@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SOUNDWORLDS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8C%80%3C/text%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  #canvas { display: block; width: 100%; height: 100%; }
+
+  /* ── Controls panel ── */
+  #panel {
+    position: fixed; top: 12px; right: 12px; z-index: 100;
+    width: 280px; color: #cfe3ff;
+    font: 12px/1.5 'SF Mono', Menlo, Consolas, monospace;
+    background: rgba(8, 12, 22, 0.82);
+    border: 1px solid rgba(120, 160, 255, 0.25);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    user-select: none;
+  }
+  #panel.hidden { display: none; }
+  #panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; cursor: pointer;
+    border-bottom: 1px solid rgba(120, 160, 255, 0.15);
+  }
+  #panel.collapsed #panel-body { display: none; }
+  #panel.collapsed #panel-head { border-bottom: none; }
+  #panel-title { font-weight: bold; letter-spacing: 1px; color: #9fc2ff; }
+  #panel-stats { color: #6b86b8; font-size: 11px; }
+  #panel-body { padding: 10px 12px 12px; }
+  .row { margin-bottom: 9px; }
+  .row label { display: block; color: #8fa8d8; margin-bottom: 3px; font-size: 11px; }
+  .row label .val { float: right; color: #cfe3ff; }
+  input[type="range"] { width: 100%; accent-color: #6f9fff; height: 18px; }
+  select, button, input[type="file"] {
+    width: 100%; padding: 5px 8px; color: #cfe3ff;
+    background: rgba(30, 42, 70, 0.9);
+    border: 1px solid rgba(120, 160, 255, 0.3);
+    border-radius: 6px; font: inherit; cursor: pointer;
+  }
+  select:hover, button:hover { border-color: rgba(140, 180, 255, 0.6); }
+  .btnrow { display: flex; gap: 6px; }
+  .btnrow button { flex: 1; }
+  button.on { background: rgba(70, 110, 200, 0.85); border-color: #7fa8ff; }
+  #file-input { font-size: 10px; }
+  .hint { color: #4d648f; font-size: 10px; margin-top: 8px; text-align: center; }
+  hr { border: none; border-top: 1px solid rgba(120, 160, 255, 0.12); margin: 10px 0; }
+
+  /* Big play prompt (audio needs a user gesture) */
+  #tap-to-start {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    background: rgba(0,0,0,0.55); color: #cfe3ff; cursor: pointer;
+    font: 16px/1.6 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    opacity: 1; transition: opacity 0.4s;
+  }
+  #tap-to-start.gone { opacity: 0; pointer-events: none; }
+  #tap-to-start .big { font-size: 28px; color: #9fc2ff; text-shadow: 0 0 30px rgba(110,160,255,0.8); }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="tap-to-start">
+  <div class="big">SOUNDWORLDS</div>
+  <div>click anywhere, then pick a track</div>
+</div>
+
+<div id="panel">
+  <div id="panel-head">
+    <span id="panel-title">SOUNDWORLDS</span>
+    <span id="panel-stats"><span id="fps">--</span> fps · <span id="pcount">1</span>p</span>
+  </div>
+  <div id="panel-body">
+    <div class="row">
+      <label>track (drop files in /audio/, list them in audio/manifest.json)</label>
+      <select id="track-select"><option value="">— built-in tracks —</option></select>
+    </div>
+    <div class="row">
+      <label>local file</label>
+      <input type="file" id="file-input" accept="audio/*">
+    </div>
+    <div class="row btnrow">
+      <button id="btn-play">▶ play</button>
+    </div>
+    <div class="row">
+      <label>scrub <span class="val" id="time-label">0:00 / 0:00</span></label>
+      <input type="range" id="scrub" min="0" max="1000" value="0">
+    </div>
+    <div class="row">
+      <label>volume <span class="val" id="vol-val">80</span></label>
+      <input type="range" id="volume" min="0" max="100" value="80">
+    </div>
+    <hr>
+    <div class="row">
+      <label>world</label>
+      <select id="world-select"></select>
+    </div>
+    <div class="row">
+      <label>reactivity <span class="val" id="react-val">1.0</span></label>
+      <input type="range" id="reactivity" min="0" max="200" value="100">
+    </div>
+    <div class="row">
+      <label>beat sensitivity <span class="val" id="beat-val">1.4</span></label>
+      <input type="range" id="beat-sens" min="105" max="250" value="140">
+    </div>
+    <div class="row">
+      <label>smoothing <span class="val" id="smooth-val">0.7</span></label>
+      <input type="range" id="smoothing" min="0" max="95" value="70">
+    </div>
+    <div class="row">
+      <label>hue <span class="val" id="hue-val">210</span></label>
+      <input type="range" id="hue" min="0" max="360" value="210">
+    </div>
+    <hr>
+    <div class="row btnrow">
+      <button id="btn-attract" class="on">ATTRACT</button>
+      <button id="btn-interactive">INTERACTIVE</button>
+    </div>
+    <div class="hint">H hide panel · C collapse · space play/pause</div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
