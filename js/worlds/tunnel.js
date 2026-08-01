@@ -150,8 +150,11 @@ export function createTunnel() {
           const bandShift = (s % BANDS.length) * 0.045;
           const h = ((hue / 360) + bandShift + audio.energy * 0.08) % 1;
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
-          const lum = 0.05 + 0.58 * (1 - Math.exp(-2.2 * drive));
-          color.setHSL(h, 0.85, lum);
+          const lum = 0.05 + 0.45 * (1 - Math.exp(-2.2 * drive));
+          // HDR: full saturation, then push past 1.0 with the band level so
+          // bloom glows in the segment's own color instead of washing white
+          color.setHSL(h, 1.0, lum);
+          color.multiplyScalar(0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5);
           wall.setColorAt(idx, color);
           idx++;
         }
@@ -166,7 +169,8 @@ export function createTunnel() {
         m.userData.fired = false;
         m.userData.z = -RINGS * RING_SPACING * 0.85 - travel; // spawn far ahead (in ring space)
         m.material.opacity = 1;
-        color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.6 + audio.beatIntensity * 0.2);
+        color.setHSL(((hue / 360) + 0.5) % 1, 1.0, 0.55);
+        color.multiplyScalar(1.4 + audio.beatIntensity * 1.2);
         m.material.color.copy(color);
       }
 
@@ -178,7 +182,8 @@ export function createTunnel() {
         m.userData.fired = true;
         m.userData.z = -1 - travel; // spawn just ahead of the camera
         m.material.opacity = 1;
-        color.setHSL(((hue / 360) + 0.12) % 1, 0.95, 0.7);
+        color.setHSL(((hue / 360) + 0.12) % 1, 1.0, 0.55);
+        color.multiplyScalar(2.0);
         m.material.color.copy(color);
       }
       tapFlash *= Math.pow(0.02, dt); // fast decay
