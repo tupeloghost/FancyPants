@@ -110,9 +110,12 @@ export function themePaint(mode, hue, u, v, time, level, jit, out) {
       }
       break;
     case 'glitter': {
-      const spark = Math.abs(Math.sin(jit * 997 + Math.floor(time * 30) * 7.7));
-      if (spark > 0.9) { out[0] = hue; out[1] = 0.2; out[2] = 3.0; }
-      else { out[0] = (hue + jit * 0.04) % 1; out[1] = 0.6; out[2] = 0.42; }
+      // smooth per-element twinkle — hard 30Hz strobing reads as a glitch
+      // on anything bigger than a particle
+      const tw = 0.5 + 0.5 * Math.sin(time * (4 + jit * 5) + jit * 80);
+      out[0] = (hue + jit * 0.04) % 1;
+      out[1] = 0.65 - Math.pow(tw, 8) * 0.45;
+      out[2] = 0.45 + Math.pow(tw, 8) * 1.6 + level * 0.3;
       break;
     }
     case 'candy': {
