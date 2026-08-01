@@ -10,6 +10,9 @@ import { createFunhouse } from './funhouse.js';
 import { createLavaLamp } from './lavalamp.js';
 import { createPlasma } from './plasma.js';
 import { createCherryLand } from './cherryland.js';
+import { createSlinky } from './slinky.js';
+import { createBlacktop } from './blacktop.js';
+import { createWaterslide } from './waterslide.js';
 
 export const WORLDS = {
   tunnel: { label: 'TUNNEL', create: createTunnel },
@@ -23,4 +26,7 @@ export const WORLDS = {
   lava:   { label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { label: 'PLASMA', create: createPlasma },
   cherry: { label: 'CHERRY LAND', create: createCherryLand },
+  slinky: { label: 'SLINKY', create: createSlinky },
+  blacktop: { label: 'BLACKTOP', create: createBlacktop },
+  waterslide: { label: 'WATERSLIDE', create: createWaterslide },
 };

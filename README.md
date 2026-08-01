@@ -11,12 +11,14 @@ simulates locally and broadcasts a tiny state blob at ~15Hz; everyone else
 renders those as glowing ghosts with styled names. If the socket drops, the
 world keeps running single-player with no error state.
 
-Ten worlds: TUNNEL (tube flight), SURFER (spectrum-terrain canyon),
+Fourteen worlds: TUNNEL (tube flight), SURFER (spectrum-terrain canyon),
 ORBIT (core + beat rings), BLOOM (persistent music-grown garden),
 TRAIL (persistent ribbon comet), SIGNAL (monolith corridor + bowling),
-RIVER (lazy river with lantern banks), BALL PIT (funhouse physics pit),
-LAVA LAMP (rising blobs, bass = heat), PLASMA (lightning globe — tap the
-glass and a tendril leaps to your finger).
+RIVER (lazy river with real current), BALL PIT (physics pit — taps rain
+more balls), LAVA LAMP (raymarched metaball wax), PLASMA (lightning globe),
+CHERRY LAND (shake the trees), SLINKY (walks downstairs forever, tap to
+boing), BLACKTOP (night street racing, tap = nitro), WATERSLIDE (open-top
+flume, tap = splash + speed).
 
 All ten share the theme engine (`js/lib/themes.js`): every color mode,
 pattern-agnostic, drives every world.

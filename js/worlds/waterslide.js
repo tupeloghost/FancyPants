@@ -1,0 +1,237 @@
+// WATERSLIDE — a twisting open-top flume dropping forever downhill. Water
+// rushes under you, the pipe banks through curves, beats splash. Tap for a
+// splash burst + a shot of speed. Ghost riders slide the same flume.
+
+import * as THREE from 'three';
+import { glowPoints, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
+const RINGS = 54;           // half-pipe rings alive at once
+const SEGS = 14;            // arc segments per ring (lower half only)
+const RING_SPACING = 5;
+const DROP = 0.42;          // downhill slope per unit forward
+const WATER_N = 240;
+
+export function createWaterslide() {
+  let scene, camera, group, wall, water, spray, sky;
+  let travel = 0, boost = 0;
+  let steer = 0, steerTarget = 0;
+  const tp = [0, 0, 0];
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+
+  const ringZ = new Float32Array(RINGS);
+  const ringSeed = new Float32Array(RINGS);
+  const waterLane = new Float32Array(WATER_N);
+  const waterOff = new Float32Array(WATER_N);
+  let sprayLife = 0;
+
+  const R = 7;
+  const curveX = t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20;
+  const dropY = t => -t * DROP + Math.sin(t * 0.02) * 4;
+
+  return {
+    name: 'WATERSLIDE',
+
+    init(_scene, _camera) {
+      scene = _scene; camera = _camera;
+      group = new THREE.Group();
+      scene.add(group);
+      scene.fog = new THREE.FogExp2(0x02060a, 0.011);
+
+      const geo = new THREE.BoxGeometry(1, 0.4, RING_SPACING * 0.9);
+      {
+        const pa = geo.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.6 + (pa.getY(i) / 0.4 + 0.5) * 0.5;
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
+      wall = new THREE.InstancedMesh(
+        geo,
+        new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
+        RINGS * SEGS
+      );
+      wall.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      wall.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * SEGS * 3), 3);
+      wall.instanceColor.setUsage(THREE.DynamicDrawUsage);
+      wall.frustumCulled = false;
+      group.add(wall);
+
+      for (let r = 0; r < RINGS; r++) {
+        ringZ[r] = -r * RING_SPACING;
+        ringSeed[r] = Math.random();
+      }
+
+      // rushing water: streaks tearing down the flume floor
+      const wp = new Float32Array(WATER_N * 3);
+      const wc = new Float32Array(WATER_N * 3);
+      for (let i = 0; i < WATER_N; i++) {
+        waterLane[i] = (Math.random() - 0.5) * (R * 0.9);
+        waterOff[i] = Math.random() * RINGS * RING_SPACING;
+      }
+      const wg = new THREE.BufferGeometry();
+      wg.setAttribute('position', new THREE.BufferAttribute(wp, 3).setUsage(THREE.DynamicDrawUsage));
+      wg.setAttribute('color', new THREE.BufferAttribute(wc, 3).setUsage(THREE.DynamicDrawUsage));
+      water = new THREE.Points(wg, glowPoints(0.9, 0.85));
+      water.material.vertexColors = true;
+      water.frustumCulled = false;
+      group.add(water);
+
+      // splash spray burst
+      const sp = new Float32Array(80 * 3);
+      const sg = new THREE.BufferGeometry();
+      sg.setAttribute('position', new THREE.BufferAttribute(sp, 3).setUsage(THREE.DynamicDrawUsage));
+      spray = new THREE.Points(sg, glowPoints(1.0, 0));
+      spray.frustumCulled = false;
+      group.add(spray);
+      sprayLife = 0;
+
+      sky = skyDome(300);
+      group.add(sky);
+
+      travel = 0; boost = 0;
+      camera.fov = 76;
+      camera.updateProjectionMatrix();
+    },
+
+    setInput(x) { steerTarget = x; },
+
+    // ghost riders ahead in the same flume
+    placeGhost(p, i, out) {
+      const t = travel + 14 + (i % 6) * 9;
+      out.set(curveX(t) + p.x * 3.5, dropY(t) + 1.4, -t);
+    },
+
+    // tap: splash burst + a shot of speed
+    onTap() {
+      boost = 1;
+      sprayLife = 1;
+      const pos = spray.geometry.attributes.position;
+      const t = travel + 6;
+      for (let i = 0; i < 80; i++) {
+        pos.setXYZ(i,
+          curveX(t) + (Math.random() - 0.5) * 5,
+          dropY(t) + 1 + Math.random() * 2,
+          -t + (Math.random() - 0.5) * 4
+        );
+      }
+      pos.needsUpdate = true;
+    },
+
+    update(dt, audio, participants, opts) {
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+
+      boost *= Math.pow(0.2, dt);
+      const speed = 16 + audio.volume * 42 * reactivity + boost * 34;
+      travel += speed * dt;
+
+      if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
+      steer += (steerTarget - steer) * Math.min(1, dt * 4);
+      if (participants && participants[0]) {
+        participants[0].x = steer;
+        participants[0].y = 0;
+      }
+
+      // bank into the curve like a rider would
+      const ahead = curveX(travel + 30) - curveX(travel);
+      const bank = ahead * 0.03 + steer * 0.35;
+
+      // camera rides low in the flume
+      camera.position.set(
+        curveX(travel) + steer * (R * 0.55),
+        dropY(travel) + 2.6 + Math.abs(steer) * 1.4 + audio.bass * 0.3,
+        -travel
+      );
+      camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6, -(travel + 34));
+      camera.rotation.z += -bank;
+
+      // half-pipe rings recycle ahead. ringZ is the ring's ABSOLUTE world z
+      // (camera lives at z = -travel), and -ringZ is its path parameter.
+      let idx = 0;
+      for (let r = 0; r < RINGS; r++) {
+        if (ringZ[r] > -travel + RING_SPACING * 1.5) {
+          ringZ[r] -= RINGS * RING_SPACING;
+          ringSeed[r] = Math.random();
+        }
+        const t = -ringZ[r];              // distance along the flume
+        const distAhead = t - travel;     // 0 at the camera
+        const cx = curveX(t);
+        const cy = dropY(t) + R; // ring center sits R above the floor
+
+        for (let s2 = 0; s2 < SEGS; s2++) {
+          // arc across the LOWER half only — open-top flume
+          const a = Math.PI + (s2 / (SEGS - 1)) * Math.PI;
+          const level = audio[['bass', 'lowMid', 'mid', 'high', 'treble'][s2 % 5]];
+          dummy.position.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, ringZ[r]);
+          dummy.rotation.set(0, 0, a + Math.PI / 2);
+          const w = (Math.PI * R) / SEGS * 0.85;
+          dummy.scale.set(w, 1 + level * 1.6 * reactivity, 1);
+          dummy.updateMatrix();
+          wall.setMatrixAt(idx, dummy.matrix);
+
+          const jitv = Math.abs(Math.sin(ringSeed[r] * 43.7 + s2 * 12.9));
+          themePaint(colorMode, hue / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp);
+          const wet = 0.16 + level * 0.4 * reactivity + boost * 0.12;
+          color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])));
+          color.multiplyScalar(Math.min(1, Math.max(0.08, distAhead / 22))); // dim right at the camera
+          wall.setColorAt(idx, color);
+          idx++;
+        }
+      }
+      wall.instanceMatrix.needsUpdate = true;
+      wall.instanceColor.needsUpdate = true;
+
+      // water streaks race down the floor, faster than you
+      const wpos = water.geometry.attributes.position;
+      const wcol = water.geometry.attributes.color;
+      const span = RINGS * RING_SPACING;
+      for (let i = 0; i < WATER_N; i++) {
+        waterOff[i] += (speed * 0.55 + 26) * dt;
+        const t = travel + (waterOff[i] % span);
+        const floorY = dropY(t) + 0.55 + Math.abs(waterLane[i]) * 0.06;
+        wpos.setXYZ(i, curveX(t) + waterLane[i], floorY, -t);
+        const froth = 0.5 + 0.5 * Math.sin(i * 3.7 + time * 14);
+        // dim streaks near the camera so overlap never whites out the lens
+        const distDim = Math.min(1, Math.max(0.06, ((waterOff[i] % span)) / 22));
+        color.setHSL((hue / 360 + 0.5) % 1, 0.4, (0.16 + froth * 0.14 + audio.volume * 0.1) * distDim);
+        wcol.setXYZ(i, color.r, color.g, color.b);
+      }
+      wpos.needsUpdate = true;
+      wcol.needsUpdate = true;
+      water.material.size = 0.5 + audio.volume * 0.3 + boost * 0.3;
+
+      // splash spray
+      if (sprayLife > 0.02) {
+        sprayLife *= Math.pow(0.06, dt);
+        spray.material.opacity = sprayLife;
+        color.setHSL((hue / 360 + 0.5) % 1, 0.3, 0.75);
+        spray.material.color.copy(color);
+        const pos = spray.geometry.attributes.position;
+        for (let i = 0; i < 80; i++) {
+          pos.setY(i, pos.getY(i) + dt * (4 + (i % 5)));
+          pos.setZ(i, pos.getZ(i) - dt * speed * 0.4);
+        }
+        pos.needsUpdate = true;
+      } else {
+        spray.material.opacity = 0;
+      }
+
+      sky.position.copy(camera.position);
+      themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
+      sky.material.color.setHSL(tp[0], tp[1] * 0.5, 0.24 + audio.energy * 0.15);
+
+      const fovT = 76 + speed * 0.16 + boost * 10;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
+      camera.updateProjectionMatrix();
+    },
+
+    dispose() {
+      scene.fog = null;
+      group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+      scene.remove(group);
+    },
+  };
+}
