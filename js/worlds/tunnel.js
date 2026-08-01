@@ -453,7 +453,7 @@ export function createTunnel() {
           let weave = 1;
           if (pattern === 'paisley') {
             const swirl = Math.sin(a * 2 + Math.sin((travel - z) * 0.045) * 2.6 + travel * 0.015);
-            weave = swirl > 0.25 ? 1.25 : (swirl > -0.35 ? 0.75 : 0.35);
+            weave = swirl > 0.25 ? 1.4 : (swirl > -0.35 ? 0.7 : 0.22);
             if (!themed) {
               if (swirl > 0.25) h = (h + 0.07) % 1;
               else if (swirl < -0.35) h = (h + 0.5) % 1;
@@ -467,24 +467,30 @@ export function createTunnel() {
             const dz2 = (along % 13 + 13) % 13 - 6.5;
             const d = Math.sqrt(dx * dx + dz2 * dz2);
             const edge = Math.min(1, Math.max(0, 1 - (d - 3.1) / 1.2));
-            weave = 0.15 + 1.25 * edge;
+            weave = 0.1 + 1.55 * edge;
             if (edge > 0.4 && !themed) h = (h + 0.5) % 1;
           } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;
             const segBand = (s % 4) < 2;
-            weave = ringBand && segBand ? 1.25 : (ringBand || segBand ? 0.85 : 0.45);
+            weave = ringBand && segBand ? 1.5 : (ringBand || segBand ? 0.8 : 0.28);
             if (ringBand !== segBand && !themed) h = (h + 0.06) % 1;
           }
-          if (themed) weave = 1 + (weave - 1) * 0.35; // gentle texture only
+          else if (pattern === 'checker') {
+            weave = (r + s) % 2 ? 1.3 : 0.55;
+          } else if (pattern === 'stripes') {
+            weave = s % 2 ? 1.25 : 0.5;
+          }
+          if (themed) weave = 1 + (weave - 1) * 0.45; // gentle texture only
 
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
           const lum = 0.03 + 0.4 * (1 - Math.exp(-2.2 * drive));
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
 
           const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
-          const rawDrive = Math.min(1.9, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave * (0.82 + jit * 0.36));
+          const rawDrive = Math.min(1.9, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
-          color.multiplyScalar(Math.max(0.15, drive2) * proximityDim);
+          // weave lives OUTSIDE the clamp — patterns keep their contrast
+          color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave);
           wall.setColorAt(idx, color);
           idx++;
         }
