@@ -15,9 +15,10 @@ import { Presence } from './lib/presence.js';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+const IS_MOBILE = matchMedia('(pointer: coarse)').matches;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance' });
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000208);
@@ -27,7 +28,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.3, 0.5
+  new THREE.Vector2(window.innerWidth, window.innerHeight), IS_MOBILE ? 0.5 : 0.7, 0.3, 0.5
 );
 composer.addPass(bloomPass);
 
@@ -440,7 +441,16 @@ $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 function dismissOverlay() {
   audio.ensureContext();
   tap.classList.add('gone');
+  // iOS: tilt controls need explicit permission, and the request must come
+  // from a user gesture — this tap is our one chance
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().catch(() => {});
+  }
+  // phones: start with the panel collapsed — the world is the point
+  if (IS_MOBILE) { panel.classList.remove('hidden'); panel.classList.add('collapsed'); }
 }
+if (IS_MOBILE) panel.classList.add('hidden'); // hidden behind the join card
 function startRoom(code, name, asOwner) {
   if (!validName(name)) { $('join-msg').textContent = 'name: 3-14 letters, numbers, _'; return; }
   net.local.name = name;
