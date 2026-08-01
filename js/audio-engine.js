@@ -24,6 +24,7 @@ export class AudioEngine {
       beat: false,
       beatIntensity: 0,
       energy: 0,
+      spectrum: new Float32Array(64), // downsampled, smoothed, 0-1 per bin
     };
 
     this._freq = null;
@@ -109,6 +110,18 @@ export class AudioEngine {
     const k = Math.min(1, Math.max(0.02, s));
     for (const key of ['bass', 'lowMid', 'mid', 'high', 'treble', 'volume']) {
       d[key] += (raw[key] - d[key]) * k;
+    }
+
+    // 64-bin spectrum (log-ish downsample of the useful range) for terrain-style worlds
+    const spec = d.spectrum;
+    for (let i = 0; i < 64; i++) {
+      const t0 = i / 64, t1 = (i + 1) / 64;
+      const lo = Math.floor(Math.pow(t0, 1.6) * 750) + 1;
+      const hi = Math.max(lo + 1, Math.floor(Math.pow(t1, 1.6) * 750) + 1);
+      let sum = 0;
+      for (let b = lo; b < hi; b++) sum += this._freq[b];
+      const v = sum / ((hi - lo) * 255);
+      spec[i] += (v - spec[i]) * k;
     }
 
     // Energy: slow-moving average of volume for section-change detection

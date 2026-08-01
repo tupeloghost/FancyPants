@@ -73,7 +73,7 @@ for (const [key, w] of Object.entries(WORLDS)) {
 $('world-select').addEventListener('change', e => switchWorld(e.target.value));
 
 // tracks from /audio/manifest.json (optional file — silently skipped if absent)
-fetch('audio/manifest.json')
+fetch('audio/manifest.json?t=' + Date.now())
   .then(r => (r.ok ? r.json() : []))
   .then(list => {
     for (const f of list) {
@@ -165,6 +165,7 @@ window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 'h' || e.key === 'H') panel.classList.toggle('hidden');
   if (e.key === 'c' || e.key === 'C') panel.classList.toggle('collapsed');
+  if (e.key === 's' || e.key === 'S') screenshotQueued = true;
   if (e.key === ' ') {
     e.preventDefault();
     audio.playing ? audio.pause() : audio.play().catch(() => {});
@@ -275,6 +276,7 @@ function drawSpectrum(a) {
 // ── Loop ──
 let last = performance.now();
 let fpsFrames = 0, fpsTime = 0, time = 0, lowFpsStreak = 0;
+let screenshotQueued = false;
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -291,6 +293,20 @@ function frame(now) {
     time,
   });
   composer.render();
+
+  // PNG export must happen in the same frame as the render (no preserveDrawingBuffer)
+  if (screenshotQueued) {
+    screenshotQueued = false;
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `soundworlds-${world.name.toLowerCase()}-${Date.now()}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
   drawSpectrum(a);
 
   // panel readouts + bloom auto-degrade on sustained low fps

@@ -4,9 +4,14 @@ Browser-based multiplayer audio-reactive visual playground for livestreams.
 Vanilla JS + Three.js (CDN import map), no build step. Deployable to any
 static host (GitHub Pages / Cloudflare Pages).
 
-**Current status: Phase 1** — audio engine + TUNNEL world + controls panel,
-single-player only. Multiplayer (PartyKit), join flow, and the remaining
-five worlds come after this phase is approved.
+**Current status: Phase 2** — all six worlds, single-player.
+Multiplayer (PartyKit) and the join flow are next.
+
+Worlds: TUNNEL (tube flight), SURFER (spectrum terrain, tap to jump),
+ORBIT (core + beat rings, single-axis steering), BLOOM (persistent
+music-grown garden, tap to plant a burst), TRAIL (persistent ribbon,
+`S` exports a PNG), SIGNAL (monoliths lit by frequency strikes, tap
+sends a radar ping).
 
 ## Run locally
 
@@ -40,6 +45,7 @@ without any manifest.
 | `H` | hide/show the whole panel (clean recording) |
 | `C` | collapse/expand the panel |
 | `Space` | play / pause |
+| `S` | export a PNG of the canvas |
 
 Panel: track picker, play/pause/scrub/volume, world selector (live switch),
 reactivity, beat sensitivity, smoothing, hue, ATTRACT vs INTERACTIVE mode,
@@ -47,7 +53,7 @@ FPS + participant count.
 
 In INTERACTIVE mode, steer with the mouse (desktop) or tilt (mobile).
 
-URL params: `?world=tunnel` (`room` and `names` are reserved for the
+URL params: `?world=tunnel|surfer|orbit|bloom|trail|signal` (`room` and `names` are reserved for the
 multiplayer phase).
 
 ## Architecture
