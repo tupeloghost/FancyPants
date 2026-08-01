@@ -354,7 +354,7 @@ export function createTunnel() {
                 h = 0.6; sat = 0.12;
                 boost = 1.8 + 0.8 * Math.sin(time * 2.5 + jit * 90); // twinkle
               } else {
-                h = (0.72 + 0.16 * Math.sin((travel - z) * 0.05 + a * 0.8)) % 1;
+                h = ((hue / 360) + 0.16 * Math.sin((travel - z) * 0.05 + a * 0.8) + 1) % 1;
                 sat = 0.85;
                 boost = 0.18 + level * 0.25; // nebula stays dim
               }
@@ -364,8 +364,8 @@ export function createTunnel() {
               // dark champagne field; the real sparkle is the particle layer.
               // A few elements still catch the light, briefly and sharply.
               const spark = Math.abs(Math.sin(ringSeed[r] * 91.7 + s * 57.31 + Math.floor(time * 30) * 7.7));
-              if (spark > 0.965) { h = 0.11; sat = 0.12; boost = 3.2 + audio.volume; }
-              else { h = 0.10 + jit * 0.03; sat = 0.65; boost = 0.4; }
+              if (spark > 0.965) { h = (hue / 360) % 1; sat = 0.25; boost = 3.2 + audio.volume; }
+              else { h = ((hue / 360) + jit * 0.04) % 1; sat = 0.6; boost = 0.4; }
               break;
             }
             case 'candy': {
@@ -483,9 +483,12 @@ export function createTunnel() {
           const tw = Math.abs(Math.sin(i * 12.9898 + frame * 78.233));
           if (tw > 0.86) {
             const heat = 1.6 + audio.volume * 1.4 + (tw - 0.86) * 12;
-            col.setXYZ(i, heat, heat, heat * 0.92); // white-gold flash
+            // flash = white core tinted toward the chosen hue
+            color.setHSL((hue / 360) % 1, 0.55, 0.5);
+            col.setXYZ(i, heat * (0.6 + color.r * 0.4), heat * (0.6 + color.g * 0.4), heat * (0.6 + color.b * 0.4));
           } else {
-            col.setXYZ(i, 0.06, 0.05, 0.03); // dust barely there
+            color.setHSL((hue / 360) % 1, 0.6, 0.05);
+            col.setXYZ(i, color.r, color.g, color.b); // dust barely there
           }
         }
         pos.needsUpdate = true;
