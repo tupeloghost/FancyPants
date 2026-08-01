@@ -22,7 +22,12 @@ export function createSignal() {
   const mBand = new Uint8Array(COUNT);
   const mThresh = new Float32Array(COUNT);
   const mLit = new Float32Array(COUNT);
+  const mFall = new Float32Array(COUNT);    // 0 = standing; 0..1 = tipping over
+  const mFallDX = new Float32Array(COUNT);  // direction it was struck toward
+  const mFallDZ = new Float32Array(COUNT);
   const ping = { active: false, x: 0, z: 0, r: 0 };
+  let balls = [];                            // bowling shots
+  const fallAxis = new THREE.Vector3();
 
   function laneX() {
     const side = Math.random() < 0.5 ? -1 : 1;
@@ -100,6 +105,19 @@ export function createSignal() {
       sky = skyDome(340);
       group.add(sky);
 
+      // bowling ball pool — glowing spheres you hurl down the corridor
+      balls = [];
+      for (let i = 0; i < 5; i++) {
+        const b = new THREE.Mesh(
+          new THREE.SphereGeometry(1.7, 16, 16),
+          new THREE.MeshBasicMaterial({ toneMapped: false })
+        );
+        b.visible = false;
+        b.userData = { vel: new THREE.Vector3(), t: 0 };
+        group.add(b);
+        balls.push(b);
+      }
+
       for (let i = 0; i < COUNT; i++) {
         mx[i] = laneX();
         mz[i] = -Math.random() * SPAN;
@@ -117,11 +135,23 @@ export function createSignal() {
       camera.updateProjectionMatrix();
     },
 
+    // tap: hurl a glowing ball down the corridor — it knocks columns over
+    // like bowling pins (the radar ping rides along with it)
     onTap() {
       ping.active = true;
       ping.x = camera.position.x;
       ping.z = camera.position.z;
       ping.r = 0;
+      const b = balls.find(x => !x.visible) || balls[0];
+      b.visible = true;
+      b.userData.t = 0;
+      b.position.copy(camera.position);
+      b.position.y = 3;
+      b.userData.vel.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      b.userData.vel.y = 0;
+      b.userData.vel.normalize().multiplyScalar(110);
+      // launch a few meters ahead so the ball doesn't flash the whole lens
+      b.position.addScaledVector(b.userData.vel, 0.12);
     },
 
     update(dt, audio, participants, opts) {
@@ -169,6 +199,7 @@ export function createSignal() {
           mBand[i] = Math.floor(Math.random() * BANDS.length);
           mThresh[i] = 0.28 + Math.random() * 0.35;
           mLit[i] = 0;
+          mFall[i] = 0;   // recycled columns stand back up ahead
         }
 
         const level = audio[BANDS[mBand[i]]];
@@ -186,16 +217,39 @@ export function createSignal() {
         mLit[i] *= Math.pow(0.25, dt);
 
         const pulse = 1 + mLit[i] * 0.12 + audio.beatIntensity * 0.05;
-        dummy.position.set(mx[i], (mh[i] * pulse) / 2, mz[i]);
-        dummy.scale.set(mw[i], mh[i] * pulse, mw[i]);
-        dummy.rotation.set(0, 0, 0);
-        dummy.updateMatrix();
-        monoliths.setMatrixAt(i, dummy.matrix);
+        const h = mh[i] * pulse;
 
-        dummy.position.y = -dummy.position.y;
-        dummy.scale.y = -dummy.scale.y;
-        dummy.updateMatrix();
-        reflections.setMatrixAt(i, dummy.matrix);
+        if (mFall[i] > 0) {
+          // struck: tip over around the base edge, ease out as it lands
+          mFall[i] = Math.min(1, mFall[i] + dt * 2.0);
+          const e = 1 - (1 - mFall[i]) * (1 - mFall[i]); // ease-out
+          const a = e * Math.PI * 0.48;
+          const sa = Math.sin(a), ca = Math.cos(a);
+          fallAxis.set(mFallDZ[i], 0, -mFallDX[i]); // perpendicular to strike dir
+          dummy.position.set(
+            mx[i] + mFallDX[i] * sa * h / 2,
+            Math.max(mw[i] / 2, ca * h / 2),
+            mz[i] + mFallDZ[i] * sa * h / 2
+          );
+          dummy.scale.set(mw[i], h, mw[i]);
+          dummy.quaternion.setFromAxisAngle(fallAxis, a);
+          dummy.updateMatrix();
+          monoliths.setMatrixAt(i, dummy.matrix);
+          dummy.position.y = -dummy.position.y;
+          dummy.quaternion.setFromAxisAngle(fallAxis, -a);
+          dummy.updateMatrix();
+          reflections.setMatrixAt(i, dummy.matrix);
+        } else {
+          dummy.position.set(mx[i], h / 2, mz[i]);
+          dummy.scale.set(mw[i], h, mw[i]);
+          dummy.rotation.set(0, 0, 0);
+          dummy.updateMatrix();
+          monoliths.setMatrixAt(i, dummy.matrix);
+          dummy.position.y = -dummy.position.y;
+          dummy.scale.y = -dummy.scale.y;
+          dummy.updateMatrix();
+          reflections.setMatrixAt(i, dummy.matrix);
+        }
 
         const bandShift = mBand[i] * 0.05;
         color.setHSL(((hue / 360) + bandShift) % 1, 0.8, 0.05 + mLit[i] * 0.65);
@@ -206,6 +260,29 @@ export function createSignal() {
       monoliths.instanceColor.needsUpdate = true;
       reflections.instanceMatrix.needsUpdate = true;
       reflections.instanceColor.needsUpdate = true;
+
+      // bowling balls fly, glow, and knock columns over
+      for (const b of balls) {
+        if (!b.visible) continue;
+        b.userData.t += dt;
+        if (b.userData.t > 4) { b.visible = false; continue; }
+        b.position.addScaledVector(b.userData.vel, dt);
+        color.setHSL(((hue / 360) + 0.5) % 1, 0.95, 0.65);
+        b.material.color.copy(color);
+        const bs = 1 + Math.sin(b.userData.t * 20) * 0.08;
+        b.scale.setScalar(bs);
+        for (let i = 0; i < COUNT; i++) {
+          if (mFall[i] > 0) continue;
+          if (Math.abs(b.position.x - mx[i]) < mw[i] + 2 &&
+              Math.abs(b.position.z - mz[i]) < mw[i] + 2) {
+            mFall[i] = 0.001;
+            const len = Math.hypot(b.userData.vel.x, b.userData.vel.z) || 1;
+            mFallDX[i] = b.userData.vel.x / len;
+            mFallDZ[i] = b.userData.vel.z / len;
+            mLit[i] = 1; // flare on impact
+          }
+        }
+      }
 
       // dust wraps around the camera; shimmers with the highs
       const dpos = dust.geometry.attributes.position;

@@ -29,6 +29,7 @@ export function createTrail() {
   const wakeVel = new Float32Array(WAKE * 3);
   const wakeLife = new Float32Array(WAKE);
   let wakePhase = 0;
+  let clickHue = 0;   // advances on every tap — the ribbon keeps each color
   const up = new THREE.Vector3(), u = new THREE.Vector3(), v2 = new THREE.Vector3();
   const color = new THREE.Color();
   const tmpDir = new THREE.Vector3();
@@ -141,9 +142,11 @@ export function createTrail() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    // tap: width surge + spark scatter + an expanding light ring
+    // tap: jump to a fresh color (the ribbon behind keeps the old ones —
+    // look back and it's a rainbow of your clicks) + surge + ring
     onTap() {
       kick = 1;
+      clickHue = (clickHue + 0.31) % 1; // golden-angle-ish: consecutive clicks contrast
       const ring = tapRings.find(r => !r.visible) || tapRings[0];
       ring.visible = true;
       ring.userData.life = 1;
@@ -190,9 +193,10 @@ export function createTrail() {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
         const width = (0.28 + audio.volume * 1.6 * reactivity) * (1 + kick * 1.4);
-        // hue drifts slowly over time so long ribbons become rainbows
-        const drift = (hue / 360 + time * 0.008) % 1;
-        color.setHSL((drift + BAND_HUE_SHIFT[domIdx]) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
+        // base color = panel hue + the click-cycled offset, so every tap
+        // starts a new color segment; a slow drift keeps it alive between taps
+        const base = (hue / 360 + clickHue + time * 0.004) % 1;
+        color.setHSL((base + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -245,7 +249,7 @@ export function createTrail() {
           }
         }
         pos.needsUpdate = true;
-        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.9, 0.5);
+        color.setHSL(((hue / 360) + clickHue + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 0.9, 0.5);
         wake.material.color.copy(color);
         wake.material.size = 0.8 + audio.volume * 1.2;
       }
@@ -257,7 +261,7 @@ export function createTrail() {
         if (r.userData.life <= 0) { r.visible = false; continue; }
         r.scale.addScalar(dt * 55);
         r.quaternion.copy(camera.quaternion);
-        color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.55);
+        color.setHSL(((hue / 360) + clickHue + 0.5) % 1, 0.9, 0.55);
         r.material.color.copy(color);
         r.material.opacity = r.userData.life * 0.8;
       }
@@ -265,7 +269,7 @@ export function createTrail() {
       // head orb + halo
       headOrb.position.copy(head);
       headOrb.scale.setScalar(1 + audio.volume * 0.9 * reactivity + kick * 1.2);
-      color.setHSL((hue / 360) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
+      color.setHSL(((hue / 360) + clickHue) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
       headOrb.material.color.copy(color);
       headHalo.position.copy(head);
       headHalo.scale.setScalar(3.5 * (1 + audio.volume * 0.8 + kick * 1.2));
