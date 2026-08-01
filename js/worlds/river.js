@@ -185,10 +185,10 @@ export function createRiver() {
       // choppy stream water: several short overlapping waves, all racing
       // downstream — turbulence, not gentle swells
       swellAt = (x, z) =>
-        (Math.sin(z * 0.22 + drift * 0.5) * 0.42 +
-         Math.sin(z * 0.47 + drift * 0.83 + x * 0.3) * 0.28 +
-         Math.sin(x * 0.55 - drift * 0.6) * 0.22 +
-         Math.sin(z * 0.13 + drift * 0.3) * 0.3) *
+        (Math.sin(z * 0.22 - drift * 0.5) * 0.42 +
+         Math.sin(z * 0.47 - drift * 0.83 + x * 0.3) * 0.28 +
+         Math.sin(x * 0.55 + drift * 0.6) * 0.22 +
+         Math.sin(z * 0.13 - drift * 0.3) * 0.3) *
         (0.45 + audio.volume * 1.3 * reactivity + rush * 0.5);
       const camX = riverX(camZ) + steer * 8;
       const ride = swellAt(camX, camZ);
@@ -282,11 +282,10 @@ export function createRiver() {
       // foam rides the current — overtaking the camera so the flow reads
       {
         const fpos2 = foam.geometry.attributes.position;
-        const flowSpeed = 13 + audio.energy * 12 + rush * 30;
+        const flowSpeed = 9 + audio.energy * 8 + rush * 22;
         for (let i = 0; i < 240; i++) {
-          let z = fpos2.getZ(i) - flowSpeed * dt; // downstream faster than the camera
-          if (z < camZ - WL * 0.9) z = camZ + 12;
-          if (z > camZ + 15) z = camZ - WL * 0.85;
+          let z = fpos2.getZ(i) + flowSpeed * dt; // rushing TOWARD you — you're moving
+          if (z > camZ + 12) z = camZ - WL * 0.85;
           fpos2.setZ(i, z);
           fpos2.setX(i, riverX(z) + foamLat[i]);
           fpos2.setY(i, 0.3 + Math.max(0, swellAt(riverX(z) + foamLat[i], z)) * 0.9);
