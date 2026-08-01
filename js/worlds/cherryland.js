@@ -33,6 +33,9 @@ export function createCherryLand() {
   const treeShake = new Float32Array(TREES);
   const heroes = [];
   let bursts = [];
+  let juice = null;
+  const juiceVel = new Float32Array(26 * 3);
+  let juiceLife = 0;
 
   const pathX = z => Math.sin(z * 0.012) * 18;
   const hillY = (x, z) => Math.sin(x * 0.045 + 1) * 1.6 + Math.sin(z * 0.03) * 1.9;
@@ -140,6 +143,16 @@ export function createCherryLand() {
         bursts.push(m);
       }
 
+      // juice splash for direct cherry pops
+      {
+        const jp = new Float32Array(26 * 3);
+        const jg = new THREE.BufferGeometry();
+        jg.setAttribute('position', new THREE.BufferAttribute(jp, 3).setUsage(THREE.DynamicDrawUsage));
+        juice = new THREE.Points(jg, glowPoints(1.1, 0));
+        juice.frustumCulled = false;
+        group.add(juice);
+      }
+
       sun = glowSprite(60);
       sun.material.fog = false;
       group.add(sun);
@@ -160,12 +173,48 @@ export function createCherryLand() {
       out.set(pathX(z) + p.x * 10 + Math.sin(i * 2.9) * 6, 4 + Math.sin(i * 1.7) * 2, z);
     },
 
-    // tap a TREE: it shakes and its cherries drop, bounce, then regrow
+    // tap a CHERRY: it POPS — juice everywhere. Tap a tree: shake-down.
     onTap(x, y) {
       const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
       const dir = v.sub(camera.position).normalize();
       const cp = new THREE.Vector3();
       const m4 = new THREE.Matrix4();
+
+      // direct cherry hit first — the juicy interaction
+      let bestC = -1, bestCD = 1e9;
+      for (let i = 0; i < NCHERRY; i++) {
+        if (cFall[i] !== 0) continue;
+        cherries.getMatrixAt(i, m4);
+        cp.setFromMatrixPosition(m4).sub(camera.position);
+        const along = cp.dot(dir);
+        if (along < 3 || along > 110) continue;
+        const d = cp.clone().cross(dir).length() / Math.max(1, along * 0.05);
+        if (d < bestCD) { bestCD = d; bestC = i; }
+      }
+      if (bestC >= 0 && bestCD < 14) {
+        cherries.getMatrixAt(bestC, m4);
+        cp.setFromMatrixPosition(m4);
+        cFall[bestC] = 2; cPop[bestC] = 4; // popped away, regrows later
+        cfx[bestC] = cp.x; cfy[bestC] = -999; cfz[bestC] = cp.z; // hidden while resting
+        // burst ring + juice spray
+        const b = bursts.find(x2 => !x2.visible) || bursts[0];
+        b.visible = true;
+        b.userData.life = 1;
+        b.position.copy(cp);
+        b.scale.setScalar(0.6);
+        b.quaternion.copy(camera.quaternion);
+        juiceLife = 1;
+        const jpos = juice.geometry.attributes.position;
+        for (let k = 0; k < 26; k++) {
+          jpos.setXYZ(k, cp.x, cp.y, cp.z);
+          juiceVel[k * 3] = (Math.random() - 0.5) * 14;
+          juiceVel[k * 3 + 1] = 2 + Math.random() * 9;
+          juiceVel[k * 3 + 2] = (Math.random() - 0.5) * 14;
+        }
+        jpos.needsUpdate = true;
+        return;
+      }
+
       let best = -1, bestD = 1e9;
       for (let i = 0; i < TREES; i++) {
         cp.set(tx[i], hillY(tx[i], tz[i]) + th[i], tz[i]).sub(camera.position);
@@ -289,10 +338,15 @@ export function createCherryLand() {
           } else if (cFall[ci] === 2) {
             cPop[ci] -= dt;
             if (cPop[ci] <= 0) cFall[ci] = 0; // back on the branch
-            dummy.position.set(cfx[ci], hillY(cfx[ci], cfz[ci]) + 0.55, cfz[ci]);
-            dummy.scale.setScalar(Math.max(0.001, 1 + level * 0.4) * Math.min(1, cPop[ci]));
+            if (cfy[ci] < -100) {
+              dummy.position.set(0, -999, 0); // popped clean away
+              dummy.scale.setScalar(0.001);
+            } else {
+              dummy.position.set(cfx[ci], hillY(cfx[ci], cfz[ci]) + 0.55, cfz[ci]);
+              dummy.scale.setScalar(Math.max(0.001, 1 + level * 0.4) * Math.min(1, cPop[ci]));
+            }
           } else {
-            const swing = Math.sin(time * 1.1 + ci) * 0.25 + shake * Math.sin(time * 30 + ci) * 0.8;
+            const swing = Math.sin(time * 1.1 + ci) * 0.25 + shake * Math.sin(time * 30 + ci) * 1.1;
             dummy.position.set(
               tx[i] + Math.cos(a) * canopyR * 0.75 + swing,
               gy + th[i] + canopyR * 0.4 - canopyR * 0.8 - Math.abs(Math.sin(ci * 3.3)) * 1.2,
@@ -305,7 +359,7 @@ export function createCherryLand() {
           cherries.setMatrixAt(ci, dummy.matrix);
           // cherry red, warmed toward the hue in follow-hue modes
           const cherryHue = 0.975 + level * 0.03;
-          color.setHSL(cherryHue % 1, 0.95, Math.min(0.62, 0.3 + level * 0.4 * reactivity + audio.beatIntensity * 0.1));
+          color.setHSL(cherryHue % 1, 0.95, Math.min(0.68, 0.3 + level * 0.4 * reactivity + audio.beatIntensity * 0.1 + shake * 0.25));
           cherries.setColorAt(ci, color);
         }
       }
@@ -351,6 +405,27 @@ export function createCherryLand() {
       color.setHSL(0.93, 0.7, 0.5 + audio.high * 0.2);
       petals.material.color.copy(color);
       petals.material.size = 0.8 + audio.high * 0.5;
+
+      // juice spray: arcs out, falls, fades
+      if (juiceLife > 0.02) {
+        juiceLife *= Math.pow(0.1, dt);
+        const jpos = juice.geometry.attributes.position;
+        for (let k = 0; k < 26; k++) {
+          juiceVel[k * 3 + 1] -= 22 * dt;
+          jpos.setXYZ(k,
+            jpos.getX(k) + juiceVel[k * 3] * dt,
+            Math.max(0.3, jpos.getY(k) + juiceVel[k * 3 + 1] * dt),
+            jpos.getZ(k) + juiceVel[k * 3 + 2] * dt
+          );
+        }
+        jpos.needsUpdate = true;
+        juice.material.opacity = juiceLife;
+        color.setHSL(0.97, 0.95, 0.55);
+        juice.material.color.copy(color);
+        juice.material.size = 1 + (1 - juiceLife) * 0.8;
+      } else {
+        juice.material.opacity = 0;
+      }
 
       // pop bursts
       for (const b of bursts) {

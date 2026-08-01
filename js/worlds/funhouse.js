@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 420;
+const BALLS = 700;
 const ARENA = 34;           // half-width of the pit
 const GRAV = -26;
 
@@ -97,12 +97,14 @@ export function createFunhouse() {
       const t = (2 - camera.position.y) / (dir.y || -0.0001);
       const hx = Math.max(-ARENA, Math.min(ARENA, camera.position.x + dir.x * Math.abs(t)));
       const hz = Math.max(-ARENA, Math.min(ARENA, camera.position.z + dir.z * Math.abs(t)));
-      for (let n = 0; n < 7; n++) {
+      // spawn flash so adding balls is unmistakable
+      this._flash = { x: hx, z: hz, t: 1 };
+      for (let n = 0; n < 12; n++) {
         // grow the pool until it's full, then recycle random old balls
         const i = active < BALLS ? active++ : 1 + Math.floor(Math.random() * (BALLS - 1));
         px[i] = hx + (Math.random() - 0.5) * 6;
         pz[i] = hz + (Math.random() - 0.5) * 6;
-        py[i] = 30 + Math.random() * 14;
+        py[i] = 26 + Math.random() * 12;
         vx[i] = (Math.random() - 0.5) * 6;
         vy[i] = -4;
         vz[i] = (Math.random() - 0.5) * 6;
@@ -170,6 +172,32 @@ export function createFunhouse() {
       }
       balls.instanceMatrix.needsUpdate = true;
       balls.instanceColor.needsUpdate = true;
+
+      // drop flash: the sky opens where the new balls pour in
+      if (this._flash && this._flash.t > 0.02) {
+        this._flash.t *= Math.pow(0.05, dt);
+        if (!this._flashSprite) {
+          this._flashSprite = new THREE.Mesh(
+            new THREE.RingGeometry(0.9, 1, 40),
+            new THREE.MeshBasicMaterial({
+              toneMapped: false, transparent: true, opacity: 0, side: THREE.DoubleSide,
+              blending: THREE.AdditiveBlending, depthWrite: false,
+            })
+          );
+          this._flashSprite.rotation.x = -Math.PI / 2;
+          group.add(this._flashSprite);
+        }
+        const fs = this._flashSprite;
+        fs.visible = true;
+        fs.position.set(this._flash.x, 24, this._flash.z);
+        fs.scale.setScalar(3 + (1 - this._flash.t) * 22);
+        themePaint(colorMode, hue / 360, 0.3, 0, time, 1, 0.5, tp);
+        color.setHSL(tp[0], tp[1], 0.6);
+        fs.material.color.copy(color);
+        fs.material.opacity = this._flash.t * 0.9;
+      } else if (this._flashSprite) {
+        this._flashSprite.visible = false;
+      }
 
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.bass, 0.5, tp);
       color.setHSL(tp[0], tp[1] * 0.8, 0.3 + audio.bass * 0.2);

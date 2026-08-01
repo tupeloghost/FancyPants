@@ -13,6 +13,7 @@ const STAIRS = 26;
 
 export function createSlinky() {
   let scene, camera, group, coils, stairs, edges, sky, dustF, spot;
+  let impacts = [];
   let walk = 0, walkVel = 0;
   let boing = 0, landPulse = 0, lastStep = 0;
   const camPos = new THREE.Vector3(30, 0, 0);
@@ -86,6 +87,23 @@ export function createSlinky() {
       edges.frustumCulled = false;
       group.add(edges);
 
+      // landing impact rings on the stair tops
+      impacts = [];
+      for (let i = 0; i < 5; i++) {
+        const m = new THREE.Mesh(
+          new THREE.RingGeometry(0.9, 1, 40),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0, side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.visible = false;
+        m.userData = { life: 0 };
+        group.add(m);
+        impacts.push(m);
+      }
+
       // soft spotlight pool traveling with the slinky
       spot = glowSprite(30);
       spot.material.opacity = 0.2;
@@ -146,6 +164,21 @@ export function createSlinky() {
       if (Math.floor(walk) !== lastStep) {
         lastStep = Math.floor(walk);
         landPulse = 1; // the slap of the spring hitting the next step
+        const m = impacts.find(x => !x.visible) || impacts[0];
+        m.visible = true;
+        m.userData.life = 1;
+        m.position.set(0, -lastStep * STEP_H + 0.12, -lastStep * STEP_D - STEP_D / 2);
+        m.scale.setScalar(1.5);
+      }
+      for (const m of impacts) {
+        if (!m.visible) continue;
+        m.userData.life -= dt * 1.4;
+        if (m.userData.life <= 0) { m.visible = false; continue; }
+        m.scale.addScalar(dt * 30);
+        themePaint(colorMode, hue / 360, 0.5, walk * 0.1, time, 1, 0.5, tp);
+        color.setHSL(tp[0], tp[1], 0.55);
+        m.material.color.copy(color);
+        m.material.opacity = m.userData.life * 0.8;
       }
 
       // coils: phase-offset copies along the path, compression waves running
@@ -207,14 +240,16 @@ export function createSlinky() {
       edges.instanceMatrix.needsUpdate = true;
       edges.instanceColor.needsUpdate = true;
 
-      // camera: side-on, gliding down with the spring, easing every move,
-      // swinging slowly around for parallax
+      // camera: full orbit around the slinky — every angle, always moving.
+      // In play mode your pointer steers anywhere on the circle.
       pathAt(walk - RINGS * 0.026, P); // middle of the slinky
-      const swing = (pointer.active && !attract ? pointer.x * 0.7 : Math.sin(time * 0.11) * 0.55);
+      const ang = (pointer.active && !attract)
+        ? pointer.x * Math.PI + time * 0.02
+        : time * 0.08;
       camPos.set(
-        Math.cos(swing) * 32,
+        Math.cos(ang) * 33,
         P.y + 9 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing
-        P.z + 14 + Math.sin(swing) * 20
+        P.z - 4 + Math.sin(ang) * 33
       );
       camera.position.lerp(camPos, Math.min(1, dt * 2.5));
       camera.lookAt(0, P.y + 3, P.z - 6);
