@@ -82,6 +82,7 @@ const settings = {
   attract: true,
   colorMode: 'rainbow',
   pattern: 'spiral',
+  shape: 'slat',
   hdr: 1.0,
 };
 
@@ -171,6 +172,7 @@ $('hdr').value = 100;
 $('scrub').value = 0;
 $('color-mode').value = 'rainbow';
 $('pattern').value = 'spiral';
+$('shape').value = 'slat';
 
 // sliders — keep the filled portion of the track in sync via --fill
 function setFill(el) {
@@ -211,6 +213,7 @@ $('btn-interactive').addEventListener('click', () => setAttract(false));
 
 $('color-mode').addEventListener('change', e => settings.colorMode = e.target.value);
 $('pattern').addEventListener('change', e => settings.pattern = e.target.value);
+$('shape').addEventListener('change', e => settings.shape = e.target.value);
 
 // hotkeys
 window.addEventListener('keydown', e => {
@@ -344,6 +347,7 @@ function frame(now) {
     attract: settings.attract,
     colorMode: settings.colorMode,
     pattern: settings.pattern,
+    shape: settings.shape,
     hdr: settings.hdr,
     time,
   });
