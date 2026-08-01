@@ -3,6 +3,8 @@
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
 
 const COLS = 64;            // one column per spectrum bin
 const ROWS = 96;            // rows of spectrum history scrolling toward camera
@@ -94,7 +96,8 @@ export function createSurfer() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const tp = this._tp || (this._tp = [0, 0, 0]);
 
       // push a new spectrum row at a fixed cadence; terrain scrolls between rows
       rowTimer += dt * (0.6 + audio.volume * 1.2); // music speeds the world up
@@ -157,7 +160,11 @@ export function createSurfer() {
           // the center "road" columns glow so the path reads
           const road = Math.exp(-Math.pow(c - COLS / 2, 2) / 16) * (0.1 + audio.volume * 0.12);
           const lum = 0.2 + t * 0.5 + audio.beatIntensity * 0.15 + road;
-          color.setHSL(((hue / 360) + t * 0.14 + r * 0.0008) % 1, 0.9, Math.min(0.72, lum));
+          // theme paints the terrain: u = height (sunset stacks correctly),
+          // v = depth so themes flow toward the horizon
+          const jitv = Math.abs(Math.sin(c * 12.9898 + r * 78.233));
+          themePaint(colorMode, hue / 360, t, r * 0.08 + time * 0.15, time, t, jitv, tp);
+          color.setHSL(tp[0], 0.9 * tp[1] + 0.1, Math.min(0.72, lum * Math.min(1.5, tp[2])));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }

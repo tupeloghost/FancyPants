@@ -5,6 +5,8 @@
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
 
 const MAX_CRYSTALS = 3200;
 const MAX_STEMS = 3200;
@@ -27,6 +29,8 @@ export function createBloom() {
   // per-crystal state for band pulsing (ring buffer at MAX)
   const cBand = new Uint8Array(MAX_CRYSTALS);
   const cHue = new Float32Array(MAX_CRYSTALS);
+  const cSat = new Float32Array(MAX_CRYSTALS);
+  const tpS = [0, 0, 0];
   const cLum = new Float32Array(MAX_CRYSTALS);
   const cPx = new Float32Array(MAX_CRYSTALS);
   const cPy = new Float32Array(MAX_CRYSTALS);
@@ -36,7 +40,7 @@ export function createBloom() {
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
-  function place(pos, audio, hue, reactivity, big) {
+  function place(pos, audio, hue, reactivity, big, colorMode, time) {
     const loud = audio.energy;
     const size = (0.22 + loud * 1.9 * reactivity) * (big ? 1.7 : 1) * (0.6 + Math.random() * 0.9);
 
@@ -65,8 +69,10 @@ export function createBloom() {
     dummy.updateMatrix();
     crystals.setMatrixAt(ci, dummy.matrix);
     cBand[ci] = Math.floor(Math.random() * BANDS.length);
-    cHue[ci] = ((hue / 360) + cBand[ci] * 0.06 + Math.random() * 0.04) % 1;
-    cLum[ci] = 0.2 + loud * 0.25;
+    themePaint(colorMode || 'rainbow', hue / 360, Math.random(), pos.z * 0.015, time || 0, loud, Math.random(), tpS);
+    cHue[ci] = tpS[0];
+    cSat[ci] = tpS[1];
+    cLum[ci] = (0.2 + loud * 0.25) * Math.min(1.4, tpS[2]);
     cPx[ci] = pos.x; cPy[ci] = pos.y; cPz[ci] = pos.z;
     growing.push({ idx: ci, t: 0, pos: pos.clone(), size, rot });
     nCrystals++;
@@ -183,7 +189,7 @@ export function createBloom() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
 
       // fly forward — speed rides the music, always moving
       path += dt * (4 + audio.volume * 16 * reactivity + audio.energy * 6);
@@ -234,7 +240,7 @@ export function createBloom() {
             Math.sin(ang) * rad * 0.75,
             (Math.random() - 0.5) * (6 + audio.volume * 14)
           );
-          place(jitter.add(grower), audio, hue, reactivity, n > 3);
+          place(jitter.add(grower), audio, hue, reactivity, n > 3, colorMode, time);
         }
       }
 
@@ -244,7 +250,7 @@ export function createBloom() {
           const jitter = new THREE.Vector3(
             (Math.random() - 0.5) * 7, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 7
           );
-          place(jitter.add(tapPoint), audio, hue, reactivity, true);
+          place(jitter.add(tapPoint), audio, hue, reactivity, true, colorMode, time);
         }
         tapPlant = 0;
       }
@@ -299,7 +305,7 @@ export function createBloom() {
             sat -= f * 0.4; // flare toward white
           }
         }
-        color.setHSL(cHue[i], Math.max(0.3, sat), Math.min(0.75, lum));
+        color.setHSL(cHue[i], Math.max(0.3, Math.min(sat, cSat[i] + 0.1)), Math.min(0.75, lum));
         crystals.setColorAt(i, color);
       }
       if (nLive) crystals.instanceColor.needsUpdate = true;

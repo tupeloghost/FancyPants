@@ -11,11 +11,15 @@ simulates locally and broadcasts a tiny state blob at ~15Hz; everyone else
 renders those as glowing ghosts with styled names. If the socket drops, the
 world keeps running single-player with no error state.
 
-Worlds: TUNNEL (tube flight), SURFER (spectrum terrain, tap to jump),
-ORBIT (core + beat rings, single-axis steering), BLOOM (persistent
-music-grown garden, tap to plant a burst), TRAIL (persistent ribbon,
-`S` exports a PNG), SIGNAL (monoliths lit by frequency strikes, tap
-sends a radar ping).
+Ten worlds: TUNNEL (tube flight), SURFER (spectrum-terrain canyon),
+ORBIT (core + beat rings), BLOOM (persistent music-grown garden),
+TRAIL (persistent ribbon comet), SIGNAL (monolith corridor + bowling),
+RIVER (lazy river with lantern banks), BALL PIT (funhouse physics pit),
+LAVA LAMP (rising blobs, bass = heat), PLASMA (lightning globe — tap the
+glass and a tendril leaps to your finger).
+
+All ten share the theme engine (`js/lib/themes.js`): every color mode,
+pattern-agnostic, drives every world.
 
 ## Run locally
 

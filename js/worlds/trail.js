@@ -4,6 +4,8 @@
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
 
 const MAX_POINTS = 14000;   // capped total segment count
 const MIN_DIST = 0.22;
@@ -172,7 +174,8 @@ export function createTrail() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const tp = this._tp || (this._tp = [0, 0, 0]);
 
       // the head's speed IS the music — crawls in silence, tears on drops
       phase += dt * (0.25 + audio.volume * 2.6 * reactivity + audio.beatIntensity * 1.2);
@@ -209,11 +212,11 @@ export function createTrail() {
         const width = (0.28 + audio.volume * 1.6 * reactivity) * (1 + kick * 1.4);
         // base color = panel hue + the click-cycled offset, so every tap
         // starts a new color segment; a slow drift keeps it alive between taps
-        const base = (hue / 360 + clickHue + time * 0.004) % 1;
-        color.setHSL((base + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 1.0, 0.5);
-        // HDR: drive the color past 1.0 — bloom stays saturated instead of
-        // washing to white, which is what reads as "vivid"
-        color.multiplyScalar(0.7 + audio.volume * 1.6 + kick * 1.4 + audio.beatIntensity * 0.5);
+        themePaint(colorMode, hue / 360, domIdx / 5, phase * 0.12, time, audio.volume,
+          Math.abs(Math.sin(nPoints * 0.37)), tp);
+        color.setHSL((tp[0] + clickHue) % 1, tp[1], 0.5);
+        // HDR drive, scaled by the theme's own brightness
+        color.multiplyScalar((0.7 + audio.volume * 1.6 + kick * 1.4 + audio.beatIntensity * 0.5) * Math.min(1.4, tp[2]));
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -266,8 +269,9 @@ export function createTrail() {
           }
         }
         pos.needsUpdate = true;
-        color.setHSL(((hue / 360) + clickHue + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 1.0, 0.5);
-        color.multiplyScalar(0.9 + audio.volume * 1.4);
+        themePaint(colorMode, hue / 360, domIdx / 5, phase * 0.12, time, audio.volume, 0.5, tp);
+        color.setHSL((tp[0] + clickHue) % 1, tp[1], 0.5);
+        color.multiplyScalar((0.9 + audio.volume * 1.4) * Math.min(1.3, tp[2]));
         wake.material.color.copy(color);
         wake.material.size = 0.8 + audio.volume * 1.2;
       }

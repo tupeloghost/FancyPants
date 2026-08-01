@@ -5,6 +5,10 @@ import { createOrbit } from './orbit.js';
 import { createBloom } from './bloom.js';
 import { createTrail } from './trail.js';
 import { createSignal } from './signal.js';
+import { createRiver } from './river.js';
+import { createFunhouse } from './funhouse.js';
+import { createLavaLamp } from './lavalamp.js';
+import { createPlasma } from './plasma.js';
 
 export const WORLDS = {
   tunnel: { label: 'TUNNEL', create: createTunnel },
@@ -13,4 +17,8 @@ export const WORLDS = {
   bloom:  { label: 'BLOOM',  create: createBloom },
   trail:  { label: 'TRAIL',  create: createTrail },
   signal: { label: 'SIGNAL', create: createSignal },
+  river:  { label: 'RIVER',  create: createRiver },
+  funhouse: { label: 'BALL PIT', create: createFunhouse },
+  lava:   { label: 'LAVA LAMP', create: createLavaLamp },
+  plasma: { label: 'PLASMA', create: createPlasma },
 };

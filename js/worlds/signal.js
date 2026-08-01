@@ -4,6 +4,8 @@
 
 import * as THREE from 'three';
 import { glowPoints, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
 
 const COUNT = 340;
 const SPAN = 520;           // corridor length before structures recycle ahead
@@ -165,7 +167,8 @@ export function createSignal() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const tp = this._tp || (this._tp = [0, 0, 0]);
 
       if (participants && participants[0]) {
         participants[0].x = Math.sin(travel * 0.01);
@@ -266,8 +269,10 @@ export function createSignal() {
           reflections.setMatrixAt(i, dummy.matrix);
         }
 
-        const bandShift = mBand[i] * 0.05;
-        color.setHSL(((hue / 360) + bandShift) % 1, 0.8, 0.05 + mLit[i] * 0.65);
+        const jitv = Math.abs(Math.sin(i * 12.9898 + mBand[i] * 3.7));
+        themePaint(colorMode, (hue / 360 + mBand[i] * 0.05) % 1,
+          ((mx[i] / 120) + 0.5 + 1) % 1, mz[i] * 0.015 + time * 0.05, time, mLit[i], jitv, tp);
+        color.setHSL(tp[0], tp[1] * 0.85 + 0.05, Math.min(0.72, (0.05 + mLit[i] * 0.65) * Math.min(1.5, tp[2])));
         monoliths.setColorAt(i, color);
         reflections.setColorAt(i, color);
       }

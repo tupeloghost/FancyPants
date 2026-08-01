@@ -3,6 +3,8 @@
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
 
 const SHAPE_POOL = 24;
 const STARS = 600;
@@ -136,7 +138,9 @@ export function createOrbit() {
     onTap() { corePulse = 1; scatter = 1; this._spawn = true; },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const tp = this._tp || (this._tp = [0, 0, 0]);
+      const paint = (u, lvl) => { themePaint(colorMode, hue / 360, u, time * 0.15, time, lvl, (u * 7.13) % 1, tp); return tp; };
 
       this._t = time;
       if (participants && participants[0]) {
@@ -155,9 +159,11 @@ export function createOrbit() {
       coreWire.rotation.x += dt * 0.13;
       corePulse *= Math.pow(0.01, dt);
 
-      color.setHSL((opts.hue / 360) % 1, 0.85, 0.3 + audio.bass * 0.4 + corePulse * 0.3);
+      paint(0.12, audio.bass);
+      color.setHSL(tp[0], tp[1], Math.min(0.7, (0.3 + audio.bass * 0.4 + corePulse * 0.3) * Math.min(1.3, tp[2])));
       core.material.color.copy(color);
-      color.setHSL(((opts.hue / 360) + 0.08) % 1, 0.9, 0.6 + audio.beatIntensity * 0.1);
+      paint(0.4, audio.mid);
+      color.setHSL(tp[0], tp[1], Math.min(0.72, (0.6 + audio.beatIntensity * 0.1) * Math.min(1.2, tp[2])));
       coreWire.material.color.copy(color);
       coreHot.scale.setScalar(s * (0.9 + audio.bass * 0.5 + corePulse * 0.6));
       coreHalo.scale.setScalar(11 * (1 + audio.bass * 0.3 + corePulse * 0.4));
@@ -178,10 +184,12 @@ export function createOrbit() {
       dome.rotation.y += dt * 0.02;
       dome.rotation.x += dt * 0.008;
       dome.scale.setScalar(1 + audio.bass * 0.05 * reactivity + scatter * 0.06);
-      color.setHSL(((hue / 360) + 0.05) % 1, 0.7, 0.3 + audio.mid * 0.25);
+      paint(0.92, audio.mid);
+      color.setHSL(tp[0], tp[1] * 0.7, Math.min(0.6, (0.3 + audio.mid * 0.25) * Math.min(1.2, tp[2])));
       dome.material.color.copy(color);
       dome.material.opacity = 0.12 + audio.mid * 0.2 + audio.beatIntensity * 0.15 + scatter * 0.3;
-      color.setHSL(((hue / 360) + 0.15) % 1, 0.85, 0.5 + audio.mid * 0.25);
+      paint(0.7, audio.mid);
+      color.setHSL(tp[0], tp[1], Math.min(0.72, (0.5 + audio.mid * 0.25) * Math.min(1.3, tp[2])));
       swarm.material.color.copy(color);
       swarm.material.size = 0.22 + audio.high * 0.3;
 
