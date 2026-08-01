@@ -11,7 +11,7 @@ const H = 34;               // interior height of the glass
 const R_BOT = 9.5, R_TOP = 5;
 
 export function createLavaLamp() {
-  let scene, camera, group, sky, glass, baseCone, capCone, bulbGlow, pool, motes, roomGlow, glassShine;
+  let scene, camera, group, sky, glass, baseCone, capCone, bulbGlow, pool, motes, roomGlow, glassShine, liquid;
   const blobs = [];          // {mesh, halo, y, vy, size, phase, poke}
   const tp = [0, 0, 0];
   const color = new THREE.Color();
@@ -52,6 +52,24 @@ export function createLavaLamp() {
       capCone.position.y = H / 2 + 3;
       group.add(baseCone, capCone);
 
+      // the liquid: interior column, bright at the bulb fading upward
+      {
+        const lg = new THREE.CylinderGeometry(R_TOP + 0.2, R_BOT + 0.2, H, 28, 24, true);
+        const pa = lg.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = Math.pow(1 - (pa.getY(i) / H + 0.5), 2.2); // hot at bottom
+          const v2 = 0.04 + t * 0.5;
+          vc[i * 3] = v2; vc[i * 3 + 1] = v2; vc[i * 3 + 2] = v2;
+        }
+        lg.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+        liquid = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({
+          vertexColors: true, transparent: true, opacity: 0.55, toneMapped: false,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
+        }));
+        group.add(liquid);
+      }
+
       // the bulb: a hot glow in the base shining up through the wax
       bulbGlow = glowSprite(26);
       bulbGlow.position.y = -H / 2 - 1;
@@ -85,6 +103,7 @@ export function createLavaLamp() {
           laneR: 0.25 + (i % 3) * 0.3,       // own distance from the axis
           spin: (i % 2 ? 1 : -1) * (0.02 + Math.random() * 0.03),
           poke: 0,
+          merge: 0,
         });
       }
 
@@ -187,36 +206,57 @@ export function createLavaLamp() {
         const z = Math.sin(ang) * off;
         b.mesh.position.set(x, b.y, z);
 
-        // teardrop when rising, flattened when sinking, wobble from poke
+        // teardrop when rising, flattened when sinking, wobble from poke.
+        // Near the pool, blobs NECK: stretch down toward the wax they're
+        // pulling away from — the signature lava-lamp move.
         const rising = b.vy > 0.3, sinking = b.vy < -0.3;
-        const stretch = rising ? 1.25 + Math.min(0.4, b.vy * 0.15)
-                      : sinking ? 0.85 : 1;
-        const wob = 1 + Math.sin(time * 1.9 + b.phase * 3) * 0.06 + b.poke * 0.3;
-        b.mesh.scale.set(b.size * wob / Math.sqrt(stretch), b.size * wob * stretch, b.size * wob / Math.sqrt(stretch));
+        let stretch = rising ? 1.25 + Math.min(0.4, b.vy * 0.15)
+                    : sinking ? 0.85 : 1;
+        const poolDist = b.y - (-H / 2 + 1);
+        if (rising && poolDist < b.size * 2.2) {
+          stretch += (1 - poolDist / (b.size * 2.2)) * 0.7; // pulled taffy
+        }
+        // merge swell: blobs touching each other fatten and brighten
+        b.merge = 0;
+        for (let j = 0; j < blobs.length; j++) {
+          if (j === i) continue;
+          const o = blobs[j];
+          const d = b.mesh.position.distanceTo(o.mesh.position);
+          const overlap = (b.size + o.size) * 0.9 - d;
+          if (overlap > 0) b.merge = Math.min(1, b.merge + overlap / (b.size + o.size));
+        }
+        // out-of-phase xz wobble — jelly, not marble
+        const wobX = 1 + Math.sin(time * 1.6 + b.phase * 3) * 0.07 + b.poke * 0.25 + b.merge * 0.15;
+        const wobZ = 1 + Math.sin(time * 1.6 + b.phase * 3 + 2.1) * 0.07 + b.poke * 0.25 + b.merge * 0.15;
+        const wob = (wobX + wobZ) / 2;
+        b.mesh.scale.set(b.size * wobX / Math.sqrt(stretch), b.size * wob * stretch, b.size * wobZ / Math.sqrt(stretch));
         b.halo.position.copy(b.mesh.position);
-        b.halo.scale.setScalar(b.size * 2.6 * wob);
 
         const uy = (b.y + H / 2) / H;
         themePaint(colorMode, hue / 360, uy, i * 0.4, time, heat, (b.phase % 1), tp);
-        // lit from below: blobs glow hotter the lower they are
-        const glow = 0.28 + heat * 0.25 + (1 - uy) * 0.18 + b.poke * 0.2;
-        color.setHSL(tp[0], tp[1], Math.min(0.68, glow * Math.min(1.5, tp[2])));
+        // lit from below: blobs glow hotter the lower they are — but capped
+        // well under white so they stay WAX, not lightbulbs
+        const glow = 0.24 + heat * 0.18 + (1 - uy) * 0.14 + b.poke * 0.15 + b.merge * 0.08;
+        color.setHSL(tp[0], Math.max(0.8, tp[1]), Math.min(0.55, glow * Math.min(1.25, tp[2])));
         b.mesh.material.color.copy(color);
         b.halo.material.color.copy(color);
-        b.halo.material.opacity = 0.28 + heat * 0.25 + (1 - uy) * 0.15;
+        b.halo.material.opacity = 0.12 + heat * 0.1 + b.merge * 0.1;
+        b.halo.scale.setScalar(b.size * 1.9 * wob);
       }
 
       // the pool breathes: swells when blobs are home, glows with the bulb
       themePaint(colorMode, hue / 360, 0.02, 0, time, heat, 0.3, tp);
       const poolR = R_BOT - 1 + Math.sin(time * 0.8) * 0.2;
       pool.scale.set(poolR, 1.6 + inPool * 0.35 + heat * 0.8, poolR);
-      color.setHSL(tp[0], tp[1], Math.min(0.7, (0.4 + heat * 0.3) * Math.min(1.5, tp[2])));
+      color.setHSL(tp[0], Math.max(0.75, tp[1]), Math.min(0.48, (0.3 + heat * 0.18) * Math.min(1.2, tp[2])));
       pool.material.color.copy(color);
+      liquid.material.color.copy(color);
+      liquid.material.opacity = 0.4 + heat * 0.3;
 
       // bulb: the heart of the lamp — burns with the bass
-      bulbGlow.scale.setScalar(26 * (1 + heat * 0.6 + audio.beatIntensity * 0.3));
+      bulbGlow.scale.setScalar(20 * (1 + heat * 0.5 + audio.beatIntensity * 0.25));
       bulbGlow.material.color.copy(color);
-      bulbGlow.material.opacity = 0.5 + heat * 0.4;
+      bulbGlow.material.opacity = 0.32 + heat * 0.3;
 
       // glass catches the wax light faintly
       glass.material.color.copy(color);
