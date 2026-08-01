@@ -434,7 +434,22 @@ function buildChips(containerId, items, isGlyph, apply, initial, nameId) {
   }
 }
 buildChips('color-chips', COLOR_MODES, false, v => { settings.colorMode = v; refreshHueLock(); updateURL(); }, settings.colorMode, 'color-name');
-buildChips('pattern-chips', PATTERNS, false, v => { settings.pattern = v; updateURL(); }, settings.pattern, 'pattern-name');
+// each pattern brings the element shape it needs: polka dots ARE circles,
+// checker tiles ARE squares. You can still override shape afterward.
+const PATTERN_SHAPES = {
+  polka: 'circle', checker: 'square', kaleido: 'diamond',
+  paisley: 'circle', spiral: 'slat', stripes: 'slat', plaid: 'slat', waves: 'slat',
+};
+buildChips('pattern-chips', PATTERNS, false, v => {
+  settings.pattern = v;
+  const sh = PATTERN_SHAPES[v];
+  if (sh) {
+    settings.shape = sh;
+    setChipActive('shape-chips', sh);
+    $('shape-name').textContent = sh;
+  }
+  updateURL();
+}, settings.pattern, 'pattern-name');
 buildChips('shape-chips', SHAPES, true, v => { settings.shape = v; updateURL(); }, settings.shape, 'shape-name');
 refreshHueLock();
 

@@ -275,7 +275,7 @@ export function createTunnel() {
         let twist;
         switch (pattern) {
           case 'stripes': case 'plaid': case 'polka': twist = 0; break;
-          case 'kaleido': twist = (r % 2 ? 1 : -1) * travel * 0.012; break;
+          case 'kaleido': twist = (r % 2 ? 1 : -1) * (travel * 0.03 + Math.sin(travel * 0.05) * 0.3); break;
           case 'checker': twist = (r % 2) * (Math.PI / SEGS); break;
           case 'paisley': twist = Math.sin((travel + ringZ[r]) * 0.03) * 0.6 + travel * 0.004; break;
           default:        twist = ringSeed[r] * 0.1 + travel * 0.006;
