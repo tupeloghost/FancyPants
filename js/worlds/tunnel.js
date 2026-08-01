@@ -31,6 +31,15 @@ export function createTunnel() {
   // which frequency band drives each wall segment (by angle sector)
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
+  // fixed-mood palettes: hue stops dealt around the tube (hue slider ignored)
+  const PALETTES = {
+    fire:   [0.00, 0.04, 0.08, 0.12, 0.02],
+    ocean:  [0.50, 0.55, 0.60, 0.47, 0.64],
+    sunset: [0.83, 0.93, 0.02, 0.07, 0.75],
+    candy:  [0.90, 0.50, 0.14, 0.82, 0.45],
+    forest: [0.28, 0.35, 0.22, 0.40, 0.31],
+  };
+
   function api() { return {
     name: 'TUNNEL',
 
@@ -159,21 +168,30 @@ export function createTunnel() {
           // color: hue base shifted per band, brightness from level.
           // Brightness compresses as reactivity rises (soft-clip) so cranking
           // the slider adds punch and motion without washing the scene white.
-          // color mode controls how hue is dealt around the tube
-          let h;
+          // color mode controls how hue is dealt around the tube, plus the
+          // color character (saturation + HDR boost)
+          let h, sat = 1.0, boost = 1.0;
           switch (colorMode) {
             case 'mono':    h = (hue / 360) % 1; break;
             case 'duo':     h = ((hue / 360) + (s % 2) * 0.5) % 1; break;
             case 'triad':   h = ((hue / 360) + (s % 3) / 3) % 1; break;
             case 'cycle':   h = ((hue / 360) + time * 0.03 + (s % BANDS.length) * 0.045) % 1; break;
+            case 'pastel':  h = ((hue / 360) + (s % BANDS.length) * 0.045) % 1; sat = 0.45; boost = 0.8; break;
+            case 'neon':    h = ((hue / 360) + (s % 3) / 3) % 1; boost = 1.5; break;
+            case 'random':  h = (ringSeed[r] * 7.13 + s * 0.618) % 1; break; // stable per ring/segment
+            case 'fire': case 'ocean': case 'sunset': case 'candy': case 'forest': {
+              const pal = PALETTES[colorMode];
+              h = pal[(r + s) % pal.length];
+              break;
+            }
             default:        h = ((hue / 360) + (s % BANDS.length) * 0.045 + audio.energy * 0.08) % 1; // rainbow
           }
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
           const lum = 0.05 + 0.45 * (1 - Math.exp(-2.2 * drive));
           // HDR: full saturation, then push past 1.0 with the band level so
           // bloom glows in the segment's own color instead of washing white
-          color.setHSL(h, 1.0, lum);
-          color.multiplyScalar(0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5);
+          color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
+          color.multiplyScalar((0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost);
           wall.setColorAt(idx, color);
           idx++;
         }
