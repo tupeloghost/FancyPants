@@ -177,7 +177,7 @@ function updateDust(dt, a, time) {
 const settings = {
   reactivity: 1.0,
   hue: 210,
-  attract: true,
+  attract: false, // default to PLAY — the world responds to you out of the box
   colorMode: 'rainbow',
   pattern: 'spiral',
   shape: 'slat',

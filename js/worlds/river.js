@@ -14,7 +14,7 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 export function createRiver() {
   let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam, banks;
   const foamLat = new Float32Array(240);
-  let drift = 0;
+  let drift = 0, rush = 0;   // taps shoot the current forward
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -151,6 +151,7 @@ export function createRiver() {
     },
 
     onTap(x, y) {
+      rush = 1; // the stream grabs you — a shot of current
       // drop a ripple where the tap ray meets the water plane (y = 0)
       const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
       const dir = v.sub(camera.position).normalize();
@@ -169,7 +170,8 @@ export function createRiver() {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
 
       // lazy drift — the river never hurries, even on drops
-      drift += dt * (8 + audio.energy * 11 + audio.volume * 5);
+      rush *= Math.pow(0.18, dt); // surge, then ease back to the stream's pace
+      drift += dt * (8 + audio.energy * 11 + audio.volume * 5 + rush * 34);
       const camZ = -drift;
       if (attract || !pointer.active) steer += (Math.sin(time * 0.2) * 0.4 - steer) * Math.min(1, dt);
       else steer += (pointer.x - steer) * Math.min(1, dt * 1.5);
@@ -187,14 +189,14 @@ export function createRiver() {
          Math.sin(z * 0.47 + drift * 0.83 + x * 0.3) * 0.28 +
          Math.sin(x * 0.55 - drift * 0.6) * 0.22 +
          Math.sin(z * 0.13 + drift * 0.3) * 0.3) *
-        (0.45 + audio.volume * 1.3 * reactivity);
+        (0.45 + audio.volume * 1.3 * reactivity + rush * 0.5);
       const camX = riverX(camZ) + steer * 8;
       const ride = swellAt(camX, camZ);
       camera.position.set(camX, 2.1 + ride * 1.1, camZ);
       // your gaze wanders side to side, drifting with the current
       const wander = Math.sin(time * 0.13) * 14;
       camera.lookAt(riverX(camZ - 45) + wander, 2.1 + ride * 0.4, camZ - 45);
-      camera.rotation.z += Math.sin(time * 0.21) * 0.035 + steer * -0.05 + ride * 0.045;
+      camera.rotation.z += Math.sin(time * 0.21) * 0.035 + steer * -0.05 + ride * (0.045 + rush * 0.03);
 
       // water: gentle swells + the waveform breathing through the surface
       water.position.z = camZ - WL / 2 + 40;
@@ -280,7 +282,7 @@ export function createRiver() {
       // foam rides the current — overtaking the camera so the flow reads
       {
         const fpos2 = foam.geometry.attributes.position;
-        const flowSpeed = 13 + audio.energy * 12;
+        const flowSpeed = 13 + audio.energy * 12 + rush * 30;
         for (let i = 0; i < 240; i++) {
           let z = fpos2.getZ(i) - flowSpeed * dt; // downstream faster than the camera
           if (z < camZ - WL * 0.9) z = camZ + 12;
@@ -316,7 +318,7 @@ export function createRiver() {
       color.setHSL((hue / 360) % 1, 0.55, 0.3 + audio.energy * 0.2);
       sky.material.color.copy(color);
 
-      const fovT = 70 + audio.volume * 5 * reactivity;
+      const fovT = 70 + audio.volume * 5 * reactivity + rush * 14;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 4);
       camera.updateProjectionMatrix();
     },
