@@ -38,11 +38,13 @@ export function createSurfer() {
         geo,
         new THREE.MeshBasicMaterial({ wireframe: true, vertexColors: true, toneMapped: false })
       );
+      mesh.frustumCulled = false; // heights are rewritten every frame
       group.add(mesh);
 
       // mirrored ceiling — the same waveform hangs overhead, so the frame
       // is enclosed top and bottom like the tunnel. Shares geometry: free.
       ceiling = new THREE.Mesh(geo, mesh.material);
+      ceiling.frustumCulled = false;
       ceiling.scale.y = -1;
       ceiling.position.y = 30;
       group.add(ceiling);

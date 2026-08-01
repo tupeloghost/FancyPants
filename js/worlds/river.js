@@ -43,6 +43,7 @@ export function createRiver() {
       geo.rotateX(-Math.PI / 2);
       geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 3), 3));
       water = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+      water.frustumCulled = false; // vertices are placed in world space
       group.add(water);
 
       // lantern posts along both banks
@@ -64,8 +65,10 @@ export function createRiver() {
       lanternGlow.frustumCulled = false;
       group.add(lanternGlow);
 
+      // lantern pairs spaced evenly over exactly one wrap period (WL),
+      // so recycling is seamless — no visible teleports
       for (let i = 0; i < LANTERNS; i++) {
-        lz[i] = -i * (WL / LANTERNS) * 1.9;
+        lz[i] = -Math.floor(i / 2) * (WL / (LANTERNS / 2));
         lside[i] = (i % 2 ? 1 : -1) * (16 + Math.random() * 7);
         lh[i] = 2.5 + Math.random() * 4;
         lband[i] = i % BANDS.length;
@@ -184,8 +187,8 @@ export function createRiver() {
       const gcol = lanternGlow.geometry.attributes.color;
       for (let i = 0; i < LANTERNS; i++) {
         let z = lz[i];
-        while (z > camZ + 20) { z -= LANTERNS * (WL / LANTERNS) * 1.9 * 0.5; }
-        while (z < camZ - WL) { z += LANTERNS * (WL / LANTERNS) * 1.9 * 0.5; }
+        while (z > camZ + 18) z -= WL;
+        while (z < camZ + 18 - WL) z += WL;
         lz[i] = z;
         const x = riverX(z) + lside[i];
         const level = audio[BANDS[lband[i]]];
