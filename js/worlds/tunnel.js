@@ -141,11 +141,14 @@ export function createTunnel() {
           dummy.updateMatrix();
           wall.setMatrixAt(idx, dummy.matrix);
 
-          // color: hue base shifted per band, brightness from level
+          // color: hue base shifted per band, brightness from level.
+          // Brightness compresses as reactivity rises (soft-clip) so cranking
+          // the slider adds punch and motion without washing the scene white.
           const bandShift = (s % BANDS.length) * 0.045;
           const h = ((hue / 360) + bandShift + audio.energy * 0.08) % 1;
-          const lum = 0.06 + level * 0.55 * reactivity + audio.beatIntensity * 0.12 + tapFlash * 0.18;
-          color.setHSL(h, 0.85, Math.min(0.75, lum));
+          const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
+          const lum = 0.05 + 0.58 * (1 - Math.exp(-2.2 * drive));
+          color.setHSL(h, 0.85, lum);
           wall.setColorAt(idx, color);
           idx++;
         }
