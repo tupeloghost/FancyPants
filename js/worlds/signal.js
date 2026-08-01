@@ -10,7 +10,7 @@ const FIELD = 380;          // world size; camera wraps within it
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createSignal() {
-  let scene, camera, group, monoliths, reflections, ground, dust;
+  let scene, camera, group, monoliths, reflections, ground, dust, pingRing;
   let drift = 0;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -32,9 +32,19 @@ export function createSignal() {
       scene.add(group);
       scene.fog = new THREE.FogExp2(0x02030a, 0.014);
 
+      // vertical gradient baked into vertex colors — multiplies with the
+      // per-instance color, so monoliths glow from the ground up instead of
+      // reading as flat boxes
+      const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+      const vc = new Float32Array(boxGeo.attributes.position.count * 3);
+      for (let i = 0; i < boxGeo.attributes.position.count; i++) {
+        const t = 0.25 + (boxGeo.attributes.position.getY(i) + 0.5) * 0.75;
+        vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+      }
+      boxGeo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
       monoliths = new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        boxGeo,
+        new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
         COUNT
       );
       monoliths.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(COUNT * 3), 3);
@@ -53,7 +63,7 @@ export function createSignal() {
       reflections = new THREE.InstancedMesh(
         monoliths.geometry,
         new THREE.MeshBasicMaterial({
-          toneMapped: false, transparent: true, opacity: 0.28,
+          toneMapped: false, transparent: true, opacity: 0.28, vertexColors: true,
           blending: THREE.AdditiveBlending, depthWrite: false,
         }),
         COUNT
@@ -72,6 +82,18 @@ export function createSignal() {
       dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
       dust = new THREE.Points(dg, glowPoints(0.8, 0.5));
       group.add(dust);
+
+      // visible ping ring rolling across the floor
+      pingRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.96, 1, 64),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0, side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      pingRing.rotation.x = -Math.PI / 2;
+      pingRing.position.y = 0.3;
+      group.add(pingRing);
 
       for (let i = 0; i < COUNT; i++) {
         mx[i] = (Math.random() - 0.5) * FIELD;
@@ -115,6 +137,14 @@ export function createSignal() {
       if (ping.active) {
         ping.r += 90 * dt;
         if (ping.r > FIELD) ping.active = false;
+        pingRing.position.x = ping.x;
+        pingRing.position.z = ping.z;
+        pingRing.scale.setScalar(Math.max(0.01, ping.r));
+        color.setHSL(((hue / 360) + 0.12) % 1, 0.9, 0.55);
+        pingRing.material.color.copy(color);
+        pingRing.material.opacity = Math.max(0, 0.7 * (1 - ping.r / FIELD));
+      } else {
+        pingRing.material.opacity = 0;
       }
 
       // beats sparkle a random handful of monoliths across the field

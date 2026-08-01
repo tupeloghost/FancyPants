@@ -14,6 +14,7 @@ export function createSurfer() {
   let steer = 0, steerTarget = 0;
   let jumpY = 0, jumpVel = 0;
   let rowTimer = 0, scrollOff = 0;
+  let waveR = -1;             // tap shockwave position in row units (-1 = off)
   const history = [];       // ring of Float32Array(COLS), newest first
   for (let r = 0; r < ROWS; r++) history.push(new Float32Array(COLS));
   const color = new THREE.Color();
@@ -74,6 +75,7 @@ export function createSurfer() {
 
     onTap() {
       if (jumpY <= 0.01) jumpVel = 22; // one-button jump
+      waveR = 0;                        // + a shockwave ridge racing to the horizon
     },
 
     update(dt, audio, participants, opts) {
@@ -108,15 +110,27 @@ export function createSurfer() {
       }
 
       // write heights + colors
+      // tap shockwave: a ridge of light racing from the camera to the horizon
+      if (waveR >= 0) {
+        waveR += dt * 90;
+        if (waveR > ROWS + 8) waveR = -1;
+      }
+
       const pos = mesh.geometry.attributes.position;
       const col = mesh.geometry.attributes.color;
       const rowScroll = rowTimer / ROW_INTERVAL;
       for (let r = 0; r < ROWS; r++) {
         const hRow = history[Math.min(ROWS - 1, r)];
         const hRowNext = history[Math.min(ROWS - 1, r + 1)];
+        // row ROWS-1 is nearest the camera; the wave travels toward row 0
+        let rowBump = 0;
+        if (waveR >= 0) {
+          const d = (ROWS - 1 - r) - waveR;
+          rowBump = 8 * Math.exp(-(d * d) / 12) * (1 - waveR / (ROWS + 8));
+        }
         for (let c = 0; c < COLS; c++) {
           const i = r * COLS + c;
-          const h = hRow[c] * (1 - rowScroll) + hRowNext[c] * rowScroll;
+          const h = hRow[c] * (1 - rowScroll) + hRowNext[c] * rowScroll + rowBump;
           pos.setY(i, h);
           const t = Math.min(1, h / 14);
           // bright enough to cross the bloom threshold on peaks and beats

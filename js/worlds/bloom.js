@@ -10,7 +10,9 @@ const MAX_STEMS = 2600;
 
 export function createBloom() {
   let scene, camera, group;
-  let crystals, stems, spores, ground, growerLight;
+  let crystals, stems, spores, ground, growerLight, tapFlashSprite;
+  const tapPoint = new THREE.Vector3();
+  let tapFlash = 0, tapPlant = 0;
   let nCrystals = 0, nStems = 0;
   const recentIdx = [];      // most recent crystals pulse with the beat
   const recentHue = [];
@@ -103,6 +105,9 @@ export function createBloom() {
       // the grower is a visible wandering light — the world's focal point
       growerLight = glowSprite(9);
       group.add(growerLight);
+      tapFlashSprite = glowSprite(14);
+      tapFlashSprite.material.opacity = 0;
+      group.add(tapFlashSprite);
 
       // faint ground disc so the garden sits somewhere
       ground = new THREE.Mesh(
@@ -120,7 +125,14 @@ export function createBloom() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    onTap() { burst = 8; }, // plant a burst wherever the grower is
+    // tap: plant a burst exactly where you clicked — ray from the camera
+    // into the scene, planted at fixed depth
+    onTap(x, y) {
+      tapPoint.set(x, y, 0.5).unproject(camera);
+      tapPoint.sub(camera.position).normalize().multiplyScalar(46).add(camera.position);
+      tapFlash = 1;
+      tapPlant = 10;
+    },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
@@ -152,6 +164,27 @@ export function createBloom() {
           );
           place(jitter.add(grower), audio, hue, reactivity, n > 2);
         }
+      }
+
+      // tap planting: cluster at the clicked point + flash
+      if (tapPlant > 0) {
+        for (let i = 0; i < tapPlant; i++) {
+          const jitter = new THREE.Vector3(
+            (Math.random() - 0.5) * 7, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 7
+          );
+          place(jitter.add(tapPoint), audio, hue, reactivity, true);
+        }
+        tapPlant = 0;
+      }
+      if (tapFlash > 0.01) {
+        tapFlash *= Math.pow(0.03, dt);
+        tapFlashSprite.position.copy(tapPoint);
+        tapFlashSprite.scale.setScalar(14 * (1.6 - tapFlash * 0.6));
+        color.setHSL(((hue / 360) + 0.1) % 1, 0.9, 0.6);
+        tapFlashSprite.material.color.copy(color);
+        tapFlashSprite.material.opacity = tapFlash * 0.85;
+      } else {
+        tapFlashSprite.material.opacity = 0;
       }
 
       // recent growth pulses with the beat — the garden feels alive

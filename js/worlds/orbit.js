@@ -9,9 +9,10 @@ const STARS = 600;
 
 export function createOrbit() {
   let scene, camera, group;
-  let core, coreWire, coreHot, coreHalo, stars, player, swarm, trail;
+  let core, coreWire, coreHot, coreHalo, stars, player, swarm, trail, dome;
   let shapes = [];
   let trailPts = [];
+  let scatter = 0;    // tap: swarm blasts outward, dome flashes
   let angle = 0;
   let radius = 12, radiusTarget = 12;
   let corePulse = 0;
@@ -41,6 +42,16 @@ export function createOrbit() {
       );
       coreHalo = glowSprite(24);
       group.add(core, coreWire, coreHot, coreHalo);
+
+      // enveloping dome — the world has walls that breathe with the music
+      dome = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(72, 2),
+        new THREE.MeshBasicMaterial({
+          wireframe: true, transparent: true, opacity: 0.16,
+          toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      group.add(dome);
 
       // particle swarm around the core
       const swp = new Float32Array(700 * 3);
@@ -112,7 +123,7 @@ export function createOrbit() {
     // single-axis input: x steers orbit radius
     setInput(x) { radiusTarget = 13 + x * 7; },
 
-    onTap() { corePulse = 1; this._spawn = true; },
+    onTap() { corePulse = 1; scatter = 1; this._spawn = true; },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
@@ -139,10 +150,19 @@ export function createOrbit() {
       coreHalo.material.color.copy(color);
       coreHalo.material.opacity = 0.3 + audio.bass * 0.25 + corePulse * 0.25;
 
-      // swarm breathes with the mids and spins
-      swarm.rotation.y += dt * (0.15 + audio.mid * 0.8 * reactivity);
+      // swarm breathes with the mids, spins, and blasts outward on taps
+      scatter *= Math.pow(0.02, dt);
+      swarm.rotation.y += dt * (0.15 + audio.mid * 0.8 * reactivity + scatter * 3);
       swarm.rotation.z += dt * 0.05;
-      swarm.scale.setScalar(1 + audio.mid * 0.35 * reactivity + audio.beatIntensity * 0.15);
+      swarm.scale.setScalar(1 + audio.mid * 0.35 * reactivity + audio.beatIntensity * 0.15 + scatter * 1.4);
+
+      // dome breathes; flashes on beats and taps
+      dome.rotation.y += dt * 0.02;
+      dome.rotation.x += dt * 0.008;
+      dome.scale.setScalar(1 + audio.bass * 0.05 * reactivity + scatter * 0.06);
+      color.setHSL(((hue / 360) + 0.05) % 1, 0.7, 0.3 + audio.mid * 0.25);
+      dome.material.color.copy(color);
+      dome.material.opacity = 0.12 + audio.mid * 0.2 + audio.beatIntensity * 0.15 + scatter * 0.3;
       color.setHSL(((hue / 360) + 0.15) % 1, 0.85, 0.5 + audio.mid * 0.25);
       swarm.material.color.copy(color);
       swarm.material.size = 0.22 + audio.high * 0.3;

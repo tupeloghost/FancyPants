@@ -11,7 +11,10 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon, headOrb, headHalo, stars;
+  let scene, camera, group, ribbon, headOrb, headHalo, stars, sparks;
+  const SPARKS = 90;
+  const sparkVel = new Float32Array(SPARKS * 3);
+  let sparkLife = 0;
   let nPoints = 0;
   const camPos = new THREE.Vector3(0, 8, 42);
   let head = new THREE.Vector3();
@@ -65,6 +68,15 @@ export function createTrail() {
       headHalo = glowSprite(6);
       group.add(headHalo);
 
+      // tap spark burst
+      const skp = new Float32Array(SPARKS * 3);
+      const skg = new THREE.BufferGeometry();
+      skg.setAttribute('position', new THREE.BufferAttribute(skp, 3).setUsage(THREE.DynamicDrawUsage));
+      sparks = new THREE.Points(skg, glowPoints(1.1, 0));
+      sparks.frustumCulled = false;
+      group.add(sparks);
+      sparkLife = 0;
+
       // sparse starfield for depth
       const sp = new Float32Array(500 * 3);
       for (let i = 0; i < 500; i++) {
@@ -86,7 +98,18 @@ export function createTrail() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    onTap() { kick = 1; }, // width surge rides down the next stretch
+    // tap: width surge down the ribbon + a burst of sparks from the head
+    onTap() {
+      kick = 1;
+      sparkLife = 1;
+      const pos = sparks.geometry.attributes.position;
+      for (let i = 0; i < SPARKS; i++) {
+        pos.setXYZ(i, head.x, head.y, head.z);
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(8 + Math.random() * 18);
+        sparkVel[i * 3] = v.x; sparkVel[i * 3 + 1] = v.y; sparkVel[i * 3 + 2] = v.z;
+      }
+      pos.needsUpdate = true;
+    },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
@@ -115,8 +138,10 @@ export function createTrail() {
         for (let i = 0; i < BANDS.length; i++) {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
-        const width = (0.25 + audio.volume * 2.2 * reactivity) * (1 + kick * 2.2);
-        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.92, Math.min(0.72, 0.42 + audio.volume * 0.35 + kick * 0.2));
+        // keep lum under the whiteout ceiling — additive overlap + bloom
+        // already amplifies; a 0.5 lum ribbon reads as a laser, 0.7 reads as fog
+        const width = (0.22 + audio.volume * 1.5 * reactivity) * (1 + kick * 1.4);
+        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -138,9 +163,27 @@ export function createTrail() {
       color.setHSL((hue / 360) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
       headOrb.material.color.copy(color);
       headHalo.position.copy(head);
-      headHalo.scale.setScalar(6 * (1 + audio.volume * 1.5 + kick * 2));
+      headHalo.scale.setScalar(3.5 * (1 + audio.volume * 0.8 + kick * 1.2));
       headHalo.material.color.copy(color);
-      headHalo.material.opacity = 0.5 + audio.volume * 0.4;
+      headHalo.material.opacity = 0.3 + audio.volume * 0.25;
+
+      // sparks fly out and fade
+      if (sparkLife > 0.01) {
+        sparkLife *= Math.pow(0.08, dt);
+        const pos = sparks.geometry.attributes.position;
+        for (let i = 0; i < SPARKS; i++) {
+          pos.setXYZ(i,
+            pos.getX(i) + sparkVel[i * 3] * dt,
+            pos.getY(i) + sparkVel[i * 3 + 1] * dt,
+            pos.getZ(i) + sparkVel[i * 3 + 2] * dt
+          );
+        }
+        pos.needsUpdate = true;
+        sparks.material.opacity = sparkLife;
+        sparks.material.color.copy(color);
+      } else {
+        sparks.material.opacity = 0;
+      }
 
       // camera loosely chases the head, orbiting as it goes
       const r = 34 + Math.sin(time * 0.06) * 5;
