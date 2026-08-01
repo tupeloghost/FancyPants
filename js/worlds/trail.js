@@ -196,7 +196,10 @@ export function createTrail() {
         // base color = panel hue + the click-cycled offset, so every tap
         // starts a new color segment; a slow drift keeps it alive between taps
         const base = (hue / 360 + clickHue + time * 0.004) % 1;
-        color.setHSL((base + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
+        color.setHSL((base + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 1.0, 0.5);
+        // HDR: drive the color past 1.0 — bloom stays saturated instead of
+        // washing to white, which is what reads as "vivid"
+        color.multiplyScalar(0.7 + audio.volume * 1.6 + kick * 1.4 + audio.beatIntensity * 0.5);
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -249,7 +252,8 @@ export function createTrail() {
           }
         }
         pos.needsUpdate = true;
-        color.setHSL(((hue / 360) + clickHue + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 0.9, 0.5);
+        color.setHSL(((hue / 360) + clickHue + BAND_HUE_SHIFT[domIdx] * 0.5) % 1, 1.0, 0.5);
+        color.multiplyScalar(0.9 + audio.volume * 1.4);
         wake.material.color.copy(color);
         wake.material.size = 0.8 + audio.volume * 1.2;
       }
@@ -261,7 +265,8 @@ export function createTrail() {
         if (r.userData.life <= 0) { r.visible = false; continue; }
         r.scale.addScalar(dt * 55);
         r.quaternion.copy(camera.quaternion);
-        color.setHSL(((hue / 360) + clickHue + 0.5) % 1, 0.9, 0.55);
+        color.setHSL(((hue / 360) + clickHue + 0.5) % 1, 1.0, 0.5);
+        color.multiplyScalar(1 + r.userData.life * 2);
         r.material.color.copy(color);
         r.material.opacity = r.userData.life * 0.8;
       }
@@ -269,7 +274,8 @@ export function createTrail() {
       // head orb + halo
       headOrb.position.copy(head);
       headOrb.scale.setScalar(1 + audio.volume * 0.9 * reactivity + kick * 1.2);
-      color.setHSL(((hue / 360) + clickHue) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
+      color.setHSL(((hue / 360) + clickHue) % 1, 1.0, 0.55);
+      color.multiplyScalar(1.2 + audio.volume * 1.2 + audio.beatIntensity * 0.8);
       headOrb.material.color.copy(color);
       headHalo.position.copy(head);
       headHalo.scale.setScalar(3.5 * (1 + audio.volume * 0.8 + kick * 1.2));
