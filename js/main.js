@@ -48,6 +48,8 @@ const settings = {
   reactivity: 1.0,
   hue: 210,
   attract: true,
+  colorMode: 'rainbow',
+  pattern: 'spiral',
 };
 
 // ── World switcher ──
@@ -133,6 +135,8 @@ $('smoothing').value = 70;
 $('hue').value = 210;
 $('bloom').value = 90;
 $('scrub').value = 0;
+$('color-mode').value = 'rainbow';
+$('pattern').value = 'spiral';
 
 // sliders — keep the filled portion of the track in sync via --fill
 function setFill(el) {
@@ -169,6 +173,9 @@ function setAttract(on) {
 }
 $('btn-attract').addEventListener('click', () => setAttract(true));
 $('btn-interactive').addEventListener('click', () => setAttract(false));
+
+$('color-mode').addEventListener('change', e => settings.colorMode = e.target.value);
+$('pattern').addEventListener('change', e => settings.pattern = e.target.value);
 
 // hotkeys
 window.addEventListener('keydown', e => {
@@ -300,6 +307,8 @@ function frame(now) {
     reactivity: settings.reactivity,
     hue: settings.hue,
     attract: settings.attract,
+    colorMode: settings.colorMode,
+    pattern: settings.pattern,
     time,
   });
   composer.render();
