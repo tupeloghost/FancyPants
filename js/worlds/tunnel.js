@@ -133,6 +133,7 @@ export function createTunnel() {
 
   function api() { return {
     name: 'TUNNEL',
+    options: ['pattern', 'shape'],
 
     init(_scene, _camera) {
       scene = _scene;

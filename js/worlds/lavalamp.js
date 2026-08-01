@@ -11,7 +11,7 @@ const H = 34;               // interior height of the glass
 const R_BOT = 9.5, R_TOP = 5;
 
 export function createLavaLamp() {
-  let scene, camera, group, sky, glass, baseCone, capCone, bulbGlow, pool, motes;
+  let scene, camera, group, sky, glass, baseCone, capCone, bulbGlow, pool, motes, roomGlow, glassShine;
   const blobs = [];          // {mesh, halo, y, vy, size, phase, poke}
   const tp = [0, 0, 0];
   const color = new THREE.Color();
@@ -67,7 +67,8 @@ export function createLavaLamp() {
 
       blobs.length = 0;
       for (let i = 0; i < BLOBS; i++) {
-        const size = 1.6 + Math.random() * 2.6;
+        // size variety: a few big slugs, several small beads
+        const size = i < 3 ? 3.2 + Math.random() * 1.6 : 1.2 + Math.random() * 1.8;
         const mesh = new THREE.Mesh(
           new THREE.SphereGeometry(1, 24, 24),
           new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.95 })
@@ -80,6 +81,9 @@ export function createLavaLamp() {
           vy: 0,
           size,
           phase: Math.random() * 100,
+          lane: (i / BLOBS) * Math.PI * 2,   // own angular lane in the vessel
+          laneR: 0.25 + (i % 3) * 0.3,       // own distance from the axis
+          spin: (i % 2 ? 1 : -1) * (0.02 + Math.random() * 0.03),
           poke: 0,
         });
       }
@@ -98,6 +102,26 @@ export function createLavaLamp() {
       mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
       motes = new THREE.Points(mg, glowPoints(0.4, 0.45));
       group.add(motes);
+
+      // the lamp lights the room — a big soft wash behind it
+      roomGlow = glowSprite(120);
+      roomGlow.position.z = -30;
+      group.add(roomGlow);
+
+      // vertical highlight streak on the glass, like a window reflection
+      glassShine = glowSprite(1);
+      glassShine.scale.set(3.5, H * 1.05, 1);
+      glassShine.position.set(R_BOT * 0.55, 0, R_BOT * 0.8);
+      glassShine.material.opacity = 0.12;
+      group.add(glassShine);
+
+      // little knob on the cap — the finishing silhouette touch
+      const knob = new THREE.Mesh(
+        new THREE.SphereGeometry(1.1, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false })
+      );
+      knob.position.y = H / 2 + 6.2;
+      group.add(knob);
 
       sky = skyDome(200);
       group.add(sky);
@@ -148,17 +172,19 @@ export function createLavaLamp() {
         const altitude = (b.y + H / 2) / H;              // 0 bottom, 1 top
         const warmth = (nearBottom ? heat * 2.2 : heat) - altitude * 1.1;
         const buoy = warmth * 2.6 + Math.sin(time * 0.13 + b.phase) * 0.35 - 0.35;
-        b.vy += (buoy - b.vy) * Math.min(1, dt * 0.4);
-        b.y += b.vy * dt * (1.5 + heat);
+        b.vy += (buoy - b.vy) * Math.min(1, dt * 0.22); // wax, not water
+        b.y += b.vy * dt * (1.1 + heat * 0.8);
         if (b.y > H / 2 - b.size) { b.y = H / 2 - b.size; b.vy = -0.3; }
         if (b.y < -H / 2 + 1) { b.y = -H / 2 + 1; b.vy = Math.max(0, b.vy); inPool++; }
         b.poke *= Math.pow(0.05, dt);
         if (b.y < -H / 2 + 2.2) inPool += 0; // (counted above)
 
-        // stay inside the tapered glass
-        const maxOff = Math.max(0.4, profile(b.y) - b.size - 0.4);
-        const x = Math.sin(time * 0.09 + b.phase) * maxOff * 0.8;
-        const z = Math.cos(time * 0.07 + b.phase * 1.7) * maxOff * 0.8;
+        // each blob keeps to its own slow lane inside the tapered glass
+        const maxOff = Math.max(0.3, profile(b.y) - b.size - 0.5);
+        const ang = b.lane + time * b.spin;
+        const off = maxOff * b.laneR;
+        const x = Math.cos(ang) * off;
+        const z = Math.sin(ang) * off;
         b.mesh.position.set(x, b.y, z);
 
         // teardrop when rising, flattened when sinking, wobble from poke
@@ -199,6 +225,11 @@ export function createLavaLamp() {
       motes.material.color.copy(color);
       motes.material.size = 0.4 + audio.high * 0.4;
       motes.rotation.y += dt * 0.03;
+
+      // the room breathes with the lamp
+      roomGlow.material.color.copy(color);
+      roomGlow.material.opacity = 0.06 + heat * 0.1 + audio.beatIntensity * 0.04;
+      glassShine.material.opacity = 0.09 + heat * 0.06;
       sky.position.copy(camera.position);
       color.setHSL(tp[0], tp[1] * 0.4, 0.1 + audio.energy * 0.1);
       sky.material.color.copy(color);

@@ -121,6 +121,10 @@ function switchWorld(key) {
   if (world) world.dispose();
   world = WORLDS[key].create();
   world.init(scene, camera);
+  // only show controls this world actually implements — no dead buttons
+  const caps = world.options || [];
+  $('opt-pattern').style.display = caps.includes('pattern') ? '' : 'none';
+  $('opt-shape').style.display = caps.includes('shape') ? '' : 'none';
 }
 
 // ── Panel wiring ──
