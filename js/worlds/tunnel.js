@@ -158,6 +158,8 @@ export function createTunnel() {
         switch (pattern) {
           case 'stripes': twist = 0; break;                                   // aligned lanes
           case 'plaid':   twist = 0; break;                                   // aligned grid for crossing stripes
+          case 'polka':   twist = 0; break;                                   // aligned grid for round dots
+          case 'paisley': twist = Math.sin((travel + ringZ[r]) * 0.03) * 0.6 + travel * 0.004; break; // organic swirl
           case 'kaleido': twist = (r % 2 ? 1 : -1) * travel * 0.012; break;   // counter-rotating rings
           case 'checker': twist = (r % 2) * (Math.PI / SEGS); break;          // offset alternate rings
           default:        twist = ringSeed[r] * 0.1 + travel * 0.006;         // spiral (and waves)
@@ -204,6 +206,20 @@ export function createTunnel() {
             case 'pastel':  h = ((hue / 360) + (s % BANDS.length) * 0.045) % 1; sat = 0.45; boost = 0.8; break;
             case 'neon':    h = ((hue / 360) + (s % 3) / 3) % 1; boost = 1.5; break;
             case 'random':  h = (ringSeed[r] * 7.13 + s * 0.618) % 1; break; // stable per ring/segment
+            case 'glitter-gold': case 'glitter-silver': case 'glitter-rainbow': {
+              if (colorMode === 'glitter-gold') { h = 0.10 + (s % 3) * 0.015; sat = 0.85; }
+              else if (colorMode === 'glitter-silver') { h = 0.58; sat = 0.14; }
+              else { h = (ringSeed[r] * 7.13 + s * 0.618) % 1; sat = 1.0; }
+              // sequin flash: time-hashed sparkle — random slats catch the light
+              const spark = Math.abs(Math.sin(ringSeed[r] * 91.7 + s * 57.31 + Math.floor(time * 14) * 13.7));
+              if (spark > 0.84) {
+                boost = 2.4 + audio.volume * 1.2;
+                sat *= 0.45; // flash toward white-hot
+              } else {
+                boost = 0.75;
+              }
+              break;
+            }
             default:
               if (PALETTES[colorMode]) {
                 const stop = PALETTES[colorMode][(r + s) % PALETTES[colorMode].length];
@@ -221,7 +237,20 @@ export function createTunnel() {
           // HDR: full saturation, then push past 1.0 with the band level so
           // bloom glows in the segment's own color instead of washing white
           let weave = 1;
-          if (pattern === 'plaid') {
+          if (pattern === 'paisley') {
+            // curling bands: a swirl field over (angle, depth) — organic
+            // teardrop-ish flow instead of straight stripes
+            const swirl = Math.sin(a * 2 + Math.sin((travel - z) * 0.045) * 2.6 + travel * 0.015);
+            weave = swirl > 0.25 ? 1.25 : (swirl > -0.35 ? 0.75 : 0.35);
+            if (swirl > 0.25) h = (h + 0.07) % 1;
+            else if (swirl < -0.35) h = (h + 0.5) % 1; // deep gaps flip complementary
+          } else if (pattern === 'polka') {
+            // round dots on a dark field, dot centers every 5x5 slats
+            const dr = (r % 5) - 2, ds = (s % 5) - 2;
+            const inDot = dr * dr + ds * ds <= 2.5;
+            weave = inDot ? 1.35 : 0.22;
+            if (inDot) h = (h + 0.5) % 1; // dots pop complementary to the field
+          } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;          // stripes along the tube
             const segBand = (s % 4) < 2;           // stripes around the tube
             weave = ringBand && segBand ? 1.25 : (ringBand || segBand ? 0.85 : 0.45);
