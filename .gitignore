@@ -1,5 +1,2 @@
 .DS_Store
 node_modules/
-audio/*
-!audio/manifest.json
-!audio/.gitkeep
