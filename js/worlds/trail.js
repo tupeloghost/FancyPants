@@ -10,8 +10,9 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon;
+  let scene, camera, group, ribbon, headOrb, stars;
   let nPoints = 0;
+  const camPos = new THREE.Vector3(0, 8, 42);
   let head = new THREE.Vector3();
   let headTarget = new THREE.Vector3();
   let prev = new THREE.Vector3();
@@ -51,6 +52,24 @@ export function createTrail() {
       ribbon.frustumCulled = false;
       group.add(ribbon);
 
+      // glowing head orb — the pen tip
+      headOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 14, 14),
+        new THREE.MeshBasicMaterial({ toneMapped: false })
+      );
+      group.add(headOrb);
+
+      // sparse starfield for depth
+      const sp = new Float32Array(500 * 3);
+      for (let i = 0; i < 500; i++) {
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(80 + Math.random() * 100);
+        sp.set([v.x, v.y, v.z], i * 3);
+      }
+      const sg = new THREE.BufferGeometry();
+      sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+      stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 0.5, color: 0x66779a, toneMapped: false }));
+      group.add(stars);
+
       nPoints = 0;
       head.set(0, 0, 0);
       prev.copy(head);
@@ -89,8 +108,8 @@ export function createTrail() {
         for (let i = 0; i < BANDS.length; i++) {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
-        const width = (0.12 + audio.volume * 1.7 * reactivity) * (1 + kick * 2.2);
-        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.9, 0.3 + audio.volume * 0.4 + kick * 0.2);
+        const width = (0.25 + audio.volume * 2.2 * reactivity) * (1 + kick * 2.2);
+        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.92, Math.min(0.72, 0.42 + audio.volume * 0.35 + kick * 0.2));
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -106,10 +125,21 @@ export function createTrail() {
         prev.copy(head);
       }
 
-      // slow orbit camera
-      const r = 42 + Math.sin(time * 0.06) * 6;
-      camera.position.set(Math.sin(time * 0.05) * r, 8 + Math.sin(time * 0.09) * 6, Math.cos(time * 0.05) * r);
-      camera.lookAt(0, 0, 0);
+      // head orb glows and swells with the music
+      headOrb.position.copy(head);
+      headOrb.scale.setScalar(1 + audio.volume * 1.2 * reactivity + kick * 1.5);
+      color.setHSL((hue / 360) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
+      headOrb.material.color.copy(color);
+
+      // camera loosely chases the head, orbiting as it goes
+      const r = 34 + Math.sin(time * 0.06) * 5;
+      camPos.set(
+        head.x * 0.4 + Math.sin(time * 0.05) * r,
+        head.y * 0.4 + 7 + Math.sin(time * 0.09) * 5,
+        head.z * 0.4 + Math.cos(time * 0.05) * r
+      );
+      camera.position.lerp(camPos, Math.min(1, dt * 1.6));
+      camera.lookAt(head.x * 0.6, head.y * 0.6, head.z * 0.6);
     },
 
     dispose() {

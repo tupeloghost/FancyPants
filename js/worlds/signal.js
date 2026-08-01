@@ -9,7 +9,7 @@ const FIELD = 380;          // world size; camera wraps within it
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createSignal() {
-  let scene, camera, group, monoliths;
+  let scene, camera, group, monoliths, ground;
   let drift = 0;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -38,6 +38,14 @@ export function createSignal() {
       );
       monoliths.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(COUNT * 3), 3);
       group.add(monoliths);
+
+      // dark ground so the field reads as a place, not a void
+      ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(FIELD * 2, FIELD * 2),
+        new THREE.MeshBasicMaterial({ color: 0x04050f, toneMapped: false })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      group.add(ground);
 
       for (let i = 0; i < COUNT; i++) {
         mx[i] = (Math.random() - 0.5) * FIELD;
@@ -83,8 +91,16 @@ export function createSignal() {
         if (ping.r > FIELD) ping.active = false;
       }
 
+      // beats sparkle a random handful of monoliths across the field
+      let sparkle = 0;
+      if (audio.beat) sparkle = 10 + Math.floor(audio.beatIntensity * 14);
+
       // strike + decay per monolith
       for (let i = 0; i < COUNT; i++) {
+        if (sparkle > 0 && Math.random() < sparkle / COUNT * 3) {
+          mLit[i] = Math.max(mLit[i], 0.4 + audio.beatIntensity * 0.5);
+          sparkle--;
+        }
         const level = audio[BANDS[mBand[i]]];
         if (level > mThresh[i]) {
           mLit[i] = Math.max(mLit[i], Math.min(1, (level - mThresh[i]) * 3 * reactivity));
@@ -105,8 +121,8 @@ export function createSignal() {
         const bandShift = mBand[i] * 0.05;
         color.setHSL(
           ((hue / 360) + bandShift) % 1,
-          0.75,
-          0.03 + mLit[i] * 0.55
+          0.8,
+          0.05 + mLit[i] * 0.65
         );
         monoliths.setColorAt(i, color);
       }

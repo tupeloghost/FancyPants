@@ -8,8 +8,9 @@ const STARS = 600;
 
 export function createOrbit() {
   let scene, camera, group;
-  let core, coreWire, stars, player;
+  let core, coreWire, coreHot, stars, player, swarm, trail;
   let shapes = [];
+  let trailPts = [];
   let angle = 0;
   let radius = 12, radiusTarget = 12;
   let corePulse = 0;
@@ -32,10 +33,36 @@ export function createOrbit() {
         new THREE.IcosahedronGeometry(3.6, 1),
         new THREE.MeshBasicMaterial({ wireframe: true, transparent: true, opacity: 0.5, toneMapped: false })
       );
-      group.add(core, coreWire);
+      // white-hot center that blooms
+      coreHot = new THREE.Mesh(
+        new THREE.SphereGeometry(1.4, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
+      );
+      group.add(core, coreWire, coreHot);
+
+      // particle swarm around the core
+      const swp = new Float32Array(700 * 3);
+      for (let i = 0; i < 700; i++) {
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(5 + Math.random() * 6);
+        swp.set([v.x, v.y * 0.5, v.z], i * 3);
+      }
+      const swg = new THREE.BufferGeometry();
+      swg.setAttribute('position', new THREE.BufferAttribute(swp, 3));
+      swarm = new THREE.Points(swg, new THREE.PointsMaterial({ size: 0.22, transparent: true, opacity: 0.9, toneMapped: false }));
+      group.add(swarm);
+
+      // player trail
+      const tp = new Float32Array(80 * 3);
+      const tg = new THREE.BufferGeometry();
+      tg.setAttribute('position', new THREE.BufferAttribute(tp, 3).setUsage(THREE.DynamicDrawUsage));
+      tg.setDrawRange(0, 0);
+      trail = new THREE.Line(tg, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.7, toneMapped: false }));
+      trail.frustumCulled = false;
+      group.add(trail);
+      trailPts = [];
 
       // beat shapes: expanding rings in random orientations
-      const ringGeo = new THREE.TorusGeometry(1, 0.05, 6, 64);
+      const ringGeo = new THREE.TorusGeometry(1, 0.12, 6, 64);
       for (let i = 0; i < SHAPE_POOL; i++) {
         const m = new THREE.Mesh(
           ringGeo,
@@ -91,10 +118,19 @@ export function createOrbit() {
       coreWire.rotation.x += dt * 0.13;
       corePulse *= Math.pow(0.01, dt);
 
-      color.setHSL((opts.hue / 360) % 1, 0.8, 0.25 + audio.bass * 0.4 + corePulse * 0.3);
+      color.setHSL((opts.hue / 360) % 1, 0.85, 0.3 + audio.bass * 0.4 + corePulse * 0.3);
       core.material.color.copy(color);
-      color.setHSL(((opts.hue / 360) + 0.08) % 1, 0.9, 0.55);
+      color.setHSL(((opts.hue / 360) + 0.08) % 1, 0.9, 0.6 + audio.beatIntensity * 0.1);
       coreWire.material.color.copy(color);
+      coreHot.scale.setScalar(s * (0.9 + audio.bass * 0.5 + corePulse * 0.6));
+
+      // swarm breathes with the mids and spins
+      swarm.rotation.y += dt * (0.15 + audio.mid * 0.8 * reactivity);
+      swarm.rotation.z += dt * 0.05;
+      swarm.scale.setScalar(1 + audio.mid * 0.35 * reactivity + audio.beatIntensity * 0.15);
+      color.setHSL(((hue / 360) + 0.15) % 1, 0.85, 0.5 + audio.mid * 0.25);
+      swarm.material.color.copy(color);
+      swarm.material.size = 0.22 + audio.high * 0.3;
 
       // beats (and taps) spawn expanding rings
       if (audio.beat || this._spawn) {
@@ -115,13 +151,22 @@ export function createOrbit() {
         m.material.opacity = Math.max(0, 1 - m.userData.r / 50);
       }
 
-      // player orbits
+      // player orbits, dragging a glowing trail
       player.position.set(Math.cos(angle) * radius, Math.sin(angle * 0.7) * 2, Math.sin(angle) * radius);
       color.setHSL(((hue / 360) + 0.35) % 1, 0.9, 0.65 + audio.beatIntensity * 0.2);
       player.material.color.copy(color);
+      trail.material.color.copy(color);
+
+      trailPts.push(player.position.clone());
+      if (trailPts.length > 80) trailPts.shift();
+      const tPos = trail.geometry.attributes.position;
+      for (let i = 0; i < trailPts.length; i++) tPos.setXYZ(i, trailPts[i].x, trailPts[i].y, trailPts[i].z);
+      tPos.needsUpdate = true;
+      trail.geometry.setDrawRange(0, trailPts.length);
 
       // camera orbits slowly opposite the player
-      camera.position.set(Math.sin(time * 0.07) * 34, 13 + Math.sin(time * 0.11) * 4, Math.cos(time * 0.07) * 34);
+      const camR = 27 - audio.bass * 3 * reactivity;
+      camera.position.set(Math.sin(time * 0.07) * camR, 10 + Math.sin(time * 0.11) * 4, Math.cos(time * 0.07) * camR);
       camera.lookAt(0, 0, 0);
       const fovTarget = 70 + audio.volume * 8 * reactivity;
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 6);

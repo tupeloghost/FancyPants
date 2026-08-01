@@ -9,8 +9,10 @@ const MAX_STEMS = 2600;
 
 export function createBloom() {
   let scene, camera, group;
-  let crystals, stems;
+  let crystals, stems, spores, ground;
   let nCrystals = 0, nStems = 0;
+  const recentIdx = [];      // most recent crystals pulse with the beat
+  const recentHue = [];
   let spawnTimer = 0;
   let grower = new THREE.Vector3();
   let growerTarget = new THREE.Vector3();
@@ -46,8 +48,12 @@ export function createBloom() {
       dummy.updateMatrix();
       crystals.setMatrixAt(nCrystals, dummy.matrix);
       // quiet passages → cool dim tones; loud → hot bright shifted hue
-      color.setHSL(((hue / 360) + audio.mid * 0.25 + Math.random() * 0.06) % 1, 0.85, 0.22 + loud * 0.5);
+      const crystalHue = ((hue / 360) + audio.mid * 0.25 + Math.random() * 0.06) % 1;
+      color.setHSL(crystalHue, 0.85, 0.3 + loud * 0.42);
       crystals.setColorAt(nCrystals, color);
+      recentIdx.push(nCrystals);
+      recentHue.push(crystalHue);
+      if (recentIdx.length > 24) { recentIdx.shift(); recentHue.shift(); }
       nCrystals++;
       crystals.count = nCrystals;
       crystals.instanceMatrix.needsUpdate = true;
@@ -78,7 +84,29 @@ export function createBloom() {
       stems.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_STEMS * 3), 3);
       crystals.count = 0; stems.count = 0;
       nCrystals = 0; nStems = 0;
+      recentIdx.length = 0; recentHue.length = 0;
       group.add(crystals, stems);
+
+      // drifting spores fill the dark
+      const spp = new Float32Array(500 * 3);
+      for (let i = 0; i < 500; i++) {
+        spp[i * 3] = (Math.random() - 0.5) * 70;
+        spp[i * 3 + 1] = (Math.random() - 0.5) * 34;
+        spp[i * 3 + 2] = (Math.random() - 0.5) * 70;
+      }
+      const spg = new THREE.BufferGeometry();
+      spg.setAttribute('position', new THREE.BufferAttribute(spp, 3));
+      spores = new THREE.Points(spg, new THREE.PointsMaterial({ size: 0.28, transparent: true, opacity: 0.7, toneMapped: false }));
+      group.add(spores);
+
+      // faint ground disc so the garden sits somewhere
+      ground = new THREE.Mesh(
+        new THREE.CircleGeometry(75, 48),
+        new THREE.MeshBasicMaterial({ toneMapped: false })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -15;
+      group.add(ground);
 
       grower.set(0, 0, 0);
       camera.fov = 70;
@@ -120,6 +148,27 @@ export function createBloom() {
           place(jitter.add(grower), audio, hue, reactivity, n > 2);
         }
       }
+
+      // recent growth pulses with the beat — the garden feels alive
+      if (recentIdx.length) {
+        const boost = audio.beatIntensity * 0.3 + audio.bass * 0.12;
+        for (let i = 0; i < recentIdx.length; i++) {
+          const age = i / recentIdx.length; // older → dimmer pulse
+          color.setHSL(recentHue[i], 0.85, Math.min(0.75, 0.32 + audio.energy * 0.4 + boost * age));
+          crystals.setColorAt(recentIdx[i], color);
+        }
+        crystals.instanceColor.needsUpdate = true;
+      }
+
+      // spores drift up and shimmer with the highs
+      spores.rotation.y += dt * 0.03;
+      spores.position.y = Math.sin(time * 0.1) * 2;
+      color.setHSL(((hue / 360) + 0.4) % 1, 0.7, 0.35 + audio.high * 0.35);
+      spores.material.color.copy(color);
+      spores.material.size = 0.28 + audio.high * 0.35;
+
+      color.setHSL((hue / 360) % 1, 0.5, 0.02 + audio.bass * 0.03);
+      ground.material.color.copy(color);
 
       // slow orbit camera around the garden
       const r = 44 + Math.sin(time * 0.05) * 8;

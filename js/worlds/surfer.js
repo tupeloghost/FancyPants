@@ -9,7 +9,7 @@ const WIDTH = 170, DEPTH = 260;
 const ROW_INTERVAL = 0.035; // seconds between history rows
 
 export function createSurfer() {
-  let scene, camera, group, mesh;
+  let scene, camera, group, mesh, sun, sunHalo, stars;
   let steer = 0, steerTarget = 0;
   let jumpY = 0, jumpVel = 0;
   let rowTimer = 0, scrollOff = 0;
@@ -35,6 +35,32 @@ export function createSurfer() {
         new THREE.MeshBasicMaterial({ wireframe: true, vertexColors: true, toneMapped: false })
       );
       group.add(mesh);
+
+      // synthwave sun on the horizon — blooms hard, pulses with bass
+      sun = new THREE.Mesh(
+        new THREE.CircleGeometry(26, 48),
+        new THREE.MeshBasicMaterial({ toneMapped: false, fog: false })
+      );
+      sun.position.set(0, 16, -230);
+      group.add(sun);
+      sunHalo = new THREE.Mesh(
+        new THREE.RingGeometry(26, 44, 48),
+        new THREE.MeshBasicMaterial({ toneMapped: false, fog: false, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
+      );
+      sunHalo.position.copy(sun.position);
+      group.add(sunHalo);
+
+      // stars above the horizon
+      const sp = new Float32Array(400 * 3);
+      for (let i = 0; i < 400; i++) {
+        sp[i * 3] = (Math.random() - 0.5) * 500;
+        sp[i * 3 + 1] = 20 + Math.random() * 160;
+        sp[i * 3 + 2] = -260 + Math.random() * 60;
+      }
+      const sg = new THREE.BufferGeometry();
+      sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+      stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.1, color: 0xaabbee, toneMapped: false, fog: false }));
+      group.add(stars);
 
       camera.position.set(0, 10, 40);
       camera.rotation.set(0, 0, 0);
@@ -91,18 +117,32 @@ export function createSurfer() {
           const h = hRow[c] * (1 - rowScroll) + hRowNext[c] * rowScroll;
           pos.setY(i, h);
           const t = Math.min(1, h / 14);
-          color.setHSL(((hue / 360) + t * 0.14 + r * 0.0008) % 1, 0.85, 0.12 + t * 0.5);
+          // bright enough to cross the bloom threshold on peaks and beats
+          const lum = 0.2 + t * 0.5 + audio.beatIntensity * 0.15;
+          color.setHSL(((hue / 360) + t * 0.14 + r * 0.0008) % 1, 0.9, Math.min(0.72, lum));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
       pos.needsUpdate = true;
       col.needsUpdate = true;
 
+      // sun pulses with bass, hue-complementary so it pops against the grid
+      const sunScale = 1 + audio.bass * 0.35 * reactivity + audio.beatIntensity * 0.15;
+      sun.scale.setScalar(sunScale);
+      sunHalo.scale.setScalar(sunScale * (1.05 + audio.beatIntensity * 0.3));
+      color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.55 + audio.bass * 0.15);
+      sun.material.color.copy(color);
+      sunHalo.material.color.copy(color);
+      sunHalo.material.opacity = 0.2 + audio.beatIntensity * 0.5;
+
       // camera rides the wave
       const camH = 9 + audio.volume * 5 * reactivity + jumpY;
       camera.position.set(steer * 40, camH, 40);
       camera.lookAt(steer * 30, 3 + jumpY * 0.4, -60);
-      camera.rotation.z += steer * -0.08;
+      camera.rotation.z += steer * -0.1 + Math.sin(time * 0.4) * 0.015;
+      const fovT = 75 + audio.volume * 10 * reactivity + audio.beatIntensity * 5;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
+      camera.updateProjectionMatrix();
     },
 
     dispose() {
