@@ -29,6 +29,8 @@ export function createFunhouse() {
   const seed = new Float32Array(BALLS);
   const restY = new Float32Array(BALLS); // stacked rest height: no n2 collisions,
                                          // but the pile still fills the pit
+  const homeX = new Float32Array(BALLS); // even home spread — the pit always
+  const homeZ = new Float32Array(BALLS); // relaxes back to uniform, no clumps
   const me = 0; // ball #0 is the local player's
   let active = 240;          // taps add balls up to the full pool
 
@@ -71,6 +73,11 @@ export function createFunhouse() {
         rad[i] = 0.5 + Math.random() * 0.75;
         seed[i] = Math.random();
         restY[i] = rad[i] + Math.floor(i / PER_LAYER) * 0.95 + Math.random() * 1.6; // lumpy surface
+        // sunflower spread: evenly covers the pit at any count
+        const rr = ARENA * 0.96 * Math.sqrt((i % PER_LAYER) / PER_LAYER + 0.01);
+        const th = i * 2.399963;
+        homeX[i] = Math.cos(th) * rr;
+        homeZ[i] = Math.sin(th) * rr;
       }
       rad[me] = 1.3; // the player's ball is a little bigger
 
@@ -209,8 +216,11 @@ export function createFunhouse() {
         if (py[i] > WALL_H + 6) vy[i] -= 30 * step; // gravity catches high fliers fast
         if (Math.abs(px[i]) > ARENA) { px[i] = Math.sign(px[i]) * ARENA; vx[i] *= -0.8; }
         if (Math.abs(pz[i]) > ARENA) { pz[i] = Math.sign(pz[i]) * ARENA; vz[i] *= -0.8; }
-        vx[i] *= (1 - step * 0.6);
-        vz[i] *= (1 - step * 0.6);
+        // drift home: scattered balls settle back into an even pit
+        vx[i] += (homeX[i] - px[i]) * step * 0.5;
+        vz[i] += (homeZ[i] - pz[i]) * step * 0.5;
+        vx[i] *= (1 - step * 0.7);
+        vz[i] *= (1 - step * 0.7);
 
         // squash on landing, stretch in flight
         const squash = py[i] <= rad[i] + 0.05 && Math.abs(vy[i]) > 2 ? 0.8 : 1 + Math.min(0.25, Math.abs(vy[i]) * 0.006);
@@ -280,22 +290,34 @@ export function createFunhouse() {
         yaw += dt * 0.12;
         pitch += (Math.sin(time * 0.17) * 0.25 - pitch) * Math.min(1, dt * 2);
       }
-      fwd.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+      fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
       const swim = 4 + audio.volume * 3.5 * reactivity;
       camera.position.addScaledVector(fwd, swim * dt);
       camera.position.addScaledVector(camVel, dt);
       camVel.multiplyScalar(Math.max(0, 1 - dt * 2.2)); // lunge fades
 
-      // soft walls: glance off the pit edges, never leave the pit
-      const m2 = ARENA - 2;
-      if (Math.abs(camera.position.x) > m2) { camera.position.x = Math.sign(camera.position.x) * m2; yaw += dt * 2.5; }
-      if (Math.abs(camera.position.z) > m2) { camera.position.z = Math.sign(camera.position.z) * m2; yaw += dt * 2.5; }
-      // stay near the pile's surface: dive a few balls deep at most, so the
-      // view is the churning surface, not the inside of a sphere
-      const pileTop = 1 + (active / PER_LAYER) * 0.95;
-      camera.position.y = Math.min(WALL_H - 2.5, Math.max(Math.max(1.6, pileTop - 3.5), camera.position.y));
+      // height: ride just above the pile crest; steering down dives in,
+      // steering up lifts toward the rim — but never under the pile
+      const pileTop2 = 1 + (active / PER_LAYER) * 0.95;
+      const targetY = pileTop2 + 1.4 + pitch * 5;
+      camera.position.y += (targetY - camera.position.y) * Math.min(1, dt * 2);
 
-      camera.rotation.set(pitch - 0.14, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1)); // gaze rests on the balls
+      // soft walls: near the edge, the view bends back toward the pit —
+      // you never end up staring at a wall
+      const m2 = ARENA - 2;
+      const cd = Math.hypot(camera.position.x, camera.position.z);
+      if (cd > ARENA - 9) {
+        const faceCenter = Math.atan2(camera.position.x, camera.position.z);
+        let dy = faceCenter - yaw;
+        while (dy > Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        yaw += dy * Math.min(1, dt * (cd - (ARENA - 9)) * 0.55);
+      }
+      if (Math.abs(camera.position.x) > m2) camera.position.x = Math.sign(camera.position.x) * m2;
+      if (Math.abs(camera.position.z) > m2) camera.position.z = Math.sign(camera.position.z) * m2;
+      camera.position.y = Math.min(WALL_H - 2, Math.max(1.8, camera.position.y));
+
+      camera.rotation.set(pitch * 0.5 - 0.22, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1)); // gaze rests on the balls
 
       // nearby balls shoulder away from the lens so it never sits inside one
       for (let i = 0; i < active; i++) {
