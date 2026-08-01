@@ -183,6 +183,7 @@ const settings = {
   shape: 'slat',
   hdr: 1.0,
   stardust: true,
+  balls: 240,
 };
 
 // ── URL params: every knob is shareable ──
@@ -216,6 +217,7 @@ function switchWorld(key) {
   const caps = world.options || [];
   $('opt-pattern').style.display = caps.includes('pattern') ? '' : 'none';
   $('opt-shape').style.display = caps.includes('shape') ? '' : 'none';
+  $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
 }
 
 // ── Panel wiring ──
@@ -309,6 +311,7 @@ $('hue-val').textContent = settings.hue;
 document.documentElement.style.setProperty('--accent-h', settings.hue);
 $('bloom').value = 70;
 $('hdr').value = 100;
+$('balls').value = 240;
 $('scrub').value = 0;
 
 // sliders — keep the filled portion of the track in sync via --fill
@@ -335,6 +338,7 @@ slider('hue', 'hue-val', v => v, v => {
   updateURL();
 });
 slider('hdr', 'hdr-val', v => (v / 100).toFixed(1), v => settings.hdr = v / 100);
+slider('balls', 'balls-val', v => v, v => settings.balls = v);
 let bloomBase = 0.7;
 slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
   bloomBase = v / 100;
@@ -729,6 +733,7 @@ function frame(now) {
     shape: settings.shape,
     hdr: settings.hdr,
     stardust: settings.stardust,
+    balls: settings.balls,
     time,
   });
 

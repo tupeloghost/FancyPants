@@ -26,6 +26,7 @@ export function createFunhouse() {
 
   return {
     name: 'BALL PIT',
+    options: ['balls'],
 
     init(_scene, _camera) {
       scene = _scene; camera = _camera;
@@ -122,8 +123,23 @@ export function createFunhouse() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', balls: targetBalls = 240 } = opts;
       this._t = time;
+
+      // the slider IS the pit: pour balls in from the sky to reach the
+      // target, or quietly retire the extras
+      if (active < targetBalls) {
+        const add = Math.min(3, targetBalls - active); // steady pour, not a dump
+        for (let n = 0; n < add; n++) {
+          const i = active++;
+          px[i] = (Math.random() - 0.5) * ARENA * 1.6;
+          pz[i] = (Math.random() - 0.5) * ARENA * 1.6;
+          py[i] = 30 + Math.random() * 10;
+          vx[i] = (Math.random() - 0.5) * 4; vy[i] = -2; vz[i] = (Math.random() - 0.5) * 4;
+        }
+      } else if (active > targetBalls) {
+        active = Math.max(targetBalls, 1);
+      }
 
       // beats bounce the whole pit
       const kick = audio.beat ? 7 + audio.beatIntensity * 16 * reactivity : 0;
@@ -205,10 +221,27 @@ export function createFunhouse() {
       floor.material.opacity = 0.26 + audio.bass * 0.2;
       sky.material.color.copy(color);
 
-      // camera circles the pit, dipping with the bass
-      const r = 50 - audio.bass * 5;
-      camera.position.set(Math.sin(time * 0.06) * r, 22 + Math.sin(time * 0.1) * 4 - audio.bass * 3, Math.cos(time * 0.06) * r);
-      camera.lookAt(0, 4, 0);
+      // IN the pit: eye-level with the balls, wading behind your own,
+      // slowly circling so the view keeps changing
+      const camAng = time * 0.05;
+      const camTX = px[me] - Math.sin(camAng) * 9;
+      const camTZ = pz[me] - Math.cos(camAng) * 9;
+      camera.position.x += (camTX - camera.position.x) * Math.min(1, dt * 2.5);
+      camera.position.z += (camTZ - camera.position.z) * Math.min(1, dt * 2.5);
+      camera.position.y += ((5.6 + audio.bass * 0.8) - camera.position.y) * Math.min(1, dt * 2.5);
+      camera.lookAt(px[me] + Math.sin(camAng) * 8, 3.2, pz[me] + Math.cos(camAng) * 8);
+      camera.rotation.z += Math.sin(time * 0.4) * 0.015;
+
+      // nearby balls shoulder away from the lens so it never sits inside one
+      for (let i = 0; i < active; i++) {
+        const dx = px[i] - camera.position.x, dz = pz[i] - camera.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 7 && d > 0.01) {
+          const f = (7 - d) * 11 * dt;
+          vx[i] += (dx / d) * f;
+          vz[i] += (dz / d) * f;
+        }
+      }
       const fovT = 72 + audio.volume * 8 * reactivity + audio.beatIntensity * 4;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
