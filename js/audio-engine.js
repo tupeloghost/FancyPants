@@ -66,6 +66,23 @@ export class AudioEngine {
     this.el.load();
   }
 
+  // join-moment chime: quick two-note bell, mixed straight to output
+  joinChime() {
+    if (!this.ctx) return;
+    const t0 = this.ctx.currentTime;
+    for (const [freq, dt, dur] of [[659, 0, 0.22], [988, 0.09, 0.3]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(0.14, t0 + dt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + dur);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start(t0 + dt); o.stop(t0 + dt + dur + 0.05);
+    }
+  }
+
   play() { this.ensureContext(); return this.el.play(); }
   pause() { this.el.pause(); }
   get playing() { return !this.el.paused && !this.el.ended; }

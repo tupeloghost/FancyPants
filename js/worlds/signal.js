@@ -135,6 +135,15 @@ export function createSignal() {
       camera.updateProjectionMatrix();
     },
 
+    // others are distant lights drifting in the dark
+    placeGhost(p, i, out) {
+      out.set(
+        p.x * 45 + Math.sin(i * 2.2) * 12,
+        5 + Math.abs(p.y) * 10 + Math.sin(i * 1.3) * 3,
+        camera.position.z - 55 - (i % 9) * 22
+      );
+    },
+
     // tap: hurl a glowing ball AT WHAT YOU CLICKED — aim at a column and
     // it goes down like a bowling pin (the radar ping rides along)
     onTap(x, y) {
@@ -157,6 +166,11 @@ export function createSignal() {
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
+
+      if (participants && participants[0]) {
+        participants[0].x = Math.sin(travel * 0.01);
+        participants[0].y = 0.3;
+      }
 
       // constant forward flight — faster when the music surges
       const speed = 9 + audio.energy * 26 * reactivity + audio.volume * 8;

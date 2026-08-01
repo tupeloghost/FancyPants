@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "fancy-pants",
+  "main": "server.js",
+  "compatibilityDate": "2026-08-01"
+}

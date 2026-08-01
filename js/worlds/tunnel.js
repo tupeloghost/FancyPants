@@ -213,6 +213,11 @@ export function createTunnel() {
 
     setInput(x, y) { steerTarget.x = x; steerTarget.y = y; },
 
+    // ghosts: glowing motes flying the same tube, offset by their steer
+    placeGhost(p, i, out) {
+      out.set(p.x * 3.2, p.y * 2.4, -8 - (i % 8) * 3 - Math.sin(i * 2.7) * 1.5);
+    },
+
     onTap() {
       tapFlash = 1;
       tapQueued = true;
@@ -231,6 +236,13 @@ export function createTunnel() {
 
       const speed = (10 + audio.volume * 55 * reactivity);
       travel += speed * dt;
+
+      // local participant state = our steer (what remotes render)
+      if (participants && participants[0]) {
+        participants[0].x = steer.x;
+        participants[0].y = steer.y;
+        participants[0].z = 0;
+      }
 
       const curveX = Math.sin(travel * 0.02) * 3 + Math.sin(travel * 0.007) * 5;
       const curveY = Math.cos(travel * 0.016) * 2.2;

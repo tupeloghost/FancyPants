@@ -142,6 +142,15 @@ export function createTrail() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
+    // fellow comets swim alongside the head
+    placeGhost(p, i, out) {
+      out.set(
+        head.x + p.x * 10 + Math.cos(i * 2.1) * 7,
+        head.y + p.y * 6 + Math.sin(i * 1.7) * 4,
+        head.z + Math.sin(i * 2.9) * 6 - 4
+      );
+    },
+
     // tap: jump to a fresh color (the ribbon behind keeps the old ones —
     // look back and it's a rainbow of your clicks) + surge + ring
     onTap() {
@@ -180,6 +189,11 @@ export function createTrail() {
       pathAt(phase, headTarget);
       headTarget.add(steer);
       head.lerp(headTarget, Math.min(1, dt * 5));
+
+      if (participants && participants[0]) {
+        participants[0].x = pointer.active ? pointer.x : Math.sin(time * 0.34) * 0.5;
+        participants[0].y = pointer.active ? pointer.y : Math.sin(time * 0.27) * 0.4;
+      }
 
       // append ribbon points as the head moves
       if (nPoints < MAX_POINTS && head.distanceTo(prev) > MIN_DIST) {

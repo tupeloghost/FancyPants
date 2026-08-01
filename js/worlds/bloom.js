@@ -163,6 +163,15 @@ export function createBloom() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
+    // fellow gardeners drift around the flight path ahead
+    placeGhost(p, i, out) {
+      out.set(
+        camPos.x + p.x * 12 + Math.cos(i * 2.4) * 9,
+        camPos.y + p.y * 7 + Math.sin(i * 3.7) * 5,
+        camPos.z - 28 - (i % 6) * 7
+      );
+    },
+
     onTap(x, y) {
       tapPoint.set(x, y, 0.5).unproject(camera);
       tapPoint.sub(camera.position).normalize().multiplyScalar(40).add(camera.position);
@@ -194,6 +203,11 @@ export function createBloom() {
       const fovT = 72 + audio.volume * 9 * reactivity + audio.beatIntensity * 5;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
+
+      if (participants && participants[0]) {
+        participants[0].x = pointer.active ? pointer.x : Math.sin(time * 0.7) * 0.4;
+        participants[0].y = pointer.active ? pointer.y : Math.sin(time * 0.5) * 0.3;
+      }
 
       // grower rides ahead on the path axis; growth rings form around it
       growerTarget.set(

@@ -83,6 +83,11 @@ export function createSurfer() {
 
     setInput(x) { steerTarget = x; },
 
+    // ghost riders share the terrain, staggered ahead of the camera
+    placeGhost(p, i, out) {
+      out.set(p.x * 42, 7 + p.y * 4 + Math.sin(i * 3.1) * 1.5, 18 - (i % 5) * 8);
+    },
+
     onTap() {
       if (jumpY <= 0.01) jumpVel = 22; // one-button jump
       waveR = 0;                        // + a shockwave ridge racing to the horizon
@@ -104,6 +109,11 @@ export function createSurfer() {
           row[c] = audio.spectrum[bin] * amp * (0.35 + Math.abs(c - COLS / 2) / (COLS / 2));
         }
         history.unshift(row);
+      }
+
+      if (participants && participants[0]) {
+        participants[0].x = steer;
+        participants[0].y = jumpY / 12;
       }
 
       // steering / attract drift

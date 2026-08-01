@@ -10,6 +10,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { AudioEngine } from './audio-engine.js';
 import { WORLDS } from './worlds/registry.js';
+import { Net } from './net.js';
+import { Presence } from './lib/presence.js';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -70,10 +72,14 @@ window.addEventListener('resize', () => {
 // ── Audio ──
 const audio = new AudioEngine();
 
-// ── Participants (single-player: just the local one) ──
-const participants = [
-  { id: 'local', name: localStorage.getItem('sw_name') || 'you', x: 0, y: 0, z: 0, heading: 0, action: 'idle', local: true, color: 0 },
-];
+// ── Net + presence: participants come from the net layer ──
+const net = new Net();
+const participants = net.participants;
+if (!net.local.name) net.local.name = 'you';
+const presence = new Presence();
+presence.init(scene);
+net.onJoin = () => audio.joinChime();
+window.__net = net; window.__presence = presence; // debug handles
 
 // ── Settings (live-tunable via panel) ──
 const settings = {
@@ -95,6 +101,7 @@ const settings = {
   if (qp.get('shape')) settings.shape = qp.get('shape');
   if (qp.get('hue')) settings.hue = +qp.get('hue') || 210;
   if (qp.get('dust') === 'off') settings.stardust = false;
+  if (qp.get('names') === 'off') window.__namesOff = true;
 }
 
 function updateURL() {
@@ -355,6 +362,13 @@ $('btn-stardust').addEventListener('click', () => {
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 'h' || e.key === 'H') panel.classList.toggle('hidden');
+  if (e.key === 'b' || e.key === 'B') {
+    // broadcast mode: clean frame, wider camera, crowd-first
+    settings.broadcast = !settings.broadcast;
+    panel.classList.toggle('hidden', settings.broadcast);
+  }
+  if (e.key === 'n' || e.key === 'N') presence.namesVisible = !presence.namesVisible; // instant
+  if (e.key === 'p' || e.key === 'P') { $('plist').classList.toggle('hidden'); renderPlist(); }
   if (e.key === 'c' || e.key === 'C') panel.classList.toggle('collapsed');
   if (e.key === 's' || e.key === 'S') screenshotQueued = true;
   if (e.key === ' ') {
@@ -415,18 +429,65 @@ window.addEventListener('deviceorientation', e => {
   world.setInput(Math.max(-1, Math.min(1, e.gamma / 30)), Math.max(-1, Math.min(1, (e.beta - 45) / -30)));
 });
 
-// tap-to-start unlocks the AudioContext
+// ── Join flow ──
 const tap = $('tap-to-start');
-tap.addEventListener('click', () => {
+const ROOM_CHARS = 'ACDEFGHJKMNPQRTUVWXYZ2346789'; // no O/0, I/1, ambiguous glyphs
+const genCode = () => Array.from({ length: 4 }, () => ROOM_CHARS[Math.floor(Math.random() * ROOM_CHARS.length)]).join('');
+const validName = n => /^[a-zA-Z0-9_]{3,14}$/.test(n);
+
+$('join-name').value = net.local.name === 'you' ? '' : net.local.name;
+
+function dismissOverlay() {
   audio.ensureContext();
   tap.classList.add('gone');
+}
+function startRoom(code, name, asOwner) {
+  if (!validName(name)) { $('join-msg').textContent = 'name: 3-14 letters, numbers, _'; return; }
+  net.local.name = name;
+  localStorage.setItem('fp_name', name);
+  $('room-badge').textContent = code;
+  $('room-badge').classList.remove('hidden');
+  net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = 'pick another name'; };
+  net.join(code, name, asOwner); // no host configured → runs solo, silently
+  dismissOverlay();
+  updateURL();
+}
+$('btn-join').addEventListener('click', () => {
+  const code = $('join-room').value.trim().toUpperCase();
+  if (code.length < 4) { $('join-msg').textContent = 'enter a room code'; return; }
+  startRoom(code, $('join-name').value.trim(), false);
 });
+$('btn-host').addEventListener('click', () => {
+  startRoom(genCode(), $('join-name').value.trim() || 'host', true);
+});
+$('btn-solo').addEventListener('click', () => {
+  if ($('join-name').value.trim()) net.local.name = $('join-name').value.trim();
+  dismissOverlay();
+});
+// clicking outside the card still starts solo (the old behavior)
+tap.addEventListener('click', e => { if (e.target === tap) dismissOverlay(); });
 
 // URL params (?world=tunnel supported now; room/names reserved for later phases)
 const params = new URLSearchParams(location.search);
 const startWorld = WORLDS[params.get('world')] ? params.get('world') : 'tunnel';
 $('world-select').value = startWorld;
 switchWorld(startWorld);
+
+// participants overlay: click a name to kill just that name (they keep playing)
+function renderPlist() {
+  const box = $('plist-rows');
+  box.innerHTML = '';
+  for (const p of participants) {
+    const row = document.createElement('div');
+    row.className = 'plist-row' + (presence.hiddenNames.has(p.name) ? ' muted' : '');
+    row.innerHTML = `<span>${p.name}</span><span>${p.local ? 'you' : ''}</span>`;
+    row.addEventListener('click', () => {
+      presence.hiddenNames.has(p.name) ? presence.hiddenNames.delete(p.name) : presence.hiddenNames.add(p.name);
+      renderPlist();
+    });
+    box.appendChild(row);
+  }
+}
 
 // ── Spectrum strip: live view of the 5 bands + beat flash, for tuning ──
 const specCanvas = $('spectrum');
@@ -464,6 +525,17 @@ function drawSpectrum(a) {
   }
 }
 
+// names=off param + sim mode + auto-join from ?room=
+if (window.__namesOff) presence.namesVisible = false;
+{
+  const qp = new URLSearchParams(location.search);
+  const sim = parseInt(qp.get('sim') || '0', 10);
+  if (sim > 0) net.simulate(Math.min(sim, 60));
+  const room = qp.get('room');
+  if (room) $('join-room').value = room.toUpperCase();
+}
+settings.broadcast = false;
+
 // ── Loop ──
 let last = performance.now();
 let fpsFrames = 0, fpsTime = 0, time = 0, lowFpsStreak = 0;
@@ -476,6 +548,7 @@ function frame(now) {
   time += dt;
 
   const a = audio.update(dt);
+  net.update(dt, time);
   updateCursor(dt, a);
   world.update(dt, a, participants, {
     reactivity: settings.reactivity,
@@ -488,6 +561,18 @@ function frame(now) {
     stardust: settings.stardust,
     time,
   });
+
+  // ghosts render through the same path in every world
+  presence.update(dt, participants,
+    world.placeGhost ? world.placeGhost.bind(world) : (p, i, out) => out.set(p.x, p.y, p.z),
+    { beatIntensity: a.beatIntensity, time });
+
+  if (settings.broadcast) {
+    // widen to frame the crowd, not the local player
+    camera.fov = Math.min(118, camera.fov + 9);
+    camera.updateProjectionMatrix();
+  }
+
   composer.render();
 
   // PNG export must happen in the same frame as the render (no preserveDrawingBuffer)
@@ -529,6 +614,7 @@ function frame(now) {
     $('time-cur').textContent = f(audio.currentTime);
     $('time-dur').textContent = f(audio.duration);
     $('pcount').textContent = participants.length;
+    if (!$('plist').classList.contains('hidden')) renderPlist();
   }
 }
 requestAnimationFrame(frame);

@@ -271,6 +271,57 @@
     text-shadow: 0 0 40px hsla(var(--accent-h), 90%, 65%, 0.9), 0 0 90px hsla(var(--accent-h), 90%, 55%, 0.5);
     animation: breathe 3s ease-in-out infinite;
   }
+  /* ── Join card ── */
+  #join-card {
+    display: flex; flex-direction: column; gap: 9px; width: 250px;
+    letter-spacing: normal;
+  }
+  #join-card input {
+    padding: 10px 12px; border-radius: 10px; text-align: center;
+    background: rgba(10, 16, 30, 0.85); color: var(--ink);
+    border: 1px solid var(--accent-line); font: 14px 'SF Mono', Menlo, monospace;
+    letter-spacing: 2px; outline: none;
+  }
+  #join-card input:focus { border-color: var(--accent); box-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.4); }
+  #join-card input::placeholder { color: var(--ink-faint); letter-spacing: 1px; }
+  .join-row { display: flex; gap: 7px; }
+  .join-row button {
+    flex: 1; padding: 9px 0; border-radius: 10px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent-line);
+    font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+  }
+  .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
+  #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
+
+  /* room code — prominent, part of the broadcast frame */
+  #room-badge {
+    position: fixed; top: 16px; left: 18px; z-index: 90;
+    font: 700 30px 'SF Mono', Menlo, monospace; letter-spacing: 7px;
+    color: var(--accent);
+    text-shadow: 0 0 18px hsla(var(--accent-h), 90%, 65%, 0.9), 0 0 50px hsla(var(--accent-h), 90%, 55%, 0.5);
+    user-select: none; pointer-events: none;
+  }
+  #room-badge::before {
+    content: 'ROOM'; display: block;
+    font-size: 9px; letter-spacing: 4px; color: var(--ink-faint); text-shadow: none;
+  }
+  #room-badge.hidden { display: none; }
+
+  /* participants overlay (P) */
+  #plist {
+    position: fixed; left: 18px; bottom: 18px; z-index: 90;
+    background: var(--glass); border: 1px solid var(--accent-line); border-radius: 12px;
+    padding: 10px 12px; color: var(--ink); width: 200px;
+    font: 11px 'SF Mono', Menlo, monospace;
+    backdrop-filter: blur(14px);
+  }
+  #plist.hidden { display: none; }
+  .plist-title { color: var(--ink-faint); font-size: 9px; letter-spacing: 1px; margin-bottom: 6px; }
+  .plist-row { padding: 3px 6px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; }
+  .plist-row:hover { background: var(--accent-soft); }
+  .plist-row.muted { opacity: 0.4; text-decoration: line-through; }
+
   @keyframes breathe {
     0%, 100% { opacity: 0.85; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.03); }
@@ -283,7 +334,23 @@
 
 <div id="tap-to-start">
   <div class="big">FANCY PANTS</div>
-  <div>click anywhere · then pick a track</div>
+  <div id="join-card">
+    <input id="join-name" maxlength="14" placeholder="your name" autocomplete="off">
+    <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
+    <div id="join-msg"></div>
+    <div class="join-row">
+      <button id="btn-join">JOIN</button>
+      <button id="btn-host">HOST</button>
+      <button id="btn-solo">SOLO</button>
+    </div>
+  </div>
+</div>
+
+<div id="room-badge" class="hidden"></div>
+
+<div id="plist" class="hidden">
+  <div class="plist-title">participants — click to hide a name</div>
+  <div id="plist-rows"></div>
 </div>
 
 <div id="panel">
@@ -365,7 +432,7 @@
       </div>
     </div>
 
-    <div class="hint"><kbd>H</kbd> hide · <kbd>C</kbd> collapse · <kbd>space</kbd> play · <kbd>S</kbd> png</div>
+    <div class="hint"><kbd>H</kbd> panel · <kbd>B</kbd> broadcast · <kbd>N</kbd> names · <kbd>P</kbd> people · <kbd>space</kbd> play · <kbd>S</kbd> png</div>
   </div>
 </div>
 

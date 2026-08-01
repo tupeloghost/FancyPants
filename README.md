@@ -4,8 +4,12 @@ Browser-based multiplayer audio-reactive visual playground for livestreams.
 Vanilla JS + Three.js (CDN import map), no build step. Deployable to any
 static host (GitHub Pages / Cloudflare Pages).
 
-**Current status: Phase 2** — all six worlds, single-player.
-Multiplayer (PartyKit) and the join flow are next.
+**Current status: Phase 3** — all six worlds + multiplayer presence layer.
+
+Multiplayer is presence-only (no shared physics, no authority): every client
+simulates locally and broadcasts a tiny state blob at ~15Hz; everyone else
+renders those as glowing ghosts with styled names. If the socket drops, the
+world keeps running single-player with no error state.
 
 Worlds: TUNNEL (tube flight), SURFER (spectrum terrain, tap to jump),
 ORBIT (core + beat rings, single-axis steering), BLOOM (persistent
@@ -71,6 +75,47 @@ multiplayer phase).
 - `js/main.js` — shared shell: renderer, loop, panel, world switcher,
   participants array (stubbed at 1 for now).
 
+## Multiplayer
+
+Join flow: the streamer clicks HOST (a 4-char room code appears in-world,
+top-left); viewers open the site on their phone, enter the code + a name,
+and their name materializes in the world with a flare and a chime.
+
+- Names: 3-14 chars `[a-zA-Z0-9_]`, validated server-side (NFKC normalize,
+  leetspeak collapse, profanity wordlist, owner-impersonation block, rename
+  rate limit 30s). Rejections just say "pick another name".
+- Max 120 active participants; later joiners become spectators (receive,
+  never send). Peers are dropped after 5s of silence.
+- Colors come from a fixed 12-color palette assigned on join.
+
+Streamer hotkeys (all take effect within one frame):
+
+| Key | Action |
+| --- | --- |
+| `B` | broadcast mode — hide UI, widen camera to frame the crowd |
+| `N` | all names -> color-only, instantly |
+| `P` | participants list — click a name to hide just that name |
+
+URL params: `?world=…&room=CODE&names=off&sim=8` (`sim` spawns fake
+participants for testing/attract).
+
 ## PartyKit server
 
-Not built yet — arrives with the multiplayer phase.
+Lives in `/partykit`. To run it:
+
+```bash
+cd partykit
+npm install
+npx partykit dev        # local dev server
+npx partykit deploy     # deploys to <name>.<user>.partykit.dev
+```
+
+Then point the client at it — set the host before `js/main.js` loads,
+e.g. in `index.html`:
+
+```html
+<script>window.FANCYPANTS_HOST = 'fancy-pants.YOURUSER.partykit.dev';</script>
+```
+
+With no host configured, JOIN/HOST still work visually but the session is
+solo — by design, the show must go on.

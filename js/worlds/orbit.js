@@ -126,11 +126,23 @@ export function createOrbit() {
     // single-axis input: x steers orbit radius
     setInput(x) { radiusTarget = 13 + x * 7; },
 
+    // everyone circles the same core; their steer picks the orbit radius
+    placeGhost(p, i, out) {
+      const rad = 13 + p.x * 7;
+      const ang = (this._t || 0) * (0.4 + (i % 3) * 0.1) + i * 1.7;
+      out.set(Math.cos(ang) * rad, Math.sin(ang * 0.7 + i) * 2.5, Math.sin(ang) * rad);
+    },
+
     onTap() { corePulse = 1; scatter = 1; this._spawn = true; },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
 
+      this._t = time;
+      if (participants && participants[0]) {
+        participants[0].x = (radius - 13) / 7;
+        participants[0].y = 0;
+      }
       if (attract) radiusTarget = 13 + Math.sin(time * 0.5) * 5;
       radius += (radiusTarget - radius) * Math.min(1, dt * 4);
       angle += dt * (0.5 + audio.volume * 1.6 * reactivity);
