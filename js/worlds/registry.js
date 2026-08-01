@@ -9,6 +9,7 @@ import { createRiver } from './river.js';
 import { createFunhouse } from './funhouse.js';
 import { createLavaLamp } from './lavalamp.js';
 import { createPlasma } from './plasma.js';
+import { createCherryLand } from './cherryland.js';
 
 export const WORLDS = {
   tunnel: { label: 'TUNNEL', create: createTunnel },
@@ -21,4 +22,5 @@ export const WORLDS = {
   funhouse: { label: 'BALL PIT', create: createFunhouse },
   lava:   { label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { label: 'PLASMA', create: createPlasma },
+  cherry: { label: 'CHERRY LAND', create: createCherryLand },
 };

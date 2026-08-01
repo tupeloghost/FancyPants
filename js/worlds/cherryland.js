@@ -1,0 +1,349 @@
+// CHERRY LAND — a dusk orchard of glowing cherry trees. Cherries pulse with
+// the frequency bands, giant cherries bounce on beats, blossom petals drift
+// down with the highs. Tap a cherry to POP it — juice everywhere.
+
+import * as THREE from 'three';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js';
+import { themePaint } from '../lib/themes.js';
+
+const TREES = 30;
+const CHERRIES_PER = 6;
+const NCHERRY = TREES * CHERRIES_PER;
+const SPAN = 420;
+const HEROES = 5;           // giant bouncing cherries
+const PETALS = 320;
+const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
+
+export function createCherryLand() {
+  let scene, camera, group, ground, trunks, canopies, cherries, cherryGlow, petals, sky, sun;
+  let travel = 0;
+  const tp = [0, 0, 0];
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  let pointer = { x: 0, active: false };
+  let steer = 0;
+
+  const tx = new Float32Array(TREES), tz = new Float32Array(TREES);
+  const th = new Float32Array(TREES), tseed = new Float32Array(TREES);
+  const cPop = new Float32Array(NCHERRY);   // >0 = popped, counts down
+  const heroes = [];
+  let bursts = [];
+
+  const pathX = z => Math.sin(z * 0.012) * 18;
+  const hillY = (x, z) => Math.sin(x * 0.045 + 1) * 1.6 + Math.sin(z * 0.03) * 1.9;
+
+  function resetTree(i, z) {
+    tz[i] = z;
+    const side = (i % 2 ? 1 : -1);
+    tx[i] = pathX(z) + side * (10 + Math.abs(Math.sin(i * 7.3)) * 12);
+    th[i] = 9 + Math.abs(Math.sin(i * 3.1)) * 6;
+    tseed[i] = Math.abs(Math.sin(i * 12.9898)) ;
+  }
+
+  return {
+    name: 'CHERRY LAND',
+
+    init(_scene, _camera) {
+      scene = _scene; camera = _camera;
+      group = new THREE.Group();
+      scene.add(group);
+      scene.fog = new THREE.FogExp2(0x0a0308, 0.008);
+
+      // rolling ground
+      const gg = new THREE.PlaneGeometry(240, SPAN + 80, 30, 60);
+      gg.rotateX(-Math.PI / 2);
+      gg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(gg.attributes.position.count * 3), 3));
+      ground = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+      ground.frustumCulled = false;
+      group.add(ground);
+
+      // trunks + canopies
+      trunks = new THREE.InstancedMesh(
+        new THREE.CylinderGeometry(0.35, 0.7, 1, 7),
+        new THREE.MeshBasicMaterial({ color: 0x1a0d12, toneMapped: false }),
+        TREES
+      );
+      canopies = new THREE.InstancedMesh(
+        new THREE.IcosahedronGeometry(1, 1),
+        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        TREES
+      );
+      canopies.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(TREES * 3), 3);
+      trunks.frustumCulled = canopies.frustumCulled = false;
+      group.add(trunks, canopies);
+
+      // cherries hanging under the canopies — glossy little spheres
+      const cg = new THREE.SphereGeometry(0.55, 12, 12);
+      {
+        const pa = cg.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.62 + (pa.getY(i) / 0.55 + 1) * 0.28; // top highlight = gloss
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        cg.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
+      cherries = new THREE.InstancedMesh(
+        cg,
+        new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
+        NCHERRY
+      );
+      cherries.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(NCHERRY * 3), 3);
+      cherries.frustumCulled = false;
+      group.add(cherries);
+
+      for (let i = 0; i < TREES; i++) resetTree(i, -i * (SPAN / TREES));
+      cPop.fill(0);
+
+      // giant hero cherries that bounce on the beat: body + partner + stem
+      heroes.length = 0;
+      for (let i = 0; i < HEROES; i++) {
+        const body = new THREE.Mesh(new THREE.SphereGeometry(1.7, 18, 18),
+          new THREE.MeshBasicMaterial({ toneMapped: false }));
+        const pal = new THREE.Mesh(new THREE.SphereGeometry(1.35, 16, 16), body.material.clone());
+        const halo = glowSprite(7);
+        group.add(body, pal, halo);
+        heroes.push({ body, pal, halo, z: -30 - i * (SPAN / HEROES), y: 0, vy: 0, seed: Math.random() * 10 });
+      }
+
+      // blossom petals drifting down
+      const pp = new Float32Array(PETALS * 3);
+      for (let i = 0; i < PETALS; i++) {
+        pp[i * 3] = (Math.random() - 0.5) * 140;
+        pp[i * 3 + 1] = Math.random() * 26;
+        pp[i * 3 + 2] = -Math.random() * SPAN;
+      }
+      const pg = new THREE.BufferGeometry();
+      pg.setAttribute('position', new THREE.BufferAttribute(pp, 3).setUsage(THREE.DynamicDrawUsage));
+      petals = new THREE.Points(pg, glowPoints(0.8, 0.75));
+      petals.frustumCulled = false;
+      group.add(petals);
+
+      // pop burst rings
+      bursts = [];
+      for (let i = 0; i < 6; i++) {
+        const m = new THREE.Mesh(
+          new THREE.RingGeometry(0.9, 1, 40),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0, side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        m.visible = false;
+        m.userData = { life: 0 };
+        group.add(m);
+        bursts.push(m);
+      }
+
+      sun = glowSprite(60);
+      sun.material.fog = false;
+      group.add(sun);
+
+      sky = skyDome(340);
+      group.add(sky);
+
+      travel = 0;
+      camera.fov = 70;
+      camera.updateProjectionMatrix();
+    },
+
+    setInput(x) { pointer.x = x; pointer.active = true; },
+
+    // fellow wanderers float through the orchard as cherry-fireflies
+    placeGhost(p, i, out) {
+      const z = camera.position.z - 20 - (i % 6) * 10;
+      out.set(pathX(z) + p.x * 10 + Math.sin(i * 2.9) * 6, 4 + Math.sin(i * 1.7) * 2, z);
+    },
+
+    // tap: POP the nearest cherry — burst ring + it regrows later
+    onTap(x, y) {
+      const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
+      const dir = v.sub(camera.position).normalize();
+      const cp = new THREE.Vector3();
+      const m4 = new THREE.Matrix4();
+      let best = -1, bestD = 1e9;
+      for (let i = 0; i < NCHERRY; i++) {
+        if (cPop[i] > 0) continue;
+        cherries.getMatrixAt(i, m4);
+        cp.setFromMatrixPosition(m4).sub(camera.position);
+        const along = cp.dot(dir);
+        if (along < 4 || along > 140) continue;
+        const d = cp.clone().cross(dir).length() / Math.max(1, along * 0.06);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      if (best >= 0 && bestD < 30) {
+        cPop[best] = 5; // seconds until it regrows
+        cherries.getMatrixAt(best, m4);
+        const b = bursts.find(x2 => !x2.visible) || bursts[0];
+        b.visible = true;
+        b.userData.life = 1;
+        b.position.setFromMatrixPosition(m4);
+        b.scale.setScalar(0.6);
+        b.quaternion.copy(camera.quaternion);
+      }
+    },
+
+    update(dt, audio, participants, opts) {
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+
+      travel += dt * (4 + audio.volume * 9 + audio.energy * 4);
+      const camZ = -travel;
+      if (attract || !pointer.active) steer += (Math.sin(time * 0.22) * 0.4 - steer) * Math.min(1, dt);
+      else steer += (pointer.x - steer) * Math.min(1, dt * 1.5);
+
+      if (participants && participants[0]) {
+        participants[0].x = steer;
+        participants[0].y = 0;
+      }
+
+      camera.position.set(pathX(camZ) + steer * 9, 4.8 + Math.sin(time * 0.4) * 0.5, camZ);
+      camera.lookAt(pathX(camZ - 50), 7.5, camZ - 50);
+      camera.rotation.z += steer * -0.04;
+
+      // ground: themed dusk meadow
+      ground.position.z = camZ - SPAN / 2 + 50;
+      const gp = ground.geometry.attributes.position;
+      const gc = ground.geometry.attributes.color;
+      const gCols = 31, gRows = 61;
+      for (let r = 0; r < gRows; r++) {
+        for (let c2 = 0; c2 < gCols; c2++) {
+          const i = r * gCols + c2;
+          const wz = ground.position.z + (r / (gRows - 1) - 0.5) * (SPAN + 80);
+          const wx = (c2 / (gCols - 1) - 0.5) * 240;
+          gp.setY(i, hillY(wx, wz));
+          const jitv = Math.abs(Math.sin(c2 * 12.99 + r * 78.23));
+          const crest = Math.max(0, hillY(wx, wz)) * 0.18; // crests catch the dusk light
+          themePaint(colorMode, hue / 360, 0.08, wz * 0.01, time, audio.volume * 0.5, jitv, tp);
+          color.setHSL(tp[0], tp[1] * 0.12, Math.min(0.055, 0.015 + crest * 0.3 + audio.volume * 0.012));
+          gc.setXYZ(i, color.r, color.g, color.b);
+        }
+      }
+      gp.needsUpdate = true;
+      gc.needsUpdate = true;
+
+      // trees recycle down the orchard rows
+      let ci = 0;
+      for (let i = 0; i < TREES; i++) {
+        if (tz[i] > camZ + 25) resetTree(i, tz[i] - SPAN);
+        const gy = hillY(tx[i], tz[i]);
+        const sway = Math.sin(time * 0.6 + tseed[i] * 9) * 0.05;
+
+        dummy.position.set(tx[i], gy + th[i] / 2, tz[i]);
+        dummy.scale.set(1, th[i], 1);
+        dummy.rotation.set(0, 0, sway * 0.4);
+        dummy.updateMatrix();
+        trunks.setMatrixAt(i, dummy.matrix);
+
+        const canopyR = th[i] * 0.55 * (1 + audio.bass * 0.08 * reactivity);
+        dummy.position.set(tx[i], gy + th[i] + canopyR * 0.4, tz[i]);
+        dummy.scale.setScalar(canopyR);
+        dummy.rotation.set(sway, tseed[i] * 6, sway);
+        dummy.updateMatrix();
+        canopies.setMatrixAt(i, dummy.matrix);
+        themePaint(colorMode, hue / 360, 0.55 + tseed[i] * 0.3, tz[i] * 0.01, time, audio.mid, tseed[i], tp);
+        color.setHSL(tp[0], tp[1] * 0.8, Math.min(0.3, 0.12 + audio.mid * 0.12 * Math.min(1.4, tp[2])));
+        canopies.setColorAt(i, color);
+
+        // cherries hang under the canopy rim, each tuned to a band
+        for (let c2 = 0; c2 < CHERRIES_PER; c2++, ci++) {
+          const a = (c2 / CHERRIES_PER) * Math.PI * 2 + tseed[i] * 7;
+          const level = audio[BANDS[(i + c2) % BANDS.length]];
+          if (cPop[ci] > 0) {
+            cPop[ci] -= dt;
+            dummy.scale.setScalar(0.001); // popped: gone until it regrows
+          } else {
+            const swing = Math.sin(time * 1.1 + ci) * 0.25;
+            dummy.position.set(
+              tx[i] + Math.cos(a) * canopyR * 0.75 + swing,
+              gy + th[i] + canopyR * 0.4 - canopyR * 0.8 - Math.abs(Math.sin(ci * 3.3)) * 1.2,
+              tz[i] + Math.sin(a) * canopyR * 0.75
+            );
+            dummy.scale.setScalar(1 + level * 1.1 * reactivity + audio.beatIntensity * 0.15);
+          }
+          dummy.rotation.set(0, 0, 0);
+          dummy.updateMatrix();
+          cherries.setMatrixAt(ci, dummy.matrix);
+          // cherry red, warmed toward the hue in follow-hue modes
+          const cherryHue = 0.975 + level * 0.03;
+          color.setHSL(cherryHue % 1, 0.95, Math.min(0.62, 0.3 + level * 0.4 * reactivity + audio.beatIntensity * 0.1));
+          cherries.setColorAt(ci, color);
+        }
+      }
+      trunks.instanceMatrix.needsUpdate = true;
+      canopies.instanceMatrix.needsUpdate = true;
+      canopies.instanceColor.needsUpdate = true;
+      cherries.instanceMatrix.needsUpdate = true;
+      cherries.instanceColor.needsUpdate = true;
+
+      // hero cherries bounce down the path on beats
+      for (const hcherry of heroes) {
+        if (hcherry.z > camZ + 20) hcherry.z -= SPAN;
+        const gx = pathX(hcherry.z) + Math.sin(hcherry.seed * 9) * 8;
+        const gy = hillY(gx, hcherry.z) + 1.7;
+        hcherry.vy -= 34 * dt;
+        if (audio.beat && hcherry.y <= gy + 0.2) hcherry.vy = 9 + audio.beatIntensity * 14 * reactivity;
+        hcherry.y = Math.max(gy, hcherry.y + hcherry.vy * dt);
+        if (hcherry.y === gy && hcherry.vy < 0) hcherry.vy = 0;
+
+        const squash = hcherry.y <= gy + 0.1 && Math.abs(hcherry.vy) < 1 ? 0.92 : 1.05;
+        hcherry.body.position.set(gx, hcherry.y, hcherry.z);
+        hcherry.body.scale.set(1 / squash, squash, 1 / squash);
+        hcherry.pal.position.set(gx + 2.1, hcherry.y - 0.4, hcherry.z + 0.4);
+        color.setHSL(0.978, 0.95, 0.42 + audio.bass * 0.15);
+        hcherry.body.material.color.copy(color);
+        hcherry.pal.material.color.copy(color).multiplyScalar(0.9);
+        hcherry.halo.position.set(gx + 1, hcherry.y, hcherry.z);
+        hcherry.halo.material.color.copy(color);
+        hcherry.halo.material.opacity = 0.3 + audio.bass * 0.25;
+      }
+
+      // petals fall with the highs, drift, wrap
+      const ppos = petals.geometry.attributes.position;
+      for (let i = 0; i < PETALS; i++) {
+        let y = ppos.getY(i) - dt * (0.8 + audio.high * 3);
+        if (y < 0) y = 24 + Math.random() * 4;
+        ppos.setY(i, y);
+        ppos.setX(i, ppos.getX(i) + Math.sin(time * 0.8 + i) * dt * 1.5);
+        const z = ppos.getZ(i);
+        if (z > camZ + 15) ppos.setZ(i, z - SPAN);
+      }
+      ppos.needsUpdate = true;
+      color.setHSL(0.93, 0.7, 0.5 + audio.high * 0.2);
+      petals.material.color.copy(color);
+      petals.material.size = 0.8 + audio.high * 0.5;
+
+      // pop bursts
+      for (const b of bursts) {
+        if (!b.visible) continue;
+        b.userData.life -= dt * 2.2;
+        if (b.userData.life <= 0) { b.visible = false; continue; }
+        b.scale.addScalar(dt * 30);
+        b.quaternion.copy(camera.quaternion);
+        color.setHSL(0.97, 0.95, 0.6);
+        b.material.color.copy(color);
+        b.material.opacity = b.userData.life * 0.9;
+      }
+
+      // dusk sun + themed sky
+      sun.position.set(pathX(camZ - 280) - 30, 30, camZ - 300);
+      color.setHSL(0.05, 0.85, 0.6);
+      sun.material.color.copy(color);
+      sun.material.opacity = 0.5 + audio.energy * 0.2;
+      sky.position.copy(camera.position);
+      themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
+      sky.material.color.setHSL(tp[0], tp[1] * 0.5, 0.24 + audio.energy * 0.15);
+
+      const fovT = 70 + audio.volume * 6 * reactivity + audio.beatIntensity * 3;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
+      camera.updateProjectionMatrix();
+    },
+
+    dispose() {
+      scene.fog = null;
+      group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+      scene.remove(group);
+      heroes.length = 0;
+      bursts = [];
+    },
+  };
+}
