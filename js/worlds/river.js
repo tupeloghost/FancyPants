@@ -7,12 +7,12 @@ import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
-const WW = 90, WL = 340;
+const WW = 38, WL = 340;
 const LANTERNS = 56;
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createRiver() {
-  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam, tube, banks;
+  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam, tube, banks, reflections;
   const foamLat = new Float32Array(130);
   let drift = 0;
   const tp = [0, 0, 0];
@@ -71,7 +71,7 @@ export function createRiver() {
       // so recycling is seamless — no visible teleports
       for (let i = 0; i < LANTERNS; i++) {
         lz[i] = -Math.floor(i / 2) * (WL / (LANTERNS / 2));
-        lside[i] = (i % 2 ? 1 : -1) * (16 + Math.random() * 7);
+        lside[i] = (i % 2 ? 1 : -1) * (13 + Math.random() * 3);
         lh[i] = 2.5 + Math.random() * 4;
         lband[i] = i % BANDS.length;
       }
@@ -79,7 +79,7 @@ export function createRiver() {
       // fireflies over the water
       const fp = new Float32Array(240 * 3);
       for (let i = 0; i < 240; i++) {
-        fp[i * 3] = (Math.random() - 0.5) * 70;
+        fp[i * 3] = (Math.random() - 0.5) * 44;
         fp[i * 3 + 1] = 1 + Math.random() * 9;
         fp[i * 3 + 2] = -Math.random() * WL;
       }
@@ -100,16 +100,38 @@ export function createRiver() {
         foam = new THREE.Points(fog2, glowPoints(0.55, 0.55));
         foam.frustumCulled = false;
         group.add(foam);
-        for (let i = 0; i < 130; i++) foamLat[i] = (Math.random() - 0.5) * 24;
+        for (let i = 0; i < 130; i++) foamLat[i] = (Math.random() - 0.5) * (WW * 0.7);
       }
 
-      // YOUR inner tube — visible at the bottom of the frame, riding the water
-      tube = new THREE.Mesh(
-        new THREE.TorusGeometry(1.55, 0.5, 14, 36),
-        new THREE.MeshBasicMaterial({ toneMapped: false })
+      // YOUR pool float — striped like the real thing, you sit inside it
+      {
+        const tg = new THREE.TorusGeometry(1.5, 0.55, 14, 40);
+        const pa = tg.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          // stripes around the ring + a little top-light
+          const ang = Math.atan2(pa.getY(i), pa.getX(i));
+          const stripe = Math.floor(((ang / (Math.PI * 2)) + 1) * 8) % 2 ? 1.0 : 0.42;
+          vc[i * 3] = stripe; vc[i * 3 + 1] = stripe; vc[i * 3 + 2] = stripe;
+        }
+        tg.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+        tube = new THREE.Mesh(tg, new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }));
+        group.add(tube);
+      }
+
+      // lantern light lies on the water: streak reflections, the thing that
+      // makes a dark surface read as WATER
+      reflections = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.7, 0.04, 7.5),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0.55,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+        LANTERNS
       );
-      tube.rotation.x = Math.PI / 2;
-      group.add(tube);
+      reflections.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(LANTERNS * 3), 3);
+      reflections.frustumCulled = false;
+      group.add(reflections);
 
       // shore lines: soft glowing banks containing the river
       banks = new THREE.InstancedMesh(
@@ -194,18 +216,22 @@ export function createRiver() {
         (0.5 + audio.volume * 1.6 * reactivity);
       const camX = riverX(camZ) + steer * 8;
       const ride = swellAt(camX, camZ);
-      camera.position.set(camX, 2.7 + ride * 0.85, camZ);
+      camera.position.set(camX, 2.35 + ride * 0.85, camZ);
       // lazy tube spin: your gaze wanders side to side like a drifting float
       const wander = Math.sin(time * 0.13) * 14;
       camera.lookAt(riverX(camZ - 45) + wander, 2.1 + ride * 0.4, camZ - 45);
       camera.rotation.z += Math.sin(time * 0.21) * 0.035 + steer * -0.05 + ride * 0.02;
 
-      // the tube bobs under you, tilting with the water
-      tube.position.set(camX + Math.sin(time * 0.4) * 0.2, 0.15 + ride * 0.9, camZ - 3.9);
-      tube.rotation.x = Math.PI / 2 + swellAt(camX, camZ - 6) * 0.06;
-      tube.rotation.z = Math.sin(time * 0.35) * 0.08 + steer * 0.1;
+      // you SIT in the float: centered below the camera, slowly spinning
+      // the way a drifting tube does, tilting with the water under it
+      tube.position.set(camX, 0.55 + ride * 0.9, camZ - 2.3);
+      tube.rotation.set(
+        Math.PI / 2 + swellAt(camX, camZ - 4) * 0.07 + 0.06,
+        0,
+        time * 0.1 + steer * 0.15 // the lazy spin
+      );
       themePaint(colorMode, hue / 360, 0.85, drift * 0.01, time, audio.volume, 0.7, tp);
-      color.setHSL(tp[0], tp[1], Math.min(0.5, 0.28 * Math.min(1.4, tp[2])));
+      color.setHSL(tp[0], tp[1], Math.min(0.52, 0.3 * Math.min(1.4, tp[2])));
       tube.material.color.copy(color);
 
       // water: gentle swells + the waveform breathing through the surface
@@ -228,7 +254,7 @@ export function createRiver() {
           const bright = 0.06 + Math.max(0, swell) * (0.12 + audio.volume * 0.3);
           const jitv = Math.abs(Math.sin(c * 12.99 + r * 78.23));
           themePaint(colorMode, hue / 360, 0.15 + Math.max(0, swell) * 0.5, wz * 0.02 + time * 0.1, time, audio.volume, jitv, tp);
-          color.setHSL(tp[0], tp[1] * 0.85, Math.min(0.6, bright * Math.min(1.6, tp[2]) * 3));
+          color.setHSL(tp[0], tp[1] * 0.8, Math.min(0.3, bright * Math.min(1.5, tp[2]) * 1.7));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
@@ -255,7 +281,18 @@ export function createRiver() {
         lanterns.setColorAt(i, color);
         gpos.setXYZ(i, x, lh[i], z);
         gcol.setXYZ(i, color.r, color.g, color.b);
+
+        // its light lying on the water, wobbling with the swell
+        const rx = riverX(z) + lside[i] * 0.55; // reflection sits toward the water
+        dummy.position.set(rx, 0.08, z - 1.5);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, 1, 1 + swellAt(rx, z) * 0.5 + level * 1.2);
+        dummy.updateMatrix();
+        reflections.setMatrixAt(i, dummy.matrix);
+        reflections.setColorAt(i, color);
       }
+      reflections.instanceMatrix.needsUpdate = true;
+      reflections.instanceColor.needsUpdate = true;
       lanterns.instanceMatrix.needsUpdate = true;
       lanterns.instanceColor.needsUpdate = true;
       gpos.needsUpdate = true;
@@ -278,7 +315,7 @@ export function createRiver() {
       for (let i = 0; i < 64; i++) {
         const side = i % 2 ? 1 : -1;
         let z = camZ + 10 - Math.floor(i / 2) * 10.5;
-        dummy.position.set(riverX(z) + side * (WW * 0.42), 0.25 + Math.sin(z * 0.2) * 0.15, z);
+        dummy.position.set(riverX(z) + side * (WW * 0.5 + 2.5), 0.25 + Math.sin(z * 0.2) * 0.15, z);
         dummy.rotation.set(0, Math.atan2(riverX(z - 6) - riverX(z + 6), 12), 0);
         dummy.scale.set(1, 1, 1);
         dummy.updateMatrix();
