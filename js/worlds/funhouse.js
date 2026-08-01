@@ -221,16 +221,15 @@ export function createFunhouse() {
       floor.material.opacity = 0.26 + audio.bass * 0.2;
       sky.material.color.copy(color);
 
-      // IN the pit: eye-level with the balls, wading behind your own,
-      // slowly circling so the view keeps changing
-      const camAng = time * 0.028;
-      const camTX = px[me] - Math.sin(camAng) * 9;
-      const camTZ = pz[me] - Math.cos(camAng) * 9;
-      camera.position.x += (camTX - camera.position.x) * Math.min(1, dt * 1.1);
-      camera.position.z += (camTZ - camera.position.z) * Math.min(1, dt * 1.1);
-      camera.position.y += ((4.4 + audio.bass * 0.35) - camera.position.y) * Math.min(1, dt * 1.1);
-      camera.lookAt(px[me] + Math.sin(camAng) * 8, 3.2, pz[me] + Math.cos(camAng) * 8);
-      camera.rotation.z += Math.sin(time * 0.3) * 0.008;
+      // IN the pit: a slow, steady glide at ball level — no chasing, no
+      // snapping. The pit moves; the camera barely does.
+      const camAng = time * 0.02;
+      camera.position.set(
+        Math.sin(camAng) * 20,
+        4.6 + Math.sin(time * 0.15) * 0.3,
+        Math.cos(camAng) * 20
+      );
+      camera.lookAt(Math.sin(camAng + 2.4) * 8, 3.4, Math.cos(camAng + 2.4) * 8);
 
       // nearby balls shoulder away from the lens so it never sits inside one
       for (let i = 0; i < active; i++) {
