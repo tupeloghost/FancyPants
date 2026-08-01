@@ -52,7 +52,19 @@ export function createTunnel() {
       scene.fog = new THREE.FogExp2(0x000208, 0.016);
 
       const geo = new THREE.BoxGeometry(1, 0.35, RING_SPACING * 0.82);
-      const mat = new THREE.MeshBasicMaterial({ toneMapped: false });
+      // radial shading gradient baked into vertex colors (multiplies the
+      // per-instance color): inner edge darker, outer edge brighter — the
+      // segments read as lit, beveled material instead of flat paint
+      {
+        const pa = geo.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.72 + (pa.getY(i) / 0.35 + 0.5) * 0.42;
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
+      const mat = new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true });
       wall = new THREE.InstancedMesh(geo, mat, RINGS * SEGS);
       wall.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       wall.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * SEGS * 3), 3);
@@ -137,6 +149,7 @@ export function createTunnel() {
         let twist;
         switch (pattern) {
           case 'stripes': twist = 0; break;                                   // aligned lanes
+          case 'plaid':   twist = 0; break;                                   // aligned grid for crossing stripes
           case 'kaleido': twist = (r % 2 ? 1 : -1) * travel * 0.012; break;   // counter-rotating rings
           case 'checker': twist = (r % 2) * (Math.PI / SEGS); break;          // offset alternate rings
           default:        twist = ringSeed[r] * 0.1 + travel * 0.006;         // spiral (and waves)
@@ -144,9 +157,13 @@ export function createTunnel() {
 
         for (let s = 0; s < SEGS; s++) {
           const a = (s / SEGS) * Math.PI * 2 + twist;
-          // each sector driven by a band
-          const band = BANDS[s % BANDS.length];
-          const level = audio[band];
+          // each sector driven by a band — blended with its neighbor so the
+          // levels (and colors) flow around the ring instead of hard-stepping
+          const bt = (s / SEGS) * BANDS.length;
+          const b0 = Math.floor(bt) % BANDS.length;
+          const b1 = (b0 + 1) % BANDS.length;
+          const bf = bt - Math.floor(bt);
+          const level = audio[BANDS[b0]] * (1 - bf) + audio[BANDS[b1]] * bf;
           let segRadius = radius * (1 + level * 0.18 * reactivity);
           if (pattern === 'waves') {
             segRadius += Math.sin(a * 3 + travel * 0.12) * (1 + audio.mid * 2 * reactivity);
@@ -184,14 +201,21 @@ export function createTunnel() {
               h = pal[(r + s) % pal.length];
               break;
             }
-            default:        h = ((hue / 360) + (s % BANDS.length) * 0.045 + audio.energy * 0.08) % 1; // rainbow
+            default:        h = ((hue / 360) + (s / SEGS) * 0.24 + audio.energy * 0.08) % 1; // rainbow, continuous
           }
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
           const lum = 0.05 + 0.45 * (1 - Math.exp(-2.2 * drive));
           // HDR: full saturation, then push past 1.0 with the band level so
           // bloom glows in the segment's own color instead of washing white
+          let weave = 1;
+          if (pattern === 'plaid') {
+            const ringBand = (r % 6) < 3;          // stripes along the tube
+            const segBand = (s % 4) < 2;           // stripes around the tube
+            weave = ringBand && segBand ? 1.25 : (ringBand || segBand ? 0.85 : 0.45);
+            if (ringBand !== segBand) h = (h + 0.06) % 1; // crossings shift hue like thread-over-thread
+          }
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
-          color.multiplyScalar((0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost);
+          color.multiplyScalar((0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
           wall.setColorAt(idx, color);
           idx++;
         }
