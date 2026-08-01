@@ -129,6 +129,20 @@ const panel = $('panel');
 
 $('panel-head').addEventListener('click', () => panel.classList.toggle('collapsed'));
 
+// tabs: music / style / tune — remembered across sessions
+document.querySelectorAll('#tabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#tabs .tab').forEach(x => x.classList.toggle('on', x === t));
+    document.querySelectorAll('.tab-page').forEach(pg =>
+      pg.classList.toggle('on', pg.id === 'page-' + t.dataset.tab));
+    localStorage.setItem('fp_tab', t.dataset.tab);
+  });
+});
+{
+  const saved = localStorage.getItem('fp_tab');
+  if (saved) document.querySelector(`#tabs .tab[data-tab="${saved}"]`)?.click();
+}
+
 // world select
 for (const [key, w] of Object.entries(WORLDS)) {
   const opt = document.createElement('option');
