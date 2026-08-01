@@ -3,13 +3,14 @@
 // explosive. Growth persists for the whole session (until world switch).
 
 import * as THREE from 'three';
+import { glowSprite, glowPoints } from '../lib/glow.js';
 
 const MAX_CRYSTALS = 2600;
 const MAX_STEMS = 2600;
 
 export function createBloom() {
   let scene, camera, group;
-  let crystals, stems, spores, ground;
+  let crystals, stems, spores, ground, growerLight;
   let nCrystals = 0, nStems = 0;
   const recentIdx = [];      // most recent crystals pulse with the beat
   const recentHue = [];
@@ -96,8 +97,12 @@ export function createBloom() {
       }
       const spg = new THREE.BufferGeometry();
       spg.setAttribute('position', new THREE.BufferAttribute(spp, 3));
-      spores = new THREE.Points(spg, new THREE.PointsMaterial({ size: 0.28, transparent: true, opacity: 0.7, toneMapped: false }));
+      spores = new THREE.Points(spg, glowPoints(0.9, 0.7));
       group.add(spores);
+
+      // the grower is a visible wandering light — the world's focal point
+      growerLight = glowSprite(9);
+      group.add(growerLight);
 
       // faint ground disc so the garden sits somewhere
       ground = new THREE.Mesh(
@@ -159,6 +164,13 @@ export function createBloom() {
         }
         crystals.instanceColor.needsUpdate = true;
       }
+
+      // grower light breathes with the music and flares on beats
+      growerLight.position.copy(grower);
+      growerLight.scale.setScalar(9 * (1 + audio.volume * 1.4 * reactivity + audio.beatIntensity * 0.8));
+      color.setHSL(((hue / 360) + 0.05) % 1, 0.85, 0.6);
+      growerLight.material.color.copy(color);
+      growerLight.material.opacity = 0.45 + audio.volume * 0.4 + audio.beatIntensity * 0.3;
 
       // spores drift up and shimmer with the highs
       spores.rotation.y += dt * 0.03;

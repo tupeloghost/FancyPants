@@ -60,7 +60,10 @@ export function createTunnel() {
       for (let i = 0; i < BEAT_RING_POOL; i++) {
         const m = new THREE.Mesh(
           torusGeo,
-          new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0 })
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
         );
         m.visible = false;
         m.userData = { life: 0, z: 0, fired: false };

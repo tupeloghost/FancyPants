@@ -2,6 +2,7 @@
 // the dominant frequency band. Never fades. (PNG export: press S — shell-level.)
 
 import * as THREE from 'three';
+import { glowSprite, glowPoints } from '../lib/glow.js';
 
 const MAX_POINTS = 14000;   // capped total segment count
 const MIN_DIST = 0.22;
@@ -10,7 +11,7 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon, headOrb, stars;
+  let scene, camera, group, ribbon, headOrb, headHalo, stars;
   let nPoints = 0;
   const camPos = new THREE.Vector3(0, 8, 42);
   let head = new THREE.Vector3();
@@ -47,7 +48,10 @@ export function createTrail() {
       geo.setDrawRange(0, 0);
       ribbon = new THREE.Mesh(
         geo,
-        new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, toneMapped: false })
+        new THREE.MeshBasicMaterial({
+          vertexColors: true, side: THREE.DoubleSide, toneMapped: false,
+          transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+        })
       );
       ribbon.frustumCulled = false;
       group.add(ribbon);
@@ -58,6 +62,8 @@ export function createTrail() {
         new THREE.MeshBasicMaterial({ toneMapped: false })
       );
       group.add(headOrb);
+      headHalo = glowSprite(6);
+      group.add(headHalo);
 
       // sparse starfield for depth
       const sp = new Float32Array(500 * 3);
@@ -67,7 +73,8 @@ export function createTrail() {
       }
       const sg = new THREE.BufferGeometry();
       sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-      stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 0.5, color: 0x66779a, toneMapped: false }));
+      stars = new THREE.Points(sg, glowPoints(1.4, 0.65));
+      stars.material.color.set(0x66779a);
       group.add(stars);
 
       nPoints = 0;
@@ -130,6 +137,10 @@ export function createTrail() {
       headOrb.scale.setScalar(1 + audio.volume * 1.2 * reactivity + kick * 1.5);
       color.setHSL((hue / 360) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
       headOrb.material.color.copy(color);
+      headHalo.position.copy(head);
+      headHalo.scale.setScalar(6 * (1 + audio.volume * 1.5 + kick * 2));
+      headHalo.material.color.copy(color);
+      headHalo.material.opacity = 0.5 + audio.volume * 0.4;
 
       // camera loosely chases the head, orbiting as it goes
       const r = 34 + Math.sin(time * 0.06) * 5;

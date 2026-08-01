@@ -2,6 +2,7 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
+import { glowSprite, glowPoints } from '../lib/glow.js';
 
 const COLS = 64;            // one column per spectrum bin
 const ROWS = 96;            // rows of spectrum history scrolling toward camera
@@ -43,11 +44,10 @@ export function createSurfer() {
       );
       sun.position.set(0, 16, -230);
       group.add(sun);
-      sunHalo = new THREE.Mesh(
-        new THREE.RingGeometry(26, 44, 48),
-        new THREE.MeshBasicMaterial({ toneMapped: false, fog: false, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
-      );
+      sunHalo = glowSprite(190);
+      sunHalo.material.fog = false;
       sunHalo.position.copy(sun.position);
+      sunHalo.position.z += 2;
       group.add(sunHalo);
 
       // stars above the horizon
@@ -59,7 +59,9 @@ export function createSurfer() {
       }
       const sg = new THREE.BufferGeometry();
       sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-      stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.1, color: 0xaabbee, toneMapped: false, fog: false }));
+      stars = new THREE.Points(sg, glowPoints(2.4, 0.8));
+      stars.material.color.set(0xaabbee);
+      stars.material.fog = false;
       group.add(stars);
 
       camera.position.set(0, 10, 40);
@@ -129,11 +131,11 @@ export function createSurfer() {
       // sun pulses with bass, hue-complementary so it pops against the grid
       const sunScale = 1 + audio.bass * 0.35 * reactivity + audio.beatIntensity * 0.15;
       sun.scale.setScalar(sunScale);
-      sunHalo.scale.setScalar(sunScale * (1.05 + audio.beatIntensity * 0.3));
+      sunHalo.scale.setScalar(190 * sunScale * (1 + audio.beatIntensity * 0.25));
       color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.55 + audio.bass * 0.15);
       sun.material.color.copy(color);
       sunHalo.material.color.copy(color);
-      sunHalo.material.opacity = 0.2 + audio.beatIntensity * 0.5;
+      sunHalo.material.opacity = 0.55 + audio.beatIntensity * 0.4;
 
       // camera rides the wave
       const camH = 9 + audio.volume * 5 * reactivity + jumpY;

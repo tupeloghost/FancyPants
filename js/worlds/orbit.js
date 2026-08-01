@@ -2,13 +2,14 @@
 // expand outward; you steer through the gaps with a single axis (radius).
 
 import * as THREE from 'three';
+import { glowSprite, glowPoints } from '../lib/glow.js';
 
 const SHAPE_POOL = 24;
 const STARS = 600;
 
 export function createOrbit() {
   let scene, camera, group;
-  let core, coreWire, coreHot, stars, player, swarm, trail;
+  let core, coreWire, coreHot, coreHalo, stars, player, swarm, trail;
   let shapes = [];
   let trailPts = [];
   let angle = 0;
@@ -38,7 +39,8 @@ export function createOrbit() {
         new THREE.SphereGeometry(1.4, 16, 16),
         new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
       );
-      group.add(core, coreWire, coreHot);
+      coreHalo = glowSprite(24);
+      group.add(core, coreWire, coreHot, coreHalo);
 
       // particle swarm around the core
       const swp = new Float32Array(700 * 3);
@@ -48,7 +50,7 @@ export function createOrbit() {
       }
       const swg = new THREE.BufferGeometry();
       swg.setAttribute('position', new THREE.BufferAttribute(swp, 3));
-      swarm = new THREE.Points(swg, new THREE.PointsMaterial({ size: 0.22, transparent: true, opacity: 0.9, toneMapped: false }));
+      swarm = new THREE.Points(swg, glowPoints(0.7, 0.85));
       group.add(swarm);
 
       // player trail
@@ -56,17 +58,25 @@ export function createOrbit() {
       const tg = new THREE.BufferGeometry();
       tg.setAttribute('position', new THREE.BufferAttribute(tp, 3).setUsage(THREE.DynamicDrawUsage));
       tg.setDrawRange(0, 0);
-      trail = new THREE.Line(tg, new THREE.LineBasicMaterial({ transparent: true, opacity: 0.7, toneMapped: false }));
+      trail = new THREE.Line(tg, new THREE.LineBasicMaterial({
+        transparent: true, opacity: 0.85, toneMapped: false,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }));
       trail.frustumCulled = false;
       group.add(trail);
       trailPts = [];
 
       // beat shapes: expanding rings in random orientations
-      const ringGeo = new THREE.TorusGeometry(1, 0.12, 6, 64);
+      // thin tube relative to radius — rings are uniform-scaled up to ~40x,
+      // so the tube must stay proportionally hairline or they become donuts
+      const ringGeo = new THREE.TorusGeometry(1, 0.02, 6, 64);
       for (let i = 0; i < SHAPE_POOL; i++) {
         const m = new THREE.Mesh(
           ringGeo,
-          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, toneMapped: false })
+          new THREE.MeshBasicMaterial({
+            transparent: true, opacity: 0, toneMapped: false,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
         );
         m.visible = false;
         m.userData = { r: 0, speed: 0 };
@@ -82,7 +92,8 @@ export function createOrbit() {
       }
       const sg = new THREE.BufferGeometry();
       sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-      stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 0.6, color: 0x8899bb, toneMapped: false }));
+      stars = new THREE.Points(sg, glowPoints(1.6, 0.7));
+      stars.material.color.set(0x8899bb);
       group.add(stars);
 
       // local player mote
@@ -123,6 +134,10 @@ export function createOrbit() {
       color.setHSL(((opts.hue / 360) + 0.08) % 1, 0.9, 0.6 + audio.beatIntensity * 0.1);
       coreWire.material.color.copy(color);
       coreHot.scale.setScalar(s * (0.9 + audio.bass * 0.5 + corePulse * 0.6));
+      coreHalo.scale.setScalar(11 * (1 + audio.bass * 0.3 + corePulse * 0.4));
+      color.setHSL((hue / 360) % 1, 0.85, 0.4);
+      coreHalo.material.color.copy(color);
+      coreHalo.material.opacity = 0.3 + audio.bass * 0.25 + corePulse * 0.25;
 
       // swarm breathes with the mids and spins
       swarm.rotation.y += dt * (0.15 + audio.mid * 0.8 * reactivity);
@@ -140,7 +155,7 @@ export function createOrbit() {
         m.userData.r = 3.5;
         m.userData.speed = 9 + (audio.beatIntensity || 0.5) * 18 * reactivity;
         m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-        color.setHSL(((hue / 360) + 0.5 + Math.random() * 0.1) % 1, 0.9, 0.6);
+        color.setHSL(((hue / 360) + 0.5 + Math.random() * 0.1) % 1, 0.9, 0.42);
         m.material.color.copy(color);
       }
       for (const m of shapes) {
@@ -148,7 +163,7 @@ export function createOrbit() {
         m.userData.r += m.userData.speed * dt;
         if (m.userData.r > 55) { m.visible = false; continue; }
         m.scale.setScalar(m.userData.r);
-        m.material.opacity = Math.max(0, 1 - m.userData.r / 50);
+        m.material.opacity = Math.max(0, 0.55 * (1 - m.userData.r / 42));
       }
 
       // player orbits, dragging a glowing trail

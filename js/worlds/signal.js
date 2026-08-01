@@ -2,6 +2,7 @@
 // illuminate as their frequency band strikes them. Fog, mood, no timer.
 
 import * as THREE from 'three';
+import { glowPoints } from '../lib/glow.js';
 
 const COUNT = 320;
 const FIELD = 380;          // world size; camera wraps within it
@@ -9,7 +10,7 @@ const FIELD = 380;          // world size; camera wraps within it
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createSignal() {
-  let scene, camera, group, monoliths, ground;
+  let scene, camera, group, monoliths, reflections, ground, dust;
   let drift = 0;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -42,10 +43,35 @@ export function createSignal() {
       // dark ground so the field reads as a place, not a void
       ground = new THREE.Mesh(
         new THREE.PlaneGeometry(FIELD * 2, FIELD * 2),
-        new THREE.MeshBasicMaterial({ color: 0x04050f, toneMapped: false })
+        new THREE.MeshBasicMaterial({ color: 0x04050f, toneMapped: false, transparent: true, opacity: 0.72 })
       );
       ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.05;
       group.add(ground);
+
+      // mirrored monoliths under the floor — wet-ground reflection
+      reflections = new THREE.InstancedMesh(
+        monoliths.geometry,
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0.28,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+        COUNT
+      );
+      reflections.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(COUNT * 3), 3);
+      group.add(reflections);
+
+      // dust motes hanging in the fog
+      const dp = new Float32Array(700 * 3);
+      for (let i = 0; i < 700; i++) {
+        dp[i * 3] = (Math.random() - 0.5) * FIELD;
+        dp[i * 3 + 1] = 1 + Math.random() * 28;
+        dp[i * 3 + 2] = (Math.random() - 0.5) * FIELD;
+      }
+      const dg = new THREE.BufferGeometry();
+      dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
+      dust = new THREE.Points(dg, glowPoints(0.8, 0.5));
+      group.add(dust);
 
       for (let i = 0; i < COUNT; i++) {
         mx[i] = (Math.random() - 0.5) * FIELD;
@@ -118,6 +144,12 @@ export function createSignal() {
         dummy.updateMatrix();
         monoliths.setMatrixAt(i, dummy.matrix);
 
+        // mirror below the floor
+        dummy.position.y = -dummy.position.y;
+        dummy.scale.y = -dummy.scale.y;
+        dummy.updateMatrix();
+        reflections.setMatrixAt(i, dummy.matrix);
+
         const bandShift = mBand[i] * 0.05;
         color.setHSL(
           ((hue / 360) + bandShift) % 1,
@@ -125,9 +157,17 @@ export function createSignal() {
           0.05 + mLit[i] * 0.65
         );
         monoliths.setColorAt(i, color);
+        reflections.setColorAt(i, color);
       }
       monoliths.instanceMatrix.needsUpdate = true;
       monoliths.instanceColor.needsUpdate = true;
+      reflections.instanceMatrix.needsUpdate = true;
+      reflections.instanceColor.needsUpdate = true;
+
+      // dust shimmers with the highs
+      color.setHSL(((hue / 360) + 0.1) % 1, 0.6, 0.3 + audio.high * 0.4);
+      dust.material.color.copy(color);
+      dust.material.size = 0.8 + audio.high * 0.7;
     },
 
     dispose() {
