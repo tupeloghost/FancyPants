@@ -16,6 +16,10 @@ export function createFunhouse() {
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   let pointer = { x: 0, y: 0, active: false };
+  // first-person swim state
+  const camVel = new THREE.Vector3();
+  const fwd = new THREE.Vector3();
+  let yaw = 0, pitch = 0;
 
   const px = new Float32Array(BALLS), py = new Float32Array(BALLS), pz = new Float32Array(BALLS);
   const vx = new Float32Array(BALLS), vy = new Float32Array(BALLS), vz = new Float32Array(BALLS);
@@ -79,7 +83,11 @@ export function createFunhouse() {
       sky = skyDome(240);
       group.add(sky);
 
-      camera.fov = 72;
+      camera.rotation.order = 'YXZ';
+      camera.position.set(0, 6, ARENA * 0.7);
+      yaw = 0; pitch = -0.05;
+      camVel.set(0, 0, 0);
+      camera.fov = 74;
       camera.updateProjectionMatrix();
     },
 
@@ -98,6 +106,8 @@ export function createFunhouse() {
       const t = (2 - camera.position.y) / (dir.y || -0.0001);
       const hx = Math.max(-ARENA, Math.min(ARENA, camera.position.x + dir.x * Math.abs(t)));
       const hz = Math.max(-ARENA, Math.min(ARENA, camera.position.z + dir.z * Math.abs(t)));
+      // LUNGE: dive hard toward wherever you clicked
+      camVel.addScaledVector(dir, 42);
       // spawn flash so adding balls is unmistakable
       this._flash = { x: hx, z: hz, t: 1 };
       for (let n = 0; n < 18; n++) {
@@ -221,15 +231,28 @@ export function createFunhouse() {
       floor.material.opacity = 0.26 + audio.bass * 0.2;
       sky.material.color.copy(color);
 
-      // IN the pit: a slow, steady glide at ball level — no chasing, no
-      // snapping. The pit moves; the camera barely does.
-      const camAng = time * 0.02;
-      camera.position.set(
-        Math.sin(camAng) * 20,
-        4.6 + Math.sin(time * 0.15) * 0.3,
-        Math.cos(camAng) * 20
-      );
-      camera.lookAt(Math.sin(camAng + 2.4) * 8, 3.4, Math.cos(camAng + 2.4) * 8);
+      // SWIM the pit: the mouse steers — weave with x, dive/climb with y —
+      // while you glide forward through the balls. Clicks lunge you.
+      if (!attract && pointer.active) {
+        yaw -= pointer.x * dt * 1.7;
+        pitch += (pointer.y * 0.85 - pitch) * Math.min(1, dt * 3);
+      } else {
+        yaw += dt * 0.12;
+        pitch += (Math.sin(time * 0.17) * 0.25 - pitch) * Math.min(1, dt * 2);
+      }
+      fwd.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+      const swim = 5.5 + audio.volume * 5 * reactivity;
+      camera.position.addScaledVector(fwd, swim * dt);
+      camera.position.addScaledVector(camVel, dt);
+      camVel.multiplyScalar(Math.max(0, 1 - dt * 2.2)); // lunge fades
+
+      // soft walls: glance off the pit edges, never leave the pit
+      const m2 = ARENA - 2;
+      if (Math.abs(camera.position.x) > m2) { camera.position.x = Math.sign(camera.position.x) * m2; yaw += dt * 2.5; }
+      if (Math.abs(camera.position.z) > m2) { camera.position.z = Math.sign(camera.position.z) * m2; yaw += dt * 2.5; }
+      camera.position.y = Math.min(24, Math.max(1.6, camera.position.y));
+
+      camera.rotation.set(pitch, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1));
 
       // nearby balls shoulder away from the lens so it never sits inside one
       for (let i = 0; i < active; i++) {
