@@ -48,6 +48,23 @@ export function createTunnel() {
     cosmos:   [[0.78, 0.95, 1.0], [0.65, 1.00, 0.95], [0.90, 0.90, 1.05], [0.12, 0.85, 0.9], [0.70, 0.80, 0.8]],
   };
 
+  // smooth cyclic interpolation between palette stops — gradients, not steps
+  function palLerp(pal, t, out) {
+    const n = pal.length;
+    const x = ((t % 1) + 1) % 1 * n;
+    const i0 = Math.floor(x) % n, i1 = (i0 + 1) % n;
+    const f = x - Math.floor(x);
+    const a = pal[i0], b = pal[i1];
+    // shortest-path hue lerp
+    let dh = b[0] - a[0];
+    if (dh > 0.5) dh -= 1; else if (dh < -0.5) dh += 1;
+    out[0] = ((a[0] + dh * f) % 1 + 1) % 1;
+    out[1] = a[1] + (b[1] - a[1]) * f;
+    out[2] = a[2] + (b[2] - a[2]) * f;
+    return out;
+  }
+  const palOut = [0, 0, 0];
+
   function api() { return {
     name: 'TUNNEL',
 
@@ -198,13 +215,17 @@ export function createTunnel() {
           // color mode controls how hue is dealt around the tube, plus the
           // color character (saturation + HDR boost)
           let h, sat = 1.0, boost = 1.0;
+          // depth + flow terms: color drifts down the tube and over time so
+          // the full field is a continuous gradient, never repeated patches
+          const depth = (travel - z) * 0.0022;
+          const flow = time * 0.012;
           switch (colorMode) {
-            case 'mono':    h = (hue / 360) % 1; break;
-            case 'duo':     h = ((hue / 360) + (s % 2) * 0.5) % 1; break;
-            case 'triad':   h = ((hue / 360) + (s % 3) / 3) % 1; break;
-            case 'cycle':   h = ((hue / 360) + time * 0.03 + (s % BANDS.length) * 0.045) % 1; break;
-            case 'pastel':  h = ((hue / 360) + (s % BANDS.length) * 0.045) % 1; sat = 0.45; boost = 0.8; break;
-            case 'neon':    h = ((hue / 360) + (s % 3) / 3) % 1; boost = 1.5; break;
+            case 'mono':    h = ((hue / 360) + depth * 0.3) % 1; break;
+            case 'duo':     h = ((hue / 360) + (s % 2) * 0.5 + depth * 0.25) % 1; break;
+            case 'triad':   h = ((hue / 360) + (s % 3) / 3 + depth * 0.25) % 1; break;
+            case 'cycle':   h = ((hue / 360) + time * 0.03 + (s / SEGS) + depth) % 1; break;
+            case 'pastel':  h = ((hue / 360) + (s / SEGS) * 0.6 + depth * 0.5) % 1; sat = 0.45; boost = 0.8; break;
+            case 'neon':    h = ((hue / 360) + (s % 3) / 3 + depth * 0.4) % 1; boost = 1.5; break;
             case 'random':  h = (ringSeed[r] * 7.13 + s * 0.618) % 1; break; // stable per ring/segment
             case 'glitter-gold': case 'glitter-silver': case 'glitter-rainbow': {
               if (colorMode === 'glitter-gold') { h = 0.10 + (s % 3) * 0.015; sat = 0.85; }
@@ -233,7 +254,8 @@ export function createTunnel() {
           const lum = 0.03 + 0.4 * (1 - Math.exp(-2.2 * drive));
           // stable per-slat jitter so no two neighbors are the same flat swatch
           const jit = Math.abs(Math.sin(ringSeed[r] * 12.9898 + s * 78.233)) ;
-          h = (h + (jit - 0.5) * 0.035 + 1) % 1;
+          // the music bends hue too, not just brightness
+          h = (h + (jit - 0.5) * 0.035 + level * 0.05 + audio.beatIntensity * 0.02 + 1) % 1;
           // HDR: full saturation, then push past 1.0 with the band level so
           // bloom glows in the segment's own color instead of washing white
           let weave = 1;
