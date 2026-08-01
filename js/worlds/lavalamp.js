@@ -1,23 +1,23 @@
-// LAVA LAMP — an actual lamp: tapered glass vessel, glowing bulb in the
-// base, wax that pools at the bottom and breaks off into rising blobs when
-// the music heats it. Bass = heat. Tap pokes a blob.
+// LAVA LAMP — raymarched metaball wax. The blobs are a single continuous
+// liquid field rendered in a fragment shader: they genuinely merge, neck
+// off the pool, and split like real wax. Bass = heat. Tap pokes a blob.
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BLOBS = 11;
-const H = 34;               // interior height of the glass
+const BLOBS = 9;            // moving blobs (+1 pool blob in the field)
+const H = 34;
 const R_BOT = 9.5, R_TOP = 5;
+const MAX_FIELD = 12;       // shader uniform slots
 
 export function createLavaLamp() {
-  let scene, camera, group, sky, glass, baseCone, capCone, bulbGlow, pool, motes, roomGlow, glassShine, liquid;
-  const blobs = [];          // {mesh, halo, y, vy, size, phase, poke}
+  let scene, camera, group, sky, glass, bulbGlow, motes, roomGlow, glassShine, wax;
+  const blobs = [];
   const tp = [0, 0, 0];
-  const color = new THREE.Color();
+  const colBot = new THREE.Color(), colTop = new THREE.Color(), colRim = new THREE.Color();
   let pointer = { x: 0, y: 0, active: false };
 
-  // interior radius of the vessel at height y (y in [-H/2, H/2])
   const profile = y => R_BOT + (R_TOP - R_BOT) * ((y + H / 2) / H);
 
   return {
@@ -29,118 +29,157 @@ export function createLavaLamp() {
       scene.add(group);
       scene.fog = null;
 
-      // the glass: a tapered, faintly luminous vessel
+      // ── the wax: one raymarched metaball field inside a bounding box ──
+      const uniforms = {
+        uBlobs: { value: Array.from({ length: MAX_FIELD }, () => new THREE.Vector4(0, -99, 0, 0.001)) },
+        uCount: { value: 0 },
+        uColBot: { value: colBot },
+        uColTop: { value: colTop },
+        uRim: { value: colRim },
+        uHeat: { value: 0 },
+        uH: { value: H },
+        uRBot: { value: R_BOT },
+        uRTop: { value: R_TOP },
+      };
+      wax = new THREE.Mesh(
+        new THREE.BoxGeometry(R_BOT * 2 + 2, H + 6, R_BOT * 2 + 2),
+        new THREE.ShaderMaterial({
+          uniforms,
+          vertexShader: `
+            varying vec3 vWorld;
+            void main() {
+              vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform vec4 uBlobs[${MAX_FIELD}];
+            uniform int uCount;
+            uniform vec3 uColBot, uColTop, uRim;
+            uniform float uHeat, uH, uRBot, uRTop;
+            varying vec3 vWorld;
+
+            // polynomial smooth-min: THE metaball merge
+            float smin(float a, float b, float k) {
+              float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+              return mix(b, a, h) - k * h * (1.0 - h);
+            }
+
+            float field(vec3 p) {
+              float d = 1e5;
+              for (int i = 0; i < ${MAX_FIELD}; i++) {
+                if (i >= uCount) break;
+                vec4 b = uBlobs[i];
+                d = smin(d, length(p - b.xyz) - b.w, 2.8);
+              }
+              // confine the wax to the tapered vessel
+              float prof = mix(uRBot, uRTop, clamp((p.y + uH * 0.5) / uH, 0.0, 1.0)) - 0.35;
+              d = max(d, length(p.xz) - prof);
+              d = max(d, p.y - uH * 0.5);
+              d = max(d, -(p.y + uH * 0.5 + 0.6)); // floor: wax never leaks below the vessel
+              return d;
+            }
+
+            vec3 fnormal(vec3 p) {
+              vec2 e = vec2(0.06, 0.0);
+              return normalize(vec3(
+                field(p + e.xyy) - field(p - e.xyy),
+                field(p + e.yxy) - field(p - e.yxy),
+                field(p + e.yyx) - field(p - e.yyx)
+              ));
+            }
+
+            void main() {
+              vec3 ro = cameraPosition;
+              vec3 rd = normalize(vWorld - ro);
+              float t = length(vWorld - ro);
+              float tMax = t + uRBot * 2.0 + uH + 8.0;
+              float hit = -1.0;
+              for (int i = 0; i < 64; i++) {
+                vec3 p = ro + rd * t;
+                float d = field(p);
+                if (d < 0.035) { hit = t; break; }
+                t += max(d * 0.9, 0.025);
+                if (t > tMax) break;
+              }
+              if (hit < 0.0) discard;
+              vec3 p = ro + rd * hit;
+              vec3 n = fnormal(p);
+              float h01 = clamp((p.y + uH * 0.5) / uH, 0.0, 1.0);
+              vec3 base = mix(uColBot, uColTop, h01);
+              // lit from the bulb below, rim glow at the silhouette
+              float below = clamp(1.15 - h01 * 1.25, 0.0, 1.2);
+              float fres = pow(1.0 - abs(dot(n, rd)), 2.0);
+              float topLight = max(0.0, n.y) * 0.12;
+              vec3 col = base * (0.32 + below * 0.85 + uHeat * 0.2 + topLight)
+                       + uRim * fres * (0.4 + uHeat * 0.35);
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `,
+        })
+      );
+      group.add(wax);
+
+      // glass vessel + silhouette hardware
       glass = new THREE.Mesh(
         new THREE.CylinderGeometry(R_TOP + 0.6, R_BOT + 0.6, H, 36, 1, true),
         new THREE.MeshBasicMaterial({
-          transparent: true, opacity: 0.08, toneMapped: false,
+          transparent: true, opacity: 0.07, toneMapped: false,
           blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
         })
       );
-      group.add(glass);
+      const dark = new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false });
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(R_BOT + 0.8, R_BOT + 4.5, 9, 36), dark);
+      base.position.y = -H / 2 - 4.5;
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.6, R_TOP + 0.7, 6, 36), dark);
+      cap.position.y = H / 2 + 3;
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 12), dark);
+      knob.position.y = H / 2 + 6.2;
+      group.add(glass, base, cap, knob);
 
-      // metal base and cap silhouettes — the thing reads as an OBJECT
-      baseCone = new THREE.Mesh(
-        new THREE.CylinderGeometry(R_BOT + 0.8, R_BOT + 4.5, 9, 36),
-        new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false })
-      );
-      baseCone.position.y = -H / 2 - 4.5;
-      capCone = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.6, R_TOP + 0.7, 6, 36),
-        new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false })
-      );
-      capCone.position.y = H / 2 + 3;
-      group.add(baseCone, capCone);
-
-      // the liquid: interior column, bright at the bulb fading upward
-      {
-        const lg = new THREE.CylinderGeometry(R_TOP + 0.2, R_BOT + 0.2, H, 28, 24, true);
-        const pa = lg.attributes.position;
-        const vc = new Float32Array(pa.count * 3);
-        for (let i = 0; i < pa.count; i++) {
-          const t = Math.pow(1 - (pa.getY(i) / H + 0.5), 2.2); // hot at bottom
-          const v2 = 0.04 + t * 0.5;
-          vc[i * 3] = v2; vc[i * 3 + 1] = v2; vc[i * 3 + 2] = v2;
-        }
-        lg.setAttribute('color', new THREE.BufferAttribute(vc, 3));
-        liquid = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({
-          vertexColors: true, transparent: true, opacity: 0.55, toneMapped: false,
-          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide,
-        }));
-        group.add(liquid);
-      }
-
-      // the bulb: a hot glow in the base shining up through the wax
-      bulbGlow = glowSprite(26);
+      bulbGlow = glowSprite(20);
       bulbGlow.position.y = -H / 2 - 1;
       group.add(bulbGlow);
 
-      // the wax pool at the bottom that blobs sink back into
-      pool = new THREE.Mesh(
-        new THREE.SphereGeometry(1, 24, 16),
-        new THREE.MeshBasicMaterial({ toneMapped: false })
-      );
-      pool.position.y = -H / 2 + 0.5;
-      group.add(pool);
+      roomGlow = glowSprite(120);
+      roomGlow.position.z = -30;
+      group.add(roomGlow);
 
+      glassShine = glowSprite(1);
+      glassShine.scale.set(3.5, H * 1.05, 1);
+      glassShine.position.set(R_BOT * 0.55, 0, R_BOT * 0.8);
+      glassShine.material.opacity = 0.1;
+      group.add(glassShine);
+
+      // blob physics state (rendered only through the field)
       blobs.length = 0;
       for (let i = 0; i < BLOBS; i++) {
-        // size variety: a few big slugs, several small beads
-        const size = i < 3 ? 3.2 + Math.random() * 1.6 : 1.2 + Math.random() * 1.8;
-        const mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(1, 24, 24),
-          new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.95 })
-        );
-        const halo = glowSprite(size * 2.6);
-        group.add(mesh, halo);
+        const size = i < 3 ? 2.6 + Math.random() * 1.3 : 1.1 + Math.random() * 1.4;
         blobs.push({
-          mesh, halo,
-          y: -H / 2 + 1 + Math.random() * 3, // start in the pool
+          y: -H / 2 + 1 + Math.random() * 3,
           vy: 0,
           size,
           phase: Math.random() * 100,
-          lane: (i / BLOBS) * Math.PI * 2,   // own angular lane in the vessel
-          laneR: 0.25 + (i % 3) * 0.3,       // own distance from the axis
+          lane: (i / BLOBS) * Math.PI * 2,
+          laneR: 0.25 + (i % 3) * 0.3,
           spin: (i % 2 ? 1 : -1) * (0.02 + Math.random() * 0.03),
           poke: 0,
-          merge: 0,
+          x: 0, z: 0,
         });
       }
 
-      // motes suspended in the fluid
+      // motes in the fluid
       const mp = new Float32Array(120 * 3);
       for (let i = 0; i < 120; i++) {
         const y = (Math.random() - 0.5) * H * 0.9;
         const r = Math.random() * (profile(y) - 1);
         const a = Math.random() * Math.PI * 2;
-        mp[i * 3] = Math.cos(a) * r;
-        mp[i * 3 + 1] = y;
-        mp[i * 3 + 2] = Math.sin(a) * r;
+        mp[i * 3] = Math.cos(a) * r; mp[i * 3 + 1] = y; mp[i * 3 + 2] = Math.sin(a) * r;
       }
       const mg = new THREE.BufferGeometry();
       mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
-      motes = new THREE.Points(mg, glowPoints(0.4, 0.45));
+      motes = new THREE.Points(mg, glowPoints(0.4, 0.4));
       group.add(motes);
-
-      // the lamp lights the room — a big soft wash behind it
-      roomGlow = glowSprite(120);
-      roomGlow.position.z = -30;
-      group.add(roomGlow);
-
-      // vertical highlight streak on the glass, like a window reflection
-      glassShine = glowSprite(1);
-      glassShine.scale.set(3.5, H * 1.05, 1);
-      glassShine.position.set(R_BOT * 0.55, 0, R_BOT * 0.8);
-      glassShine.material.opacity = 0.12;
-      group.add(glassShine);
-
-      // little knob on the cap — the finishing silhouette touch
-      const knob = new THREE.Mesh(
-        new THREE.SphereGeometry(1.1, 12, 12),
-        new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false })
-      );
-      knob.position.y = H / 2 + 6.2;
-      group.add(knob);
 
       sky = skyDome(200);
       group.add(sky);
@@ -151,23 +190,22 @@ export function createLavaLamp() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    // fellow watchers drift as small bubbles around the lamp
     placeGhost(p, i, out) {
       const a = (this._t || 0) * 0.25 + i * 1.9;
       out.set(Math.cos(a) * (19 + p.x * 4), Math.sin(a * 0.7 + i) * H * 0.4, Math.sin(a) * (19 + p.x * 4));
     },
 
-    // tap: poke the blob nearest the click ray
     onTap(x, y) {
       const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
       const dir = v.sub(camera.position).normalize();
       let best = null, bestD = 1e9;
+      const bp = new THREE.Vector3();
       for (const b of blobs) {
-        const toB = b.mesh.position.clone().sub(camera.position);
-        const d = toB.cross(dir).length();
+        bp.set(b.x, b.y, b.z).sub(camera.position);
+        const d = bp.cross(dir).length();
         if (d < bestD) { bestD = d; best = b; }
       }
-      if (best) { best.poke = 1; best.vy += 7; }
+      if (best) { best.poke = 1; best.vy += 6; }
     },
 
     update(dt, audio, participants, opts) {
@@ -179,102 +217,60 @@ export function createLavaLamp() {
         participants[0].y = 0;
       }
 
-      // heat rises from the bulb: bass + slow-burn energy
-      const heat = Math.min(1, audio.bass * 0.8 * reactivity + audio.energy * 0.5);
+      const heat = Math.min(1, audio.bass * 0.9 * reactivity + audio.energy * 0.4);
 
-      let inPool = 0;
-      for (let i = 0; i < blobs.length; i++) {
+      // wax physics — slow, viscous, cyclical
+      const u = wax.material.uniforms;
+      let slot = 0;
+      // slot 0: the pool — a big blob sunk below the floor; risers neck off
+      // it through the smooth-min for free
+      u.uBlobs.value[slot++].set(0, -H / 2 - 3.2 + heat * 0.8, 0, 6.8);
+
+      for (let i = 0; i < blobs.length && slot < MAX_FIELD; i++) {
         const b = blobs[i];
-        // wax physics: heat lifts blobs near the bottom; they cool with
-        // altitude and sink back — the endless lamp cycle
         const nearBottom = b.y < -H / 2 + 4;
-        const altitude = (b.y + H / 2) / H;              // 0 bottom, 1 top
+        const altitude = (b.y + H / 2) / H;
         const warmth = (nearBottom ? heat * 2.2 : heat) - altitude * 1.1;
         const buoy = warmth * 2.6 + Math.sin(time * 0.13 + b.phase) * 0.35 - 0.35;
-        b.vy += (buoy - b.vy) * Math.min(1, dt * 0.22); // wax, not water
+        b.vy += (buoy - b.vy) * Math.min(1, dt * 0.22);
         b.y += b.vy * dt * (1.1 + heat * 0.8);
-        if (b.y > H / 2 - b.size) { b.y = H / 2 - b.size; b.vy = -0.3; }
-        if (b.y < -H / 2 + 1) { b.y = -H / 2 + 1; b.vy = Math.max(0, b.vy); inPool++; }
+        if (b.y > H / 2 - b.size - 0.5) { b.y = H / 2 - b.size - 0.5; b.vy = -0.25; }
+        if (b.y < -H / 2 + 0.5) { b.y = -H / 2 + 0.5; b.vy = Math.max(0, b.vy); }
         b.poke *= Math.pow(0.05, dt);
-        if (b.y < -H / 2 + 2.2) inPool += 0; // (counted above)
 
-        // each blob keeps to its own slow lane inside the tapered glass
-        const maxOff = Math.max(0.3, profile(b.y) - b.size - 0.5);
+        const maxOff = Math.max(0.3, profile(b.y) - b.size - 0.6);
         const ang = b.lane + time * b.spin;
-        const off = maxOff * b.laneR;
-        const x = Math.cos(ang) * off;
-        const z = Math.sin(ang) * off;
-        b.mesh.position.set(x, b.y, z);
+        b.x = Math.cos(ang) * maxOff * b.laneR;
+        b.z = Math.sin(ang) * maxOff * b.laneR;
 
-        // teardrop when rising, flattened when sinking, wobble from poke.
-        // Near the pool, blobs NECK: stretch down toward the wax they're
-        // pulling away from — the signature lava-lamp move.
-        const rising = b.vy > 0.3, sinking = b.vy < -0.3;
-        let stretch = rising ? 1.25 + Math.min(0.4, b.vy * 0.15)
-                    : sinking ? 0.85 : 1;
-        const poolDist = b.y - (-H / 2 + 1);
-        if (rising && poolDist < b.size * 2.2) {
-          stretch += (1 - poolDist / (b.size * 2.2)) * 0.7; // pulled taffy
-        }
-        // merge swell: blobs touching each other fatten and brighten
-        b.merge = 0;
-        for (let j = 0; j < blobs.length; j++) {
-          if (j === i) continue;
-          const o = blobs[j];
-          const d = b.mesh.position.distanceTo(o.mesh.position);
-          const overlap = (b.size + o.size) * 0.9 - d;
-          if (overlap > 0) b.merge = Math.min(1, b.merge + overlap / (b.size + o.size));
-        }
-        // out-of-phase xz wobble — jelly, not marble
-        const wobX = 1 + Math.sin(time * 1.6 + b.phase * 3) * 0.07 + b.poke * 0.25 + b.merge * 0.15;
-        const wobZ = 1 + Math.sin(time * 1.6 + b.phase * 3 + 2.1) * 0.07 + b.poke * 0.25 + b.merge * 0.15;
-        const wob = (wobX + wobZ) / 2;
-        b.mesh.scale.set(b.size * wobX / Math.sqrt(stretch), b.size * wob * stretch, b.size * wobZ / Math.sqrt(stretch));
-        b.halo.position.copy(b.mesh.position);
-
-        const uy = (b.y + H / 2) / H;
-        themePaint(colorMode, hue / 360, uy, i * 0.4, time, heat, (b.phase % 1), tp);
-        // lit from below: blobs glow hotter the lower they are — but capped
-        // well under white so they stay WAX, not lightbulbs
-        const glow = 0.24 + heat * 0.18 + (1 - uy) * 0.14 + b.poke * 0.15 + b.merge * 0.08;
-        color.setHSL(tp[0], Math.max(0.8, tp[1]), Math.min(0.55, glow * Math.min(1.25, tp[2])));
-        b.mesh.material.color.copy(color);
-        b.halo.material.color.copy(color);
-        b.halo.material.opacity = 0.12 + heat * 0.1 + b.merge * 0.1;
-        b.halo.scale.setScalar(b.size * 1.9 * wob);
+        const wob = 1 + Math.sin(time * 1.4 + b.phase * 3) * 0.05 + b.poke * 0.2 + audio.bass * 0.08;
+        u.uBlobs.value[slot++].set(b.x, b.y, b.z, b.size * wob);
       }
+      u.uCount.value = slot;
+      u.uHeat.value = heat;
 
-      // the pool breathes: swells when blobs are home, glows with the bulb
-      themePaint(colorMode, hue / 360, 0.02, 0, time, heat, 0.3, tp);
-      const poolR = R_BOT - 1 + Math.sin(time * 0.8) * 0.2;
-      pool.scale.set(poolR, 1.6 + inPool * 0.35 + heat * 0.8, poolR);
-      color.setHSL(tp[0], Math.max(0.75, tp[1]), Math.min(0.48, (0.3 + heat * 0.18) * Math.min(1.2, tp[2])));
-      pool.material.color.copy(color);
-      liquid.material.color.copy(color);
-      liquid.material.opacity = 0.4 + heat * 0.3;
+      // theme colors: bottom of the wax vs top, rim from the hot end
+      themePaint(colorMode, hue / 360, 0.06, 0, time, heat, 0.35, tp);
+      colBot.setHSL(tp[0], Math.max(0.75, tp[1]), Math.min(0.5, Math.max(0.2, 0.34 * Math.min(1.4, tp[2])) + heat * 0.08));
+      colRim.copy(colBot).multiplyScalar(1.7);
+      themePaint(colorMode, hue / 360, 0.92, 0.3, time, heat, 0.7, tp);
+      colTop.setHSL(tp[0], Math.max(0.7, tp[1]), Math.min(0.42, Math.max(0.13, 0.26 * Math.min(1.3, tp[2]))));
 
-      // bulb: the heart of the lamp — burns with the bass
+      // lamp hardware breathes with the heat
       bulbGlow.scale.setScalar(20 * (1 + heat * 0.5 + audio.beatIntensity * 0.25));
-      bulbGlow.material.color.copy(color);
-      bulbGlow.material.opacity = 0.32 + heat * 0.3;
-
-      // glass catches the wax light faintly
-      glass.material.color.copy(color);
-      glass.material.opacity = 0.05 + heat * 0.07;
-
-      motes.material.color.copy(color);
+      bulbGlow.material.color.copy(colBot);
+      bulbGlow.material.opacity = 0.3 + heat * 0.28;
+      glass.material.color.copy(colBot);
+      glass.material.opacity = 0.025 + heat * 0.03;
+      roomGlow.material.color.copy(colBot);
+      roomGlow.material.opacity = 0.06 + heat * 0.1 + audio.beatIntensity * 0.04;
+      glassShine.material.opacity = 0.08 + heat * 0.05;
+      motes.material.color.copy(colBot);
       motes.material.size = 0.4 + audio.high * 0.4;
       motes.rotation.y += dt * 0.03;
-
-      // the room breathes with the lamp
-      roomGlow.material.color.copy(color);
-      roomGlow.material.opacity = 0.06 + heat * 0.1 + audio.beatIntensity * 0.04;
-      glassShine.material.opacity = 0.09 + heat * 0.06;
       sky.position.copy(camera.position);
-      color.setHSL(tp[0], tp[1] * 0.4, 0.1 + audio.energy * 0.1);
-      sky.material.color.copy(color);
+      sky.material.color.copy(colBot).multiplyScalar(0.3);
 
-      // mostly front-on, gentle sway — you're watching a lamp on a shelf
       camera.position.set(Math.sin(time * 0.04) * 14, 2 + Math.sin(time * 0.06) * 5, 44 - audio.bass * 3);
       camera.lookAt(0, 0, 0);
       const fovT = 60 + audio.volume * 5 * reactivity;
