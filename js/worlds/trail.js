@@ -13,16 +13,19 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon, headOrb, headHalo, stars, sky, wake;
+  let scene, camera, group, ribbon, ribbonMirror, headOrb, headHalo, stars, sky, wake;
   let nPoints = 0;
   let phase = 0;                       // path parameter — advances with the music
   const head = new THREE.Vector3();
+  const headTarget = new THREE.Vector3();
   const headDir = new THREE.Vector3(0, 0, -1);
   const prev = new THREE.Vector3();
   const camTarget = new THREE.Vector3();
   const lookTarget = new THREE.Vector3();
+  const steer = new THREE.Vector3();   // smoothed steering offset — no teleports
   let pointer = { x: 0, y: 0, active: false };
   let kick = 0;
+  let tapRings = [];                   // expanding light rings on tap
   const wakeVel = new Float32Array(WAKE * 3);
   const wakeLife = new Float32Array(WAKE);
   const color = new THREE.Color();
@@ -69,6 +72,31 @@ export function createTrail() {
       ribbon.frustumCulled = false;
       group.add(ribbon);
 
+      // mirror reflection below — shares the geometry, so it's free to update
+      ribbonMirror = new THREE.Mesh(ribbon.geometry, ribbon.material.clone());
+      ribbonMirror.material.opacity = 0.3;
+      ribbonMirror.scale.y = -1;
+      ribbonMirror.position.y = -34;
+      ribbonMirror.frustumCulled = false;
+      group.add(ribbonMirror);
+
+      // tap ring pool — camera-facing rings that expand and fade
+      const tapRingGeo = new THREE.RingGeometry(0.92, 1, 48);
+      tapRings = [];
+      for (let i = 0; i < 6; i++) {
+        const m = new THREE.Mesh(
+          tapRingGeo,
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0, side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        m.visible = false;
+        m.userData = { life: 0 };
+        group.add(m);
+        tapRings.push(m);
+      }
+
       headOrb = new THREE.Mesh(
         new THREE.SphereGeometry(0.5, 14, 14),
         new THREE.MeshBasicMaterial({ toneMapped: false })
@@ -111,9 +139,14 @@ export function createTrail() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    // tap: width surge + spark scatter via wake burst
+    // tap: width surge + spark scatter + an expanding light ring
     onTap() {
       kick = 1;
+      const ring = tapRings.find(r => !r.visible) || tapRings[0];
+      ring.visible = true;
+      ring.userData.life = 1;
+      ring.position.copy(head);
+      ring.scale.setScalar(0.5);
       for (let i = 0; i < WAKE; i++) {
         if (Math.random() < 0.5) continue;
         wakeLife[i] = 1;
@@ -131,11 +164,17 @@ export function createTrail() {
       phase += dt * (0.25 + audio.volume * 2.6 * reactivity + audio.beatIntensity * 1.2);
       kick *= Math.pow(0.05, dt);
 
-      pathAt(phase, head);
+      // steering is a SMOOTHED offset — raw pointer deltas were teleporting
+      // the head every frame and scribbling the ribbon in play mode
       if (!attract && pointer.active) {
-        head.x += pointer.x * 12;
-        head.y += pointer.y * 8;
+        steer.x += (pointer.x * 14 - steer.x) * Math.min(1, dt * 2.5);
+        steer.y += (pointer.y * 9 - steer.y) * Math.min(1, dt * 2.5);
+      } else {
+        steer.multiplyScalar(Math.max(0, 1 - dt * 1.5));
       }
+      pathAt(phase, headTarget);
+      headTarget.add(steer);
+      head.lerp(headTarget, Math.min(1, dt * 5));
 
       // append ribbon points as the head moves
       if (nPoints < MAX_POINTS && head.distanceTo(prev) > MIN_DIST) {
@@ -149,7 +188,9 @@ export function createTrail() {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
         const width = (0.28 + audio.volume * 1.6 * reactivity) * (1 + kick * 1.4);
-        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
+        // hue drifts slowly over time so long ribbons become rainbows
+        const drift = (hue / 360 + time * 0.008) % 1;
+        color.setHSL((drift + BAND_HUE_SHIFT[domIdx]) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
 
         const pos = ribbon.geometry.attributes.position;
         const col = ribbon.geometry.attributes.color;
@@ -192,6 +233,18 @@ export function createTrail() {
         color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.9, 0.5);
         wake.material.color.copy(color);
         wake.material.size = 0.8 + audio.volume * 1.2;
+      }
+
+      // tap rings expand and fade, always facing the camera
+      for (const r of tapRings) {
+        if (!r.visible) continue;
+        r.userData.life -= dt * 1.6;
+        if (r.userData.life <= 0) { r.visible = false; continue; }
+        r.scale.addScalar(dt * 55);
+        r.quaternion.copy(camera.quaternion);
+        color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.55);
+        r.material.color.copy(color);
+        r.material.opacity = r.userData.life * 0.8;
       }
 
       // head orb + halo

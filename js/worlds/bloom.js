@@ -28,6 +28,11 @@ export function createBloom() {
   const cBand = new Uint8Array(MAX_CRYSTALS);
   const cHue = new Float32Array(MAX_CRYSTALS);
   const cLum = new Float32Array(MAX_CRYSTALS);
+  const cPx = new Float32Array(MAX_CRYSTALS);
+  const cPy = new Float32Array(MAX_CRYSTALS);
+  const cPz = new Float32Array(MAX_CRYSTALS);
+  const wave = { r: -1, x: 0, y: 0, z: 0 };  // tap shockwave through the garden
+  let bubbles = [];                           // beat-emitted light bubbles
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
@@ -59,6 +64,7 @@ export function createBloom() {
     cBand[ci] = Math.floor(Math.random() * BANDS.length);
     cHue[ci] = ((hue / 360) + cBand[ci] * 0.06 + Math.random() * 0.04) % 1;
     cLum[ci] = 0.2 + loud * 0.25;
+    cPx[ci] = pos.x; cPy[ci] = pos.y; cPz[ci] = pos.z;
     growing.push({ idx: ci, t: 0, pos: pos.clone(), size, rot });
     nCrystals++;
     crystals.count = Math.min(nCrystals, MAX_CRYSTALS);
@@ -120,6 +126,17 @@ export function createBloom() {
       tapFlashSprite.material.opacity = 0;
       group.add(tapFlashSprite);
 
+      // light bubbles the grower exhales on beats
+      bubbles = [];
+      for (let i = 0; i < 10; i++) {
+        const b = glowSprite(2);
+        b.material.opacity = 0;
+        b.userData = { life: 0, vel: new THREE.Vector3() };
+        group.add(b);
+        bubbles.push(b);
+      }
+      wave.r = -1;
+
       ground = new THREE.Mesh(
         new THREE.CircleGeometry(180, 48),
         new THREE.MeshBasicMaterial({
@@ -148,6 +165,9 @@ export function createBloom() {
       tapPoint.sub(camera.position).normalize().multiplyScalar(40).add(camera.position);
       tapFlash = 1;
       tapPlant = 12;
+      // shockwave rolls out from the tap through everything already grown
+      wave.r = 0;
+      wave.x = tapPoint.x; wave.y = tapPoint.y; wave.z = tapPoint.z;
     },
 
     update(dt, audio, participants, opts) {
@@ -235,14 +255,52 @@ export function createBloom() {
         crystals.instanceMatrix.needsUpdate = true;
       }
 
-      // EVERY crystal pulses with its band — the forest plays the track
+      // tap shockwave sweeps outward
+      if (wave.r >= 0) {
+        wave.r += dt * 55;
+        if (wave.r > 160) wave.r = -1;
+      }
+
+      // EVERY crystal pulses with its band — the forest plays the track —
+      // and flares white-hot as the tap shockwave passes through it
       const nLive = Math.min(nCrystals, MAX_CRYSTALS);
       for (let i = 0; i < nLive; i++) {
         const level = audio[BANDS[cBand[i]]];
-        color.setHSL(cHue[i], 0.85, Math.min(0.72, cLum[i] + level * 0.4 * reactivity + audio.beatIntensity * 0.06));
+        let lum = cLum[i] + level * 0.4 * reactivity + audio.beatIntensity * 0.06;
+        let sat = 0.85;
+        if (wave.r >= 0) {
+          const d = Math.abs(Math.sqrt(
+            (cPx[i] - wave.x) ** 2 + (cPy[i] - wave.y) ** 2 + (cPz[i] - wave.z) ** 2
+          ) - wave.r);
+          if (d < 7) {
+            const f = 1 - d / 7;
+            lum += f * 0.45 * (1 - wave.r / 160);
+            sat -= f * 0.4; // flare toward white
+          }
+        }
+        color.setHSL(cHue[i], Math.max(0.3, sat), Math.min(0.75, lum));
         crystals.setColorAt(i, color);
       }
       if (nLive) crystals.instanceColor.needsUpdate = true;
+
+      // grower exhales a light bubble on beats
+      if (audio.beat) {
+        const b = bubbles.find(x => x.userData.life <= 0);
+        if (b) {
+          b.userData.life = 1;
+          b.position.copy(grower);
+          b.userData.vel.set((Math.random() - 0.5) * 3, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 3);
+        }
+      }
+      for (const b of bubbles) {
+        if (b.userData.life <= 0) { b.material.opacity = 0; continue; }
+        b.userData.life -= dt * 0.35;
+        b.position.addScaledVector(b.userData.vel, dt);
+        b.scale.setScalar(2 + (1 - b.userData.life) * 7);
+        color.setHSL(((hue / 360) + 0.12) % 1, 0.85, 0.55);
+        b.material.color.copy(color);
+        b.material.opacity = Math.max(0, b.userData.life * 0.5);
+      }
 
       // grower light leads the way
       growerLight.position.copy(grower);
