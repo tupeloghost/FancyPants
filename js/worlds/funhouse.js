@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 1200;
+const BALLS = 2000;
 const ARENA = 34;           // half-width of the pit
 const GRAV = -26;
 
