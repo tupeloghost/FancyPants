@@ -12,7 +12,8 @@ const LANTERNS = 56;
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createRiver() {
-  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon;
+  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam;
+  const foamLat = new Float32Array(130);
   let drift = 0;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
@@ -87,6 +88,20 @@ export function createRiver() {
       fireflies.frustumCulled = false;
       group.add(fireflies);
 
+      // foam streaks riding the current past the camera — the flow made visible
+      {
+        const fo = new Float32Array(130 * 3);
+        for (let i = 0; i < 130; i++) {
+          fo[i * 3] = 0; fo[i * 3 + 1] = 0.35; fo[i * 3 + 2] = -Math.random() * WL;
+        }
+        const fog2 = new THREE.BufferGeometry();
+        fog2.setAttribute('position', new THREE.BufferAttribute(fo, 3).setUsage(THREE.DynamicDrawUsage));
+        foam = new THREE.Points(fog2, glowPoints(0.55, 0.55));
+        foam.frustumCulled = false;
+        group.add(foam);
+        for (let i = 0; i < 130; i++) foamLat[i] = (Math.random() - 0.5) * 24;
+      }
+
       moon = glowSprite(46);
       moon.material.fog = false;
       group.add(moon);
@@ -143,7 +158,7 @@ export function createRiver() {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
 
       // lazy drift — the river never hurries, even on drops
-      drift += dt * (2.5 + audio.energy * 5 + audio.volume * 2.5);
+      drift += dt * (5 + audio.energy * 9 + audio.volume * 4);
       const camZ = -drift;
       if (attract || !pointer.active) steer += (Math.sin(time * 0.2) * 0.4 - steer) * Math.min(1, dt);
       else steer += (pointer.x - steer) * Math.min(1, dt * 1.5);
@@ -153,8 +168,8 @@ export function createRiver() {
         participants[0].y = 0;
       }
 
-      camera.position.set(riverX(camZ) + steer * 8, 5 + Math.sin(time * 0.5) * 0.4, camZ);
-      camera.lookAt(riverX(camZ - 55), 2.5, camZ - 55);
+      camera.position.set(riverX(camZ) + steer * 8, 4.2 + Math.sin(time * 0.5) * 0.4, camZ);
+      camera.lookAt(riverX(camZ - 55), 2.2, camZ - 55);
       camera.rotation.z += Math.sin(time * 0.33) * 0.02 + steer * -0.04;
 
       // water: gentle swells + the waveform breathing through the surface
@@ -167,9 +182,11 @@ export function createRiver() {
           const wz = water.position.z + (r / (WROWS - 1) - 0.5) * WL;
           const wx = riverX(wz) + (c / (WCOLS - 1) - 0.5) * WW;
           pos.setX(i, wx);
+          // waves travel WITH the current — the surface visibly flows
+          const flowPhase = wz * 0.09 + drift * 0.22;
           const swell =
-            Math.sin(wz * 0.09 + time * 1.1) * 0.5 +
-            Math.sin(wx * 0.14 - time * 0.8) * 0.35;
+            Math.sin(flowPhase + time * 0.4) * 0.5 +
+            Math.sin(wx * 0.14 - time * 0.8 + drift * 0.05) * 0.35;
           const h = swell * (0.5 + audio.volume * 1.6 * reactivity);
           pos.setY(i, h);
           const bright = 0.06 + Math.max(0, swell) * (0.12 + audio.volume * 0.3);
@@ -219,6 +236,24 @@ export function createRiver() {
         color.setHSL(tp[0], tp[1], 0.55);
         m.material.color.copy(color);
         m.material.opacity = m.userData.life * 0.7;
+      }
+
+      // foam rides the current — overtaking the camera so the flow reads
+      {
+        const fpos2 = foam.geometry.attributes.position;
+        const flowSpeed = 7 + audio.energy * 8;
+        for (let i = 0; i < 130; i++) {
+          let z = fpos2.getZ(i) - flowSpeed * dt; // downstream faster than the camera
+          if (z < camZ - WL * 0.9) z = camZ + 12;
+          if (z > camZ + 15) z = camZ - WL * 0.85;
+          fpos2.setZ(i, z);
+          fpos2.setX(i, riverX(z) + foamLat[i]);
+          fpos2.setY(i, 0.35);
+        }
+        fpos2.needsUpdate = true;
+        color.setHSL((hue / 360) % 1, 0.15, 0.65);
+        foam.material.color.copy(color);
+        foam.material.size = 0.5 + audio.volume * 0.4;
       }
 
       // fireflies wrap and shimmer with the highs

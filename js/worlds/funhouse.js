@@ -22,6 +22,7 @@ export function createFunhouse() {
   const rad = new Float32Array(BALLS);
   const seed = new Float32Array(BALLS);
   const me = 0; // ball #0 is the local player's
+  let active = 240;          // taps add balls up to the full pool
 
   return {
     name: 'BALL PIT',
@@ -52,6 +53,7 @@ export function createFunhouse() {
       balls.frustumCulled = false;
       group.add(balls);
 
+      active = 240;
       for (let i = 0; i < BALLS; i++) {
         px[i] = (Math.random() - 0.5) * ARENA * 1.8;
         pz[i] = (Math.random() - 0.5) * ARENA * 1.8;
@@ -87,14 +89,25 @@ export function createFunhouse() {
       out.set(p.x * ARENA * 0.8, 2.5 + Math.abs(Math.sin((this._t || 0) * 1.3 + i * 2)) * 6, p.y * ARENA * 0.8);
     },
 
-    // tap: blast — balls near the click point fly away from it
+    // tap: DROP a handful of fresh balls from the sky at the click point,
+    // and blast the ones already there
     onTap(x, y) {
       const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
       const dir = v.sub(camera.position).normalize();
       const t = (2 - camera.position.y) / (dir.y || -0.0001);
-      const hx = camera.position.x + dir.x * Math.abs(t);
-      const hz = camera.position.z + dir.z * Math.abs(t);
-      for (let i = 0; i < BALLS; i++) {
+      const hx = Math.max(-ARENA, Math.min(ARENA, camera.position.x + dir.x * Math.abs(t)));
+      const hz = Math.max(-ARENA, Math.min(ARENA, camera.position.z + dir.z * Math.abs(t)));
+      for (let n = 0; n < 7; n++) {
+        // grow the pool until it's full, then recycle random old balls
+        const i = active < BALLS ? active++ : 1 + Math.floor(Math.random() * (BALLS - 1));
+        px[i] = hx + (Math.random() - 0.5) * 6;
+        pz[i] = hz + (Math.random() - 0.5) * 6;
+        py[i] = 30 + Math.random() * 14;
+        vx[i] = (Math.random() - 0.5) * 6;
+        vy[i] = -4;
+        vz[i] = (Math.random() - 0.5) * 6;
+      }
+      for (let i = 0; i < active; i++) {
         const dx = px[i] - hx, dz = pz[i] - hz;
         const d = Math.hypot(dx, dz);
         if (d < 16) {
@@ -126,7 +139,8 @@ export function createFunhouse() {
       }
 
       const step = Math.min(dt, 0.033);
-      for (let i = 0; i < BALLS; i++) {
+      balls.count = active;
+      for (let i = 0; i < active; i++) {
         vy[i] += GRAV * step;
         if (kick && py[i] < rad[i] * 2.5) vy[i] += kick * (0.6 + seed[i] * 0.8);
         px[i] += vx[i] * step;

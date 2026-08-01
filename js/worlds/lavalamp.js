@@ -14,6 +14,8 @@ const MAX_FIELD = 12;       // shader uniform slots
 export function createLavaLamp() {
   let scene, camera, group, sky, glass, bulbGlow, motes, roomGlow, glassShine, wax;
   const blobs = [];
+  const splashes = [];       // short-lived droplets thrown off by taps
+  let heatKick = 0;          // tap heat surge
   const tp = [0, 0, 0];
   const colBot = new THREE.Color(), colTop = new THREE.Color(), colRim = new THREE.Color();
   let pointer = { x: 0, y: 0, active: false };
@@ -205,7 +207,20 @@ export function createLavaLamp() {
         const d = bp.cross(dir).length();
         if (d < bestD) { bestD = d; best = b; }
       }
-      if (best) { best.poke = 1; best.vy += 6; }
+      if (best) {
+        best.poke = 1;
+        best.vy += 6;
+        heatKick = 1; // the whole lamp answers: brighter bulb, livelier wax
+        // droplets shear off the poked blob and fall back — real splitting
+        for (let i = 0; i < 2; i++) {
+          splashes.push({
+            x: best.x, y: best.y, z: best.z,
+            vx: (Math.random() - 0.5) * 10, vy: 5 + Math.random() * 5, vz: (Math.random() - 0.5) * 10,
+            r: best.size * 0.42, life: 1.4,
+          });
+          if (splashes.length > 2) splashes.shift();
+        }
+      }
     },
 
     update(dt, audio, participants, opts) {
@@ -217,7 +232,8 @@ export function createLavaLamp() {
         participants[0].y = 0;
       }
 
-      const heat = Math.min(1, audio.bass * 0.9 * reactivity + audio.energy * 0.4);
+      heatKick *= Math.pow(0.08, dt);
+      const heat = Math.min(1, audio.bass * 0.9 * reactivity + audio.energy * 0.4 + heatKick * 0.45);
 
       // wax physics — slow, viscous, cyclical
       const u = wax.material.uniforms;
@@ -245,6 +261,19 @@ export function createLavaLamp() {
 
         const wob = 1 + Math.sin(time * 1.4 + b.phase * 3) * 0.05 + b.poke * 0.2 + audio.bass * 0.08;
         u.uBlobs.value[slot++].set(b.x, b.y, b.z, b.size * wob);
+      }
+      // splash droplets fly, shrink, and rejoin the field
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const sp = splashes[i];
+        sp.life -= dt;
+        if (sp.life <= 0 || slot >= MAX_FIELD) { splashes.splice(i, 1); continue; }
+        sp.vy -= 14 * dt;
+        sp.x += sp.vx * dt; sp.y += sp.vy * dt; sp.z += sp.vz * dt;
+        const pr = profile(sp.y) - 0.8;
+        const rr = Math.hypot(sp.x, sp.z);
+        if (rr > pr) { sp.x *= pr / rr; sp.z *= pr / rr; sp.vx *= -0.4; sp.vz *= -0.4; }
+        if (sp.y < -H / 2 + 1) sp.y = -H / 2 + 1;
+        u.uBlobs.value[slot++].set(sp.x, sp.y, sp.z, sp.r * Math.min(1, sp.life));
       }
       u.uCount.value = slot;
       u.uHeat.value = heat;
