@@ -212,7 +212,12 @@ export function createTunnel() {
               }        h = ((hue / 360) + (s / SEGS) * 0.24 + audio.energy * 0.08) % 1; // rainbow, continuous
           }
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
-          const lum = 0.05 + 0.45 * (1 - Math.exp(-2.2 * drive));
+          // deep jewel-tone base: paper is light and opaque, glass is dark
+          // until lit — keep quiet slats near-black so loud ones glow
+          const lum = 0.03 + 0.4 * (1 - Math.exp(-2.2 * drive));
+          // stable per-slat jitter so no two neighbors are the same flat swatch
+          const jit = Math.abs(Math.sin(ringSeed[r] * 12.9898 + s * 78.233)) ;
+          h = (h + (jit - 0.5) * 0.035 + 1) % 1;
           // HDR: full saturation, then push past 1.0 with the band level so
           // bloom glows in the segment's own color instead of washing white
           let weave = 1;
@@ -229,7 +234,7 @@ export function createTunnel() {
           // cap the HDR drive so peaks bloom in color instead of bleaching white
           // hdr scales how far colors are driven past standard range:
           // 0 = flat SDR, 1 = default, 2 = full superbright
-          const rawDrive = Math.min(1.55, (0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
+          const rawDrive = Math.min(1.6, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           color.multiplyScalar(Math.max(0.15, drive2) * proximityDim);
           wall.setColorAt(idx, color);
