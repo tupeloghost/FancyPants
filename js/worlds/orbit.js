@@ -45,7 +45,7 @@ export function createOrbit() {
 
       // enveloping dome — the world has walls that breathe with the music
       dome = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(72, 2),
+        new THREE.IcosahedronGeometry(40, 2),
         new THREE.MeshBasicMaterial({
           wireframe: true, transparent: true, opacity: 0.16,
           toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false,

@@ -10,7 +10,7 @@ const WIDTH = 170, DEPTH = 260;
 const ROW_INTERVAL = 0.035; // seconds between history rows
 
 export function createSurfer() {
-  let scene, camera, group, mesh, sun, sunHalo, stars, sky;
+  let scene, camera, group, mesh, ceiling, sun, sunHalo, stars, sky;
   let steer = 0, steerTarget = 0;
   let jumpY = 0, jumpVel = 0;
   let rowTimer = 0, scrollOff = 0;
@@ -37,6 +37,13 @@ export function createSurfer() {
         new THREE.MeshBasicMaterial({ wireframe: true, vertexColors: true, toneMapped: false })
       );
       group.add(mesh);
+
+      // mirrored ceiling — the same waveform hangs overhead, so the frame
+      // is enclosed top and bottom like the tunnel. Shares geometry: free.
+      ceiling = new THREE.Mesh(geo, mesh.material);
+      ceiling.scale.y = -1;
+      ceiling.position.y = 30;
+      group.add(ceiling);
 
       // synthwave sun on the horizon — blooms hard, pulses with bass
       sun = new THREE.Mesh(

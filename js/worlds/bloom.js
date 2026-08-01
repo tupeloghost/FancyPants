@@ -40,6 +40,8 @@ export function createBloom() {
     const loud = audio.energy;
     const size = (0.22 + loud * 1.9 * reactivity) * (big ? 1.7 : 1) * (0.6 + Math.random() * 0.9);
 
+    // stems only under the flight axis — overhead crystals float free
+    if (pos.y < 0) {
     const si = nStems % MAX_STEMS;
     const h = size * (2.5 + Math.random() * 2);
     dummy.position.set(pos.x, pos.y - h / 2, pos.z);
@@ -53,6 +55,7 @@ export function createBloom() {
     stems.count = Math.min(nStems, MAX_STEMS);
     stems.instanceMatrix.needsUpdate = true;
     stems.instanceColor.needsUpdate = true;
+    }
 
     const ci = nCrystals % MAX_CRYSTALS;
     const rot = [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI];
@@ -192,10 +195,10 @@ export function createBloom() {
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
 
-      // grower rides ahead of the camera, wandering off the path
+      // grower rides ahead on the path axis; growth rings form around it
       growerTarget.set(
-        camPos.x + Math.sin(time * 0.7) * 15,
-        camPos.y + Math.sin(time * 0.5) * 8 - 2,
+        camPos.x + Math.sin(time * 0.7) * 4,
+        camPos.y + Math.sin(time * 0.5) * 3,
         camPos.z - 45
       );
       grower.lerp(growerTarget, Math.min(1, dt * 2));
@@ -208,10 +211,14 @@ export function createBloom() {
         const n = burst > 0 ? burst : (audio.beat ? 4 : 2);
         burst = 0;
         for (let i = 0; i < n; i++) {
+          // grow in a loose cylinder AROUND the flight path — the garden
+          // becomes a tunnel that assembles itself, walls and ceiling too
+          const ang = Math.random() * Math.PI * 2;
+          const rad = 10 + Math.random() * 9 + audio.volume * 6;
           const jitter = new THREE.Vector3(
-            (Math.random() - 0.5) * (4 + audio.volume * 14),
-            (Math.random() - 0.5) * (3 + audio.volume * 9),
-            (Math.random() - 0.5) * (4 + audio.volume * 14)
+            Math.cos(ang) * rad,
+            Math.sin(ang) * rad * 0.75,
+            (Math.random() - 0.5) * (6 + audio.volume * 14)
           );
           place(jitter.add(grower), audio, hue, reactivity, n > 3);
         }

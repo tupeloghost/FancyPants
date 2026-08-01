@@ -28,6 +28,8 @@ export function createTrail() {
   let tapRings = [];                   // expanding light rings on tap
   const wakeVel = new Float32Array(WAKE * 3);
   const wakeLife = new Float32Array(WAKE);
+  let wakePhase = 0;
+  const up = new THREE.Vector3(), u = new THREE.Vector3(), v2 = new THREE.Vector3();
   const color = new THREE.Color();
   const tmpDir = new THREE.Vector3();
   const tmpSide = new THREE.Vector3();
@@ -213,14 +215,27 @@ export function createTrail() {
         for (let i = 0; i < BANDS.length; i++) {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
+        // helix vortex: particles spawn on a spiral around the flight
+        // direction and stream backward — the camera flies inside the swirl
+        wakePhase += dt * (4 + audio.volume * 12);
+        up.set(0, 1, 0);
+        u.crossVectors(headDir, up).normalize();
+        v2.crossVectors(headDir, u).normalize();
         for (let i = 0; i < WAKE; i++) {
           wakeLife[i] -= dt * 0.9;
           if (wakeLife[i] <= 0) {
             wakeLife[i] = 0.6 + Math.random() * 0.4;
-            pos.setXYZ(i, head.x, head.y, head.z);
-            const v = new THREE.Vector3().randomDirection().multiplyScalar(1.5 + audio.volume * 6);
-            v.addScaledVector(headDir, -4 - audio.volume * 8); // stream backward
-            wakeVel[i * 3] = v.x; wakeVel[i * 3 + 1] = v.y; wakeVel[i * 3 + 2] = v.z;
+            const a = wakePhase + i * 0.45;
+            const rad = 2.2 + audio.volume * 3 + Math.random() * 0.8;
+            pos.setXYZ(i,
+              head.x + u.x * Math.cos(a) * rad + v2.x * Math.sin(a) * rad,
+              head.y + u.y * Math.cos(a) * rad + v2.y * Math.sin(a) * rad,
+              head.z + u.z * Math.cos(a) * rad + v2.z * Math.sin(a) * rad
+            );
+            const back = -5 - audio.volume * 9;
+            wakeVel[i * 3] = headDir.x * back + u.x * Math.cos(a) * 1.5;
+            wakeVel[i * 3 + 1] = headDir.y * back + u.y * Math.cos(a) * 1.5;
+            wakeVel[i * 3 + 2] = headDir.z * back + u.z * Math.cos(a) * 1.5;
           } else {
             pos.setXYZ(i,
               pos.getX(i) + wakeVel[i * 3] * dt,

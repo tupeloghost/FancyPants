@@ -7,7 +7,7 @@ import { glowPoints, skyDome } from '../lib/glow.js';
 
 const COUNT = 340;
 const SPAN = 520;           // corridor length before structures recycle ahead
-const LANE_MIN = 12, LANE_MAX = 95;
+const LANE_MIN = 11, LANE_MAX = 58;
 
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -103,7 +103,7 @@ export function createSignal() {
       for (let i = 0; i < COUNT; i++) {
         mx[i] = laneX();
         mz[i] = -Math.random() * SPAN;
-        mh[i] = 5 + Math.pow(Math.random(), 2) * 42;
+        mh[i] = 6 + Math.pow(Math.random(), 2) * 58;
         mw[i] = 1.8 + Math.random() * 2.6;
         mBand[i] = Math.floor(Math.random() * BANDS.length);
         mThresh[i] = 0.28 + Math.random() * 0.35;
@@ -131,7 +131,7 @@ export function createSignal() {
       const speed = 9 + audio.energy * 26 * reactivity + audio.volume * 8;
       travel += speed * dt;
       const wander = Math.sin(travel * 0.01) * 7;
-      camera.position.set(wander, 8.5 + Math.sin(time * 0.2) * 1.5, -travel);
+      camera.position.set(wander, 6.5 + Math.sin(time * 0.2) * 1.5, -travel);
       camera.rotation.set(
         Math.sin(time * 0.11) * 0.04,
         Math.sin(travel * 0.01) * -0.12,
@@ -164,7 +164,7 @@ export function createSignal() {
         if (mz[i] > camZ + 25) {
           mz[i] -= SPAN;
           mx[i] = laneX();
-          mh[i] = 5 + Math.pow(Math.random(), 2) * 42;
+          mh[i] = 6 + Math.pow(Math.random(), 2) * 58;
           mw[i] = 1.8 + Math.random() * 2.6;
           mBand[i] = Math.floor(Math.random() * BANDS.length);
           mThresh[i] = 0.28 + Math.random() * 0.35;
