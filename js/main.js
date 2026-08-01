@@ -78,13 +78,14 @@ $('track-select').addEventListener('change', e => {
 $('file-input').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
+  $('file-label').textContent = '♪ ' + f.name;
   audio.loadFile(f);
   audio.play().catch(() => {});
   updatePlayBtn();
 });
 
 function updatePlayBtn() {
-  $('btn-play').textContent = audio.playing ? '⏸ pause' : '▶ play';
+  $('btn-play').textContent = audio.playing ? '⏸' : '▶';
 }
 $('btn-play').addEventListener('click', () => {
   audio.playing ? audio.pause() : audio.play().catch(() => {});
@@ -98,27 +99,39 @@ let scrubbing = false;
 $('scrub').addEventListener('input', e => {
   scrubbing = true;
   audio.seek((e.target.value / 1000) * audio.duration);
+  setFill(e.target);
 });
 $('scrub').addEventListener('change', () => { scrubbing = false; });
 
 $('volume').addEventListener('input', e => {
   audio.setVolume(e.target.value / 100);
   $('vol-val').textContent = e.target.value;
+  setFill(e.target);
 });
 audio.setVolume(0.8);
 
-// sliders
+// sliders — keep the filled portion of the track in sync via --fill
+function setFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--fill', pct + '%');
+}
+document.querySelectorAll('input[type="range"]').forEach(setFill);
+
 function slider(id, valId, fmt, apply) {
   $(id).addEventListener('input', e => {
     const v = +e.target.value;
     $(valId).textContent = fmt(v);
+    setFill(e.target);
     apply(v);
   });
 }
 slider('reactivity', 'react-val', v => (v / 100).toFixed(1), v => settings.reactivity = v / 100);
 slider('beat-sens', 'beat-val', v => (v / 100).toFixed(2), v => audio.params.beatThreshold = v / 100);
 slider('smoothing', 'smooth-val', v => (v / 100).toFixed(2), v => audio.params.smoothing = v / 100);
-slider('hue', 'hue-val', v => v, v => settings.hue = v);
+slider('hue', 'hue-val', v => v, v => {
+  settings.hue = v;
+  document.documentElement.style.setProperty('--accent-h', v);
+});
 
 // mode toggle
 function setAttract(on) {
@@ -196,9 +209,11 @@ function frame(now) {
     fpsFrames = 0; fpsTime = 0;
     if (!scrubbing && audio.duration) {
       $('scrub').value = (audio.currentTime / audio.duration) * 1000;
+      setFill($('scrub'));
     }
     const f = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-    $('time-label').textContent = `${f(audio.currentTime)} / ${f(audio.duration)}`;
+    $('time-cur').textContent = f(audio.currentTime);
+    $('time-dur').textContent = f(audio.duration);
     $('pcount').textContent = participants.length;
   }
 }
