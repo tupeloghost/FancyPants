@@ -135,22 +135,23 @@ export function createSignal() {
       camera.updateProjectionMatrix();
     },
 
-    // tap: hurl a glowing ball down the corridor — it knocks columns over
-    // like bowling pins (the radar ping rides along with it)
-    onTap() {
+    // tap: hurl a glowing ball AT WHAT YOU CLICKED — aim at a column and
+    // it goes down like a bowling pin (the radar ping rides along)
+    onTap(x, y) {
       ping.active = true;
       ping.x = camera.position.x;
       ping.z = camera.position.z;
       ping.r = 0;
-      const b = balls.find(x => !x.visible) || balls[0];
+      const b = balls.find(x2 => !x2.visible) || balls[0];
       b.visible = true;
       b.userData.t = 0;
-      b.position.copy(camera.position);
-      b.position.y = 3;
-      b.userData.vel.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      // aim through the click point, not the screen center — the corridor's
+      // middle lane is empty, so a centerline shot would never hit anything
+      b.userData.vel.set(x, y, 0.5).unproject(camera).sub(camera.position);
       b.userData.vel.y = 0;
       b.userData.vel.normalize().multiplyScalar(110);
-      // launch a few meters ahead so the ball doesn't flash the whole lens
+      b.position.copy(camera.position);
+      b.position.y = 3;
       b.position.addScaledVector(b.userData.vel, 0.12);
     },
 
