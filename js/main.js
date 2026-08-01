@@ -124,6 +124,16 @@ $('volume').addEventListener('input', e => {
 });
 audio.setVolume(0.8);
 
+// pin initial slider values — the browser's form-state restoration otherwise
+// resurrects stale positions across reloads
+$('volume').value = 80;
+$('reactivity').value = 100;
+$('beat-sens').value = 140;
+$('smoothing').value = 70;
+$('hue').value = 210;
+$('bloom').value = 90;
+$('scrub').value = 0;
+
 // sliders — keep the filled portion of the track in sync via --fill
 function setFill(el) {
   const pct = ((el.value - el.min) / (el.max - el.min)) * 100;

@@ -2,7 +2,7 @@
 // illuminate as their frequency band strikes them. Fog, mood, no timer.
 
 import * as THREE from 'three';
-import { glowPoints } from '../lib/glow.js';
+import { glowPoints, skyDome } from '../lib/glow.js';
 
 const COUNT = 320;
 const FIELD = 380;          // world size; camera wraps within it
@@ -10,7 +10,7 @@ const FIELD = 380;          // world size; camera wraps within it
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createSignal() {
-  let scene, camera, group, monoliths, reflections, ground, dust, pingRing;
+  let scene, camera, group, monoliths, reflections, ground, dust, pingRing, sky;
   let drift = 0;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -95,6 +95,9 @@ export function createSignal() {
       pingRing.position.y = 0.3;
       group.add(pingRing);
 
+      sky = skyDome(340);
+      group.add(sky);
+
       for (let i = 0; i < COUNT; i++) {
         mx[i] = (Math.random() - 0.5) * FIELD;
         mz[i] = (Math.random() - 0.5) * FIELD;
@@ -133,6 +136,11 @@ export function createSignal() {
       if (camera.position.z > FIELD / 2) camera.position.z -= FIELD;
       if (camera.position.z < -FIELD / 2) camera.position.z += FIELD;
       camera.rotation.set(Math.sin(time * 0.11) * 0.06, -heading, Math.sin(time * 0.13) * 0.02);
+
+      // sky follows the drifting camera; very dim — SIGNAL stays moody
+      sky.position.copy(camera.position);
+      color.setHSL(((hue / 360) + 0.02) % 1, 0.6, 0.22 + audio.energy * 0.2);
+      sky.material.color.copy(color);
 
       if (ping.active) {
         ping.r += 90 * dt;

@@ -2,7 +2,7 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from '../lib/glow.js';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 
 const COLS = 64;            // one column per spectrum bin
 const ROWS = 96;            // rows of spectrum history scrolling toward camera
@@ -10,7 +10,7 @@ const WIDTH = 170, DEPTH = 260;
 const ROW_INTERVAL = 0.035; // seconds between history rows
 
 export function createSurfer() {
-  let scene, camera, group, mesh, sun, sunHalo, stars;
+  let scene, camera, group, mesh, sun, sunHalo, stars, sky;
   let steer = 0, steerTarget = 0;
   let jumpY = 0, jumpVel = 0;
   let rowTimer = 0, scrollOff = 0;
@@ -64,6 +64,9 @@ export function createSurfer() {
       stars.material.color.set(0xaabbee);
       stars.material.fog = false;
       group.add(stars);
+
+      sky = skyDome(320);
+      group.add(sky);
 
       camera.position.set(0, 10, 40);
       camera.rotation.set(0, 0, 0);
@@ -133,14 +136,19 @@ export function createSurfer() {
           const h = hRow[c] * (1 - rowScroll) + hRowNext[c] * rowScroll + rowBump;
           pos.setY(i, h);
           const t = Math.min(1, h / 14);
-          // bright enough to cross the bloom threshold on peaks and beats
-          const lum = 0.2 + t * 0.5 + audio.beatIntensity * 0.15;
+          // bright enough to cross the bloom threshold on peaks and beats;
+          // the center "road" columns glow so the path reads
+          const road = Math.exp(-Math.pow(c - COLS / 2, 2) / 16) * (0.1 + audio.volume * 0.12);
+          const lum = 0.2 + t * 0.5 + audio.beatIntensity * 0.15 + road;
           color.setHSL(((hue / 360) + t * 0.14 + r * 0.0008) % 1, 0.9, Math.min(0.72, lum));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
       pos.needsUpdate = true;
       col.needsUpdate = true;
+
+      color.setHSL(((hue / 360) + 0.5) % 1, 0.6, 0.4 + audio.energy * 0.25);
+      sky.material.color.copy(color);
 
       // sun pulses with bass, hue-complementary so it pops against the grid
       const sunScale = 1 + audio.bass * 0.35 * reactivity + audio.beatIntensity * 0.15;

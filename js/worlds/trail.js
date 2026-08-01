@@ -2,7 +2,7 @@
 // the dominant frequency band. Never fades. (PNG export: press S — shell-level.)
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from '../lib/glow.js';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 
 const MAX_POINTS = 14000;   // capped total segment count
 const MIN_DIST = 0.22;
@@ -11,7 +11,7 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon, headOrb, headHalo, stars, sparks;
+  let scene, camera, group, ribbon, headOrb, headHalo, stars, sparks, sky;
   const SPARKS = 90;
   const sparkVel = new Float32Array(SPARKS * 3);
   let sparkLife = 0;
@@ -89,6 +89,9 @@ export function createTrail() {
       stars.material.color.set(0x66779a);
       group.add(stars);
 
+      sky = skyDome(300);
+      group.add(sky);
+
       nPoints = 0;
       head.set(0, 0, 0);
       prev.copy(head);
@@ -156,6 +159,9 @@ export function createTrail() {
         ribbon.geometry.setDrawRange(0, Math.max(0, (nPoints - 1) * 6));
         prev.copy(head);
       }
+
+      color.setHSL((hue / 360) % 1, 0.65, 0.4 + audio.energy * 0.25);
+      sky.material.color.copy(color);
 
       // head orb glows and swells with the music
       headOrb.position.copy(head);

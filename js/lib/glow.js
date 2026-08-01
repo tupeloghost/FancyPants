@@ -34,6 +34,25 @@ export function glowSprite(scale = 10) {
   return s;
 }
 
+// Inverted sky sphere with a horizon glow baked into vertex colors.
+// Tint it per-frame via material.color — kills the raw-black-void look.
+export function skyDome(radius = 320) {
+  const geo = new THREE.SphereGeometry(radius, 24, 16);
+  const n = geo.attributes.position.count;
+  const cols = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const y = geo.attributes.position.getY(i) / radius; // -1..1
+    const horizon = Math.max(0, 1 - Math.abs(y) * 1.7);
+    const v = 0.03 + horizon * horizon * 0.30;
+    cols[i * 3] = v; cols[i * 3 + 1] = v; cols[i * 3 + 2] = v;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+    side: THREE.BackSide, vertexColors: true,
+    toneMapped: false, fog: false, depthWrite: false,
+  }));
+}
+
 // Standard material recipe for glowing point clouds.
 export function glowPoints(size, opacity = 0.9) {
   return new THREE.PointsMaterial({

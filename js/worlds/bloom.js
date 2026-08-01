@@ -3,16 +3,17 @@
 // explosive. Growth persists for the whole session (until world switch).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from '../lib/glow.js';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js';
 
 const MAX_CRYSTALS = 2600;
 const MAX_STEMS = 2600;
 
 export function createBloom() {
   let scene, camera, group;
-  let crystals, stems, spores, ground, growerLight, tapFlashSprite;
+  let crystals, stems, spores, ground, growerLight, tapFlashSprite, sky;
   const tapPoint = new THREE.Vector3();
   let tapFlash = 0, tapPlant = 0;
+  const growing = [];        // {idx, t, pos, size, rot} — crystals animate in
   let nCrystals = 0, nStems = 0;
   const recentIdx = [];      // most recent crystals pulse with the beat
   const recentHue = [];
@@ -45,11 +46,13 @@ export function createBloom() {
     }
 
     if (nCrystals < MAX_CRYSTALS) {
+      const rot = [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI];
       dummy.position.copy(pos);
-      dummy.scale.setScalar(size);
-      dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      dummy.scale.setScalar(0.01); // grows in over ~half a second
+      dummy.rotation.set(rot[0], rot[1], rot[2]);
       dummy.updateMatrix();
       crystals.setMatrixAt(nCrystals, dummy.matrix);
+      growing.push({ idx: nCrystals, t: 0, pos: pos.clone(), size, rot });
       // quiet passages → cool dim tones; loud → hot bright shifted hue
       const crystalHue = ((hue / 360) + audio.mid * 0.25 + Math.random() * 0.06) % 1;
       color.setHSL(crystalHue, 0.85, 0.3 + loud * 0.42);
@@ -73,9 +76,18 @@ export function createBloom() {
       scene.add(group);
       scene.fog = new THREE.FogExp2(0x010104, 0.02);
 
+      // vertical gradient in vertex colors so crystals shade instead of
+      // reading as flat hexagons
+      const crysGeo = new THREE.IcosahedronGeometry(1, 0);
+      const cvc = new Float32Array(crysGeo.attributes.position.count * 3);
+      for (let i = 0; i < crysGeo.attributes.position.count; i++) {
+        const t = 0.45 + (crysGeo.attributes.position.getY(i) + 1) * 0.35;
+        cvc[i * 3] = t; cvc[i * 3 + 1] = t; cvc[i * 3 + 2] = t;
+      }
+      crysGeo.setAttribute('color', new THREE.BufferAttribute(cvc, 3));
       crystals = new THREE.InstancedMesh(
-        new THREE.IcosahedronGeometry(1, 0),
-        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        crysGeo,
+        new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
         MAX_CRYSTALS
       );
       stems = new THREE.InstancedMesh(
@@ -109,14 +121,21 @@ export function createBloom() {
       tapFlashSprite.material.opacity = 0;
       group.add(tapFlashSprite);
 
-      // faint ground disc so the garden sits somewhere
+      // soft pool of light under the garden instead of a hard disc
       ground = new THREE.Mesh(
-        new THREE.CircleGeometry(75, 48),
-        new THREE.MeshBasicMaterial({ toneMapped: false })
+        new THREE.CircleGeometry(85, 48),
+        new THREE.MeshBasicMaterial({
+          map: glowTexture(), toneMapped: false, transparent: true, opacity: 0.3,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
       );
       ground.rotation.x = -Math.PI / 2;
       ground.position.y = -15;
       group.add(ground);
+
+      sky = skyDome(300);
+      group.add(sky);
+      growing.length = 0;
 
       grower.set(0, 0, 0);
       camera.fov = 70;
@@ -186,6 +205,30 @@ export function createBloom() {
       } else {
         tapFlashSprite.material.opacity = 0;
       }
+
+      // grow-in animation: pop past full size, then settle
+      if (growing.length) {
+        for (let i = growing.length - 1; i >= 0; i--) {
+          const g = growing[i];
+          g.t += dt * 2.4;
+          const t = Math.min(1, g.t);
+          const s = g.size * (t < 0.7 ? (t / 0.7) * 1.2 : 1.2 - 0.2 * ((t - 0.7) / 0.3));
+          dummy.position.copy(g.pos);
+          dummy.scale.setScalar(Math.max(0.01, s));
+          dummy.rotation.set(g.rot[0], g.rot[1] + (1 - t) * 2.5, g.rot[2]); // spins as it grows
+          dummy.updateMatrix();
+          crystals.setMatrixAt(g.idx, dummy.matrix);
+          if (g.t >= 1) growing.splice(i, 1);
+        }
+        crystals.instanceMatrix.needsUpdate = true;
+      }
+
+      // sky + ground pool tint
+      color.setHSL(((hue / 360) + 0.35) % 1, 0.6, 0.3 + audio.energy * 0.25);
+      sky.material.color.copy(color);
+      color.setHSL((hue / 360) % 1, 0.7, 0.3 + audio.bass * 0.2);
+      ground.material.color.copy(color);
+      ground.material.opacity = 0.22 + audio.volume * 0.2;
 
       // recent growth pulses with the beat — the garden feels alive
       if (recentIdx.length) {

@@ -2,14 +2,14 @@
 // expand outward; you steer through the gaps with a single axis (radius).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from '../lib/glow.js';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 
 const SHAPE_POOL = 24;
 const STARS = 600;
 
 export function createOrbit() {
   let scene, camera, group;
-  let core, coreWire, coreHot, coreHalo, stars, player, swarm, trail, dome;
+  let core, coreWire, coreHot, coreHalo, stars, player, swarm, trail, dome, sky;
   let shapes = [];
   let trailPts = [];
   let scatter = 0;    // tap: swarm blasts outward, dome flashes
@@ -52,6 +52,9 @@ export function createOrbit() {
         })
       );
       group.add(dome);
+
+      sky = skyDome(280);
+      group.add(sky);
 
       // particle swarm around the core
       const swp = new Float32Array(700 * 3);
@@ -155,6 +158,9 @@ export function createOrbit() {
       swarm.rotation.y += dt * (0.15 + audio.mid * 0.8 * reactivity + scatter * 3);
       swarm.rotation.z += dt * 0.05;
       swarm.scale.setScalar(1 + audio.mid * 0.35 * reactivity + audio.beatIntensity * 0.15 + scatter * 1.4);
+
+      color.setHSL((hue / 360) % 1, 0.7, 0.5 + audio.energy * 0.3);
+      sky.material.color.copy(color);
 
       // dome breathes; flashes on beats and taps
       dome.rotation.y += dt * 0.02;
