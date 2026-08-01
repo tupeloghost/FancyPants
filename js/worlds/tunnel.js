@@ -24,6 +24,10 @@ export function createTunnel() {
   const ringZ = new Float32Array(RINGS);      // base z of each ring (negative = ahead)
   const ringSeed = new Float32Array(RINGS);
 
+  // tap interaction state
+  let tapFlash = 0;      // wall brightness kick, decays
+  let tapQueued = false; // spawn a fired ring on the next update
+
   // which frequency band drives each wall segment (by angle sector)
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -59,7 +63,7 @@ export function createTunnel() {
           new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0 })
         );
         m.visible = false;
-        m.userData = { life: 0, z: 0 };
+        m.userData = { life: 0, z: 0, fired: false };
         group.add(m);
         beatRings.push(m);
       }
@@ -71,6 +75,12 @@ export function createTunnel() {
 
     // input: {x: -1..1, y: -1..1} from pointer/touch, only used in interactive mode
     setInput(x, y) { steerTarget.x = x; steerTarget.y = y; },
+
+    // click/tap: fire a shockwave ring down the tube + flash the walls
+    onTap() {
+      tapFlash = 1;
+      tapQueued = true;
+    },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
@@ -134,7 +144,7 @@ export function createTunnel() {
           // color: hue base shifted per band, brightness from level
           const bandShift = (s % BANDS.length) * 0.045;
           const h = ((hue / 360) + bandShift + audio.energy * 0.08) % 1;
-          const lum = 0.06 + level * 0.55 * reactivity + audio.beatIntensity * 0.12;
+          const lum = 0.06 + level * 0.55 * reactivity + audio.beatIntensity * 0.12 + tapFlash * 0.18;
           color.setHSL(h, 0.85, Math.min(0.75, lum));
           wall.setColorAt(idx, color);
           idx++;
@@ -147,16 +157,31 @@ export function createTunnel() {
       if (audio.beat) {
         const m = beatRings.find(b => !b.visible) || beatRings[0];
         m.visible = true;
-        m.userData.life = 1;
+        m.userData.fired = false;
         m.userData.z = -RINGS * RING_SPACING * 0.85 - travel; // spawn far ahead (in ring space)
         m.material.opacity = 1;
         color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.6 + audio.beatIntensity * 0.2);
         m.material.color.copy(color);
       }
+
+      // taps fire a shockwave ring from the camera down the tube
+      if (tapQueued) {
+        tapQueued = false;
+        const m = beatRings.find(b => !b.visible) || beatRings[0];
+        m.visible = true;
+        m.userData.fired = true;
+        m.userData.z = -1 - travel; // spawn just ahead of the camera
+        m.material.opacity = 1;
+        color.setHSL(((hue / 360) + 0.12) % 1, 0.95, 0.7);
+        m.material.color.copy(color);
+      }
+      tapFlash *= Math.pow(0.02, dt); // fast decay
+
       for (const m of beatRings) {
         if (!m.visible) continue;
+        if (m.userData.fired) m.userData.z -= 140 * dt; // race away from camera
         const z = m.userData.z + travel;
-        if (z > 6) { m.visible = false; continue; }
+        if (z > 6 || z < -RINGS * RING_SPACING) { m.visible = false; continue; }
         m.position.set(
           Math.sin((travel - z) * 0.02) * 3 + Math.sin((travel - z) * 0.007) * 5 - curveX + steer.x * z * 0.06,
           Math.cos((travel - z) * 0.016) * 2.2 - curveY + steer.y * z * 0.06,

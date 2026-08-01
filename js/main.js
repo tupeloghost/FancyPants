@@ -160,6 +160,12 @@ function steerFromPointer(cx, cy) {
   world.setInput((cx / window.innerWidth) * 2 - 1, -((cy / window.innerHeight) * 2 - 1));
 }
 window.addEventListener('pointermove', e => steerFromPointer(e.clientX, e.clientY));
+
+// click/tap interaction — part of the world contract, works in both modes
+canvas.addEventListener('pointerdown', e => {
+  if (!world || !world.onTap) return;
+  world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
+});
 window.addEventListener('touchmove', e => {
   if (e.touches[0]) steerFromPointer(e.touches[0].clientX, e.touches[0].clientY);
 }, { passive: true });

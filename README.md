@@ -57,7 +57,9 @@ multiplayer phase).
   energy`. Beat detection is rolling-average bass with tunable threshold,
   smoothing, and cooldown.
 - `js/worlds/*.js` — each world exports a factory returning
-  `{ init(scene, camera), update(dt, audio, participants, opts), dispose() }`.
+  `{ init(scene, camera), update(dt, audio, participants, opts), dispose() }`,
+  plus optional `setInput(x, y)` (steer) and `onTap(x, y)` (click/tap
+  interaction — every world should implement it).
   Worlds never analyze audio or touch the network.
 - `js/worlds/registry.js` — adding a world = one file + one entry here.
 - `js/main.js` — shared shell: renderer, loop, panel, world switcher,
