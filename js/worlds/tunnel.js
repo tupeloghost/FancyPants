@@ -234,7 +234,7 @@ export function createTunnel() {
           // cap the HDR drive so peaks bloom in color instead of bleaching white
           // hdr scales how far colors are driven past standard range:
           // 0 = flat SDR, 1 = default, 2 = full superbright
-          const rawDrive = Math.min(1.6, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave * (0.82 + jit * 0.36));
+          const rawDrive = Math.min(1.9, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           color.multiplyScalar(Math.max(0.15, drive2) * proximityDim);
           wall.setColorAt(idx, color);

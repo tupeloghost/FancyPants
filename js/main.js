@@ -7,12 +7,14 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { AudioEngine } from './audio-engine.js';
 import { WORLDS } from './worlds/registry.js';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
@@ -23,9 +25,39 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.5, 0.35
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.3, 0.5
 );
 composer.addPass(bloomPass);
+
+// color grade: vibrance + contrast after bloom — this is what makes the
+// colors read as rich stained glass instead of washed pastel
+const gradePass = new ShaderPass({
+  uniforms: {
+    tDiffuse: { value: null },
+    saturation: { value: 1.45 },
+    contrast: { value: 1.12 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float saturation;
+    uniform float contrast;
+    varying vec2 vUv;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      // vibrance: push saturation harder on less-saturated pixels
+      vec3 sat = mix(vec3(luma), c.rgb, saturation);
+      // gentle S-curve contrast around mid gray
+      vec3 graded = (sat - 0.5) * contrast + 0.5;
+      gl_FragColor = vec4(max(graded, 0.0), c.a);
+    }
+  `,
+});
+composer.addPass(gradePass);
 composer.addPass(new OutputPass());
 
 window.addEventListener('resize', () => {
@@ -134,7 +166,7 @@ $('reactivity').value = 100;
 $('beat-sens').value = 140;
 $('smoothing').value = 70;
 $('hue').value = 210;
-$('bloom').value = 90;
+$('bloom').value = 70;
 $('hdr').value = 100;
 $('scrub').value = 0;
 $('color-mode').value = 'rainbow';
