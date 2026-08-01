@@ -401,11 +401,11 @@ export function createTunnel() {
               // candy-cane: glossy diagonal stripes swirling down the tube
               const stripe = Math.floor(((a / (Math.PI * 2)) * 10 + (travel - z) * 0.16 + time * 0.25) % 4 + 4) % 4;
               if (stripe === 0)      { h = 0.93; sat = 1.0;  boost = 1.1; }  // hot pink
-              else if (stripe === 1) { h = 0.0;  sat = 0.05; boost = 1.25; } // white gloss
+              else if (stripe === 1) { h = 0.0;  sat = 0.05; boost = 1.0; }  // white gloss
               else if (stripe === 2) { h = 0.50; sat = 0.95; boost = 1.0; }  // cyan
               else                   { h = 0.13; sat = 1.0;  boost = 1.05; } // lemon
               // wet-candy shine sweeping around
-              boost += Math.pow(Math.max(0, Math.cos(a - time * 1.3)), 8) * 0.8;
+              boost += Math.pow(Math.max(0, Math.cos(a - time * 1.3)), 8) * 0.55;
               break;
             }
             case 'duo':

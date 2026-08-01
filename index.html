@@ -127,6 +127,20 @@
     background: var(--accent-soft); color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent-line);
   }
+  .picked { color: var(--accent); letter-spacing: 0.5px; text-transform: none; }
+  .chip-group {
+    width: 100%; font-size: 8px; letter-spacing: 2px; color: var(--ink-faint);
+    margin-top: 3px;
+  }
+  #hue-row { position: relative; }
+  #hue-row.locked input { opacity: 0.25; pointer-events: none; }
+  #hue-row.locked label { opacity: 0.4; }
+  #hue-note {
+    display: none; font-size: 9px; color: var(--ink-faint); letter-spacing: 0.5px;
+    margin-top: -3px;
+  }
+  #hue-row.locked #hue-note { display: block; }
+
   .tab-page { display: none; }
   .tab-page.on { display: block; animation: pagein 0.18s ease-out; }
   @keyframes pagein {
@@ -445,17 +459,18 @@
         <button id="btn-interactive">&#9654; play</button>
         <button id="btn-stardust" class="on">&#10022; dust</button>
       </div>
-      <div class="mini-label">looks</div>
+      <div class="mini-label">one-click looks</div>
       <div id="preset-chips" class="chips"></div>
-      <div class="mini-label">colors</div>
+      <div class="mini-label">colors &middot; <span class="picked" id="color-name">rainbow</span></div>
       <div id="color-chips" class="chips"></div>
-      <div class="row slider">
+      <div class="row slider" id="hue-row">
         <label>hue <span class="val" id="hue-val">210</span></label>
         <input type="range" id="hue" min="0" max="360" value="210">
+        <div id="hue-note">this theme brings its own colors</div>
       </div>
-      <div class="mini-label">pattern</div>
+      <div class="mini-label">pattern &middot; <span class="picked" id="pattern-name">spiral</span></div>
       <div id="pattern-chips" class="chips"></div>
-      <div class="mini-label">shape</div>
+      <div class="mini-label">shape &middot; <span class="picked" id="shape-name">slat</span></div>
       <div id="shape-chips" class="chips"></div>
     </div>
 

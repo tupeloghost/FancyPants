@@ -260,27 +260,29 @@ const A2 = 'hsl(calc(var(--accent-h) + 180), 90%, 55%)';
 const A3 = 'hsl(calc(var(--accent-h) + 120), 90%, 55%)';
 
 const COLOR_MODES = [
-  ['rainbow', 'rainbow', 'linear-gradient(90deg,#f43,#fa0,#fe5,#3e6,#2cf,#55f,#c4f)'],
+  ['__group', 'FOLLOW THE HUE SLIDER'],
+  ['rainbow', 'rainbow — full spectrum', 'linear-gradient(90deg,#f43,#fa0,#fe5,#3e6,#2cf,#55f,#c4f)'],
   ['duotone', 'duotone — your hue & its complement', `linear-gradient(90deg,${A},${A2})`],
-  ['cycle', 'cycle — palette rotates over time', 'conic-gradient(#f43,#fe5,#3e6,#2cf,#55f,#c4f,#f43)'],
-  ['fire', 'fire', 'linear-gradient(0deg,#310,#d30,#fa0,#ff7)'],
-  ['ocean', 'ocean', 'linear-gradient(90deg,#036,#0af,#0fd,#08c)'],
-  ['sunset', 'sunset', 'linear-gradient(0deg,#f70,#f36,#a3c)'],
-  ['aurora', 'aurora', 'linear-gradient(75deg,#0e5,#3fa,#65f,#0e5)'],
-  ['forest', 'forest', 'linear-gradient(90deg,#031,#0a4,#fd6 65%,#0a4)'],
-  ['gold', 'gold', 'linear-gradient(105deg,#640,#fc3,#fff,#fc3,#640)'],
-  ['cosmos', 'cosmos — starfield & nebula', 'radial-gradient(circle at 25% 30%,#fff 4%,transparent 6%),radial-gradient(circle at 70% 65%,#fff 3%,transparent 5%),linear-gradient(120deg,#103,#527,#215)'],
-  ['glitter', 'glitter — tinted by hue', `radial-gradient(circle at 30% 40%,#fff 5%,transparent 8%),radial-gradient(circle at 75% 60%,#fff 4%,transparent 7%),linear-gradient(120deg,hsl(var(--accent-h),60%,14%),hsl(var(--accent-h),50%,26%))`],
-  ['candy', 'candy', 'repeating-linear-gradient(45deg,#f6a 0 5px,#fff 5px 9px,#4de 9px 14px,#fd4 14px 18px)'],
-  ['mono', 'mono — single hue', A],
+  ['cycle', 'cycle — colors rotate over time', 'conic-gradient(#f43,#fe5,#3e6,#2cf,#55f,#c4f,#f43)'],
+  ['mono', 'mono — one hue', A],
   ['duo', 'duo — hue + complement, hard split', `linear-gradient(90deg,${A} 50%,${A2} 50%)`],
   ['triad', 'triad — three hues', `linear-gradient(90deg,${A} 33%,${A3} 33% 66%,${A2} 66%)`],
-  ['pastel', 'pastel', 'linear-gradient(90deg,#fbc,#cfe,#dfc,#fec)'],
-  ['neon', 'neon', 'linear-gradient(90deg,#f0f,#0ff,#ff0)'],
-  ['random', 'random confetti', 'conic-gradient(#f43 0 14%,#2cf 0 32%,#fe5 0 47%,#c4f 0 66%,#3e6 0 82%,#f70 0)'],
-  ['vapor', 'vapor', 'linear-gradient(90deg,#f9c,#8df,#caf,#fac)'],
-  ['midnight', 'midnight', 'linear-gradient(90deg,#124,#36c,#89b,#236)'],
-  ['coral', 'coral', 'linear-gradient(90deg,#f75,#fa8,#4cb,#f86)'],
+  ['pastel', 'pastel — soft & dreamy', 'linear-gradient(90deg,#fbc,#cfe,#dfc,#fec)'],
+  ['neon', 'neon — maximum glow', 'linear-gradient(90deg,#f0f,#0ff,#ff0)'],
+  ['glitter', 'glitter — sparkles in your hue', `radial-gradient(circle at 30% 40%,#fff 5%,transparent 8%),radial-gradient(circle at 75% 60%,#fff 4%,transparent 7%),linear-gradient(120deg,hsl(var(--accent-h),60%,14%),hsl(var(--accent-h),50%,26%))`],
+  ['cosmos', 'cosmos — starfield, nebula in your hue', 'radial-gradient(circle at 25% 30%,#fff 4%,transparent 6%),radial-gradient(circle at 70% 65%,#fff 3%,transparent 5%),linear-gradient(120deg,#103,#527,#215)'],
+  ['__group', 'THEMES WITH THEIR OWN COLORS'],
+  ['fire', 'fire — flickering flames', 'linear-gradient(0deg,#310,#d30,#fa0,#ff7)'],
+  ['ocean', 'ocean — rolling teal swells', 'linear-gradient(90deg,#036,#0af,#0fd,#08c)'],
+  ['sunset', 'sunset — orange below, violet above', 'linear-gradient(0deg,#f70,#f36,#a3c)'],
+  ['aurora', 'aurora — green curtains, violet night', 'linear-gradient(75deg,#0e5,#3fa,#65f,#0e5)'],
+  ['forest', 'forest — canopy & dappled light', 'linear-gradient(90deg,#031,#0a4,#fd6 65%,#0a4)'],
+  ['gold', 'gold — polished metal shine', 'linear-gradient(105deg,#640,#fc3,#fff,#fc3,#640)'],
+  ['candy', 'candy — glossy cane stripes', 'repeating-linear-gradient(45deg,#f6a 0 5px,#fff 5px 9px,#4de 9px 14px,#fd4 14px 18px)'],
+  ['vapor', 'vapor — pink & cyan haze', 'linear-gradient(90deg,#f9c,#8df,#caf,#fac)'],
+  ['midnight', 'midnight — deep blues', 'linear-gradient(90deg,#124,#36c,#89b,#236)'],
+  ['coral', 'coral — warm reef tones', 'linear-gradient(90deg,#f75,#fa8,#4cb,#f86)'],
+  ['random', 'random — confetti', 'conic-gradient(#f43 0 14%,#2cf 0 32%,#fe5 0 47%,#c4f 0 66%,#3e6 0 82%,#f70 0)'],
 ];
 const PATTERNS = [
   ['spiral', 'spiral', 'conic-gradient(from 0deg,#69f,#123 25%,#69f 50%,#123 75%,#69f)'],
@@ -300,9 +302,24 @@ const SHAPES = [
   ['star', 'star', '&#9733;'],
 ];
 
-function buildChips(containerId, items, isGlyph, apply, initial) {
+// modes where the theme brings its own palette — the hue slider is moot
+const HUE_LOCKED = new Set(['fire', 'ocean', 'sunset', 'aurora', 'forest', 'gold',
+                            'candy', 'vapor', 'midnight', 'coral', 'random']);
+function refreshHueLock() {
+  $('hue-row').classList.toggle('locked', HUE_LOCKED.has(settings.colorMode));
+}
+
+function buildChips(containerId, items, isGlyph, apply, initial, nameId) {
   const box = $(containerId);
-  for (const [id, label, visual] of items) {
+  for (const item of items) {
+    if (item[0] === '__group') {
+      const gl = document.createElement('div');
+      gl.className = 'chip-group';
+      gl.textContent = item[1];
+      box.appendChild(gl);
+      continue;
+    }
+    const [id, label, visual] = item;
     const c = document.createElement('div');
     c.className = 'chip' + (id === initial ? ' on' : '');
     c.dataset.id = id;
@@ -312,14 +329,17 @@ function buildChips(containerId, items, isGlyph, apply, initial) {
     c.addEventListener('click', () => {
       box.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
       c.classList.add('on');
+      if (nameId) $(nameId).textContent = label.split(' — ')[0];
       apply(id);
     });
     box.appendChild(c);
+    if (nameId && id === initial) $(nameId).textContent = label.split(' — ')[0];
   }
 }
-buildChips('color-chips', COLOR_MODES, false, v => { settings.colorMode = v; updateURL(); }, settings.colorMode);
-buildChips('pattern-chips', PATTERNS, false, v => { settings.pattern = v; updateURL(); }, settings.pattern);
-buildChips('shape-chips', SHAPES, true, v => { settings.shape = v; updateURL(); }, settings.shape);
+buildChips('color-chips', COLOR_MODES, false, v => { settings.colorMode = v; refreshHueLock(); updateURL(); }, settings.colorMode, 'color-name');
+buildChips('pattern-chips', PATTERNS, false, v => { settings.pattern = v; updateURL(); }, settings.pattern, 'pattern-name');
+buildChips('shape-chips', SHAPES, true, v => { settings.shape = v; updateURL(); }, settings.shape, 'shape-name');
+refreshHueLock();
 
 function setChipActive(boxId, id) {
   $(boxId).querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.id === id));
@@ -359,6 +379,10 @@ const PRESETS = [
       setChipActive('color-chips', cfg.colorMode);
       setChipActive('pattern-chips', cfg.pattern);
       setChipActive('shape-chips', cfg.shape);
+      $('color-name').textContent = cfg.colorMode;
+      $('pattern-name').textContent = cfg.pattern;
+      $('shape-name').textContent = cfg.shape;
+      refreshHueLock();
       updateURL();
     });
     box.appendChild(c);
