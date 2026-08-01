@@ -28,5 +28,5 @@ export const WORLDS = {
   cherry: { label: 'CHERRY LAND', create: createCherryLand },
   slinky: { label: 'SLINKY', create: createSlinky },
   blacktop: { label: 'BLACKTOP', create: createBlacktop },
-  waterslide: { label: 'WATERSLIDE', create: createWaterslide },
+  waterslide: { label: 'SLIDE', create: createWaterslide },
 };

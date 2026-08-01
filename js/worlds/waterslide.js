@@ -31,7 +31,7 @@ export function createWaterslide() {
   const dropY = t => -t * DROP + Math.sin(t * 0.02) * 4;
 
   return {
-    name: 'WATERSLIDE',
+    name: 'SLIDE',
 
     init(_scene, _camera) {
       scene = _scene; camera = _camera;

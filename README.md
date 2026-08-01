@@ -17,8 +17,8 @@ TRAIL (persistent ribbon comet), SIGNAL (monolith corridor + bowling),
 RIVER (lazy river with real current), BALL PIT (physics pit — taps rain
 more balls), LAVA LAMP (raymarched metaball wax), PLASMA (lightning globe),
 CHERRY LAND (shake the trees), SLINKY (walks downstairs forever, tap to
-boing), BLACKTOP (night street racing, tap = nitro), WATERSLIDE (open-top
-flume, tap = splash + speed).
+boing), BLACKTOP (night street racing, tap = nitro), SLIDE (open-top
+luge flume, tap = splash + speed).
 
 All ten share the theme engine (`js/lib/themes.js`): every color mode,
 pattern-agnostic, drives every world.

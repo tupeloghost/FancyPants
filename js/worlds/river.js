@@ -12,7 +12,7 @@ const LANTERNS = 56;
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createRiver() {
-  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam;
+  let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam, tube, banks;
   const foamLat = new Float32Array(130);
   let drift = 0;
   const tp = [0, 0, 0];
@@ -30,6 +30,7 @@ export function createRiver() {
   let ripples = [];
 
   const riverX = z => Math.sin(z * 0.014) * 20 + Math.sin(z * 0.0045) * 26;
+  let swellAt = () => 0; // bound in update (needs time + drift)
 
   return {
     name: 'RIVER',
@@ -102,6 +103,24 @@ export function createRiver() {
         for (let i = 0; i < 130; i++) foamLat[i] = (Math.random() - 0.5) * 24;
       }
 
+      // YOUR inner tube — visible at the bottom of the frame, riding the water
+      tube = new THREE.Mesh(
+        new THREE.TorusGeometry(1.55, 0.5, 14, 36),
+        new THREE.MeshBasicMaterial({ toneMapped: false })
+      );
+      tube.rotation.x = Math.PI / 2;
+      group.add(tube);
+
+      // shore lines: soft glowing banks containing the river
+      banks = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(3.2, 0.8, 9),
+        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        64
+      );
+      banks.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
+      banks.frustumCulled = false;
+      group.add(banks);
+
       moon = glowSprite(46);
       moon.material.fog = false;
       group.add(moon);
@@ -168,9 +187,26 @@ export function createRiver() {
         participants[0].y = 0;
       }
 
-      camera.position.set(riverX(camZ) + steer * 8, 4.2 + Math.sin(time * 0.5) * 0.4, camZ);
-      camera.lookAt(riverX(camZ - 55), 2.2, camZ - 55);
-      camera.rotation.z += Math.sin(time * 0.33) * 0.02 + steer * -0.04;
+      // FLOATING: sit just above the surface and ride the actual swell
+      swellAt = (x, z) =>
+        (Math.sin(z * 0.09 + drift * 0.22 + time * 0.4) * 0.5 +
+         Math.sin(x * 0.14 - time * 0.8 + drift * 0.05) * 0.35) *
+        (0.5 + audio.volume * 1.6 * reactivity);
+      const camX = riverX(camZ) + steer * 8;
+      const ride = swellAt(camX, camZ);
+      camera.position.set(camX, 2.7 + ride * 0.85, camZ);
+      // lazy tube spin: your gaze wanders side to side like a drifting float
+      const wander = Math.sin(time * 0.13) * 14;
+      camera.lookAt(riverX(camZ - 45) + wander, 2.1 + ride * 0.4, camZ - 45);
+      camera.rotation.z += Math.sin(time * 0.21) * 0.035 + steer * -0.05 + ride * 0.02;
+
+      // the tube bobs under you, tilting with the water
+      tube.position.set(camX + Math.sin(time * 0.4) * 0.2, 0.15 + ride * 0.9, camZ - 3.9);
+      tube.rotation.x = Math.PI / 2 + swellAt(camX, camZ - 6) * 0.06;
+      tube.rotation.z = Math.sin(time * 0.35) * 0.08 + steer * 0.1;
+      themePaint(colorMode, hue / 360, 0.85, drift * 0.01, time, audio.volume, 0.7, tp);
+      color.setHSL(tp[0], tp[1], Math.min(0.5, 0.28 * Math.min(1.4, tp[2])));
+      tube.material.color.copy(color);
 
       // water: gentle swells + the waveform breathing through the surface
       water.position.z = camZ - WL / 2 + 40;
@@ -237,6 +273,22 @@ export function createRiver() {
         m.material.color.copy(color);
         m.material.opacity = m.userData.life * 0.7;
       }
+
+      // glowing banks contain the river on both sides
+      for (let i = 0; i < 64; i++) {
+        const side = i % 2 ? 1 : -1;
+        let z = camZ + 10 - Math.floor(i / 2) * 10.5;
+        dummy.position.set(riverX(z) + side * (WW * 0.42), 0.25 + Math.sin(z * 0.2) * 0.15, z);
+        dummy.rotation.set(0, Math.atan2(riverX(z - 6) - riverX(z + 6), 12), 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        banks.setMatrixAt(i, dummy.matrix);
+        themePaint(colorMode, hue / 360, 0.06, z * 0.015, time, audio.bass, Math.abs(Math.sin(i * 5.1)), tp);
+        color.setHSL(tp[0], tp[1] * 0.5, Math.min(0.22, 0.05 + audio.bass * 0.08));
+        banks.setColorAt(i, color);
+      }
+      banks.instanceMatrix.needsUpdate = true;
+      banks.instanceColor.needsUpdate = true;
 
       // foam rides the current — overtaking the camera so the flow reads
       {
