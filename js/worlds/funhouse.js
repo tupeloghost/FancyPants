@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 5000;
+const BALLS = 8000;
+const PER_LAYER = 880;      // balls per stacking layer — full pit crests near the rim
 const ARENA = 22;           // half-width of the pit
 const WALL_H = 13;          // visible pit walls
 const GRAV = -26;
@@ -26,6 +27,8 @@ export function createFunhouse() {
   const vx = new Float32Array(BALLS), vy = new Float32Array(BALLS), vz = new Float32Array(BALLS);
   const rad = new Float32Array(BALLS);
   const seed = new Float32Array(BALLS);
+  const restY = new Float32Array(BALLS); // stacked rest height: no n2 collisions,
+                                         // but the pile still fills the pit
   const me = 0; // ball #0 is the local player's
   let active = 240;          // taps add balls up to the full pool
 
@@ -67,6 +70,7 @@ export function createFunhouse() {
         vx[i] = vy[i] = vz[i] = 0;
         rad[i] = 0.5 + Math.random() * 0.75;
         seed[i] = Math.random();
+        restY[i] = rad[i] + Math.floor(i / PER_LAYER) * 0.95 + Math.random() * 1.6; // lumpy surface
       }
       rad[me] = 1.3; // the player's ball is a little bigger
 
@@ -195,13 +199,13 @@ export function createFunhouse() {
       balls.count = active;
       for (let i = 0; i < active; i++) {
         vy[i] += GRAV * step;
-        if (kick && py[i] < rad[i] * 2.5) vy[i] += kick * (0.6 + seed[i] * 0.8);
+        if (kick && py[i] < restY[i] + rad[i] * 1.5) vy[i] += kick * (0.6 + seed[i] * 0.8);
         px[i] += vx[i] * step;
         py[i] += vy[i] * step;
         pz[i] += vz[i] * step;
 
         // floor + walls, springy
-        if (py[i] < rad[i]) { py[i] = rad[i]; vy[i] = Math.abs(vy[i]) * 0.72; }
+        if (py[i] < restY[i]) { py[i] = restY[i]; vy[i] = Math.abs(vy[i]) * 0.72; }
         if (py[i] > WALL_H + 6) vy[i] -= 30 * step; // gravity catches high fliers fast
         if (Math.abs(px[i]) > ARENA) { px[i] = Math.sign(px[i]) * ARENA; vx[i] *= -0.8; }
         if (Math.abs(pz[i]) > ARENA) { pz[i] = Math.sign(pz[i]) * ARENA; vz[i] *= -0.8; }
@@ -286,9 +290,12 @@ export function createFunhouse() {
       const m2 = ARENA - 2;
       if (Math.abs(camera.position.x) > m2) { camera.position.x = Math.sign(camera.position.x) * m2; yaw += dt * 2.5; }
       if (Math.abs(camera.position.z) > m2) { camera.position.z = Math.sign(camera.position.z) * m2; yaw += dt * 2.5; }
-      camera.position.y = Math.min(WALL_H - 2, Math.max(1.6, camera.position.y));
+      // stay near the pile's surface: dive a few balls deep at most, so the
+      // view is the churning surface, not the inside of a sphere
+      const pileTop = 1 + (active / PER_LAYER) * 0.95;
+      camera.position.y = Math.min(WALL_H - 2.5, Math.max(Math.max(1.6, pileTop - 3.5), camera.position.y));
 
-      camera.rotation.set(pitch, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1));
+      camera.rotation.set(pitch - 0.14, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1)); // gaze rests on the balls
 
       // nearby balls shoulder away from the lens so it never sits inside one
       for (let i = 0; i < active; i++) {

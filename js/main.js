@@ -183,7 +183,7 @@ const settings = {
   shape: 'slat',
   hdr: 1.0,
   stardust: true,
-  balls: 400,
+  balls: 1500,
 };
 
 // ── URL params: every knob is shareable ──
@@ -311,7 +311,7 @@ $('hue-val').textContent = settings.hue;
 document.documentElement.style.setProperty('--accent-h', settings.hue);
 $('bloom').value = 70;
 $('hdr').value = 100;
-$('balls').value = 400;
+$('balls').value = 1500;
 $('scrub').value = 0;
 
 // sliders — keep the filled portion of the track in sync via --fill
