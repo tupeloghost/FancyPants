@@ -7,11 +7,12 @@ import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
 const BALLS = 5000;
-const ARENA = 34;           // half-width of the pit
+const ARENA = 22;           // half-width of the pit
+const WALL_H = 13;          // visible pit walls
 const GRAV = -26;
 
 export function createFunhouse() {
-  let scene, camera, group, balls, floor, sky;
+  let scene, camera, group, balls, floor, sky, walls;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -68,6 +69,30 @@ export function createFunhouse() {
         seed[i] = Math.random();
       }
       rad[me] = 1.3; // the player's ball is a little bigger
+
+      // the PIT: four translucent glowing walls with a bright rim, so the
+      // space reads as a container, not a void
+      walls = new THREE.Group();
+      for (let i = 0; i < 4; i++) {
+        const w = new THREE.Mesh(
+          new THREE.PlaneGeometry(ARENA * 2, WALL_H),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.1,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+          })
+        );
+        const rim = new THREE.Mesh(
+          new THREE.BoxGeometry(ARENA * 2 + 0.6, 0.35, 0.35),
+          new THREE.MeshBasicMaterial({ toneMapped: false })
+        );
+        const a = (i / 4) * Math.PI * 2;
+        w.position.set(Math.sin(a) * ARENA, WALL_H / 2, Math.cos(a) * ARENA);
+        w.rotation.y = a;
+        rim.position.set(Math.sin(a) * ARENA, WALL_H, Math.cos(a) * ARENA);
+        rim.rotation.y = a;
+        walls.add(w, rim);
+      }
+      group.add(walls);
 
       // soft pool of light under the pit
       floor = new THREE.Mesh(
@@ -152,7 +177,7 @@ export function createFunhouse() {
       }
 
       // beats bounce the whole pit
-      const kick = audio.beat ? 7 + audio.beatIntensity * 16 * reactivity : 0;
+      const kick = audio.beat ? 5 + audio.beatIntensity * 9 * reactivity : 0;
 
       // player ball chases the pointer
       if (!attract && pointer.active) {
@@ -177,6 +202,7 @@ export function createFunhouse() {
 
         // floor + walls, springy
         if (py[i] < rad[i]) { py[i] = rad[i]; vy[i] = Math.abs(vy[i]) * 0.72; }
+        if (py[i] > WALL_H + 6) vy[i] -= 30 * step; // gravity catches high fliers fast
         if (Math.abs(px[i]) > ARENA) { px[i] = Math.sign(px[i]) * ARENA; vx[i] *= -0.8; }
         if (Math.abs(pz[i]) > ARENA) { pz[i] = Math.sign(pz[i]) * ARENA; vz[i] *= -0.8; }
         vx[i] *= (1 - step * 0.6);
@@ -228,6 +254,16 @@ export function createFunhouse() {
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.bass, 0.5, tp);
       color.setHSL(tp[0], tp[1] * 0.8, 0.3 + audio.bass * 0.2);
       floor.material.color.copy(color);
+      for (let i = 0; i < walls.children.length; i++) {
+        const el = walls.children[i];
+        if (el.geometry.type === 'PlaneGeometry') {
+          el.material.color.copy(color);
+          el.material.opacity = 0.06 + audio.bass * 0.06 + audio.beatIntensity * 0.05;
+        } else {
+          color.setHSL(tp[0], tp[1], Math.min(0.62, 0.3 + audio.mid * 0.3));
+          el.material.color.copy(color);
+        }
+      }
       floor.material.opacity = 0.26 + audio.bass * 0.2;
       sky.material.color.copy(color);
 
@@ -241,7 +277,7 @@ export function createFunhouse() {
         pitch += (Math.sin(time * 0.17) * 0.25 - pitch) * Math.min(1, dt * 2);
       }
       fwd.set(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
-      const swim = 5.5 + audio.volume * 5 * reactivity;
+      const swim = 4 + audio.volume * 3.5 * reactivity;
       camera.position.addScaledVector(fwd, swim * dt);
       camera.position.addScaledVector(camVel, dt);
       camVel.multiplyScalar(Math.max(0, 1 - dt * 2.2)); // lunge fades
@@ -250,7 +286,7 @@ export function createFunhouse() {
       const m2 = ARENA - 2;
       if (Math.abs(camera.position.x) > m2) { camera.position.x = Math.sign(camera.position.x) * m2; yaw += dt * 2.5; }
       if (Math.abs(camera.position.z) > m2) { camera.position.z = Math.sign(camera.position.z) * m2; yaw += dt * 2.5; }
-      camera.position.y = Math.min(24, Math.max(1.6, camera.position.y));
+      camera.position.y = Math.min(WALL_H - 2, Math.max(1.6, camera.position.y));
 
       camera.rotation.set(pitch, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1));
 
