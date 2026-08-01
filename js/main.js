@@ -3,6 +3,10 @@
 // worlds already code against the final interface.
 
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { AudioEngine } from './audio-engine.js';
 import { WORLDS } from './worlds/registry.js';
 
@@ -15,8 +19,18 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000208);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
 
+// post-processing: render → bloom → output
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.9, 0.5, 0.35
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 });
@@ -132,6 +146,10 @@ slider('hue', 'hue-val', v => v, v => {
   settings.hue = v;
   document.documentElement.style.setProperty('--accent-h', v);
 });
+slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
+  bloomPass.strength = v / 100;
+  bloomPass.enabled = v > 0;
+});
 
 // mode toggle
 function setAttract(on) {
@@ -218,9 +236,45 @@ const startWorld = WORLDS[params.get('world')] ? params.get('world') : 'tunnel';
 $('world-select').value = startWorld;
 switchWorld(startWorld);
 
+// ── Spectrum strip: live view of the 5 bands + beat flash, for tuning ──
+const specCanvas = $('spectrum');
+const specCtx = specCanvas.getContext('2d');
+const SPEC_BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
+let beatFlash = 0;
+
+function drawSpectrum(a) {
+  const W = specCanvas.width, H = specCanvas.height;
+  const hue = settings.hue;
+  specCtx.clearRect(0, 0, W, H);
+
+  const n = SPEC_BANDS.length;
+  const gap = 3, bw = (W - gap * (n + 1)) / n;
+  for (let i = 0; i < n; i++) {
+    const v = a[SPEC_BANDS[i]];
+    const h = Math.max(2, v * (H - 4));
+    specCtx.fillStyle = `hsl(${(hue + i * 16) % 360}, 85%, ${35 + v * 35}%)`;
+    specCtx.beginPath();
+    specCtx.roundRect(gap + i * (bw + gap), H - 2 - h, bw, h, 2);
+    specCtx.fill();
+  }
+
+  // volume line
+  specCtx.fillStyle = `hsla(${hue}, 30%, 90%, 0.55)`;
+  specCtx.fillRect(0, H - 2 - a.volume * (H - 4), W, 1);
+
+  // beat flash frame
+  if (a.beat) beatFlash = 1;
+  if (beatFlash > 0.02) {
+    specCtx.strokeStyle = `hsla(${hue}, 95%, 75%, ${beatFlash})`;
+    specCtx.lineWidth = 2;
+    specCtx.strokeRect(1, 1, W - 2, H - 2);
+    beatFlash *= 0.82;
+  }
+}
+
 // ── Loop ──
 let last = performance.now();
-let fpsFrames = 0, fpsTime = 0, time = 0;
+let fpsFrames = 0, fpsTime = 0, time = 0, lowFpsStreak = 0;
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -236,13 +290,25 @@ function frame(now) {
     attract: settings.attract,
     time,
   });
-  renderer.render(scene, camera);
+  composer.render();
+  drawSpectrum(a);
 
-  // panel readouts
+  // panel readouts + bloom auto-degrade on sustained low fps
   fpsFrames++; fpsTime += dt;
   if (fpsTime >= 0.5) {
-    $('fps').textContent = Math.round(fpsFrames / fpsTime);
+    const fps = Math.round(fpsFrames / fpsTime);
+    $('fps').textContent = fps;
     fpsFrames = 0; fpsTime = 0;
+    lowFpsStreak = fps < 42 ? lowFpsStreak + 1 : 0;
+    if (lowFpsStreak >= 8 && bloomPass.enabled) {
+      if (bloomPass.strength > 0.45) {
+        bloomPass.strength *= 0.5;
+      } else {
+        bloomPass.enabled = false;
+      }
+      $('bloom-val').textContent = bloomPass.enabled ? bloomPass.strength.toFixed(1) + ' (auto)' : 'off (auto)';
+      lowFpsStreak = 0;
+    }
     if (!scrubbing && audio.duration) {
       $('scrub').value = (audio.currentTime / audio.duration) * 1000;
       setFill($('scrub'));

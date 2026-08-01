@@ -102,6 +102,12 @@
   }
   .sect:first-child { margin-top: 0; }
 
+  #spectrum {
+    display: block; width: 100%; height: 30px;
+    border-radius: 7px; margin-bottom: 4px;
+    background: var(--well);
+  }
+
   .row { margin-bottom: 8px; }
   .row:last-child { margin-bottom: 0; }
 
@@ -244,6 +250,8 @@
   </div>
   <div id="panel-body">
 
+    <canvas id="spectrum" width="236" height="30"></canvas>
+
     <div class="sect">TRACK</div>
     <div class="row">
       <select id="track-select"><option value="">choose from /audio/ …</option></select>
@@ -291,13 +299,20 @@
       <label>hue <span class="val" id="hue-val">210</span></label>
       <input type="range" id="hue" min="0" max="360" value="210">
     </div>
+    <div class="row slider">
+      <label>bloom <span class="val" id="bloom-val">0.9</span></label>
+      <input type="range" id="bloom" min="0" max="300" value="90">
+    </div>
 
     <div class="hint"><kbd>H</kbd> hide · <kbd>C</kbd> collapse · <kbd>space</kbd> play</div>
   </div>
 </div>
 
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
 </script>
 <script type="module" src="js/main.js"></script>
 </body>
