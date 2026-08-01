@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 
 const RINGS = 60;           // rings alive at once
-const SEGS = 18;            // wall segments per ring
+const SEGS = 30;            // wall segments per ring — slim slats, not squares
 const RING_SPACING = 4;     // world units between rings
 const BEAT_RING_POOL = 12;
 
@@ -59,7 +59,7 @@ export function createTunnel() {
         const pa = geo.attributes.position;
         const vc = new Float32Array(pa.count * 3);
         for (let i = 0; i < pa.count; i++) {
-          const t = 0.72 + (pa.getY(i) / 0.35 + 0.5) * 0.42;
+          const t = 0.5 + (pa.getY(i) / 0.35 + 0.5) * 0.62;
           vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
         }
         geo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
@@ -177,7 +177,7 @@ export function createTunnel() {
             z
           );
           dummy.rotation.set(0, 0, a + Math.PI / 2);
-          const w = (Math.PI * 2 * segRadius) / SEGS * 0.78;
+          const w = (Math.PI * 2 * segRadius) / SEGS * 0.6;
           dummy.scale.set(w, 1 + level * 2.5 * reactivity, 1);
           dummy.updateMatrix();
           wall.setMatrixAt(idx, dummy.matrix);
@@ -215,7 +215,12 @@ export function createTunnel() {
             if (ringBand !== segBand) h = (h + 0.06) % 1; // crossings shift hue like thread-over-thread
           }
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
-          color.multiplyScalar((0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
+          // slats dim as they pass the camera so close walls never flood
+          // the lens with bloom
+          const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
+          // cap the HDR drive so peaks bloom in color instead of bleaching white
+          const drive2 = Math.min(1.55, (0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
+          color.multiplyScalar(drive2 * proximityDim);
           wall.setColorAt(idx, color);
           idx++;
         }
