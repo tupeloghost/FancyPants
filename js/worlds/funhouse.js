@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 2000;
+const BALLS = 5000;
 const ARENA = 34;           // half-width of the pit
 const GRAV = -26;
 
@@ -110,7 +110,7 @@ export function createFunhouse() {
       camVel.addScaledVector(dir, 42);
       // spawn flash so adding balls is unmistakable
       this._flash = { x: hx, z: hz, t: 1 };
-      for (let n = 0; n < 18; n++) {
+      for (let n = 0; n < 30; n++) {
         // grow the pool until it's full, then recycle random old balls
         const i = active < BALLS ? active++ : 1 + Math.floor(Math.random() * (BALLS - 1));
         px[i] = hx + (Math.random() - 0.5) * 6;
