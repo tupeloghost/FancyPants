@@ -84,7 +84,28 @@ const settings = {
   pattern: 'spiral',
   shape: 'slat',
   hdr: 1.0,
+  stardust: true,
 };
+
+// ── URL params: every knob is shareable ──
+{
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('colors')) settings.colorMode = qp.get('colors');
+  if (qp.get('pattern')) settings.pattern = qp.get('pattern');
+  if (qp.get('shape')) settings.shape = qp.get('shape');
+  if (qp.get('hue')) settings.hue = +qp.get('hue') || 210;
+  if (qp.get('dust') === 'off') settings.stardust = false;
+}
+
+function updateURL() {
+  const qp = new URLSearchParams(location.search);
+  qp.set('colors', settings.colorMode);
+  qp.set('pattern', settings.pattern);
+  qp.set('shape', settings.shape);
+  qp.set('hue', settings.hue);
+  settings.stardust ? qp.delete('dust') : qp.set('dust', 'off');
+  history.replaceState(null, '', '?' + qp.toString());
+}
 
 // ── World switcher ──
 let world = null;
@@ -166,7 +187,9 @@ $('volume').value = 80;
 $('reactivity').value = 100;
 $('beat-sens').value = 140;
 $('smoothing').value = 70;
-$('hue').value = 210;
+$('hue').value = settings.hue;
+$('hue-val').textContent = settings.hue;
+document.documentElement.style.setProperty('--accent-h', settings.hue);
 $('bloom').value = 70;
 $('hdr').value = 100;
 $('scrub').value = 0;
@@ -192,6 +215,7 @@ slider('smoothing', 'smooth-val', v => (v / 100).toFixed(2), v => audio.params.s
 slider('hue', 'hue-val', v => v, v => {
   settings.hue = v;
   document.documentElement.style.setProperty('--accent-h', v);
+  updateURL();
 });
 slider('hdr', 'hdr-val', v => (v / 100).toFixed(1), v => settings.hdr = v / 100);
 slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
@@ -259,6 +283,7 @@ function buildChips(containerId, items, isGlyph, apply, initial) {
   for (const [id, label, visual] of items) {
     const c = document.createElement('div');
     c.className = 'chip' + (id === initial ? ' on' : '');
+    c.dataset.id = id;
     c.title = label;
     if (isGlyph) c.innerHTML = visual;
     else c.style.background = visual;
@@ -270,9 +295,61 @@ function buildChips(containerId, items, isGlyph, apply, initial) {
     box.appendChild(c);
   }
 }
-buildChips('color-chips', COLOR_MODES, false, v => settings.colorMode = v, settings.colorMode);
-buildChips('pattern-chips', PATTERNS, false, v => settings.pattern = v, settings.pattern);
-buildChips('shape-chips', SHAPES, true, v => settings.shape = v, settings.shape);
+buildChips('color-chips', COLOR_MODES, false, v => { settings.colorMode = v; updateURL(); }, settings.colorMode);
+buildChips('pattern-chips', PATTERNS, false, v => { settings.pattern = v; updateURL(); }, settings.pattern);
+buildChips('shape-chips', SHAPES, true, v => { settings.shape = v; updateURL(); }, settings.shape);
+
+function setChipActive(boxId, id) {
+  $(boxId).querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.id === id));
+}
+
+function setHue(v) {
+  settings.hue = v;
+  $('hue').value = v;
+  $('hue-val').textContent = v;
+  setFill($('hue'));
+  document.documentElement.style.setProperty('--accent-h', v);
+}
+
+// ── preset looks: one click sets the whole vibe ──
+const PRESETS = [
+  ['Deep Space',      { colorMode: 'cosmos',  pattern: 'spiral',  shape: 'circle',  hue: 230 }],
+  ['Amethyst Glitter',{ colorMode: 'glitter', pattern: 'spiral',  shape: 'slat',    hue: 285 }],
+  ['Candy Shop',      { colorMode: 'candy',   pattern: 'polka',   shape: 'circle',  hue: 330 }],
+  ['Molten',          { colorMode: 'fire',    pattern: 'waves',   shape: 'slat',    hue: 20 }],
+  ['Aurora Night',    { colorMode: 'aurora',  pattern: 'stripes', shape: 'slat',    hue: 150 }],
+  ['Gold Rush',       { colorMode: 'gold',    pattern: 'kaleido', shape: 'diamond', hue: 45 }],
+  ['Ocean Drift',     { colorMode: 'ocean',   pattern: 'waves',   shape: 'circle',  hue: 190 }],
+  ['Rainbow Road',    { colorMode: 'rainbow', pattern: 'checker', shape: 'square',  hue: 210 }],
+];
+{
+  const box = $('preset-chips');
+  for (const [name, cfg] of PRESETS) {
+    const c = document.createElement('div');
+    c.className = 'chip chip-preset';
+    c.textContent = name;
+    c.style.background = `linear-gradient(120deg, hsla(${cfg.hue}, 70%, 30%, 0.9), hsla(${cfg.hue}, 80%, 14%, 0.9))`;
+    c.addEventListener('click', () => {
+      settings.colorMode = cfg.colorMode;
+      settings.pattern = cfg.pattern;
+      settings.shape = cfg.shape;
+      setHue(cfg.hue);
+      setChipActive('color-chips', cfg.colorMode);
+      setChipActive('pattern-chips', cfg.pattern);
+      setChipActive('shape-chips', cfg.shape);
+      updateURL();
+    });
+    box.appendChild(c);
+  }
+}
+
+// stardust toggle
+$('btn-stardust').classList.toggle('on', settings.stardust);
+$('btn-stardust').addEventListener('click', () => {
+  settings.stardust = !settings.stardust;
+  $('btn-stardust').classList.toggle('on', settings.stardust);
+  updateURL();
+});
 
 // hotkeys
 window.addEventListener('keydown', e => {
@@ -408,6 +485,7 @@ function frame(now) {
     pattern: settings.pattern,
     shape: settings.shape,
     hdr: settings.hdr,
+    stardust: settings.stardust,
     time,
   });
   composer.render();

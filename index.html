@@ -124,6 +124,11 @@
     background-color: var(--well);
   }
   .chip:hover { transform: translateY(-2px) scale(1.08); border-color: rgba(255,255,255,0.45); }
+  .chip-preset {
+    width: auto; padding: 0 9px; font-size: 10px; letter-spacing: 0.5px;
+    color: var(--ink); white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  }
   .chip.on {
     border-color: #fff;
     box-shadow: 0 0 10px hsla(var(--accent-h), 90%, 65%, 0.8);
@@ -319,7 +324,11 @@
     <div class="row seg">
       <button id="btn-attract" class="on">&#9678; watch</button>
       <button id="btn-interactive">&#9654; play</button>
+      <button id="btn-stardust" class="on">&#10022; dust</button>
     </div>
+
+    <div class="mini-label">looks</div>
+    <div id="preset-chips" class="chips"></div>
 
     <div class="mini-label">colors</div>
     <div id="color-chips" class="chips"></div>

@@ -34,6 +34,7 @@ export function createTunnel() {
   let sparks = null;
   const sparkAngle = new Float32Array(SPARKS);
   const sparkDepth = new Float32Array(SPARKS);
+  let meteors = [];          // shooting stars
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -189,6 +190,22 @@ export function createTunnel() {
         group.add(sparks);
       }
 
+      // shooting stars: thin bright streaks whipping down the tube
+      meteors = [];
+      for (let i = 0; i < 6; i++) {
+        const m = new THREE.Mesh(
+          new THREE.BoxGeometry(0.1, 0.1, 9),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        m.visible = false;
+        m.userData = { z: 0, angle: 0, rr: 0 };
+        group.add(m);
+        meteors.push(m);
+      }
+
       travel = 0;
       camera.position.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
@@ -202,7 +219,7 @@ export function createTunnel() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow', pattern = 'spiral', hdr = 1.0, shape = 'slat' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', pattern = 'spiral', hdr = 1.0, shape = 'slat', stardust = true } = opts;
 
       // live shape swap
       if (shape !== currentShape) {
@@ -464,7 +481,8 @@ export function createTunnel() {
 
       // glitter sparkle layer: tiny points strewn on the wall, a scattered
       // handful flashing white-hot every frame — actual glitter dust
-      sparks.visible = colorMode === 'glitter';
+      const glitterMode = colorMode === 'glitter';
+      sparks.visible = glitterMode || stardust;
       if (sparks.visible) {
         const pos = sparks.geometry.attributes.position;
         const col = sparks.geometry.attributes.color;
@@ -481,6 +499,16 @@ export function createTunnel() {
             z
           );
           const tw = Math.abs(Math.sin(i * 12.9898 + frame * 78.233));
+          if (!glitterMode) {
+            // stardust: calmer, cooler, sparser twinkle in any color mode
+            if (tw > 0.93) {
+              const heat = 0.9 + audio.volume * 0.8 + (tw - 0.93) * 8;
+              col.setXYZ(i, heat * 0.85, heat * 0.9, heat);
+            } else {
+              col.setXYZ(i, 0.03, 0.035, 0.05);
+            }
+            continue;
+          }
           if (tw > 0.86) {
             const heat = 1.6 + audio.volume * 1.4 + (tw - 0.86) * 12;
             // flash = white core tinted toward the chosen hue
@@ -493,7 +521,36 @@ export function createTunnel() {
         }
         pos.needsUpdate = true;
         col.needsUpdate = true;
-        sparks.material.size = 0.45 + audio.volume * 0.35;
+        sparks.material.size = (glitterMode ? 0.45 : 0.34) + audio.volume * 0.35;
+      }
+
+      // shooting stars: rare in quiet, frequent on loud passages
+      if ((stardust || glitterMode || colorMode === 'cosmos') &&
+          Math.random() < dt * (0.25 + audio.volume * 1.6 + (audio.beat ? 0.8 : 0))) {
+        const m = meteors.find(x => !x.visible);
+        if (m) {
+          m.visible = true;
+          m.userData.z = -RINGS * RING_SPACING - travel;
+          m.userData.angle = Math.random() * Math.PI * 2;
+          m.userData.rr = 0.25 + Math.random() * 0.6; // inside the tube
+        }
+      }
+      for (const m of meteors) {
+        if (!m.visible) continue;
+        m.userData.z += 190 * dt; // much faster than the walls
+        const z = m.userData.z + travel;
+        if (z > 4) { m.visible = false; continue; }
+        const rr = radius * m.userData.rr;
+        m.position.set(
+          Math.sin((travel - z) * 0.02) * 3 + Math.sin((travel - z) * 0.007) * 5 - curveX + Math.cos(m.userData.angle) * rr + steer.x * z * 0.06,
+          Math.cos((travel - z) * 0.016) * 2.2 - curveY + Math.sin(m.userData.angle) * rr + steer.y * z * 0.06,
+          z
+        );
+        const prox = 1 - Math.abs(z) / (RINGS * RING_SPACING);
+        m.material.opacity = Math.min(1, prox * 1.8);
+        color.setHSL(((hue / 360) + 0.05) % 1, 0.25, 0.8);
+        color.multiplyScalar(1.6);
+        m.material.color.copy(color);
       }
 
       if (audio.beat) {
