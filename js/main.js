@@ -170,9 +170,6 @@ $('hue').value = 210;
 $('bloom').value = 70;
 $('hdr').value = 100;
 $('scrub').value = 0;
-$('color-mode').value = 'rainbow';
-$('pattern').value = 'spiral';
-$('shape').value = 'slat';
 
 // sliders — keep the filled portion of the track in sync via --fill
 function setFill(el) {
@@ -211,9 +208,71 @@ function setAttract(on) {
 $('btn-attract').addEventListener('click', () => setAttract(true));
 $('btn-interactive').addEventListener('click', () => setAttract(false));
 
-$('color-mode').addEventListener('change', e => settings.colorMode = e.target.value);
-$('pattern').addEventListener('change', e => settings.pattern = e.target.value);
-$('shape').addEventListener('change', e => settings.shape = e.target.value);
+// ── chip pickers: every option shows what it looks like ──
+const A = 'hsl(var(--accent-h), 90%, 55%)';
+const A2 = 'hsl(calc(var(--accent-h) + 180), 90%, 55%)';
+const A3 = 'hsl(calc(var(--accent-h) + 120), 90%, 55%)';
+
+const COLOR_MODES = [
+  ['rainbow', 'rainbow', 'linear-gradient(90deg,#f43,#fa0,#fe5,#3e6,#2cf,#55f,#c4f)'],
+  ['duotone', 'duotone — your hue & its complement', `linear-gradient(90deg,${A},${A2})`],
+  ['cycle', 'cycle — palette rotates over time', 'conic-gradient(#f43,#fe5,#3e6,#2cf,#55f,#c4f,#f43)'],
+  ['fire', 'fire', 'linear-gradient(0deg,#310,#d30,#fa0,#ff7)'],
+  ['ocean', 'ocean', 'linear-gradient(90deg,#036,#0af,#0fd,#08c)'],
+  ['sunset', 'sunset', 'linear-gradient(0deg,#f70,#f36,#a3c)'],
+  ['aurora', 'aurora', 'linear-gradient(75deg,#0e5,#3fa,#65f,#0e5)'],
+  ['forest', 'forest', 'linear-gradient(90deg,#031,#0a4,#fd6 65%,#0a4)'],
+  ['gold', 'gold', 'linear-gradient(105deg,#640,#fc3,#fff,#fc3,#640)'],
+  ['cosmos', 'cosmos — starfield & nebula', 'radial-gradient(circle at 25% 30%,#fff 4%,transparent 6%),radial-gradient(circle at 70% 65%,#fff 3%,transparent 5%),linear-gradient(120deg,#103,#527,#215)'],
+  ['glitter', 'glitter — tinted by hue', `radial-gradient(circle at 30% 40%,#fff 5%,transparent 8%),radial-gradient(circle at 75% 60%,#fff 4%,transparent 7%),linear-gradient(120deg,hsl(var(--accent-h),60%,14%),hsl(var(--accent-h),50%,26%))`],
+  ['candy', 'candy', 'repeating-linear-gradient(45deg,#f6a 0 5px,#fff 5px 9px,#4de 9px 14px,#fd4 14px 18px)'],
+  ['mono', 'mono — single hue', A],
+  ['duo', 'duo — hue + complement, hard split', `linear-gradient(90deg,${A} 50%,${A2} 50%)`],
+  ['triad', 'triad — three hues', `linear-gradient(90deg,${A} 33%,${A3} 33% 66%,${A2} 66%)`],
+  ['pastel', 'pastel', 'linear-gradient(90deg,#fbc,#cfe,#dfc,#fec)'],
+  ['neon', 'neon', 'linear-gradient(90deg,#f0f,#0ff,#ff0)'],
+  ['random', 'random confetti', 'conic-gradient(#f43 0 14%,#2cf 0 32%,#fe5 0 47%,#c4f 0 66%,#3e6 0 82%,#f70 0)'],
+  ['vapor', 'vapor', 'linear-gradient(90deg,#f9c,#8df,#caf,#fac)'],
+  ['midnight', 'midnight', 'linear-gradient(90deg,#124,#36c,#89b,#236)'],
+  ['coral', 'coral', 'linear-gradient(90deg,#f75,#fa8,#4cb,#f86)'],
+];
+const PATTERNS = [
+  ['spiral', 'spiral', 'conic-gradient(from 0deg,#69f,#123 25%,#69f 50%,#123 75%,#69f)'],
+  ['checker', 'checker', 'repeating-conic-gradient(#69f 0 25%,#123 0 50%)'],
+  ['stripes', 'stripes', 'repeating-linear-gradient(90deg,#69f 0 4px,#123 4px 8px)'],
+  ['plaid', 'plaid', 'repeating-linear-gradient(90deg,#69f 0 4px,transparent 4px 9px),repeating-linear-gradient(0deg,#4ad 0 4px,#123 4px 9px)'],
+  ['paisley', 'paisley swirl', 'radial-gradient(circle at 30% 60%,#69f 15%,transparent 40%),radial-gradient(circle at 70% 30%,#4ad 15%,transparent 45%),#123'],
+  ['polka', 'polka dot', 'radial-gradient(circle at 25% 30%,#69f 22%,transparent 26%),radial-gradient(circle at 75% 70%,#69f 22%,transparent 26%),#123'],
+  ['waves', 'waves', 'repeating-radial-gradient(circle at 0% 50%,#69f 0 3px,#123 3px 9px)'],
+  ['kaleido', 'kaleido — counter-rotating', 'conic-gradient(#69f 0 12%,#123 0 25%,#4ad 0 37%,#123 0 50%,#69f 0 62%,#123 0 75%,#4ad 0 87%,#123 0)'],
+];
+const SHAPES = [
+  ['slat', 'slat', '&#9644;'],
+  ['circle', 'circle', '&#9679;'],
+  ['square', 'square', '&#9632;'],
+  ['diamond', 'diamond', '&#9670;'],
+  ['star', 'star', '&#9733;'],
+];
+
+function buildChips(containerId, items, isGlyph, apply, initial) {
+  const box = $(containerId);
+  for (const [id, label, visual] of items) {
+    const c = document.createElement('div');
+    c.className = 'chip' + (id === initial ? ' on' : '');
+    c.title = label;
+    if (isGlyph) c.innerHTML = visual;
+    else c.style.background = visual;
+    c.addEventListener('click', () => {
+      box.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+      c.classList.add('on');
+      apply(id);
+    });
+    box.appendChild(c);
+  }
+}
+buildChips('color-chips', COLOR_MODES, false, v => settings.colorMode = v, settings.colorMode);
+buildChips('pattern-chips', PATTERNS, false, v => settings.pattern = v, settings.pattern);
+buildChips('shape-chips', SHAPES, true, v => settings.shape = v, settings.shape);
 
 // hotkeys
 window.addEventListener('keydown', e => {

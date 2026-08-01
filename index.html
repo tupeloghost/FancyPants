@@ -111,6 +111,35 @@
   .row { margin-bottom: 8px; }
   .row:last-child { margin-bottom: 0; }
 
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 5px; padding: 2px;
+    margin-bottom: 8px;
+  }
+  .chip {
+    flex: none; width: 32px; height: 24px; border-radius: 7px;
+    border: 1.5px solid rgba(255,255,255,0.10); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-dim); font-size: 13px; line-height: 1;
+    transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+    background-color: var(--well);
+  }
+  .chip:hover { transform: translateY(-2px) scale(1.08); border-color: rgba(255,255,255,0.45); }
+  .chip.on {
+    border-color: #fff;
+    box-shadow: 0 0 10px hsla(var(--accent-h), 90%, 65%, 0.8);
+    transform: scale(1.06);
+  }
+  .seg {
+    display: flex; background: var(--well); border-radius: 9px; padding: 3px; gap: 3px;
+  }
+  .seg button {
+    background: transparent; border: none; border-radius: 7px; padding: 5px 8px;
+  }
+  .seg button.on {
+    background: var(--accent-soft); color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent-line);
+  }
+
   .grid2 {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 7px 10px; margin-bottom: 9px;
@@ -287,67 +316,17 @@
     <div class="row">
       <select id="world-select"></select>
     </div>
-    <div class="row btnrow">
-      <button id="btn-attract" class="on">ATTRACT</button>
-      <button id="btn-interactive">PLAY</button>
+    <div class="row seg">
+      <button id="btn-attract" class="on">&#9678; watch</button>
+      <button id="btn-interactive">&#9654; play</button>
     </div>
-    <div class="grid2">
-      <div>
-        <div class="mini-label">colors</div>
-        <select id="color-mode">
-          <optgroup label="gradients">
-            <option value="rainbow" selected>rainbow</option>
-            <option value="duotone">duotone (hue &harr; complement)</option>
-            <option value="cycle">cycle</option>
-          </optgroup>
-          <optgroup label="themes">
-            <option value="fire">fire</option>
-            <option value="ocean">ocean</option>
-            <option value="sunset">sunset</option>
-            <option value="aurora">aurora</option>
-            <option value="forest">forest</option>
-            <option value="gold">gold</option>
-            <option value="cosmos">cosmos</option>
-            <option value="glitter">glitter</option>
-            <option value="candy">candy</option>
-          </optgroup>
-          <optgroup label="classic">
-            <option value="mono">mono</option>
-            <option value="duo">duo</option>
-            <option value="triad">triad</option>
-            <option value="pastel">pastel</option>
-            <option value="neon">neon</option>
-            <option value="random">random</option>
-            <option value="vapor">vapor</option>
-            <option value="midnight">midnight</option>
-            <option value="coral">coral</option>
-          </optgroup>
-        </select>
-      </div>
-      <div>
-        <div class="mini-label">pattern</div>
-        <select id="pattern">
-          <option value="spiral" selected>spiral</option>
-          <option value="checker">checker</option>
-          <option value="stripes">stripes</option>
-          <option value="plaid">plaid</option>
-          <option value="paisley">paisley</option>
-          <option value="polka">polka dot</option>
-          <option value="waves">waves</option>
-          <option value="kaleido">kaleido</option>
-        </select>
-      </div>
-      <div>
-        <div class="mini-label">shape</div>
-        <select id="shape">
-          <option value="slat" selected>slat</option>
-          <option value="circle">circle</option>
-          <option value="square">square</option>
-          <option value="diamond">diamond</option>
-          <option value="star">star</option>
-        </select>
-      </div>
-    </div>
+
+    <div class="mini-label">colors</div>
+    <div id="color-chips" class="chips"></div>
+    <div class="mini-label">pattern</div>
+    <div id="pattern-chips" class="chips"></div>
+    <div class="mini-label">shape</div>
+    <div id="shape-chips" class="chips"></div>
 
     <div class="sect">TUNE</div>
     <div class="grid2">
