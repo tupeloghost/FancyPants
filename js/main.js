@@ -163,9 +163,38 @@ window.addEventListener('pointermove', e => steerFromPointer(e.clientX, e.client
 
 // click/tap interaction — part of the world contract, works in both modes
 canvas.addEventListener('pointerdown', e => {
+  spawnRipple(e.clientX, e.clientY);
   if (!world || !world.onTap) return;
   world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
 });
+
+// ── Custom cursor: glowing reticle, lerps to the pointer, pulses with the beat ──
+const cursorEl = $('cursor');
+const cursor = { x: innerWidth / 2, y: innerHeight / 2, tx: innerWidth / 2, ty: innerHeight / 2, scale: 1 };
+window.addEventListener('pointermove', e => {
+  cursor.tx = e.clientX; cursor.ty = e.clientY;
+  cursorEl.classList.add('live');
+});
+window.addEventListener('pointerleave', () => cursorEl.classList.remove('live'));
+
+function spawnRipple(x, y) {
+  const r = document.createElement('div');
+  r.className = 'cursor-ripple';
+  r.style.transform = '';
+  r.style.left = x + 'px'; r.style.top = y + 'px';
+  document.body.appendChild(r);
+  r.addEventListener('animationend', () => r.remove());
+}
+
+function updateCursor(dt, a) {
+  const k = Math.min(1, dt * 22);
+  cursor.x += (cursor.tx - cursor.x) * k;
+  cursor.y += (cursor.ty - cursor.y) * k;
+  const target = 1 + a.bass * 0.5 + (a.beat ? 0.9 : 0) + a.beatIntensity * 0.4;
+  cursor.scale += (target - cursor.scale) * Math.min(1, dt * 10);
+  cursorEl.style.transform =
+    `translate(${cursor.x}px, ${cursor.y}px) scale(${cursor.scale.toFixed(3)}) rotate(${(performance.now() * 0.02) % 360}deg)`;
+}
 window.addEventListener('touchmove', e => {
   if (e.touches[0]) steerFromPointer(e.touches[0].clientX, e.touches[0].clientY);
 }, { passive: true });
@@ -200,6 +229,7 @@ function frame(now) {
   time += dt;
 
   const a = audio.update(dt);
+  updateCursor(dt, a);
   world.update(dt, a, participants, {
     reactivity: settings.reactivity,
     hue: settings.hue,
