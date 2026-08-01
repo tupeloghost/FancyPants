@@ -12,6 +12,7 @@ import { AudioEngine } from './audio-engine.js';
 import { WORLDS } from './worlds/registry.js';
 import { Net } from './net.js';
 import { Presence } from './lib/presence.js';
+import { glowTexture } from './lib/glow.js';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -81,6 +82,96 @@ const presence = new Presence();
 presence.init(scene);
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
+
+// ── Global stardust: twinkling dust + shooting stars around the camera,
+// world-agnostic so the dust toggle works everywhere ──
+const DUST_N = 420, DUST_R = 150;
+let dust, dustMeteors = [];
+{
+  const pos = new Float32Array(DUST_N * 3);
+  const col = new Float32Array(DUST_N * 3);
+  for (let i = 0; i < DUST_N; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * DUST_R * 2;
+    pos[i * 3 + 1] = (Math.random() - 0.5) * DUST_R * 2;
+    pos[i * 3 + 2] = (Math.random() - 0.5) * DUST_R * 2;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+  dust = new THREE.Points(g, new THREE.PointsMaterial({
+    size: 0.7, map: glowTexture(), transparent: true, vertexColors: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  }));
+  dust.frustumCulled = false;
+  scene.add(dust);
+  for (let i = 0; i < 4; i++) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.08, 7),
+      new THREE.MeshBasicMaterial({
+        toneMapped: false, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })
+    );
+    m.visible = false;
+    m.userData = { vel: new THREE.Vector3(), t: 0 };
+    scene.add(m);
+    dustMeteors.push(m);
+  }
+}
+
+function updateDust(dt, a, time) {
+  dust.visible = settings.stardust;
+  if (!dust.visible) { dustMeteors.forEach(m => m.visible = false); return; }
+  const pos = dust.geometry.attributes.position;
+  const col = dust.geometry.attributes.color;
+  const cp = camera.position;
+  const frame = Math.floor(time * 24);
+  for (let i = 0; i < DUST_N; i++) {
+    // wrap the cloud around the camera on all three axes
+    for (let ax = 0; ax < 3; ax++) {
+      const get = ax === 0 ? pos.getX : ax === 1 ? pos.getY : pos.getZ;
+      const set = ax === 0 ? pos.setX : ax === 1 ? pos.setY : pos.setZ;
+      const c = ax === 0 ? cp.x : ax === 1 ? cp.y : cp.z;
+      let v = get.call(pos, i);
+      if (v > c + DUST_R) v -= DUST_R * 2;
+      else if (v < c - DUST_R) v += DUST_R * 2;
+      set.call(pos, i, v);
+    }
+    const tw = Math.abs(Math.sin(i * 12.9898 + frame * 78.233));
+    if (tw > 0.94) {
+      const heat = 0.7 + a.volume * 0.7 + (tw - 0.94) * 9;
+      col.setXYZ(i, heat * 0.85, heat * 0.9, heat);
+    } else {
+      col.setXYZ(i, 0.02, 0.025, 0.04);
+    }
+  }
+  pos.needsUpdate = true;
+  col.needsUpdate = true;
+  dust.material.size = 0.6 + a.volume * 0.4;
+
+  // shooting stars streak past the camera on loud moments
+  if (Math.random() < dt * (0.15 + a.volume * 1.1 + (a.beat ? 0.6 : 0))) {
+    const m = dustMeteors.find(x => !x.visible);
+    if (m) {
+      m.visible = true;
+      m.userData.t = 0;
+      m.position.copy(cp).add(new THREE.Vector3(
+        (Math.random() - 0.5) * 90, (Math.random() - 0.3) * 60, (Math.random() - 0.5) * 90));
+      m.userData.vel.set((Math.random() - 0.5) * 2, -0.5 - Math.random(), (Math.random() - 0.5) * 2)
+        .normalize().multiplyScalar(120);
+      m.lookAt(m.position.clone().add(m.userData.vel));
+    }
+  }
+  for (const m of dustMeteors) {
+    if (!m.visible) continue;
+    m.userData.t += dt;
+    if (m.userData.t > 1.4) { m.visible = false; continue; }
+    m.position.addScaledVector(m.userData.vel, dt);
+    m.material.opacity = Math.min(1, (1.4 - m.userData.t) * 1.4) * 0.9;
+    m.material.color.setHSL((settings.hue / 360 + 0.05) % 1, 0.3, 0.8);
+    m.material.color.multiplyScalar(1.5);
+  }
+}
 
 // ── Settings (live-tunable via panel) ──
 const settings = {
@@ -244,8 +335,10 @@ slider('hue', 'hue-val', v => v, v => {
   updateURL();
 });
 slider('hdr', 'hdr-val', v => (v / 100).toFixed(1), v => settings.hdr = v / 100);
+let bloomBase = 0.7;
 slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
-  bloomPass.strength = v / 100;
+  bloomBase = v / 100;
+  bloomPass.strength = bloomBase;
   bloomPass.enabled = v > 0;
 });
 
@@ -429,7 +522,9 @@ function steerFromPointer(cx, cy) {
 window.addEventListener('pointermove', e => steerFromPointer(e.clientX, e.clientY));
 
 // click/tap interaction — part of the world contract, works in both modes
+let clickPulse = 0;
 canvas.addEventListener('pointerdown', e => {
+  clickPulse = 1; // global color surge: every click makes the whole frame answer
   spawnRipple(e.clientX, e.clientY);
   if (!world || !world.onTap) return;
   world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
@@ -602,9 +697,17 @@ function frame(now) {
   const a = audio.update(dt);
   net.update(dt, time);
   updateCursor(dt, a);
+
+  // click color-pulse: hue kicks sideways, saturation and bloom surge, then settle
+  clickPulse *= Math.pow(0.03, dt);
+  const hueEff = (settings.hue + clickPulse * 40) % 360;
+  gradePass.uniforms.saturation.value = 1.45 + clickPulse * 0.55;
+  gradePass.uniforms.contrast.value = 1.12 + clickPulse * 0.08;
+  if (bloomPass.enabled) bloomPass.strength = bloomBase * (1 + clickPulse * 0.5);
+
   world.update(dt, a, participants, {
     reactivity: settings.reactivity,
-    hue: settings.hue,
+    hue: hueEff,
     attract: settings.attract,
     colorMode: settings.colorMode,
     pattern: settings.pattern,
@@ -613,6 +716,8 @@ function frame(now) {
     stardust: settings.stardust,
     time,
   });
+
+  updateDust(dt, a, time);
 
   // ghosts render through the same path in every world
   presence.update(dt, participants,

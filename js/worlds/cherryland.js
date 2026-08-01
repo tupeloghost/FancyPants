@@ -25,7 +25,12 @@ export function createCherryLand() {
 
   const tx = new Float32Array(TREES), tz = new Float32Array(TREES);
   const th = new Float32Array(TREES), tseed = new Float32Array(TREES);
-  const cPop = new Float32Array(NCHERRY);   // >0 = popped, counts down
+  const cPop = new Float32Array(NCHERRY);   // rest timer while on the ground
+  const cFall = new Uint8Array(NCHERRY);    // 0 hanging, 1 falling, 2 resting
+  const cfx = new Float32Array(NCHERRY), cfy = new Float32Array(NCHERRY);
+  const cfz = new Float32Array(NCHERRY), cfvy = new Float32Array(NCHERRY);
+  const cfvx = new Float32Array(NCHERRY), cfvz = new Float32Array(NCHERRY);
+  const treeShake = new Float32Array(TREES);
   const heroes = [];
   let bursts = [];
 
@@ -155,31 +160,41 @@ export function createCherryLand() {
       out.set(pathX(z) + p.x * 10 + Math.sin(i * 2.9) * 6, 4 + Math.sin(i * 1.7) * 2, z);
     },
 
-    // tap: POP the nearest cherry — burst ring + it regrows later
+    // tap a TREE: it shakes and its cherries drop, bounce, then regrow
     onTap(x, y) {
       const v = new THREE.Vector3(x, y, 0.5).unproject(camera);
       const dir = v.sub(camera.position).normalize();
       const cp = new THREE.Vector3();
       const m4 = new THREE.Matrix4();
       let best = -1, bestD = 1e9;
-      for (let i = 0; i < NCHERRY; i++) {
-        if (cPop[i] > 0) continue;
-        cherries.getMatrixAt(i, m4);
-        cp.setFromMatrixPosition(m4).sub(camera.position);
+      for (let i = 0; i < TREES; i++) {
+        cp.set(tx[i], hillY(tx[i], tz[i]) + th[i], tz[i]).sub(camera.position);
         const along = cp.dot(dir);
-        if (along < 4 || along > 140) continue;
-        const d = cp.clone().cross(dir).length() / Math.max(1, along * 0.06);
+        if (along < 4 || along > 160) continue;
+        const d = cp.clone().cross(dir).length() / Math.max(1, along * 0.05);
         if (d < bestD) { bestD = d; best = i; }
       }
-      if (best >= 0 && bestD < 30) {
-        cPop[best] = 5; // seconds until it regrows
-        cherries.getMatrixAt(best, m4);
-        const b = bursts.find(x2 => !x2.visible) || bursts[0];
-        b.visible = true;
-        b.userData.life = 1;
-        b.position.setFromMatrixPosition(m4);
-        b.scale.setScalar(0.6);
-        b.quaternion.copy(camera.quaternion);
+      if (best < 0 || bestD > 60) return;
+      treeShake[best] = 1;
+      // shake this tree's cherries loose from wherever they hang right now
+      for (let c2 = 0; c2 < CHERRIES_PER; c2++) {
+        const ci = best * CHERRIES_PER + c2;
+        if (cFall[ci] !== 0) continue;
+        cherries.getMatrixAt(ci, m4);
+        cp.setFromMatrixPosition(m4);
+        cFall[ci] = 1;
+        cfx[ci] = cp.x; cfy[ci] = cp.y; cfz[ci] = cp.z;
+        cfvy[ci] = 1 + Math.random() * 2;
+        cfvx[ci] = (Math.random() - 0.5) * 4;
+        cfvz[ci] = (Math.random() - 0.5) * 4;
+        const b = bursts.find(x2 => !x2.visible);
+        if (b && c2 === 0) {
+          b.visible = true;
+          b.userData.life = 1;
+          b.position.copy(cp);
+          b.scale.setScalar(0.6);
+          b.quaternion.copy(camera.quaternion);
+        }
       }
     },
 
@@ -224,7 +239,10 @@ export function createCherryLand() {
       // trees recycle down the orchard rows
       let ci = 0;
       for (let i = 0; i < TREES; i++) {
-        if (tz[i] > camZ + 25) resetTree(i, tz[i] - SPAN);
+        if (tz[i] > camZ + 25) {
+          resetTree(i, tz[i] - SPAN);
+          for (let c2 = 0; c2 < CHERRIES_PER; c2++) { cFall[i * CHERRIES_PER + c2] = 0; cPop[i * CHERRIES_PER + c2] = 0; }
+        }
         const gy = hillY(tx[i], tz[i]);
         const sway = Math.sin(time * 0.6 + tseed[i] * 9) * 0.05;
 
@@ -234,7 +252,8 @@ export function createCherryLand() {
         dummy.updateMatrix();
         trunks.setMatrixAt(i, dummy.matrix);
 
-        const canopyR = th[i] * 0.55 * (1 + audio.bass * 0.08 * reactivity);
+        treeShake[i] *= Math.pow(0.04, dt);
+        const canopyR = th[i] * 0.55 * (1 + audio.bass * 0.08 * reactivity + treeShake[i] * 0.12 * Math.sin(time * 28));
         dummy.position.set(tx[i], gy + th[i] + canopyR * 0.4, tz[i]);
         dummy.scale.setScalar(canopyR);
         dummy.rotation.set(sway, tseed[i] * 6, sway);
@@ -244,15 +263,36 @@ export function createCherryLand() {
         color.setHSL(tp[0], tp[1] * 0.8, Math.min(0.3, 0.12 + audio.mid * 0.12 * Math.min(1.4, tp[2])));
         canopies.setColorAt(i, color);
 
-        // cherries hang under the canopy rim, each tuned to a band
+        // cherries hang under the canopy rim — or fall, bounce, and rest
+        const shake = treeShake[i];
         for (let c2 = 0; c2 < CHERRIES_PER; c2++, ci++) {
           const a = (c2 / CHERRIES_PER) * Math.PI * 2 + tseed[i] * 7;
           const level = audio[BANDS[(i + c2) % BANDS.length]];
-          if (cPop[ci] > 0) {
+          if (cFall[ci] === 1) {
+            // falling: gravity + bounce off the hills
+            cfvy[ci] -= 28 * dt;
+            cfx[ci] += cfvx[ci] * dt;
+            cfy[ci] += cfvy[ci] * dt;
+            cfz[ci] += cfvz[ci] * dt;
+            const gnd = hillY(cfx[ci], cfz[ci]) + 0.55;
+            if (cfy[ci] < gnd) {
+              cfy[ci] = gnd;
+              if (Math.abs(cfvy[ci]) > 2.2) {
+                cfvy[ci] = Math.abs(cfvy[ci]) * 0.55; // bounce!
+                cfvx[ci] *= 0.7; cfvz[ci] *= 0.7;
+              } else {
+                cFall[ci] = 2; cPop[ci] = 3; // rest, then regrow
+              }
+            }
+            dummy.position.set(cfx[ci], cfy[ci], cfz[ci]);
+            dummy.scale.setScalar(1 + level * 0.6);
+          } else if (cFall[ci] === 2) {
             cPop[ci] -= dt;
-            dummy.scale.setScalar(0.001); // popped: gone until it regrows
+            if (cPop[ci] <= 0) cFall[ci] = 0; // back on the branch
+            dummy.position.set(cfx[ci], hillY(cfx[ci], cfz[ci]) + 0.55, cfz[ci]);
+            dummy.scale.setScalar(Math.max(0.001, 1 + level * 0.4) * Math.min(1, cPop[ci]));
           } else {
-            const swing = Math.sin(time * 1.1 + ci) * 0.25;
+            const swing = Math.sin(time * 1.1 + ci) * 0.25 + shake * Math.sin(time * 30 + ci) * 0.8;
             dummy.position.set(
               tx[i] + Math.cos(a) * canopyR * 0.75 + swing,
               gy + th[i] + canopyR * 0.4 - canopyR * 0.8 - Math.abs(Math.sin(ci * 3.3)) * 1.2,

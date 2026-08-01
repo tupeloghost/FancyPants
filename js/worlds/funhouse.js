@@ -6,8 +6,8 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 170;
-const ARENA = 30;           // half-width of the pit
+const BALLS = 420;
+const ARENA = 34;           // half-width of the pit
 const GRAV = -26;
 
 export function createFunhouse() {
@@ -57,7 +57,7 @@ export function createFunhouse() {
         pz[i] = (Math.random() - 0.5) * ARENA * 1.8;
         py[i] = 2 + Math.random() * 20;
         vx[i] = vy[i] = vz[i] = 0;
-        rad[i] = 1.1 + Math.random() * 1.5;
+        rad[i] = 0.85 + Math.random() * 1.25;
         seed[i] = Math.random();
       }
       rad[me] = 2.1; // the player's ball is a little bigger
@@ -164,8 +164,8 @@ export function createFunhouse() {
       sky.material.color.copy(color);
 
       // camera circles the pit, dipping with the bass
-      const r = 44 - audio.bass * 5;
-      camera.position.set(Math.sin(time * 0.06) * r, 17 + Math.sin(time * 0.1) * 4 - audio.bass * 3, Math.cos(time * 0.06) * r);
+      const r = 50 - audio.bass * 5;
+      camera.position.set(Math.sin(time * 0.06) * r, 22 + Math.sin(time * 0.1) * 4 - audio.bass * 3, Math.cos(time * 0.06) * r);
       camera.lookAt(0, 4, 0);
       const fovT = 72 + audio.volume * 8 * reactivity + audio.beatIntensity * 4;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
