@@ -31,13 +31,21 @@ export function createTunnel() {
   // which frequency band drives each wall segment (by angle sector)
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
-  // fixed-mood palettes: hue stops dealt around the tube (hue slider ignored)
+  // fixed-mood palettes: [hue, saturation, brightness-weight] stops dealt
+  // around the tube (hue slider ignored). Sat/weight per stop is what makes
+  // them read as designed palettes rather than tinted rainbows.
   const PALETTES = {
-    fire:   [0.00, 0.04, 0.08, 0.12, 0.02],
-    ocean:  [0.50, 0.55, 0.60, 0.47, 0.64],
-    sunset: [0.83, 0.93, 0.02, 0.07, 0.75],
-    candy:  [0.90, 0.50, 0.14, 0.82, 0.45],
-    forest: [0.28, 0.35, 0.22, 0.40, 0.31],
+    fire:     [[0.00, 1.00, 1.05], [0.04, 0.98, 1.0], [0.08, 0.95, 1.1], [0.12, 0.90, 0.9], [0.02, 1.00, 0.8]],
+    ocean:    [[0.50, 0.95, 1.0], [0.55, 0.90, 0.95], [0.60, 0.85, 1.05], [0.47, 1.00, 0.9], [0.64, 0.80, 0.8]],
+    sunset:   [[0.83, 0.90, 0.95], [0.93, 0.95, 1.0], [0.02, 1.00, 1.05], [0.07, 0.95, 1.0], [0.75, 0.85, 0.8]],
+    candy:    [[0.90, 1.00, 1.05], [0.50, 0.95, 1.0], [0.14, 1.00, 1.0], [0.82, 0.90, 0.9], [0.45, 0.85, 0.85]],
+    forest:   [[0.28, 0.90, 1.0], [0.35, 0.85, 0.9], [0.22, 0.95, 1.05], [0.40, 0.80, 0.85], [0.31, 1.00, 0.95]],
+    aurora:   [[0.42, 1.00, 1.1], [0.50, 0.90, 0.95], [0.75, 0.85, 0.9], [0.36, 0.95, 1.0], [0.58, 0.70, 0.75]],
+    vapor:    [[0.88, 0.80, 1.0], [0.52, 0.85, 1.0], [0.72, 0.60, 0.9], [0.95, 0.70, 0.95], [0.60, 0.75, 0.85]],
+    gold:     [[0.11, 0.90, 1.1], [0.09, 0.70, 0.95], [0.13, 1.00, 1.0], [0.07, 0.55, 0.85], [0.10, 0.85, 0.9]],
+    midnight: [[0.63, 0.95, 1.0], [0.68, 0.85, 0.85], [0.58, 1.00, 1.05], [0.72, 0.70, 0.75], [0.60, 0.40, 0.9]],
+    coral:    [[0.02, 0.90, 1.05], [0.06, 0.85, 0.95], [0.48, 0.85, 0.95], [0.98, 0.80, 0.9], [0.52, 0.90, 0.85]],
+    cosmos:   [[0.78, 0.95, 1.0], [0.65, 1.00, 0.95], [0.90, 0.90, 1.05], [0.12, 0.85, 0.9], [0.70, 0.80, 0.8]],
   };
 
   function api() { return {
@@ -107,7 +115,7 @@ export function createTunnel() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow', pattern = 'spiral' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', pattern = 'spiral', hdr = 1.0 } = opts;
 
       // speed rides volume
       const speed = (10 + audio.volume * 55 * reactivity);
@@ -196,12 +204,12 @@ export function createTunnel() {
             case 'pastel':  h = ((hue / 360) + (s % BANDS.length) * 0.045) % 1; sat = 0.45; boost = 0.8; break;
             case 'neon':    h = ((hue / 360) + (s % 3) / 3) % 1; boost = 1.5; break;
             case 'random':  h = (ringSeed[r] * 7.13 + s * 0.618) % 1; break; // stable per ring/segment
-            case 'fire': case 'ocean': case 'sunset': case 'candy': case 'forest': {
-              const pal = PALETTES[colorMode];
-              h = pal[(r + s) % pal.length];
-              break;
-            }
-            default:        h = ((hue / 360) + (s / SEGS) * 0.24 + audio.energy * 0.08) % 1; // rainbow, continuous
+            default:
+              if (PALETTES[colorMode]) {
+                const stop = PALETTES[colorMode][(r + s) % PALETTES[colorMode].length];
+                h = stop[0]; sat = stop[1]; boost = stop[2];
+                break;
+              }        h = ((hue / 360) + (s / SEGS) * 0.24 + audio.energy * 0.08) % 1; // rainbow, continuous
           }
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
           const lum = 0.05 + 0.45 * (1 - Math.exp(-2.2 * drive));
@@ -219,8 +227,11 @@ export function createTunnel() {
           // the lens with bloom
           const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
           // cap the HDR drive so peaks bloom in color instead of bleaching white
-          const drive2 = Math.min(1.55, (0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
-          color.multiplyScalar(drive2 * proximityDim);
+          // hdr scales how far colors are driven past standard range:
+          // 0 = flat SDR, 1 = default, 2 = full superbright
+          const rawDrive = Math.min(1.55, (0.75 + level * 1.7 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * weave);
+          const drive2 = 1 + (rawDrive - 1) * hdr;
+          color.multiplyScalar(Math.max(0.15, drive2) * proximityDim);
           wall.setColorAt(idx, color);
           idx++;
         }

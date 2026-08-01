@@ -50,6 +50,7 @@ const settings = {
   attract: true,
   colorMode: 'rainbow',
   pattern: 'spiral',
+  hdr: 1.0,
 };
 
 // ── World switcher ──
@@ -134,6 +135,7 @@ $('beat-sens').value = 140;
 $('smoothing').value = 70;
 $('hue').value = 210;
 $('bloom').value = 90;
+$('hdr').value = 100;
 $('scrub').value = 0;
 $('color-mode').value = 'rainbow';
 $('pattern').value = 'spiral';
@@ -160,6 +162,7 @@ slider('hue', 'hue-val', v => v, v => {
   settings.hue = v;
   document.documentElement.style.setProperty('--accent-h', v);
 });
+slider('hdr', 'hdr-val', v => (v / 100).toFixed(1), v => settings.hdr = v / 100);
 slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
   bloomPass.strength = v / 100;
   bloomPass.enabled = v > 0;
@@ -309,6 +312,7 @@ function frame(now) {
     attract: settings.attract,
     colorMode: settings.colorMode,
     pattern: settings.pattern,
+    hdr: settings.hdr,
     time,
   });
   composer.render();
