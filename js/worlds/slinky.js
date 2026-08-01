@@ -14,6 +14,8 @@ const STAIRS = 26;
 export function createSlinky() {
   let scene, camera, group, coils, stairs, edges, sky, dustF, spot;
   let impacts = [];
+  let echo = null;           // motion-blur ghost of the spring
+  let beatWave = 99;         // index of the brightness wave from the last beat
   let walk = 0, walkVel = 0;
   let boing = 0, landPulse = 0, lastStep = 0;
   const camPos = new THREE.Vector3(30, 0, 0);
@@ -65,6 +67,19 @@ export function createSlinky() {
       coils.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * 3), 3);
       coils.frustumCulled = false;
       group.add(coils);
+
+      // echo: a delayed ghost copy of the spring — motion made visible
+      echo = new THREE.InstancedMesh(
+        coils.geometry,
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, vertexColors: true, transparent: true, opacity: 0.16,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+        RINGS
+      );
+      echo.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * 3), 3);
+      echo.frustumCulled = false;
+      group.add(echo);
 
       // the endless staircase
       stairs = new THREE.InstancedMesh(
@@ -157,7 +172,8 @@ export function createSlinky() {
       // the walk: constant amble + beats shove it over the lip
       const targetVel = 0.35 + audio.volume * 0.9 * reactivity;
       walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
-      if (audio.beat) walkVel += audio.beatIntensity * 0.9 * reactivity;
+      if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
+      beatWave += dt * 90; // the pulse races down the spring
       walk += walkVel * dt;
       boing *= Math.pow(0.04, dt);
       landPulse *= Math.pow(0.03, dt);
@@ -204,9 +220,26 @@ export function createSlinky() {
         // rainbow slinky by default; every theme paints the coil run
         const jitv = Math.abs(Math.sin(i * 12.9898));
         themePaint(colorMode, hue / 360, i / RINGS, walk * 0.1, time, audio.bass, jitv, tp);
-        color.setHSL(tp[0], tp[1], Math.min(0.66, (0.3 + audio.volume * 0.25 + boing * 0.15 + landPulse * 0.08) * Math.min(1.5, tp[2])));
+        // beat wave: a flash racing coil-to-coil down the spring
+        const wave = Math.max(0, 1 - Math.abs(i - beatWave) * 0.12);
+        color.setHSL(tp[0], tp[1], Math.min(0.7, (0.3 + audio.volume * 0.25 + boing * 0.15 + landPulse * 0.08 + wave * 0.3) * Math.min(1.5, tp[2])));
         coils.setColorAt(i, color);
+
+        // echo ghost: same coil, a beat behind, faint
+        pathAt(p - 0.16, P);
+        pathAt(p - 0.14, P2);
+        TAN.subVectors(P2, P).normalize();
+        quat.setFromUnitVectors(Z_AXIS, TAN);
+        dummy.position.copy(P);
+        dummy.position.y += RING_R + 0.4;
+        dummy.quaternion.copy(quat);
+        dummy.scale.setScalar(s * 1.04);
+        dummy.updateMatrix();
+        echo.setMatrixAt(i, dummy.matrix);
+        echo.setColorAt(i, color);
       }
+      echo.instanceMatrix.needsUpdate = true;
+      echo.instanceColor.needsUpdate = true;
       coils.instanceMatrix.needsUpdate = true;
       coils.instanceColor.needsUpdate = true;
 

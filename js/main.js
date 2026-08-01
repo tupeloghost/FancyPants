@@ -542,7 +542,11 @@ window.addEventListener('pointermove', e => steerFromPointer(e.clientX, e.client
 
 // click/tap interaction — part of the world contract, works in both modes
 let clickPulse = 0;
+let pointerHeld = false;
+window.addEventListener('pointerup', () => pointerHeld = false);
+window.addEventListener('pointercancel', () => pointerHeld = false);
 canvas.addEventListener('pointerdown', e => {
+  pointerHeld = true;
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   spawnRipple(e.clientX, e.clientY);
   if (!world || !world.onTap) return;
@@ -734,6 +738,7 @@ function frame(now) {
     hdr: settings.hdr,
     stardust: settings.stardust,
     balls: settings.balls,
+    holding: pointerHeld,
     time,
   });
 

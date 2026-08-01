@@ -39,6 +39,7 @@ export function createLavaLamp() {
         uColTop: { value: colTop },
         uRim: { value: colRim },
         uHeat: { value: 0 },
+        uGoo: { value: 2.8 },
         uH: { value: H },
         uRBot: { value: R_BOT },
         uRTop: { value: R_TOP },
@@ -58,7 +59,7 @@ export function createLavaLamp() {
             uniform vec4 uBlobs[${MAX_FIELD}];
             uniform int uCount;
             uniform vec3 uColBot, uColTop, uRim;
-            uniform float uHeat, uH, uRBot, uRTop;
+            uniform float uHeat, uH, uRBot, uRTop, uGoo;
             varying vec3 vWorld;
 
             // polynomial smooth-min: THE metaball merge
@@ -72,7 +73,7 @@ export function createLavaLamp() {
               for (int i = 0; i < ${MAX_FIELD}; i++) {
                 if (i >= uCount) break;
                 vec4 b = uBlobs[i];
-                d = smin(d, length(p - b.xyz) - b.w, 2.8);
+                d = smin(d, length(p - b.xyz) - b.w, uGoo);
               }
               // confine the wax to the tapered vessel
               float prof = mix(uRBot, uRTop, clamp((p.y + uH * 0.5) / uH, 0.0, 1.0)) - 0.35;
@@ -249,15 +250,16 @@ export function createLavaLamp() {
         const warmth = (nearBottom ? heat * 2.2 : heat) - altitude * 1.1;
         const buoy = warmth * 2.6 + Math.sin(time * 0.13 + b.phase) * 0.35 - 0.35;
         b.vy += (buoy - b.vy) * Math.min(1, dt * 0.22);
-        b.y += b.vy * dt * (1.1 + heat * 0.8);
+        b.y += b.vy * dt * (1.1 + heat * 0.8) * (0.75 + (i % 3) * 0.3); // blobs travel at their own pace
         if (b.y > H / 2 - b.size - 0.5) { b.y = H / 2 - b.size - 0.5; b.vy = -0.25; }
         if (b.y < -H / 2 + 0.5) { b.y = -H / 2 + 0.5; b.vy = Math.max(0, b.vy); }
         b.poke *= Math.pow(0.05, dt);
 
         const maxOff = Math.max(0.3, profile(b.y) - b.size - 0.6);
         const ang = b.lane + time * b.spin;
-        b.x = Math.cos(ang) * maxOff * b.laneR;
-        b.z = Math.sin(ang) * maxOff * b.laneR;
+        const breathe = 0.55 + 0.45 * Math.sin(time * 0.09 + b.phase * 2); // lanes wander
+        b.x = Math.cos(ang) * maxOff * b.laneR * breathe;
+        b.z = Math.sin(ang) * maxOff * b.laneR * breathe;
 
         const wob = 1 + Math.sin(time * 1.4 + b.phase * 3) * 0.05 + b.poke * 0.2 + audio.bass * 0.08;
         u.uBlobs.value[slot++].set(b.x, b.y, b.z, b.size * wob);
@@ -277,10 +279,11 @@ export function createLavaLamp() {
       }
       u.uCount.value = slot;
       u.uHeat.value = heat;
+      u.uGoo.value = 2.4 + audio.bass * 1.6; // bass makes the merges gooier
 
       // theme colors: bottom of the wax vs top, rim from the hot end
       themePaint(colorMode, hue / 360, 0.06, 0, time, heat, 0.35, tp);
-      colBot.setHSL(tp[0], Math.max(0.75, tp[1]), Math.min(0.5, Math.max(0.2, 0.34 * Math.min(1.4, tp[2])) + heat * 0.08));
+      colBot.setHSL(tp[0], Math.max(0.75, tp[1]), Math.min(0.5, Math.max(0.24, 0.36 * Math.min(1.4, tp[2])) + heat * 0.08));
       colRim.copy(colBot).multiplyScalar(1.7);
       themePaint(colorMode, hue / 360, 0.92, 0.3, time, heat, 0.7, tp);
       colTop.setHSL(tp[0], Math.max(0.7, tp[1]), Math.min(0.42, Math.max(0.13, 0.26 * Math.min(1.3, tp[2]))));

@@ -194,8 +194,12 @@ export function createCherryLand() {
       if (bestC >= 0 && bestCD < 14) {
         cherries.getMatrixAt(bestC, m4);
         cp.setFromMatrixPosition(m4);
-        cFall[bestC] = 2; cPop[bestC] = 4; // popped away, regrows later
-        cfx[bestC] = cp.x; cfy[bestC] = -999; cfz[bestC] = cp.z; // hidden while resting
+        // knock it loose: it drops, bounces on the hills, rests, regrows
+        cFall[bestC] = 1;
+        cfx[bestC] = cp.x; cfy[bestC] = cp.y; cfz[bestC] = cp.z;
+        cfvy[bestC] = 3.5;                       // pops up off the stem first
+        cfvx[bestC] = (Math.random() - 0.5) * 6;
+        cfvz[bestC] = (Math.random() - 0.5) * 6;
         // burst ring + juice spray
         const b = bursts.find(x2 => !x2.visible) || bursts[0];
         b.visible = true;

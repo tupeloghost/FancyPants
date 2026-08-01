@@ -30,6 +30,7 @@ export function createBlacktop() {
   const bh = new Float32Array(BUILDINGS), bband = new Uint8Array(BUILDINGS);
   let speedLines = [];
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
+  let cow = null, beam = null, abduct = { z: 0, x: 0, on: false };
 
   const roadX = z => Math.sin(z * 0.008) * 26;
   const roadYaw = z => Math.atan2(roadX(z - 8) - roadX(z + 8), 16);
@@ -156,6 +157,37 @@ export function createBlacktop() {
       group.add(ufo);
       ufoT = -1; ufoNext = 10 + Math.random() * 15;
 
+      // the cow. every great highway needs one.
+      cow = new THREE.Group();
+      const cowMat = new THREE.MeshBasicMaterial({ color: 0xd8d8e0, toneMapped: false });
+      const spotMat = new THREE.MeshBasicMaterial({ color: 0x1a1a22, toneMapped: false });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.3, 1.2), cowMat);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.7), cowMat);
+      head.position.set(1.5, 0.5, 0);
+      const spot1 = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 1.25), spotMat);
+      spot1.position.set(-0.5, 0.3, 0);
+      const spot2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 1.22), spotMat);
+      spot2.position.set(0.6, -0.2, 0);
+      cow.add(body, head, spot1, spot2);
+      for (let l = 0; l < 4; l++) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.9, 0.28), spotMat);
+        leg.position.set(l < 2 ? 0.9 : -0.9, -1.05, l % 2 ? 0.35 : -0.35);
+        cow.add(leg);
+      }
+      cow.visible = false;
+      group.add(cow);
+
+      // the tractor beam
+      beam = new THREE.Mesh(
+        new THREE.ConeGeometry(4.2, 1, 24, 1, true),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        })
+      );
+      beam.visible = false;
+      group.add(beam);
+
       sky = skyDome(340);
       group.add(sky);
 
@@ -172,12 +204,14 @@ export function createBlacktop() {
       out.set(roadX(z) + (((i % 3) - 1) * 7) + p.x * 3, 1.6, z);
     },
 
-    onTap() { nitro = 1; }, // NITRO
+    onTap() { nitro = 1; }, // NITRO (hold the mouse to keep it floored)
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
 
-      nitro *= Math.pow(0.25, dt);
+      // hold to keep the nitro pinned; release and it bleeds off
+      if (opts.holding && !attract) nitro = 1;
+      else nitro *= Math.pow(0.25, dt);
       const speed = 26 + audio.volume * 70 * reactivity + nitro * 85;
       travel += speed * dt;
       const camZ = -travel;
@@ -303,15 +337,46 @@ export function createBlacktop() {
         if (ufoNext <= 0) { ufoT = 0; ufo.visible = true; ufo.userData.side = Math.random() < 0.5 ? -1 : 1; }
       } else {
         ufoT += dt / 9; // ~9s visit
-        if (ufoT >= 1) { ufoT = -1; ufo.visible = false; ufoNext = 14 + Math.random() * 22; }
+        if (ufoT >= 1) { ufoT = -1; ufo.visible = false; beam.visible = false; cow.visible = false; abduct.on = false; ufoNext = 14 + Math.random() * 22; }
         else {
           const side = ufo.userData.side;
           const swoop = Math.sin(ufoT * Math.PI); // in and out
-          ufo.position.set(
-            roadX(camZ - 120) + side * (70 - swoop * 55) + Math.sin(time * 1.3) * 4,
-            26 + Math.sin(ufoT * Math.PI * 3) * 6 + Math.sin(time * 2.1) * 1.5,
-            camZ - 150 + ufoT * 60
-          );
+          // mid-visit: STOP, beam, and take the cow
+          const abducting = ufoT > 0.35 && ufoT < 0.78;
+          if (abducting && !abduct.on) {
+            abduct.on = true;
+            abduct.z = camZ - 130;
+            abduct.x = roadX(abduct.z) + side * 24;
+          }
+          if (!abducting) abduct.on = false;
+          if (abducting) {
+            ufo.position.set(
+              abduct.x + Math.sin(time * 1.6) * 0.8,
+              24 + Math.sin(time * 2.2) * 0.8,
+              abduct.z
+            );
+            const p2 = (ufoT - 0.35) / 0.43; // 0..1 through the abduction
+            beam.visible = true;
+            beam.position.set(abduct.x, 12.2, abduct.z);
+            beam.scale.set(1, 23, 1);
+            color.setHSL(0.28, 0.8, 0.6);
+            beam.material.color.copy(color);
+            beam.material.opacity = 0.14 + Math.sin(time * 9) * 0.04 + audio.beatIntensity * 0.08;
+            cow.visible = true;
+            cow.position.set(abduct.x, 1.5 + p2 * 21, abduct.z);
+            cow.rotation.y += dt * (1.5 + p2 * 6); // spins faster as it rises
+            cow.rotation.z = Math.sin(time * 2.5) * 0.15;
+            const shrink = p2 > 0.85 ? 1 - (p2 - 0.85) / 0.15 : 1;
+            cow.scale.setScalar(Math.max(0.01, shrink));
+          } else {
+            beam.visible = false;
+            cow.visible = false;
+            ufo.position.set(
+              roadX(camZ - 120) + side * (70 - swoop * 55) + Math.sin(time * 1.3) * 4,
+              26 + Math.sin(ufoT * Math.PI * 3) * 6 + Math.sin(time * 2.1) * 1.5,
+              camZ - 150 + ufoT * 60
+            );
+          }
           ufo.rotation.z = Math.sin(time * 1.7) * 0.12;
           ufo.rotation.y += dt * 2.2; // spinning saucer
           // running lights chase around the rim, hue-tinted
