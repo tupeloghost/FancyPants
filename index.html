@@ -111,6 +111,16 @@
   .row { margin-bottom: 8px; }
   .row:last-child { margin-bottom: 0; }
 
+  .grid2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 7px 10px; margin-bottom: 9px;
+  }
+  .mini-label {
+    font-size: 9px; letter-spacing: 1.5px; color: var(--ink-faint);
+    margin-bottom: 3px;
+  }
+  optgroup { background: #0a0f1c; color: var(--ink-faint); font-style: normal; }
+
   /* ── Inputs ── */
   select, button {
     width: 100%; padding: 6px 9px; color: var(--ink);
@@ -281,67 +291,88 @@
       <button id="btn-attract" class="on">ATTRACT</button>
       <button id="btn-interactive">PLAY</button>
     </div>
-    <div class="row btnrow">
-      <select id="color-mode">
-        <option value="mono">colors: mono</option>
-        <option value="duo">colors: duo</option>
-        <option value="triad">colors: triad</option>
-        <option value="rainbow" selected>colors: rainbow</option>
-        <option value="cycle">colors: cycle</option>
-        <option value="pastel">colors: pastel</option>
-        <option value="neon">colors: neon</option>
-        <option value="fire">colors: fire</option>
-        <option value="ocean">colors: ocean</option>
-        <option value="sunset">colors: sunset</option>
-        <option value="candy">colors: candy</option>
-        <option value="forest">colors: forest</option>
-        <option value="aurora">colors: aurora</option>
-        <option value="vapor">colors: vapor</option>
-        <option value="gold">colors: gold</option>
-        <option value="midnight">colors: midnight</option>
-        <option value="coral">colors: coral</option>
-        <option value="cosmos">colors: cosmos</option>
-        <option value="glitter-gold">colors: glitter gold</option>
-        <option value="glitter-silver">colors: glitter silver</option>
-        <option value="glitter-rainbow">colors: glitter rainbow</option>
-        <option value="random">colors: random</option>
-      </select>
-      <select id="pattern">
-        <option value="spiral" selected>pattern: spiral</option>
-        <option value="checker">pattern: checker</option>
-        <option value="stripes">pattern: stripes</option>
-        <option value="plaid">pattern: plaid</option>
-        <option value="paisley">pattern: paisley</option>
-        <option value="polka">pattern: polka dot</option>
-        <option value="waves">pattern: waves</option>
-        <option value="kaleido">pattern: kaleido</option>
-      </select>
+    <div class="grid2">
+      <div>
+        <div class="mini-label">colors</div>
+        <select id="color-mode">
+          <optgroup label="gradients">
+            <option value="rainbow" selected>rainbow</option>
+            <option value="cycle">cycle</option>
+            <option value="blue-orange">blue &harr; orange</option>
+            <option value="violet-gold">violet &harr; gold</option>
+            <option value="teal-coral">teal &harr; coral</option>
+            <option value="lime-magenta">lime &harr; magenta</option>
+            <option value="ice-fire">ice &harr; fire</option>
+          </optgroup>
+          <optgroup label="palettes">
+            <option value="fire">fire</option>
+            <option value="ocean">ocean</option>
+            <option value="sunset">sunset</option>
+            <option value="candy">candy</option>
+            <option value="forest">forest</option>
+            <option value="aurora">aurora</option>
+            <option value="vapor">vapor</option>
+            <option value="gold">gold</option>
+            <option value="midnight">midnight</option>
+            <option value="coral">coral</option>
+            <option value="cosmos">cosmos</option>
+          </optgroup>
+          <optgroup label="glitter">
+            <option value="glitter-gold">glitter gold</option>
+            <option value="glitter-silver">glitter silver</option>
+            <option value="glitter-rainbow">glitter rainbow</option>
+          </optgroup>
+          <optgroup label="simple">
+            <option value="mono">mono</option>
+            <option value="duo">duo</option>
+            <option value="triad">triad</option>
+            <option value="pastel">pastel</option>
+            <option value="neon">neon</option>
+            <option value="random">random</option>
+          </optgroup>
+        </select>
+      </div>
+      <div>
+        <div class="mini-label">pattern</div>
+        <select id="pattern">
+          <option value="spiral" selected>spiral</option>
+          <option value="checker">checker</option>
+          <option value="stripes">stripes</option>
+          <option value="plaid">plaid</option>
+          <option value="paisley">paisley</option>
+          <option value="polka">polka dot</option>
+          <option value="waves">waves</option>
+          <option value="kaleido">kaleido</option>
+        </select>
+      </div>
     </div>
 
     <div class="sect">TUNE</div>
-    <div class="row slider">
-      <label>reactivity <span class="val" id="react-val">1.0</span></label>
-      <input type="range" id="reactivity" min="0" max="200" value="100">
-    </div>
-    <div class="row slider">
-      <label>beat sensitivity <span class="val" id="beat-val">1.40</span></label>
-      <input type="range" id="beat-sens" min="105" max="250" value="140">
-    </div>
-    <div class="row slider">
-      <label>smoothing <span class="val" id="smooth-val">0.70</span></label>
-      <input type="range" id="smoothing" min="0" max="95" value="70">
-    </div>
-    <div class="row slider">
-      <label>hue <span class="val" id="hue-val">210</span></label>
-      <input type="range" id="hue" min="0" max="360" value="210">
-    </div>
-    <div class="row slider">
-      <label>bloom <span class="val" id="bloom-val">0.7</span></label>
-      <input type="range" id="bloom" min="0" max="300" value="70">
-    </div>
-    <div class="row slider">
-      <label>hdr <span class="val" id="hdr-val">1.0</span></label>
-      <input type="range" id="hdr" min="0" max="200" value="100">
+    <div class="grid2">
+      <div class="slider">
+        <label>reactivity <span class="val" id="react-val">1.0</span></label>
+        <input type="range" id="reactivity" min="0" max="200" value="100">
+      </div>
+      <div class="slider">
+        <label>beats <span class="val" id="beat-val">1.40</span></label>
+        <input type="range" id="beat-sens" min="105" max="250" value="140">
+      </div>
+      <div class="slider">
+        <label>smoothing <span class="val" id="smooth-val">0.70</span></label>
+        <input type="range" id="smoothing" min="0" max="95" value="70">
+      </div>
+      <div class="slider">
+        <label>hue <span class="val" id="hue-val">210</span></label>
+        <input type="range" id="hue" min="0" max="360" value="210">
+      </div>
+      <div class="slider">
+        <label>bloom <span class="val" id="bloom-val">0.7</span></label>
+        <input type="range" id="bloom" min="0" max="300" value="70">
+      </div>
+      <div class="slider">
+        <label>hdr <span class="val" id="hdr-val">1.0</span></label>
+        <input type="range" id="hdr" min="0" max="200" value="100">
+      </div>
     </div>
 
     <div class="hint"><kbd>H</kbd> hide · <kbd>C</kbd> collapse · <kbd>space</kbd> play · <kbd>S</kbd> png</div>

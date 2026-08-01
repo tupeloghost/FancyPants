@@ -46,6 +46,13 @@ export function createTunnel() {
     midnight: [[0.63, 0.95, 1.0], [0.68, 0.85, 0.85], [0.58, 1.00, 1.05], [0.72, 0.70, 0.75], [0.60, 0.40, 0.9]],
     coral:    [[0.02, 0.90, 1.05], [0.06, 0.85, 0.95], [0.48, 0.85, 0.95], [0.98, 0.80, 0.9], [0.52, 0.90, 0.85]],
     cosmos:   [[0.78, 0.95, 1.0], [0.65, 1.00, 0.95], [0.90, 0.90, 1.05], [0.12, 0.85, 0.9], [0.70, 0.80, 0.8]],
+    // complementary duotone gradients: two opposing hues, interpolation
+    // sweeps smoothly between them — pure gradient, maximum contrast
+    'blue-orange':   [[0.58, 1.00, 1.0], [0.08, 1.00, 1.05]],
+    'violet-gold':   [[0.75, 0.95, 1.0], [0.12, 1.00, 1.05]],
+    'teal-coral':    [[0.48, 0.95, 1.0], [0.02, 0.90, 1.0]],
+    'lime-magenta':  [[0.33, 1.00, 1.0], [0.87, 0.95, 1.05]],
+    'ice-fire':      [[0.55, 0.90, 1.05], [0.00, 1.00, 1.1]],
   };
 
   // smooth cyclic interpolation between palette stops — gradients, not steps
@@ -267,11 +274,19 @@ export function createTunnel() {
             if (swirl > 0.25) h = (h + 0.07) % 1;
             else if (swirl < -0.35) h = (h + 0.5) % 1; // deep gaps flip complementary
           } else if (pattern === 'polka') {
-            // round dots on a dark field, dot centers every 5x5 slats
-            const dr = (r % 5) - 2, ds = (s % 5) - 2;
-            const inDot = dr * dr + ds * ds <= 2.5;
-            weave = inDot ? 1.35 : 0.22;
-            if (inDot) h = (h + 0.5) % 1; // dots pop complementary to the field
+            // TRUE round dots: distance measured in wall-space units
+            // (circumference arc x depth), not slat indices — so dots are
+            // circles spanning several slats, staggered like real polka fabric
+            const arc = a * 6.2;                       // unwrapped circumference
+            const along = travel - z;                  // stable per ring
+            const rowIdx = Math.floor(along / 13);
+            const stagger = (rowIdx % 2) * 6.5;        // offset alternate rows
+            const dx = ((arc + stagger) % 13 + 13) % 13 - 6.5;
+            const dz2 = (along % 13 + 13) % 13 - 6.5;
+            const d = Math.sqrt(dx * dx + dz2 * dz2);
+            const edge = Math.min(1, Math.max(0, 1 - (d - 3.1) / 1.2)); // soft rim
+            weave = 0.15 + 1.25 * edge;
+            if (edge > 0.4) h = (h + 0.5) % 1;         // dots complementary to field
           } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;          // stripes along the tube
             const segBand = (s % 4) < 2;           // stripes around the tube
