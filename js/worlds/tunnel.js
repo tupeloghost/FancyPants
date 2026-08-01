@@ -5,6 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
+import { glowTexture } from '../lib/glow.js';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -28,15 +29,19 @@ export function createTunnel() {
   let tapFlash = 0;
   let tapQueued = false;
 
+  // glitter sparkle layer: hundreds of tiny points hugging the wall
+  const SPARKS = 700;
+  let sparks = null;
+  const sparkAngle = new Float32Array(SPARKS);
+  const sparkDepth = new Float32Array(SPARKS);
+
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
-  // complementary duotone gradients: [hue, sat, weight] stops, interpolated
+  // classic curated palettes: [hue, sat, weight] stops, interpolated
   const PALETTES = {
-    'blue-orange':  [[0.58, 1.00, 1.0], [0.08, 1.00, 1.05]],
-    'violet-gold':  [[0.75, 0.95, 1.0], [0.12, 1.00, 1.05]],
-    'teal-coral':   [[0.48, 0.95, 1.0], [0.02, 0.90, 1.0]],
-    'lime-magenta': [[0.33, 1.00, 1.0], [0.87, 0.95, 1.05]],
-    'ice-fire':     [[0.55, 0.90, 1.05], [0.00, 1.00, 1.1]],
+    vapor:    [[0.88, 0.80, 1.0], [0.52, 0.85, 1.0], [0.72, 0.60, 0.9], [0.95, 0.70, 0.95], [0.60, 0.75, 0.85]],
+    midnight: [[0.63, 0.95, 1.0], [0.68, 0.85, 0.85], [0.58, 1.00, 1.05], [0.72, 0.70, 0.75], [0.60, 0.40, 0.9]],
+    coral:    [[0.02, 0.90, 1.05], [0.06, 0.85, 0.95], [0.48, 0.85, 0.95], [0.98, 0.80, 0.9], [0.52, 0.90, 0.85]],
   };
 
   function palLerp(pal, t, out) {
@@ -162,6 +167,26 @@ export function createTunnel() {
         m.userData = { life: 0, z: 0, fired: false };
         group.add(m);
         beatRings.push(m);
+      }
+
+      // sparkle points (visible only in glitter mode)
+      {
+        const pos = new Float32Array(SPARKS * 3);
+        const col = new Float32Array(SPARKS * 3);
+        for (let i = 0; i < SPARKS; i++) {
+          sparkAngle[i] = Math.random() * Math.PI * 2;
+          sparkDepth[i] = Math.random() * RINGS * RING_SPACING;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+        geo.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+        sparks = new THREE.Points(geo, new THREE.PointsMaterial({
+          size: 0.55, map: glowTexture(), transparent: true, vertexColors: true,
+          blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+        }));
+        sparks.frustumCulled = false;
+        sparks.visible = false;
+        group.add(sparks);
       }
 
       travel = 0;
@@ -336,10 +361,45 @@ export function createTunnel() {
               break;
             }
             case 'glitter': {
-              // sequins: dark champagne field, small subset flashing white-hot
-              const spark = Math.abs(Math.sin(ringSeed[r] * 91.7 + s * 57.31 + Math.floor(time * 24) * 7.7));
-              if (spark > 0.9) { h = 0.11; sat = 0.15; boost = 3.0 + audio.volume; }
-              else { h = 0.10 + jit * 0.03; sat = 0.7; boost = 0.42; }
+              // dark champagne field; the real sparkle is the particle layer.
+              // A few elements still catch the light, briefly and sharply.
+              const spark = Math.abs(Math.sin(ringSeed[r] * 91.7 + s * 57.31 + Math.floor(time * 30) * 7.7));
+              if (spark > 0.965) { h = 0.11; sat = 0.12; boost = 3.2 + audio.volume; }
+              else { h = 0.10 + jit * 0.03; sat = 0.65; boost = 0.4; }
+              break;
+            }
+            case 'candy': {
+              // candy-cane: glossy diagonal stripes swirling down the tube
+              const stripe = Math.floor(((a / (Math.PI * 2)) * 10 + (travel - z) * 0.16 + time * 0.25) % 4 + 4) % 4;
+              if (stripe === 0)      { h = 0.93; sat = 1.0;  boost = 1.1; }  // hot pink
+              else if (stripe === 1) { h = 0.0;  sat = 0.05; boost = 1.25; } // white gloss
+              else if (stripe === 2) { h = 0.50; sat = 0.95; boost = 1.0; }  // cyan
+              else                   { h = 0.13; sat = 1.0;  boost = 1.05; } // lemon
+              // wet-candy shine sweeping around
+              boost += Math.pow(Math.max(0, Math.cos(a - time * 1.3)), 8) * 0.8;
+              break;
+            }
+            case 'duo':
+              h = ((hue / 360) + (s % 2) * 0.5 + depthT * 0.25) % 1;
+              break;
+            case 'triad':
+              h = ((hue / 360) + (s % 3) / 3 + depthT * 0.25) % 1;
+              break;
+            case 'neon':
+              h = ((hue / 360) + (s % 3) / 3 + depthT * 0.4) % 1;
+              boost = 1.5;
+              break;
+            case 'cycle':
+              h = ((hue / 360) + time * 0.03 + (s / SEGS) + depthT) % 1;
+              break;
+            case 'random':
+              h = (ringSeed[r] * 7.13 + s * 0.618) % 1;
+              break;
+            case 'duotone': {
+              // hue <-> complement gradient, anchored to the hue slider so
+              // the pair is always YOUR choice
+              const t2 = 0.5 - 0.5 * Math.cos(((s / SEGS) + depthT + time * 0.012) * Math.PI * 2);
+              h = ((hue / 360) + t2 * 0.5) % 1;
               break;
             }
             default:
@@ -401,6 +461,37 @@ export function createTunnel() {
       }
       wall.instanceMatrix.needsUpdate = true;
       wall.instanceColor.needsUpdate = true;
+
+      // glitter sparkle layer: tiny points strewn on the wall, a scattered
+      // handful flashing white-hot every frame — actual glitter dust
+      sparks.visible = colorMode === 'glitter';
+      if (sparks.visible) {
+        const pos = sparks.geometry.attributes.position;
+        const col = sparks.geometry.attributes.color;
+        const span = RINGS * RING_SPACING;
+        const frame = Math.floor(time * 30);
+        for (let i = 0; i < SPARKS; i++) {
+          const zRing = -(((sparkDepth[i] + travel * 0.0) % span)); // fixed in ring space
+          const z = ((sparkDepth[i] - travel) % span + span) % span * -1 + RING_SPACING;
+          const aa = sparkAngle[i];
+          const rr = radius * silhouette(aa, shape) * 0.985;
+          pos.setXYZ(i,
+            Math.sin((travel - z) * 0.02) * 3 + Math.sin((travel - z) * 0.007) * 5 - curveX + Math.cos(aa) * rr + steer.x * z * 0.06,
+            Math.cos((travel - z) * 0.016) * 2.2 - curveY + Math.sin(aa) * rr + steer.y * z * 0.06,
+            z
+          );
+          const tw = Math.abs(Math.sin(i * 12.9898 + frame * 78.233));
+          if (tw > 0.86) {
+            const heat = 1.6 + audio.volume * 1.4 + (tw - 0.86) * 12;
+            col.setXYZ(i, heat, heat, heat * 0.92); // white-gold flash
+          } else {
+            col.setXYZ(i, 0.06, 0.05, 0.03); // dust barely there
+          }
+        }
+        pos.needsUpdate = true;
+        col.needsUpdate = true;
+        sparks.material.size = 0.45 + audio.volume * 0.35;
+      }
 
       if (audio.beat) {
         const m = beatRings.find(b => !b.visible) || beatRings[0];
