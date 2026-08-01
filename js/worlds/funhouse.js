@@ -73,11 +73,12 @@ export function createFunhouse() {
         rad[i] = 0.5 + Math.random() * 0.75;
         seed[i] = Math.random();
         restY[i] = rad[i] + Math.floor(i / PER_LAYER) * 0.95 + Math.random() * 1.6; // lumpy surface
-        // sunflower spread: evenly covers the pit at any count
-        const rr = ARENA * 0.96 * Math.sqrt((i % PER_LAYER) / PER_LAYER + 0.01);
-        const th = i * 2.399963;
-        homeX[i] = Math.cos(th) * rr;
-        homeZ[i] = Math.sin(th) * rr;
+        // jittered grid: fills the SQUARE pit corner to corner, every layer
+        const k = i % PER_LAYER;
+        const cols = 30;
+        const cell = (ARENA * 2 - 2.4) / cols;
+        homeX[i] = -ARENA + 1.2 + ((k % cols) + 0.15 + Math.random() * 0.7) * cell;
+        homeZ[i] = -ARENA + 1.2 + (Math.floor(k / cols) % cols + 0.15 + Math.random() * 0.7) * cell;
       }
       rad[me] = 1.3; // the player's ball is a little bigger
 
