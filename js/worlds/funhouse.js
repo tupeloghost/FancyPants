@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { glowTexture, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const BALLS = 700;
+const BALLS = 1200;
 const ARENA = 34;           // half-width of the pit
 const GRAV = -26;
 
@@ -60,10 +60,10 @@ export function createFunhouse() {
         pz[i] = (Math.random() - 0.5) * ARENA * 1.8;
         py[i] = 2 + Math.random() * 20;
         vx[i] = vy[i] = vz[i] = 0;
-        rad[i] = 0.85 + Math.random() * 1.25;
+        rad[i] = 0.5 + Math.random() * 0.75;
         seed[i] = Math.random();
       }
-      rad[me] = 2.1; // the player's ball is a little bigger
+      rad[me] = 1.3; // the player's ball is a little bigger
 
       // soft pool of light under the pit
       floor = new THREE.Mesh(
@@ -100,7 +100,7 @@ export function createFunhouse() {
       const hz = Math.max(-ARENA, Math.min(ARENA, camera.position.z + dir.z * Math.abs(t)));
       // spawn flash so adding balls is unmistakable
       this._flash = { x: hx, z: hz, t: 1 };
-      for (let n = 0; n < 12; n++) {
+      for (let n = 0; n < 18; n++) {
         // grow the pool until it's full, then recycle random old balls
         const i = active < BALLS ? active++ : 1 + Math.floor(Math.random() * (BALLS - 1));
         px[i] = hx + (Math.random() - 0.5) * 6;
@@ -223,21 +223,21 @@ export function createFunhouse() {
 
       // IN the pit: eye-level with the balls, wading behind your own,
       // slowly circling so the view keeps changing
-      const camAng = time * 0.05;
+      const camAng = time * 0.028;
       const camTX = px[me] - Math.sin(camAng) * 9;
       const camTZ = pz[me] - Math.cos(camAng) * 9;
-      camera.position.x += (camTX - camera.position.x) * Math.min(1, dt * 2.5);
-      camera.position.z += (camTZ - camera.position.z) * Math.min(1, dt * 2.5);
-      camera.position.y += ((5.6 + audio.bass * 0.8) - camera.position.y) * Math.min(1, dt * 2.5);
+      camera.position.x += (camTX - camera.position.x) * Math.min(1, dt * 1.1);
+      camera.position.z += (camTZ - camera.position.z) * Math.min(1, dt * 1.1);
+      camera.position.y += ((4.4 + audio.bass * 0.35) - camera.position.y) * Math.min(1, dt * 1.1);
       camera.lookAt(px[me] + Math.sin(camAng) * 8, 3.2, pz[me] + Math.cos(camAng) * 8);
-      camera.rotation.z += Math.sin(time * 0.4) * 0.015;
+      camera.rotation.z += Math.sin(time * 0.3) * 0.008;
 
       // nearby balls shoulder away from the lens so it never sits inside one
       for (let i = 0; i < active; i++) {
         const dx = px[i] - camera.position.x, dz = pz[i] - camera.position.z;
         const d = Math.hypot(dx, dz);
-        if (d < 7 && d > 0.01) {
-          const f = (7 - d) * 11 * dt;
+        if (d < 4.5 && d > 0.01) {
+          const f = (4.5 - d) * 5 * dt;
           vx[i] += (dx / d) * f;
           vz[i] += (dz / d) * f;
         }
