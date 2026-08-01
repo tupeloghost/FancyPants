@@ -1,31 +1,42 @@
-// TRAIL — you leave a persistent glowing ribbon. Width from volume, hue from
-// the dominant frequency band. Never fades. (PNG export: press S — shell-level.)
+// TRAIL — you ARE a comet. Close chase-cam behind a glowing head whose
+// speed rides the music; it leaves a persistent ribbon (width from volume,
+// hue from the dominant band) that never fades. PNG export: press S.
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 
 const MAX_POINTS = 14000;   // capped total segment count
 const MIN_DIST = 0.22;
+const WAKE = 140;           // continuous particle wake behind the head
 
 const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 const BAND_HUE_SHIFT = [0, 0.09, 0.18, 0.3, 0.42];
 
 export function createTrail() {
-  let scene, camera, group, ribbon, headOrb, headHalo, stars, sparks, sky;
-  const SPARKS = 90;
-  const sparkVel = new Float32Array(SPARKS * 3);
-  let sparkLife = 0;
+  let scene, camera, group, ribbon, headOrb, headHalo, stars, sky, wake;
   let nPoints = 0;
-  const camPos = new THREE.Vector3(0, 8, 42);
-  let head = new THREE.Vector3();
-  let headTarget = new THREE.Vector3();
-  let prev = new THREE.Vector3();
+  let phase = 0;                       // path parameter — advances with the music
+  const head = new THREE.Vector3();
+  const headDir = new THREE.Vector3(0, 0, -1);
+  const prev = new THREE.Vector3();
+  const camTarget = new THREE.Vector3();
+  const lookTarget = new THREE.Vector3();
   let pointer = { x: 0, y: 0, active: false };
   let kick = 0;
+  const wakeVel = new Float32Array(WAKE * 3);
+  const wakeLife = new Float32Array(WAKE);
   const color = new THREE.Color();
   const tmpDir = new THREE.Vector3();
   const tmpSide = new THREE.Vector3();
   const toCam = new THREE.Vector3();
+
+  function pathAt(p, out) {
+    out.set(
+      Math.sin(p * 0.34) * 20 + Math.sin(p * 0.11) * 9,
+      Math.sin(p * 0.27) * 11 + Math.cos(p * 0.07) * 4,
+      Math.cos(p * 0.19) * 16 - p * 2.2   // net forward drift — never stalls
+    );
+  }
 
   return {
     name: 'TRAIL',
@@ -36,7 +47,6 @@ export function createTrail() {
       scene.add(group);
       scene.fog = null;
 
-      // ribbon as a triangle strip: 2 verts per path point
       const pos = new Float32Array(MAX_POINTS * 2 * 3);
       const col = new Float32Array(MAX_POINTS * 2 * 3);
       const geo = new THREE.BufferGeometry();
@@ -59,7 +69,6 @@ export function createTrail() {
       ribbon.frustumCulled = false;
       group.add(ribbon);
 
-      // glowing head orb — the pen tip
       headOrb = new THREE.Mesh(
         new THREE.SphereGeometry(0.5, 14, 14),
         new THREE.MeshBasicMaterial({ toneMapped: false })
@@ -68,19 +77,18 @@ export function createTrail() {
       headHalo = glowSprite(6);
       group.add(headHalo);
 
-      // tap spark burst
-      const skp = new Float32Array(SPARKS * 3);
-      const skg = new THREE.BufferGeometry();
-      skg.setAttribute('position', new THREE.BufferAttribute(skp, 3).setUsage(THREE.DynamicDrawUsage));
-      sparks = new THREE.Points(skg, glowPoints(1.1, 0));
-      sparks.frustumCulled = false;
-      group.add(sparks);
-      sparkLife = 0;
+      // continuous wake: particles respawn at the head, drift off, fade
+      const wkp = new Float32Array(WAKE * 3);
+      const wkg = new THREE.BufferGeometry();
+      wkg.setAttribute('position', new THREE.BufferAttribute(wkp, 3).setUsage(THREE.DynamicDrawUsage));
+      wake = new THREE.Points(wkg, glowPoints(1.0, 0.85));
+      wake.frustumCulled = false;
+      group.add(wake);
+      for (let i = 0; i < WAKE; i++) wakeLife[i] = Math.random();
 
-      // sparse starfield for depth
-      const sp = new Float32Array(500 * 3);
-      for (let i = 0; i < 500; i++) {
-        const v = new THREE.Vector3().randomDirection().multiplyScalar(80 + Math.random() * 100);
+      const sp = new Float32Array(700 * 3);
+      for (let i = 0; i < 700; i++) {
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(90 + Math.random() * 140);
         sp.set([v.x, v.y, v.z], i * 3);
       }
       const sg = new THREE.BufferGeometry();
@@ -93,57 +101,54 @@ export function createTrail() {
       group.add(sky);
 
       nPoints = 0;
-      head.set(0, 0, 0);
+      phase = 0;
+      pathAt(0, head);
       prev.copy(head);
-      camera.fov = 70;
+      camera.position.copy(head).add(new THREE.Vector3(0, 4, 14));
+      camera.fov = 74;
       camera.updateProjectionMatrix();
     },
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    // tap: width surge down the ribbon + a burst of sparks from the head
+    // tap: width surge + spark scatter via wake burst
     onTap() {
       kick = 1;
-      sparkLife = 1;
-      const pos = sparks.geometry.attributes.position;
-      for (let i = 0; i < SPARKS; i++) {
+      for (let i = 0; i < WAKE; i++) {
+        if (Math.random() < 0.5) continue;
+        wakeLife[i] = 1;
+        const pos = wake.geometry.attributes.position;
         pos.setXYZ(i, head.x, head.y, head.z);
-        const v = new THREE.Vector3().randomDirection().multiplyScalar(8 + Math.random() * 18);
-        sparkVel[i * 3] = v.x; sparkVel[i * 3 + 1] = v.y; sparkVel[i * 3 + 2] = v.z;
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(10 + Math.random() * 20);
+        wakeVel[i * 3] = v.x; wakeVel[i * 3 + 1] = v.y; wakeVel[i * 3 + 2] = v.z;
       }
-      pos.needsUpdate = true;
     },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
 
-      // head path: lissajous drift in attract, pointer-driven otherwise
-      if (attract || !pointer.active) {
-        headTarget.set(
-          Math.sin(time * 0.34) * 20 + Math.sin(time * 0.11) * 9,
-          Math.sin(time * 0.27) * 11 + Math.cos(time * 0.07) * 4,
-          Math.cos(time * 0.19) * 16
-        );
-      } else {
-        headTarget.set(pointer.x * 24, pointer.y * 13, Math.sin(time * 0.15) * 10);
-      }
-      head.lerp(headTarget, Math.min(1, dt * (attract ? 1.2 : 3.5)));
+      // the head's speed IS the music — crawls in silence, tears on drops
+      phase += dt * (0.25 + audio.volume * 2.6 * reactivity + audio.beatIntensity * 1.2);
       kick *= Math.pow(0.05, dt);
+
+      pathAt(phase, head);
+      if (!attract && pointer.active) {
+        head.x += pointer.x * 12;
+        head.y += pointer.y * 8;
+      }
 
       // append ribbon points as the head moves
       if (nPoints < MAX_POINTS && head.distanceTo(prev) > MIN_DIST) {
         tmpDir.subVectors(head, prev).normalize();
+        headDir.lerp(tmpDir, 0.25).normalize();
         toCam.subVectors(camera.position, head).normalize();
         tmpSide.crossVectors(tmpDir, toCam).normalize();
 
-        // dominant band picks the hue
         let domIdx = 0, domVal = -1;
         for (let i = 0; i < BANDS.length; i++) {
           if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
         }
-        // keep lum under the whiteout ceiling — additive overlap + bloom
-        // already amplifies; a 0.5 lum ribbon reads as a laser, 0.7 reads as fog
-        const width = (0.22 + audio.volume * 1.5 * reactivity) * (1 + kick * 1.4);
+        const width = (0.28 + audio.volume * 1.6 * reactivity) * (1 + kick * 1.4);
         color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.95, Math.min(0.52, 0.34 + audio.volume * 0.25 + kick * 0.12));
 
         const pos = ribbon.geometry.attributes.position;
@@ -160,12 +165,38 @@ export function createTrail() {
         prev.copy(head);
       }
 
-      color.setHSL((hue / 360) % 1, 0.65, 0.4 + audio.energy * 0.25);
-      sky.material.color.copy(color);
+      // wake particles: respawn at the head, drift, fade
+      {
+        const pos = wake.geometry.attributes.position;
+        let domIdx = 0, domVal = -1;
+        for (let i = 0; i < BANDS.length; i++) {
+          if (audio[BANDS[i]] > domVal) { domVal = audio[BANDS[i]]; domIdx = i; }
+        }
+        for (let i = 0; i < WAKE; i++) {
+          wakeLife[i] -= dt * 0.9;
+          if (wakeLife[i] <= 0) {
+            wakeLife[i] = 0.6 + Math.random() * 0.4;
+            pos.setXYZ(i, head.x, head.y, head.z);
+            const v = new THREE.Vector3().randomDirection().multiplyScalar(1.5 + audio.volume * 6);
+            v.addScaledVector(headDir, -4 - audio.volume * 8); // stream backward
+            wakeVel[i * 3] = v.x; wakeVel[i * 3 + 1] = v.y; wakeVel[i * 3 + 2] = v.z;
+          } else {
+            pos.setXYZ(i,
+              pos.getX(i) + wakeVel[i * 3] * dt,
+              pos.getY(i) + wakeVel[i * 3 + 1] * dt,
+              pos.getZ(i) + wakeVel[i * 3 + 2] * dt
+            );
+          }
+        }
+        pos.needsUpdate = true;
+        color.setHSL(((hue / 360) + BAND_HUE_SHIFT[domIdx]) % 1, 0.9, 0.5);
+        wake.material.color.copy(color);
+        wake.material.size = 0.8 + audio.volume * 1.2;
+      }
 
-      // head orb glows and swells with the music
+      // head orb + halo
       headOrb.position.copy(head);
-      headOrb.scale.setScalar(1 + audio.volume * 1.2 * reactivity + kick * 1.5);
+      headOrb.scale.setScalar(1 + audio.volume * 0.9 * reactivity + kick * 1.2);
       color.setHSL((hue / 360) % 1, 0.9, 0.65 + audio.beatIntensity * 0.15);
       headOrb.material.color.copy(color);
       headHalo.position.copy(head);
@@ -173,33 +204,21 @@ export function createTrail() {
       headHalo.material.color.copy(color);
       headHalo.material.opacity = 0.3 + audio.volume * 0.25;
 
-      // sparks fly out and fade
-      if (sparkLife > 0.01) {
-        sparkLife *= Math.pow(0.08, dt);
-        const pos = sparks.geometry.attributes.position;
-        for (let i = 0; i < SPARKS; i++) {
-          pos.setXYZ(i,
-            pos.getX(i) + sparkVel[i * 3] * dt,
-            pos.getY(i) + sparkVel[i * 3 + 1] * dt,
-            pos.getZ(i) + sparkVel[i * 3 + 2] * dt
-          );
-        }
-        pos.needsUpdate = true;
-        sparks.material.opacity = sparkLife;
-        sparks.material.color.copy(color);
-      } else {
-        sparks.material.opacity = 0;
-      }
+      // chase-cam: sit behind and above the head, look past it
+      camTarget.copy(head).addScaledVector(headDir, -13).add(new THREE.Vector3(0, 3.5, 0));
+      camera.position.lerp(camTarget, Math.min(1, dt * 3));
+      lookTarget.copy(head).addScaledVector(headDir, 10);
+      camera.lookAt(lookTarget);
+      camera.rotation.z += Math.sin(time * 0.5) * 0.02 + kick * 0.05;
+      const fovT = 74 + audio.volume * 12 * reactivity + audio.beatIntensity * 6;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
+      camera.updateProjectionMatrix();
 
-      // camera loosely chases the head, orbiting as it goes
-      const r = 34 + Math.sin(time * 0.06) * 5;
-      camPos.set(
-        head.x * 0.4 + Math.sin(time * 0.05) * r,
-        head.y * 0.4 + 7 + Math.sin(time * 0.09) * 5,
-        head.z * 0.4 + Math.cos(time * 0.05) * r
-      );
-      camera.position.lerp(camPos, Math.min(1, dt * 1.6));
-      camera.lookAt(head.x * 0.6, head.y * 0.6, head.z * 0.6);
+      // sky + stars follow so the dome never runs out
+      sky.position.copy(camera.position);
+      stars.position.copy(camera.position);
+      color.setHSL((hue / 360) % 1, 0.65, 0.4 + audio.energy * 0.25);
+      sky.material.color.copy(color);
     },
 
     dispose() {

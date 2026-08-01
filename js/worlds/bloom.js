@@ -1,70 +1,68 @@
-// BLOOM — dark space, no fail state. Moving through it grows procedural
-// crystals whose scale and color ride the music. Quiet = delicate, loud =
-// explosive. Growth persists for the whole session (until world switch).
+// BLOOM — you fly slowly through dark space; the garden grows around your
+// path and persists. Every crystal is tuned to a frequency band and pulses
+// with it, so the whole forest plays the track. Quiet = delicate, loud =
+// explosive. No fail state.
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js';
 
-const MAX_CRYSTALS = 2600;
-const MAX_STEMS = 2600;
+const MAX_CRYSTALS = 3200;
+const MAX_STEMS = 3200;
+const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
 export function createBloom() {
   let scene, camera, group;
   let crystals, stems, spores, ground, growerLight, tapFlashSprite, sky;
-  const tapPoint = new THREE.Vector3();
-  let tapFlash = 0, tapPlant = 0;
-  const growing = [];        // {idx, t, pos, size, rot} — crystals animate in
   let nCrystals = 0, nStems = 0;
-  const recentIdx = [];      // most recent crystals pulse with the beat
-  const recentHue = [];
   let spawnTimer = 0;
-  let grower = new THREE.Vector3();
-  let growerTarget = new THREE.Vector3();
+  let path = 0;                       // distance flown
+  const camPos = new THREE.Vector3();
+  const grower = new THREE.Vector3();
+  const growerTarget = new THREE.Vector3();
   let pointer = { x: 0, y: 0, active: false };
   let burst = 0;
+  const tapPoint = new THREE.Vector3();
+  let tapFlash = 0, tapPlant = 0;
+  const growing = [];                 // {idx, t, pos, size, rot}
+  // per-crystal state for band pulsing (ring buffer at MAX)
+  const cBand = new Uint8Array(MAX_CRYSTALS);
+  const cHue = new Float32Array(MAX_CRYSTALS);
+  const cLum = new Float32Array(MAX_CRYSTALS);
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
   function place(pos, audio, hue, reactivity, big) {
     const loud = audio.energy;
-    const size = (0.14 + loud * 1.6 * reactivity) * (big ? 1.6 : 1) * (0.6 + Math.random() * 0.8);
+    const size = (0.22 + loud * 1.9 * reactivity) * (big ? 1.7 : 1) * (0.6 + Math.random() * 0.9);
 
-    if (nStems < MAX_STEMS) {
-      // stem: thin cone reaching up to the bloom
-      const h = size * (2.5 + Math.random() * 2);
-      dummy.position.set(pos.x, pos.y - h / 2, pos.z);
-      dummy.scale.set(size * 0.12, h, size * 0.12);
-      dummy.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
-      dummy.updateMatrix();
-      stems.setMatrixAt(nStems, dummy.matrix);
-      color.setHSL(((hue / 360) + 0.32 + loud * 0.1) % 1, 0.7, 0.16 + loud * 0.25);
-      stems.setColorAt(nStems, color);
-      nStems++;
-      stems.count = nStems;
-      stems.instanceMatrix.needsUpdate = true;
-      stems.instanceColor.needsUpdate = true;
-    }
+    const si = nStems % MAX_STEMS;
+    const h = size * (2.5 + Math.random() * 2);
+    dummy.position.set(pos.x, pos.y - h / 2, pos.z);
+    dummy.scale.set(size * 0.12, h, size * 0.12);
+    dummy.rotation.set(0, Math.random() * Math.PI, (Math.random() - 0.5) * 0.35);
+    dummy.updateMatrix();
+    stems.setMatrixAt(si, dummy.matrix);
+    color.setHSL(((hue / 360) + 0.32 + loud * 0.1) % 1, 0.7, 0.16 + loud * 0.25);
+    stems.setColorAt(si, color);
+    nStems++;
+    stems.count = Math.min(nStems, MAX_STEMS);
+    stems.instanceMatrix.needsUpdate = true;
+    stems.instanceColor.needsUpdate = true;
 
-    if (nCrystals < MAX_CRYSTALS) {
-      const rot = [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI];
-      dummy.position.copy(pos);
-      dummy.scale.setScalar(0.01); // grows in over ~half a second
-      dummy.rotation.set(rot[0], rot[1], rot[2]);
-      dummy.updateMatrix();
-      crystals.setMatrixAt(nCrystals, dummy.matrix);
-      growing.push({ idx: nCrystals, t: 0, pos: pos.clone(), size, rot });
-      // quiet passages → cool dim tones; loud → hot bright shifted hue
-      const crystalHue = ((hue / 360) + audio.mid * 0.25 + Math.random() * 0.06) % 1;
-      color.setHSL(crystalHue, 0.85, 0.3 + loud * 0.42);
-      crystals.setColorAt(nCrystals, color);
-      recentIdx.push(nCrystals);
-      recentHue.push(crystalHue);
-      if (recentIdx.length > 24) { recentIdx.shift(); recentHue.shift(); }
-      nCrystals++;
-      crystals.count = nCrystals;
-      crystals.instanceMatrix.needsUpdate = true;
-      crystals.instanceColor.needsUpdate = true;
-    }
+    const ci = nCrystals % MAX_CRYSTALS;
+    const rot = [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI];
+    dummy.position.copy(pos);
+    dummy.scale.setScalar(0.01);
+    dummy.rotation.set(rot[0], rot[1], rot[2]);
+    dummy.updateMatrix();
+    crystals.setMatrixAt(ci, dummy.matrix);
+    cBand[ci] = Math.floor(Math.random() * BANDS.length);
+    cHue[ci] = ((hue / 360) + cBand[ci] * 0.06 + Math.random() * 0.04) % 1;
+    cLum[ci] = 0.2 + loud * 0.25;
+    growing.push({ idx: ci, t: 0, pos: pos.clone(), size, rot });
+    nCrystals++;
+    crystals.count = Math.min(nCrystals, MAX_CRYSTALS);
+    crystals.instanceMatrix.needsUpdate = true;
   }
 
   return {
@@ -74,10 +72,8 @@ export function createBloom() {
       scene = _scene; camera = _camera;
       group = new THREE.Group();
       scene.add(group);
-      scene.fog = new THREE.FogExp2(0x010104, 0.02);
+      scene.fog = new THREE.FogExp2(0x030208, 0.012);
 
-      // vertical gradient in vertex colors so crystals shade instead of
-      // reading as flat hexagons
       const crysGeo = new THREE.IcosahedronGeometry(1, 0);
       const cvc = new Float32Array(crysGeo.attributes.position.count * 3);
       for (let i = 0; i < crysGeo.attributes.position.count; i++) {
@@ -96,96 +92,112 @@ export function createBloom() {
         MAX_STEMS
       );
       crystals.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_CRYSTALS * 3), 3);
+      crystals.instanceColor.setUsage(THREE.DynamicDrawUsage);
       stems.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_STEMS * 3), 3);
       crystals.count = 0; stems.count = 0;
+      crystals.frustumCulled = false;
+      stems.frustumCulled = false;
       nCrystals = 0; nStems = 0;
-      recentIdx.length = 0; recentHue.length = 0;
+      growing.length = 0;
       group.add(crystals, stems);
 
-      // drifting spores fill the dark
-      const spp = new Float32Array(500 * 3);
-      for (let i = 0; i < 500; i++) {
-        spp[i * 3] = (Math.random() - 0.5) * 70;
-        spp[i * 3 + 1] = (Math.random() - 0.5) * 34;
-        spp[i * 3 + 2] = (Math.random() - 0.5) * 70;
+      // spore field streams past the camera
+      const spp = new Float32Array(800 * 3);
+      for (let i = 0; i < 800; i++) {
+        spp[i * 3] = (Math.random() - 0.5) * 90;
+        spp[i * 3 + 1] = (Math.random() - 0.5) * 44;
+        spp[i * 3 + 2] = (Math.random() - 0.5) * 160;
       }
       const spg = new THREE.BufferGeometry();
       spg.setAttribute('position', new THREE.BufferAttribute(spp, 3));
       spores = new THREE.Points(spg, glowPoints(0.9, 0.7));
+      spores.frustumCulled = false;
       group.add(spores);
 
-      // the grower is a visible wandering light — the world's focal point
       growerLight = glowSprite(9);
       group.add(growerLight);
       tapFlashSprite = glowSprite(14);
       tapFlashSprite.material.opacity = 0;
       group.add(tapFlashSprite);
 
-      // soft pool of light under the garden instead of a hard disc
       ground = new THREE.Mesh(
-        new THREE.CircleGeometry(85, 48),
+        new THREE.CircleGeometry(180, 48),
         new THREE.MeshBasicMaterial({
           map: glowTexture(), toneMapped: false, transparent: true, opacity: 0.3,
           blending: THREE.AdditiveBlending, depthWrite: false,
         })
       );
       ground.rotation.x = -Math.PI / 2;
-      ground.position.y = -15;
+      ground.position.y = -16;
       group.add(ground);
 
       sky = skyDome(300);
       group.add(sky);
-      growing.length = 0;
 
-      grower.set(0, 0, 0);
-      camera.fov = 70;
+      path = 0;
+      camPos.set(0, 0, 0);
+      grower.set(0, 0, -30);
+      camera.fov = 72;
       camera.updateProjectionMatrix();
     },
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
-    // tap: plant a burst exactly where you clicked — ray from the camera
-    // into the scene, planted at fixed depth
     onTap(x, y) {
       tapPoint.set(x, y, 0.5).unproject(camera);
-      tapPoint.sub(camera.position).normalize().multiplyScalar(46).add(camera.position);
+      tapPoint.sub(camera.position).normalize().multiplyScalar(40).add(camera.position);
       tapFlash = 1;
-      tapPlant = 10;
+      tapPlant = 12;
     },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time } = opts;
 
-      // grower drifts on its own in attract mode, follows pointer otherwise
-      if (attract || !pointer.active) {
-        growerTarget.set(
-          Math.sin(time * 0.21) * 22 + Math.sin(time * 0.07) * 8,
-          Math.sin(time * 0.16) * 9,
-          Math.cos(time * 0.13) * 22
-        );
-      } else {
-        growerTarget.set(pointer.x * 26, pointer.y * 12, Math.sin(time * 0.1) * 12);
-      }
-      grower.lerp(growerTarget, Math.min(1, dt * 1.5));
+      // fly forward — speed rides the music, always moving
+      path += dt * (4 + audio.volume * 16 * reactivity + audio.energy * 6);
+      camPos.set(
+        Math.sin(path * 0.02) * 16,
+        2 + Math.sin(path * 0.013) * 5,
+        -path
+      );
+      camera.position.lerp(camPos, Math.min(1, dt * 3));
+      const lookAhead = new THREE.Vector3(
+        Math.sin((path + 40) * 0.02) * 16 + (pointer.active && !attract ? pointer.x * 14 : 0),
+        2 + Math.sin((path + 40) * 0.013) * 5 + (pointer.active && !attract ? pointer.y * 8 : 0),
+        -path - 40
+      );
+      camera.lookAt(lookAhead);
+      camera.rotation.z += Math.sin(path * 0.02) * -0.05; // gentle bank
+      const fovT = 72 + audio.volume * 9 * reactivity + audio.beatIntensity * 5;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
+      camera.updateProjectionMatrix();
+
+      // grower rides ahead of the camera, wandering off the path
+      growerTarget.set(
+        camPos.x + Math.sin(time * 0.7) * 15,
+        camPos.y + Math.sin(time * 0.5) * 8 - 2,
+        camPos.z - 45
+      );
+      grower.lerp(growerTarget, Math.min(1, dt * 2));
 
       // growth cadence rides the music; silence grows nothing
       spawnTimer += dt;
-      const interval = 0.4 - Math.min(0.32, audio.volume * 0.36 + audio.beatIntensity * 0.1);
+      const interval = 0.28 - Math.min(0.22, audio.volume * 0.26 + audio.beatIntensity * 0.08);
       if ((spawnTimer >= interval && audio.volume > 0.03) || burst > 0) {
         spawnTimer = 0;
-        const n = burst > 0 ? burst : (audio.beat ? 3 : 1);
+        const n = burst > 0 ? burst : (audio.beat ? 4 : 2);
         burst = 0;
         for (let i = 0; i < n; i++) {
           const jitter = new THREE.Vector3(
-            (Math.random() - 0.5) * (2 + audio.volume * 9),
-            (Math.random() - 0.5) * (2 + audio.volume * 6),
-            (Math.random() - 0.5) * (2 + audio.volume * 9)
+            (Math.random() - 0.5) * (4 + audio.volume * 14),
+            (Math.random() - 0.5) * (3 + audio.volume * 9),
+            (Math.random() - 0.5) * (4 + audio.volume * 14)
           );
-          place(jitter.add(grower), audio, hue, reactivity, n > 2);
+          place(jitter.add(grower), audio, hue, reactivity, n > 3);
         }
       }
 
-      // tap planting: cluster at the clicked point + flash
+      // tap planting
       if (tapPlant > 0) {
         for (let i = 0; i < tapPlant; i++) {
           const jitter = new THREE.Vector3(
@@ -206,7 +218,7 @@ export function createBloom() {
         tapFlashSprite.material.opacity = 0;
       }
 
-      // grow-in animation: pop past full size, then settle
+      // grow-in: pop past full size with a spin, then settle
       if (growing.length) {
         for (let i = growing.length - 1; i >= 0; i--) {
           const g = growing[i];
@@ -215,7 +227,7 @@ export function createBloom() {
           const s = g.size * (t < 0.7 ? (t / 0.7) * 1.2 : 1.2 - 0.2 * ((t - 0.7) / 0.3));
           dummy.position.copy(g.pos);
           dummy.scale.setScalar(Math.max(0.01, s));
-          dummy.rotation.set(g.rot[0], g.rot[1] + (1 - t) * 2.5, g.rot[2]); // spins as it grows
+          dummy.rotation.set(g.rot[0], g.rot[1] + (1 - t) * 2.5, g.rot[2]);
           dummy.updateMatrix();
           crystals.setMatrixAt(g.idx, dummy.matrix);
           if (g.t >= 1) growing.splice(i, 1);
@@ -223,48 +235,43 @@ export function createBloom() {
         crystals.instanceMatrix.needsUpdate = true;
       }
 
-      // sky + ground pool tint
-      color.setHSL(((hue / 360) + 0.35) % 1, 0.6, 0.3 + audio.energy * 0.25);
-      sky.material.color.copy(color);
-      color.setHSL((hue / 360) % 1, 0.7, 0.3 + audio.bass * 0.2);
-      ground.material.color.copy(color);
-      ground.material.opacity = 0.22 + audio.volume * 0.2;
-
-      // recent growth pulses with the beat — the garden feels alive
-      if (recentIdx.length) {
-        const boost = audio.beatIntensity * 0.3 + audio.bass * 0.12;
-        for (let i = 0; i < recentIdx.length; i++) {
-          const age = i / recentIdx.length; // older → dimmer pulse
-          color.setHSL(recentHue[i], 0.85, Math.min(0.75, 0.32 + audio.energy * 0.4 + boost * age));
-          crystals.setColorAt(recentIdx[i], color);
-        }
-        crystals.instanceColor.needsUpdate = true;
+      // EVERY crystal pulses with its band — the forest plays the track
+      const nLive = Math.min(nCrystals, MAX_CRYSTALS);
+      for (let i = 0; i < nLive; i++) {
+        const level = audio[BANDS[cBand[i]]];
+        color.setHSL(cHue[i], 0.85, Math.min(0.72, cLum[i] + level * 0.4 * reactivity + audio.beatIntensity * 0.06));
+        crystals.setColorAt(i, color);
       }
+      if (nLive) crystals.instanceColor.needsUpdate = true;
 
-      // grower light breathes with the music and flares on beats
+      // grower light leads the way
       growerLight.position.copy(grower);
       growerLight.scale.setScalar(9 * (1 + audio.volume * 1.4 * reactivity + audio.beatIntensity * 0.8));
       color.setHSL(((hue / 360) + 0.05) % 1, 0.85, 0.6);
       growerLight.material.color.copy(color);
       growerLight.material.opacity = 0.45 + audio.volume * 0.4 + audio.beatIntensity * 0.3;
 
-      // spores drift up and shimmer with the highs
-      spores.rotation.y += dt * 0.03;
-      spores.position.y = Math.sin(time * 0.1) * 2;
+      // spores stream past (wrap around the camera in z)
+      const sp = spores.geometry.attributes.position;
+      for (let i = 0; i < sp.count; i++) {
+        let z = sp.getZ(i);
+        if (z > camPos.z + 20) sp.setZ(i, z - 160);
+        else if (z < camPos.z - 140) sp.setZ(i, z + 160);
+      }
+      sp.needsUpdate = true;
       color.setHSL(((hue / 360) + 0.4) % 1, 0.7, 0.35 + audio.high * 0.35);
       spores.material.color.copy(color);
-      spores.material.size = 0.28 + audio.high * 0.35;
+      spores.material.size = 0.9 + audio.high * 0.5;
 
-      color.setHSL((hue / 360) % 1, 0.5, 0.02 + audio.bass * 0.03);
+      // sky, ground pool follow the flight
+      sky.position.copy(camera.position);
+      color.setHSL(((hue / 360) + 0.35) % 1, 0.6, 0.3 + audio.energy * 0.25);
+      sky.material.color.copy(color);
+      ground.position.x = camPos.x;
+      ground.position.z = camPos.z - 40;
+      color.setHSL((hue / 360) % 1, 0.7, 0.3 + audio.bass * 0.2);
       ground.material.color.copy(color);
-
-      // slow orbit camera around the garden
-      const r = 44 + Math.sin(time * 0.05) * 8;
-      camera.position.set(Math.sin(time * 0.045) * r, 10 + Math.sin(time * 0.08) * 5, Math.cos(time * 0.045) * r);
-      camera.lookAt(0, 0, 0);
-      const fovTarget = 70 + audio.bass * 6 * reactivity;
-      camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 5);
-      camera.updateProjectionMatrix();
+      ground.material.opacity = 0.22 + audio.volume * 0.2;
     },
 
     dispose() {
