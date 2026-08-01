@@ -7,6 +7,7 @@ import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
 const DASHES = 46;
+const RAILSEGS = 120;
 const POLES = 14;
 const BUILDINGS = 90;
 const SPAN = 480;
@@ -22,13 +23,16 @@ export function createBlacktop() {
   const color = new THREE.Color();
 
   const dz = new Float32Array(DASHES);
+  const rlz = new Float32Array(RAILSEGS);
   const dlane = new Int8Array(DASHES);
   const pz = new Float32Array(POLES);
   const bz = new Float32Array(BUILDINGS), bx = new Float32Array(BUILDINGS);
   const bh = new Float32Array(BUILDINGS), bband = new Uint8Array(BUILDINGS);
   let speedLines = [];
+  let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
 
   const roadX = z => Math.sin(z * 0.008) * 26;
+  const roadYaw = z => Math.atan2(roadX(z - 8) - roadX(z + 8), 16);
 
   return {
     name: 'BLACKTOP',
@@ -60,18 +64,17 @@ export function createBlacktop() {
         dlane[i] = i < DASHES / 2 ? -1 : 1;
       }
 
-      // guard rails: continuous glowing edges
-      rails = [];
-      for (const side of [-1, 1]) {
-        const r = new THREE.Mesh(
-          new THREE.BoxGeometry(0.25, 0.5, SPAN),
-          new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.8 })
-        );
-        r.frustumCulled = false;
-        r.userData.side = side;
-        group.add(r);
-        rails.push(r);
-      }
+      // guard rails: short segments that FOLLOW the curve (a straight beam
+      // through a bending road reads as a broken line)
+      rails = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.28, 0.5, 6.4),
+        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        RAILSEGS
+      );
+      rails.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RAILSEGS * 3), 3);
+      rails.frustumCulled = false;
+      group.add(rails);
+      for (let i = 0; i < RAILSEGS; i++) rlz[i] = -(i % (RAILSEGS / 2)) * (SPAN / (RAILSEGS / 2));
 
       // streetlight poles arcing overhead + their lamps
       poles = new THREE.InstancedMesh(
@@ -123,6 +126,35 @@ export function createBlacktop() {
         group.add(m);
         speedLines.push(m);
       }
+
+      // the UFO: saucer + dome + running lights, visits now and then
+      ufo = new THREE.Group();
+      const saucer = new THREE.Mesh(
+        new THREE.SphereGeometry(4, 24, 12),
+        new THREE.MeshBasicMaterial({ color: 0x14141f, toneMapped: false })
+      );
+      saucer.scale.y = 0.26;
+      const domeTop = new THREE.Mesh(
+        new THREE.SphereGeometry(1.7, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.85 })
+      );
+      domeTop.position.y = 0.7;
+      const halo = glowSprite(16);
+      halo.material.opacity = 0.35;
+      const lp2 = new Float32Array(10 * 3);
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        lp2[i * 3] = Math.cos(a) * 3.6; lp2[i * 3 + 1] = -0.2; lp2[i * 3 + 2] = Math.sin(a) * 3.6;
+      }
+      const lg2 = new THREE.BufferGeometry();
+      lg2.setAttribute('position', new THREE.BufferAttribute(lp2, 3));
+      lg2.setAttribute('color', new THREE.BufferAttribute(new Float32Array(10 * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      ufoLights = new THREE.Points(lg2, glowPoints(1.6, 0.95));
+      ufoLights.material.vertexColors = true;
+      ufo.add(saucer, domeTop, halo, ufoLights);
+      ufo.visible = false;
+      group.add(ufo);
+      ufoT = -1; ufoNext = 10 + Math.random() * 15;
 
       sky = skyDome(340);
       group.add(sky);
@@ -176,8 +208,8 @@ export function createBlacktop() {
       for (let i = 0; i < DASHES; i++) {
         if (dz[i] > camZ + 10) dz[i] -= SPAN;
         dummy.position.set(roadX(dz[i]) + dlane[i] * 4, 0.1, dz[i]);
-        dummy.rotation.set(0, 0, 0);
-        dummy.scale.set(1, 1, 1 + speed * 0.02); // stretch with speed
+        dummy.rotation.set(0, roadYaw(dz[i]), 0); // turn with the road
+        dummy.scale.set(1, 1, 1 + speed * 0.012); // stretch with speed
         dummy.updateMatrix();
         dashes.setMatrixAt(i, dummy.matrix);
         themePaint(colorMode, hue / 360, 0.5 + dlane[i] * 0.2, dz[i] * 0.01, time, audio.volume, 0.5, tp);
@@ -187,14 +219,22 @@ export function createBlacktop() {
       dashes.instanceMatrix.needsUpdate = true;
       dashes.instanceColor.needsUpdate = true;
 
-      // rails follow the curve near the camera
-      for (const r of rails) {
-        r.position.set(roadX(camZ - 40) + r.userData.side * (ROAD_W / 2 + 1.4), 0.3, camZ - 40);
-        r.rotation.y = Math.atan2(roadX(camZ - 90) - roadX(camZ), 90) * 1.2;
-        themePaint(colorMode, hue / 360, r.userData.side > 0 ? 0.8 : 0.2, camZ * 0.005, time, audio.mid, 0.4, tp);
-        color.setHSL(tp[0], tp[1], Math.min(0.5, 0.22 + audio.mid * 0.2));
-        r.material.color.copy(color);
+      // rail segments hug the curve on both sides
+      for (let i = 0; i < RAILSEGS; i++) {
+        if (rlz[i] > camZ + 10) rlz[i] -= SPAN;
+        const side = i % 2 ? 1 : -1;
+        const z = rlz[i];
+        dummy.position.set(roadX(z) + side * (ROAD_W / 2 + 1.4), 0.3, z);
+        dummy.rotation.set(0, roadYaw(z), 0);
+        dummy.scale.set(1, 1, 1);
+        dummy.updateMatrix();
+        rails.setMatrixAt(i, dummy.matrix);
+        themePaint(colorMode, hue / 360, side > 0 ? 0.8 : 0.2, z * 0.005, time, audio.mid, 0.4, tp);
+        color.setHSL(tp[0], tp[1], Math.min(0.5, 0.2 + audio.mid * 0.2));
+        rails.setColorAt(i, color);
       }
+      rails.instanceMatrix.needsUpdate = true;
+      rails.instanceColor.needsUpdate = true;
 
       // streetlights: poles + lamps that strobe on beats
       const lpn = lampGlow.geometry.attributes.position;
@@ -255,6 +295,38 @@ export function createBlacktop() {
         color.setHSL(((hue / 360) + 0.5) % 1, 0.6, 0.7);
         color.multiplyScalar(1.4 + nitro);
         m.material.color.copy(color);
+      }
+
+      // UFO visits: swoops across the skyline, wobbles, slips away
+      if (ufoT < 0) {
+        ufoNext -= dt;
+        if (ufoNext <= 0) { ufoT = 0; ufo.visible = true; ufo.userData.side = Math.random() < 0.5 ? -1 : 1; }
+      } else {
+        ufoT += dt / 9; // ~9s visit
+        if (ufoT >= 1) { ufoT = -1; ufo.visible = false; ufoNext = 14 + Math.random() * 22; }
+        else {
+          const side = ufo.userData.side;
+          const swoop = Math.sin(ufoT * Math.PI); // in and out
+          ufo.position.set(
+            roadX(camZ - 120) + side * (70 - swoop * 55) + Math.sin(time * 1.3) * 4,
+            26 + Math.sin(ufoT * Math.PI * 3) * 6 + Math.sin(time * 2.1) * 1.5,
+            camZ - 150 + ufoT * 60
+          );
+          ufo.rotation.z = Math.sin(time * 1.7) * 0.12;
+          ufo.rotation.y += dt * 2.2; // spinning saucer
+          // running lights chase around the rim, hue-tinted
+          const lc2 = ufoLights.geometry.attributes.color;
+          for (let i = 0; i < 10; i++) {
+            const on = (Math.floor(time * 9) % 10) === i ? 2.2 : 0.35 + audio.high * 0.4;
+            color.setHSL(((hue / 360) + i * 0.08) % 1, 0.9, 0.5);
+            lc2.setXYZ(i, color.r * on, color.g * on, color.b * on);
+          }
+          lc2.needsUpdate = true;
+          const dome2 = ufo.children[1];
+          color.setHSL(((hue / 360) + 0.5) % 1, 0.7, 0.5 + audio.beatIntensity * 0.2);
+          dome2.material.color.copy(color);
+          ufo.children[2].material.color.copy(color);
+        }
       }
 
       sky.position.copy(camera.position);

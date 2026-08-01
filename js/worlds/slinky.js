@@ -3,7 +3,7 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
 const RINGS = 84;           // coils
@@ -12,9 +12,10 @@ const STEP_H = 5, STEP_D = 8;
 const STAIRS = 26;
 
 export function createSlinky() {
-  let scene, camera, group, coils, stairs, sky, dustF;
+  let scene, camera, group, coils, stairs, edges, sky, dustF, spot;
   let walk = 0, walkVel = 0;
-  let boing = 0;
+  let boing = 0, landPulse = 0, lastStep = 0;
+  const camPos = new THREE.Vector3(30, 0, 0);
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -44,9 +45,20 @@ export function createSlinky() {
       scene.add(group);
       scene.fog = new THREE.FogExp2(0x04030a, 0.011);
 
+      const coilGeo = new THREE.TorusGeometry(RING_R, 0.34, 12, 48);
+      {
+        // top-lit gloss baked into the coil so it reads as shiny plastic
+        const pa = coilGeo.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.62 + (pa.getY(i) / (RING_R + 0.34) + 1) * 0.24;
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        coilGeo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
       coils = new THREE.InstancedMesh(
-        new THREE.TorusGeometry(RING_R, 0.22, 10, 42),
-        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        coilGeo,
+        new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
         RINGS
       );
       coils.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * 3), 3);
@@ -62,6 +74,22 @@ export function createSlinky() {
       stairs.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(STAIRS * 3), 3);
       stairs.frustumCulled = false;
       group.add(stairs);
+
+      // glowing strip on every stair nose — the staircase becomes a light
+      // sculpture instead of dark boxes
+      edges = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(1, 0.18, 0.35),
+        new THREE.MeshBasicMaterial({ toneMapped: false }),
+        STAIRS
+      );
+      edges.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(STAIRS * 3), 3);
+      edges.frustumCulled = false;
+      group.add(edges);
+
+      // soft spotlight pool traveling with the slinky
+      spot = glowSprite(30);
+      spot.material.opacity = 0.2;
+      group.add(spot);
 
       // drifting sparkle in the stairwell
       const dp = new Float32Array(200 * 3);
@@ -114,6 +142,11 @@ export function createSlinky() {
       if (audio.beat) walkVel += audio.beatIntensity * 0.9 * reactivity;
       walk += walkVel * dt;
       boing *= Math.pow(0.04, dt);
+      landPulse *= Math.pow(0.03, dt);
+      if (Math.floor(walk) !== lastStep) {
+        lastStep = Math.floor(walk);
+        landPulse = 1; // the slap of the spring hitting the next step
+      }
 
       // coils: phase-offset copies along the path, compression waves running
       // through the spacing (bass breathes it, boing snaps it)
@@ -129,7 +162,8 @@ export function createSlinky() {
         dummy.position.copy(P);
         dummy.position.y += RING_R + 0.4;
         dummy.quaternion.copy(quat);
-        const s = 1 + audio.bass * 0.12 * reactivity + boing * 0.15 * Math.sin(i * 0.8 - time * 9);
+        const s = 1 + audio.bass * 0.12 * reactivity + boing * 0.15 * Math.sin(i * 0.8 - time * 9)
+                + landPulse * 0.07 * Math.max(0, 1 - i * 0.06); // head squashes on landing
         dummy.scale.setScalar(s);
         dummy.updateMatrix();
         coils.setMatrixAt(i, dummy.matrix);
@@ -137,7 +171,7 @@ export function createSlinky() {
         // rainbow slinky by default; every theme paints the coil run
         const jitv = Math.abs(Math.sin(i * 12.9898));
         themePaint(colorMode, hue / 360, i / RINGS, walk * 0.1, time, audio.bass, jitv, tp);
-        color.setHSL(tp[0], tp[1], Math.min(0.66, (0.3 + audio.volume * 0.25 + boing * 0.15) * Math.min(1.5, tp[2])));
+        color.setHSL(tp[0], tp[1], Math.min(0.66, (0.3 + audio.volume * 0.25 + boing * 0.15 + landPulse * 0.08) * Math.min(1.5, tp[2])));
         coils.setColorAt(i, color);
       }
       coils.instanceMatrix.needsUpdate = true;
@@ -155,21 +189,43 @@ export function createSlinky() {
         stairs.setMatrixAt(k, dummy.matrix);
         const jitv = Math.abs(Math.sin(n * 7.31));
         themePaint(colorMode, hue / 360, 0.15 + jitv * 0.2, n * 0.15, time, audio.mid, jitv, tp);
-        const landing = n === base ? 0.25 + audio.beatIntensity * 0.3 : 0;
+        const landing = n === base ? landPulse * 0.35 + audio.beatIntensity * 0.2 : 0;
         color.setHSL(tp[0], tp[1] * 0.7, Math.min(0.4, 0.045 + landing + audio.mid * 0.03));
         stairs.setColorAt(k, color);
+
+        // the glowing nose strip on each step
+        dummy.position.set(0, -n * STEP_H + 0.1, -n * STEP_D + 0.15);
+        dummy.scale.set(26, 1, 1);
+        dummy.updateMatrix();
+        edges.setMatrixAt(k, dummy.matrix);
+        themePaint(colorMode, hue / 360, ((n % 7) / 7), n * 0.2, time, audio.mid, jitv, tp);
+        color.setHSL(tp[0], tp[1], Math.min(0.62, (0.25 + audio.mid * 0.3 + landing) * Math.min(1.4, tp[2])));
+        edges.setColorAt(k, color);
       }
       stairs.instanceMatrix.needsUpdate = true;
       stairs.instanceColor.needsUpdate = true;
+      edges.instanceMatrix.needsUpdate = true;
+      edges.instanceColor.needsUpdate = true;
 
-      // camera: side-on, gliding down with the head of the spring
+      // camera: side-on, gliding down with the spring, easing every move,
+      // swinging slowly around for parallax
       pathAt(walk - RINGS * 0.026, P); // middle of the slinky
-      const camX = 30 + (pointer.active && !attract ? pointer.x * 10 : Math.sin(time * 0.15) * 6);
-      camera.position.set(camX, P.y + 10 + Math.sin(time * 0.3), P.z + 16);
+      const swing = (pointer.active && !attract ? pointer.x * 0.7 : Math.sin(time * 0.11) * 0.55);
+      camPos.set(
+        Math.cos(swing) * 32,
+        P.y + 9 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing
+        P.z + 14 + Math.sin(swing) * 20
+      );
+      camera.position.lerp(camPos, Math.min(1, dt * 2.5));
       camera.lookAt(0, P.y + 3, P.z - 6);
+
+      spot.position.set(0, P.y - 2, P.z - 4);
+      spot.material.opacity = 0.14 + audio.volume * 0.12 + landPulse * 0.1;
 
       color.setHSL(((hue / 360) + 0.1) % 1, 0.6, 0.3 + audio.high * 0.3);
       dustF.material.color.copy(color);
+      themePaint(colorMode, hue / 360, 0.3, walk * 0.1, time, audio.volume, 0.4, tp);
+      spot.material.color.setHSL(tp[0], tp[1] * 0.7, 0.45);
       dustF.position.y = P.y;
       dustF.position.z = P.z;
       sky.position.copy(camera.position);
