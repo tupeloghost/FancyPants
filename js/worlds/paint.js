@@ -53,7 +53,7 @@ function engrave(kind) {
     // ornate border: a double frame with a bead course between
     if (edge > 0.955) return 17;
     if (edge > 0.925) return 10;
-    if (edge > 0.895) return ((Math.round((x + y) * 14) % 2) ? 11 : 18);
+    if (edge > 0.895) return ((Math.round((x + y) * 5) % 2) ? 11 : 18);
     if (edge > 0.87) return 17;
 
     if (kind === 0) {
@@ -63,20 +63,20 @@ function engrave(kind) {
       const a = Math.atan2(dy, dx);
 
       if (r < 0.62) {
-        const spoke = Math.floor((a + Math.PI) / (Math.PI * 2) * 48);
+        const spoke = Math.floor((a + Math.PI) / (Math.PI * 2) * 20);
         if (r > 0.55) return (spoke % 2) ? 10 : 18;          // tick ring
         if (r > 0.50) return 11;                              // numeral band
         if (r > 0.46) return 8;
         if (r > 0.30) {
           // the tympan: a web of meridians and almucantars
-          const mer = Math.floor((a + Math.PI) / (Math.PI * 2) * 16) % 2;
-          const alm = Math.floor(r * 26) % 2;
+          const mer = Math.floor((a + Math.PI) / (Math.PI * 2) * 8) % 2;
+          const alm = Math.floor(r * 9) % 2;
           return mer ^ alm ? 12 : 13;
         }
         if (r > 0.26) return 10;
         // the rete at the heart, with its pointer
         const petal = Math.cos(a * 4) * 0.09;
-        if (r < 0.20 + petal) return (Math.floor(r * 22) % 2) ? 9 : 11;
+        if (r < 0.20 + petal) return (Math.floor(r * 8) % 2) ? 9 : 11;
         return 18;
       }
       // the alidade sweeping across the dial
@@ -87,7 +87,7 @@ function engrave(kind) {
       const sx = x - 0.74, sy = y - 0.74;
       const sr = Math.hypot(sx, sy);
       if (sr < 0.34) {
-        const ray = Math.floor((Math.atan2(sy, sx) + Math.PI) / (Math.PI * 2) * 30);
+        const ray = Math.floor((Math.atan2(sy, sx) + Math.PI) / (Math.PI * 2) * 14);
         if (sr > 0.17) return (ray % 2) ? 9 : 10;
         return (ray % 2) ? 10 : 11;
       }
@@ -96,20 +96,19 @@ function engrave(kind) {
       const orbs = [[0.55, -0.55, 0.15], [0.30, 0.30, 0.10], [0.78, -0.05, 0.09]];
       for (const [ox, oy, orad] of orbs) {
         const ord = Math.hypot(x - ox, y - oy);
-        if (ord < orad) return (Math.floor((y - oy) * 26) % 2) ? 7 : 8;
+        if (ord < orad) return (Math.floor((y - oy) * 7) % 2) ? 7 : 8;
         if (Math.abs((y - oy) * 2.6) < 0.05 && ord < orad * 2.1) return 10; // its ring
       }
 
       // star field: four-pointed stars on a lattice
-      const gx = x * 7, gy = y * 7;
+      const gx = x * 3.2, gy = y * 3.2;
       const cxg = Math.round(gx), cyg = Math.round(gy);
       const sd = Math.abs(gx - cxg) + Math.abs(gy - cyg);
-      if (sd < 0.30 && ((cxg * 7 + cyg * 13) % 5 === 0)) return 11;
-      if (sd < 0.5 && ((cxg * 5 + cyg * 11) % 9 === 0)) return 16;
+      if (sd < 0.34 && ((cxg * 7 + cyg * 13) % 3 === 0)) return 11;
 
-      // the night itself, banded and swirled
-      const swirl = Math.sin(x * 3.1 + Math.sin(y * 2.3) * 1.4) + Math.cos(y * 2.7);
-      return swirl > 0.6 ? 2 : swirl > -0.2 ? 1 : 17;
+      // the night itself: broad bands, no speckle
+      const swirl = Math.sin(x * 1.5 + Math.sin(y * 1.1) * 1.2) + Math.cos(y * 1.3);
+      return swirl > 0.75 ? 2 : swirl > -0.45 ? 1 : 17;
     }
 
     if (kind === 1) {
@@ -122,13 +121,13 @@ function engrave(kind) {
         const petal = Math.floor((a + Math.PI) / (Math.PI * 2) * 12);
         const inPetal = Math.cos((a + Math.PI) * 12) > -0.2;
         if (!inPetal) return 18;                       // the lead between panes
-        const band = Math.floor((r - 0.20) * 12) % 3;
+        const band = Math.floor((r - 0.20) * 6) % 3;
         return [3, 4, 5][band] + (petal % 2 ? 0 : 0);
       }
       if (r < 0.58) return 18;
       if (r < 0.78) {
-        const lobe = Math.floor((a + Math.PI) / (Math.PI * 2) * 24);
-        if (Math.cos((a + Math.PI) * 24) < -0.3) return 18;
+        const lobe = Math.floor((a + Math.PI) / (Math.PI * 2) * 12);
+        if (Math.cos((a + Math.PI) * 12) < -0.45) return 18;
         return (lobe % 3 === 0) ? 14 : (lobe % 3 === 1) ? 13 : 15;
       }
       if (r < 0.83) return 10;
@@ -139,7 +138,7 @@ function engrave(kind) {
     // kind 2 — MOTH & MOON: wings of banded scales over a lunar disc
     const mr = Math.hypot(x - 0.46, y - 0.5);
     if (mr < 0.26) {                                   // the moon behind
-      const crater = Math.sin((x - 0.46) * 30) * Math.cos((y - 0.5) * 26);
+      const crater = Math.sin((x - 0.46) * 11) * Math.cos((y - 0.5) * 9);
       return crater > 0.4 ? 16 : 11;
     }
     const wx = Math.abs(x), wy = y + 0.05;
@@ -147,18 +146,18 @@ function engrave(kind) {
     const upper = Math.hypot((wx - 0.34) / 0.34, (wy - 0.16) / 0.30);
     const lower = Math.hypot((wx - 0.28) / 0.28, (wy + 0.26) / 0.24);
     if (wx < 0.055 && Math.abs(wy) < 0.52) {           // body
-      return (Math.floor(wy * 22) % 2) ? 18 : 8;
+      return (Math.floor(wy * 7) % 2) ? 18 : 8;
     }
     if (upper < 1 || lower < 1) {
       const t = upper < 1 ? upper : lower;
-      const band = Math.floor(t * 7) % 4;
-      const vein = Math.abs(Math.sin((Math.atan2(wy, wx - 0.1)) * 9)) < 0.12;
+      const band = Math.floor(t * 4) % 4;
+      const vein = Math.abs(Math.sin((Math.atan2(wy, wx - 0.1)) * 5)) < 0.10;
       if (vein) return 18;
       return [5, 6, 7, 9][band];
     }
     if (wx < 0.30 && wy > 0.5 && wy < 0.72) return 18;  // antennae
-    const nb = Math.sin(x * 4 + y * 3) + Math.cos(y * 3.4);
-    return nb > 0.7 ? 3 : nb > -0.3 ? 2 : 1;
+    const nb = Math.sin(x * 1.7 + y * 1.3) + Math.cos(y * 1.5);
+    return nb > 0.8 ? 3 : nb > -0.4 ? 2 : 1;
   };
 
   for (let r = 0; r < N; r++) {
@@ -205,6 +204,8 @@ export function createPaint() {
 
   const cellX = c => (c - (N - 1) / 2) * CELL;
   const cellY = r => ((N - 1) / 2 - r) * CELL;
+  let edges = null, frame = null;            // region outlines and the mount
+  const MAXEDGE = N * (N + 1) * 2;
   let palIndex = [];                        // display number -> palette slot
   const paint = n => PAINTS[palIndex[n - 1]] || PAINTS[0];
 
@@ -275,6 +276,36 @@ export function createPaint() {
     }
   }
 
+  // ink every boundary between two different numbers, and the plate's rim
+  function layEdges() {
+    if (!edges) return;
+    const T = 0.085, d = new THREE.Object3D();
+    let e = 0;
+    const put = (x, y, w, h) => {
+      if (e >= MAXEDGE) return;
+      d.position.set(x, y, 0.22);
+      d.scale.set(w, h, 1);
+      d.rotation.set(0, 0, 0);
+      d.updateMatrix();
+      edges.setMatrixAt(e++, d.matrix);
+    };
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const i = r * N + c;
+        if (c === N - 1 || cellNum[i] !== cellNum[i + 1]) {
+          put(cellX(c) + CELL / 2, cellY(r), T, CELL + T);
+        }
+        if (c === 0) put(cellX(c) - CELL / 2, cellY(r), T, CELL + T);
+        if (r === N - 1 || cellNum[i] !== cellNum[i + N]) {
+          put(cellX(c), cellY(r) - CELL / 2, CELL + T, T);
+        }
+        if (r === 0) put(cellX(c), cellY(r) + CELL / 2, CELL + T, T);
+      }
+    }
+    edges.count = e;
+    edges.instanceMatrix.needsUpdate = true;
+  }
+
   function loadPlate(index) {
     const p = PLATES[index % PLATES.length];
     const raw = engrave(p.kind);
@@ -304,6 +335,7 @@ export function createPaint() {
     used = [...seen].sort((a, b) => a - b);
     held = used[0];
     numDirty = true;
+    layEdges();
     if (window.__setFigure) window.__setFigure(p.name, 0, needCount);
   }
 
@@ -320,7 +352,7 @@ export function createPaint() {
       loadPlate(0);
 
       plate = new THREE.InstancedMesh(
-        new THREE.PlaneGeometry(CELL * 0.94, CELL * 0.94),
+        new THREE.PlaneGeometry(CELL, CELL),
         new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true }),
         MAXCELLS
       );
@@ -328,6 +360,43 @@ export function createPaint() {
       plate.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXCELLS * 3), 3);
       plate.frustumCulled = false;
       group.add(plate);
+
+      // region outlines — drawn where the numbers change, the way a printed
+      // plate is inked, instead of a gap around every single cell
+      edges = new THREE.InstancedMesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({ color: 0x14151b, toneMapped: false }),
+        MAXEDGE
+      );
+      edges.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      edges.frustumCulled = false;
+      edges.renderOrder = 1;
+      group.add(edges);
+
+      // the mount: a deep card border with a fine gilt fillet inside it
+      frame = new THREE.Group();
+      {
+        const span = N * CELL, mat = new THREE.MeshBasicMaterial({ color: 0x0d0e13, toneMapped: false });
+        const gilt = new THREE.MeshBasicMaterial({ color: 0x8a6a2f, toneMapped: false });
+        const w = 3.4, f = 0.16, half = span / 2;
+        for (const [sx, sy, px, py] of [
+          [span + w * 2, w, 0, half + w / 2], [span + w * 2, w, 0, -half - w / 2],
+          [w, span, -half - w / 2, 0], [w, span, half + w / 2, 0],
+        ]) {
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(sx, sy), mat);
+          m.position.set(px, py, -0.4);
+          frame.add(m);
+        }
+        for (const [sx, sy, px, py] of [
+          [span + f * 2, f, 0, half + f], [span + f * 2, f, 0, -half - f],
+          [f, span, -half - f, 0], [f, span, half + f, 0],
+        ]) {
+          const m = new THREE.Mesh(new THREE.PlaneGeometry(sx, sy), gilt);
+          m.position.set(px, py, 0.3);
+          frame.add(m);
+        }
+      }
+      group.add(frame);
 
       fillGlow = mkPts(MAXCELLS, CELL * 1.9, 0.32);
       sparkPts = mkPts(SPARK, 1.4, 0.95);
@@ -560,8 +629,9 @@ export function createPaint() {
             // bare plate is warm paper; the cells wanting the loaded paint
             // blush toward that colour so the next move is obvious
             const ready = held === n;
-            const paper = 0.80 + (ready ? 0.06 + 0.03 * Math.sin(time * 4 + i * 0.2) : 0);
-            color.setHSL(ready ? P.h : 0.10, ready ? 0.35 : 0.10, paper - denyFlash * 0.06);
+            const grain = ((i * 2654435761) % 1000) / 1000 * 0.022;   // laid paper
+            const paper = 0.80 - grain + (ready ? 0.07 + 0.03 * Math.sin(time * 4 + i * 0.2) : 0);
+            color.setHSL(ready ? P.h : 0.10, ready ? 0.35 : 0.09, paper - denyFlash * 0.06);
             plate.setColorAt(i, color);
 
             if (numDirty) {
