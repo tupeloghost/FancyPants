@@ -309,6 +309,21 @@
   }
   #hue::-moz-range-progress { background: transparent; }
 
+  /* fine-tune drawer — advanced sliders out of sight until wanted */
+  #tune-drawer { margin-top: 12px; }
+  #tune-drawer summary {
+    list-style: none; cursor: pointer;
+    font-size: 9.5px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-faint); padding: 6px 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #tune-drawer summary::-webkit-details-marker { display: none; }
+  #tune-drawer summary::before { content: '\25B8'; font-size: 8px; transition: transform 0.15s; }
+  #tune-drawer[open] summary::before { transform: rotate(90deg); }
+  #tune-drawer summary:hover { color: var(--ink-dim); }
+  #tune-drawer[open] { border-top: 1px solid hsla(var(--accent-h), 50%, 60%, 0.12); }
+  #tune-drawer .grid2 { margin-top: 8px; }
+
   .hint {
     color: var(--ink-faint); font-size: 9.5px; margin-top: 12px; text-align: center;
     letter-spacing: 0.3px;
@@ -521,8 +536,8 @@
   <div id="panel-body">
     <div id="tabs">
       <button class="tab on" data-tab="music">&#9834; music</button>
-      <button class="tab" data-tab="style">&#10022; style</button>
-      <button class="tab" data-tab="tune">&#9881; tune</button>
+      <button class="tab" data-tab="worlds">&#9670; worlds</button>
+      <button class="tab" data-tab="looks">&#10022; looks</button>
     </div>
 
     <div class="tab-page on" id="page-music">
@@ -548,8 +563,7 @@
       </div>
     </div>
 
-    <div class="tab-page" id="page-style">
-      <div class="mini-label">worlds</div>
+    <div class="tab-page" id="page-worlds">
       <div id="world-chips"></div>
       <div id="world-note">the host picks where the room goes</div>
       <select id="world-select"></select>
@@ -562,7 +576,10 @@
         <label>balls <span class="val" id="balls-val">240</span></label>
         <input type="range" id="balls" min="60" max="8000" value="1500">
       </div>
-      <div class="mini-label">one-click looks</div>
+    </div>
+
+    <div class="tab-page" id="page-looks">
+      <div class="mini-label">instant vibes</div>
       <div id="preset-chips" class="chips"></div>
       <div class="mini-label">colors &middot; <span class="picked" id="color-name">rainbow</span></div>
       <div id="color-chips" class="chips"></div>
@@ -579,9 +596,8 @@
         <div class="mini-label">shape &middot; <span class="picked" id="shape-name">slat</span></div>
         <div id="shape-chips" class="chips"></div>
       </div>
-    </div>
-
-    <div class="tab-page" id="page-tune">
+      <details id="tune-drawer">
+        <summary>fine-tune</summary>
       <div class="grid2">
         <div class="slider" title="how hard the visuals hit with the music">
           <label>reactivity <span class="val" id="react-val">1.0</span></label>
@@ -605,6 +621,7 @@
         </div>
       </div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
+      </details>
     </div>
   </div>
 </div>
@@ -616,6 +633,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=16"></script>
+<script type="module" src="js/main.js?v=17"></script>
 </body>
 </html>
