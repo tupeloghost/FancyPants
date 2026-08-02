@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=90';
-import { WORLDS } from './worlds/registry.js?v=90';
-import { Net, PALETTE } from './net.js?v=90';
-import { Presence } from './lib/presence.js?v=90';
-import { glowTexture } from './lib/glow.js?v=90';
+import { AudioEngine } from './audio-engine.js?v=91';
+import { WORLDS } from './worlds/registry.js?v=91';
+import { Net, PALETTE } from './net.js?v=91';
+import { Presence } from './lib/presence.js?v=91';
+import { glowTexture } from './lib/glow.js?v=91';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -894,6 +894,7 @@ canvas.addEventListener('pointerdown', e => {
   }
   pointerHeld = true;
   clickPulse = 1; // global color surge: every click makes the whole frame answer
+  impact(0.42);   // and it lands in the body, not just the eye
   spawnRipple(e.clientX, e.clientY);
   // broadcast the tap — everyone's world feels it, not just ours
   net.local.action = 'tap';
@@ -903,12 +904,28 @@ canvas.addEventListener('pointerdown', e => {
   world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
 });
 
+// ── Impact: one physical punch every world shares ──
+// A tap should be FELT, not just seen. Strength 0..1+: a light tap is ~0.4,
+// a milestone is ~1. Applied over the world's own camera each frame and
+// handed back, so nothing accumulates into world state.
+let shake = 0, shakeT = 0;
+function impact(strength = 0.5) {
+  shake = Math.min(1.8, shake + strength);
+  clickPulse = Math.min(1.5, clickPulse + strength * 0.7);
+  // phones can feel it. (Android honours this; iOS Safari has no web haptics.)
+  if (IS_MOBILE && navigator.vibrate) {
+    try { navigator.vibrate(Math.round(6 + strength * 26)); } catch { /* blocked */ }
+  }
+}
+window.__impact = impact;
+
 // ── Scoring: worlds award points; your score rides the state blob ──
 let score = 0;
 function addScore(n, x, y) {
   if (settings.attract) return; // watching earns nothing
   score += n;
   net.local.score = score;
+  impact(Math.min(1.3, 0.2 + n / 260));   // the bigger the moment, the harder it lands
   const badge = $('score-badge');
   badge.classList.remove('hidden');
   $('score-val').textContent = score;
@@ -969,6 +986,7 @@ function showWorldIntro(key) {
 // someone else tapped: their click lands in OUR world too, in their color
 net.onRemoteTap = p => {
   clickPulse = Math.max(clickPulse, 0.6);
+  impact(0.22);   // you feel a friend's hit, gently
   const sx = ((p.x || 0) + 1) / 2 * window.innerWidth;
   const sy = (1 - ((p.y || 0) + 1) / 2) * window.innerHeight;
   spawnRipple(sx, sy, PALETTE[p.color % PALETTE.length]);
@@ -1208,6 +1226,7 @@ function frame(now) {
     holding: pointerHeld,
     time,
     addScore,
+    impact,
   });
 
   // The viewer's framing sits ON TOP of whatever the world asked for — and is
@@ -1229,6 +1248,18 @@ function frame(now) {
     if (world && world.pannable && (pan.x || pan.y)) {
       camera.translateX(pan.x);
       camera.translateY(pan.y);
+    }
+
+    // the punch: a jolt through the body of the shot, then a fast settle
+    if (shake > 0.002) {
+      shakeT += dt * 46;
+      const k = shake * shake;                 // sharp at the top, quick to fade
+      camera.translateX(Math.sin(shakeT * 1.7) * k * 0.85);
+      camera.translateY(Math.cos(shakeT * 2.4) * k * 0.85);
+      camera.rotation.z += Math.sin(shakeT * 1.15) * k * 0.02;
+      camera.fov = Math.max(18, Math.min(125, camera.fov + k * 3.6));
+      camera.updateProjectionMatrix();
+      shake *= Math.pow(0.015, dt);
     }
   }
 
