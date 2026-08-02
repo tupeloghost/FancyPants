@@ -214,6 +214,7 @@ function switchWorld(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
+  if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
@@ -743,6 +744,15 @@ function addScore(n, x, y) {
   $('score-val').textContent = score;
   badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
 }
+
+// a world can name what's on its easel and how far along it is
+window.__setFigure = (name, done, total) => {
+  const el = $('figure-label');
+  if (!name) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  $('fig-name').textContent = name;
+  $('fig-progress').textContent = `${done} / ${total}`;
+};
 
 // ── World intro: name + the one line that explains the whole game ──
 let introTimer = 0;

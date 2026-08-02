@@ -467,6 +467,23 @@
   #score-badge em { font: 400 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); font-style: normal; margin-left: 4px; letter-spacing: 2px; }
   #score-badge.hidden { display: none; }
   #score-badge.bump { animation: scorebump 0.3s ease-out; }
+
+  /* which figure is on the easel, and how far along it is */
+  #figure-label {
+    position: fixed; top: 116px; left: 19px; z-index: 90;
+    pointer-events: none; user-select: none;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  #figure-label.hidden { display: none; }
+  #figure-label b {
+    font: 400 12px 'SF Mono', Menlo, monospace; letter-spacing: 6px;
+    color: var(--ink); opacity: 0.72;
+  }
+  #figure-label span {
+    font: 400 9.5px 'SF Mono', Menlo, monospace; letter-spacing: 2.5px;
+    color: var(--ink-faint);
+  }
+  @media (max-width: 620px) { #figure-label { top: 96px; } }
   @keyframes scorebump { 30% { transform: scale(1.25); } }
 
   /* world intro — every world tells you the game in one line */
@@ -574,6 +591,7 @@
 
 <div id="room-badge" class="hidden"></div>
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
+<div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
 
 <div id="world-intro" class="gone"><b id="intro-name"></b><span id="intro-goal"></span></div>
 
@@ -692,6 +710,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=31"></script>
+<script type="module" src="js/main.js?v=33"></script>
 </body>
 </html>
