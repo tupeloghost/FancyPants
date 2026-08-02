@@ -16,68 +16,89 @@ import { themePaint } from '../lib/themes.js';
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [
   {
-    name: 'BLOOM',
-    hues: [0.72, 0.86, 0.06],
+    name: 'LOTUS',
+    hues: [0.92, 0.78, 0.13],   // rose · violet · gold
     rows: [
-      '....333....',
-      '...32223...',
-      '..3211123..',
-      '..3211123..',
-      '...32223...',
-      '....333....',
-      '.....2.....',
-      '....2.2....',
-      '...22.22...',
-      '....2.2....',
-      '.....2.....',
-      '.....1.....',
-      '...11111...',
+      '......333......',
+      '.....32223.....',
+      '....3211123....',
+      '...321111123...',
+      '..32111111123..',
+      '.3211111111123.',
+      '..32111111123..',
+      '...321111123...',
+      '....3211123....',
+      '.....32223.....',
+      '......333......',
     ],
   },
   {
-    name: 'AGAVE',
-    hues: [0.42, 0.34, 0.14],
+    name: 'FERN',
+    hues: [0.45, 0.35, 0.16],   // teal · green · amber
     rows: [
-      '....3.3....',
-      '.....2.....',
-      '.....2.....',
-      '...2.2.2...',
-      '...2.2.2...',
-      '...22222...',
-      '.....2.....',
-      '.....2.....',
-      '.....2.....',
-      '...11111...',
-      '...11111...',
+      '.......3.......',
+      '......232......',
+      '.....2.3.2.....',
+      '....2..3..2....',
+      '...2...3...2...',
+      '..2....3....2..',
+      '.......3.......',
+      '..2....3....2..',
+      '...2...3...2...',
+      '....2..3..2....',
+      '.....2.3.2.....',
+      '......232......',
+      '.......1.......',
+      '.......1.......',
     ],
   },
   {
-    name: 'LANTERN',
-    hues: [0.55, 0.5, 0.13],
+    name: 'ORCHID',
+    hues: [0.75, 0.88, 0.09],   // indigo · magenta · peach
     rows: [
-      '...33333...',
-      '..3333333..',
-      '.333333333.',
-      '.333333333.',
-      '..3333333..',
-      '...22222...',
-      '....222....',
-      '....222....',
-      '...22222...',
-      '...11111...',
-      '....111....',
+      '......333......',
+      '.....32123.....',
+      '....3211123....',
+      '....3211123....',
+      '.....32123.....',
+      '...3..222..3...',
+      '..32..222..23..',
+      '...3...2...3...',
+      '.......2.......',
+      '.......2.......',
+      '......111......',
+      '.....11111.....',
     ],
   },
 ];
 
-const CELL = 2.5;
+const CELL = 2.2;
+const MAXCELLS = 256;   // any figure fits; unused slots park offscreen
 const RUNES = 26;        // floating harvestables alive at once
 const TRAY_MAX = 6;
 const SPARK = 260;       // celebration sparks
 
+// fine serif numerals — the cell tells you its depth in plain figures
+function digitTexture(n) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.font = '300 84px "Didot", "Bodoni 72", "Playfair Display", Georgia, serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.shadowColor = 'rgba(255,255,255,0.75)';
+  g.shadowBlur = 12;
+  g.fillStyle = '#ffffff';
+  g.fillText(String(n), 64, 68);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  return t;
+}
+
 export function createGarden() {
   let scene, camera, group, sky, motes;
-  let cellMesh, pipPts, runePts, runeGlow, trayPts, sparkPts, keyLight;
+  let cellMesh, runePts, runeGlow, trayPts, sparkPts, keyLight, fillGlow;
+  const numPts = [];   // one Points layer per depth, each drawn with its numeral
   const tp = [0, 0, 0];
   const color = new THREE.Color();
   const dummy = new THREE.Object3D();
@@ -196,16 +217,33 @@ export function createGarden() {
 
       // lattice cells — one instanced quad per cell, dark until earned
       cellMesh = new THREE.InstancedMesh(
-        new THREE.PlaneGeometry(CELL * 0.82, CELL * 0.82),
+        new THREE.PlaneGeometry(CELL * 0.8, CELL * 0.8),
         new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 1 }),
-        rows * cols
+        MAXCELLS
       );
       cellMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      cellMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(rows * cols * 3), 3);
+      cellMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXCELLS * 3), 3);
       cellMesh.frustumCulled = false;
       group.add(cellMesh);
 
-      pipPts = mkPts(rows * cols * 3, 0.9, 0.85);   // depth marks on empty cells
+      // set gems get a soft bloom behind them so they read as jewels
+      fillGlow = mkPts(MAXCELLS, CELL * 2.1, 0.5);
+
+      // numerals: a Points layer per depth, each with its own figure drawn fine
+      numPts.length = 0;
+      for (let n = 1; n <= 3; n++) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
+        g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
+        const p = new THREE.Points(g, new THREE.PointsMaterial({
+          size: CELL * 0.72, map: digitTexture(n), transparent: true, vertexColors: true,
+          blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+        }));
+        p.frustumCulled = false;
+        group.add(p);
+        numPts.push(p);
+      }
+
       runePts = mkPts(RUNES, 3.4, 1);
       runeGlow = mkPts(RUNES, 9, 0.4);
       trayPts = mkPts(TRAY_MAX, 4.2, 1);
@@ -343,8 +381,10 @@ export function createGarden() {
       camera.rotation.z += Math.sin(time * 0.05) * 0.008;
 
       // ── lattice ──
-      const pipA = pipPts.geometry.attributes;
-      let pip = 0;
+      const numA = numPts.map(p => p.geometry.attributes);
+      const numN = [0, 0, 0];
+      const glowA = fillGlow.geometry.attributes;
+      let glowN = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const i = r * cols + c;
@@ -391,25 +431,35 @@ export function createGarden() {
           }
           cellMesh.setColorAt(i, color);
 
-          // depth marks: 1, 2, or 3 pips telling you what the cell will accept
-          if (t && !cellFilled[i]) {
-            for (let k = 0; k < t; k++) {
-              const off = (k - (t - 1) / 2) * 0.42;
-              pipA.position.setXYZ(pip, x + off, y, 0.4);
-              const held = tray.includes(t);
-              const g = held ? 0.5 + 0.18 * Math.sin(time * 4 + i) : 0.19;
-              color.setHSL(tierHue(t), 0.8, g);
-              pipA.color.setXYZ(pip, color.r, color.g, color.b);
-              pip++;
-            }
+          if (t && cellFilled[i]) {
+            // a set gem blooms softly into the room
+            glowA.position.setXYZ(glowN, x, y, -0.6);
+            color.multiplyScalar(0.75);
+            glowA.color.setXYZ(glowN, color.r, color.g, color.b);
+            glowN++;
+          } else if (t) {
+            // the cell states its depth in a fine numeral, and brightens the
+            // moment you're carrying the rune it will accept
+            const ready = tray.includes(t);
+            const g = ready ? 0.6 + 0.16 * Math.sin(time * 3.4 + i) : 0.26;
+            const a = numN[t - 1];
+            numA[t - 1].position.setXYZ(a, x, y, 0.5);
+            color.setHSL(tierHue(t), ready ? 0.45 : 0.22, g);
+            numA[t - 1].color.setXYZ(a, color.r, color.g, color.b);
+            numN[t - 1]++;
           }
         }
       }
-      for (; pip < rows * cols * 3; pip++) pipA.position.setXYZ(pip, 0, -999, 0);
+      for (let n = 0; n < 3; n++) {
+        for (let k = numN[n]; k < MAXCELLS; k++) numA[n].position.setXYZ(k, 0, -999, 0);
+        numA[n].position.needsUpdate = true;
+        numA[n].color.needsUpdate = true;
+      }
+      for (let k = glowN; k < MAXCELLS; k++) glowA.position.setXYZ(k, 0, -999, 0);
+      glowA.position.needsUpdate = true;
+      glowA.color.needsUpdate = true;
       cellMesh.instanceMatrix.needsUpdate = true;
       cellMesh.instanceColor.needsUpdate = true;
-      pipA.position.needsUpdate = true;
-      pipA.color.needsUpdate = true;
 
       // ── runes rise out of the dark; the music decides how generously ──
       spawnT -= dt;
