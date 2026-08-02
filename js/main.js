@@ -223,6 +223,7 @@ function switchWorld(key) {
   $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
   document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
   if (window.__applyWorldBloom) window.__applyWorldBloom(key); // world's bloom default (or your remembered tweak)
+  showWorldIntro(key); // nobody should ever wonder what this world wants
   net.sendWorld(key); // no-op unless we're the connected host
 }
 
@@ -752,6 +753,42 @@ function addScore(n, x, y) {
   f.addEventListener('animationend', () => f.remove());
 }
 
+// ── World intro: name + the one line that explains the whole game ──
+let introTimer = 0;
+function showWorldIntro(key) {
+  const w = WORLDS[key];
+  if (!w) return;
+  const el = $('world-intro');
+  $('intro-name').textContent = w.label;
+  $('intro-goal').textContent = w.goal || '';
+  el.classList.remove('gone');
+  clearTimeout(introTimer);
+  introTimer = setTimeout(() => el.classList.add('gone'), 4200);
+}
+
+// ── Emotes: one tap, everyone in the room smiles ──
+const EMOJI = ['🌸', '🔥', '😂', '✨', '🐄'];
+function burstEmote(idx, name, colorHex) {
+  const b = document.createElement('div');
+  b.className = 'emote-burst';
+  const c = '#' + (colorHex ?? 0xffffff).toString(16).padStart(6, '0');
+  b.innerHTML = `<span class="e">${EMOJI[idx] || '✨'}</span><span class="n" style="color:${c}">${name || ''}</span>`;
+  // scatter across the lower half so a flurry doesn't stack into one column
+  b.style.left = (12 + Math.random() * 76) + 'vw';
+  b.style.top = (58 + Math.random() * 18) + 'vh';
+  document.body.appendChild(b);
+  b.addEventListener('animationend', () => b.remove());
+}
+document.querySelectorAll('#emote-bar button').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const idx = +btn.dataset.e;
+    burstEmote(idx, net.local.name || 'you', PALETTE[net.local.color % PALETTE.length]);
+    net.sendEmote(idx);
+  });
+});
+net.onEmote = (p, idx) => burstEmote(idx, p.name, PALETTE[p.color % PALETTE.length]);
+
 // big-moment announcer: any world can put six-foot letters on the screen
 window.__announce = (text, cssColor) => {
   const a = document.createElement('div');
@@ -837,6 +874,7 @@ $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 function dismissOverlay() {
   audio.ensureContext();
   tap.classList.add('gone');
+  showWorldIntro(currentWorldKey); // the greeting belongs AFTER the join card, not behind it
   // iOS: tilt controls need explicit permission, and the request must come
   // from a user gesture — this tap is our one chance
   if (typeof DeviceOrientationEvent !== 'undefined' &&

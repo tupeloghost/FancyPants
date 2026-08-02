@@ -30,6 +30,7 @@ export class Net {
     this.onSong = null;    // ({url,pos,playing}) => {} — sync to the host's music
     this.onRemoteTap = null; // (participant) => {} — someone else clicked their world
     this.onWorld = null;   // (key) => {} — the host moved the room to another world
+    this.onEmote = null;   // (participant, idx) => {} — someone reacted
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -94,12 +95,24 @@ export class Net {
       if (!this.owner && this.onSong) this.onSong(m);
     } else if (m.t === 'world') {
       if (!this.owner && this.onWorld) this.onWorld(m.key);
+    } else if (m.t === 'emote') {
+      const p = this.participants.find(x => x.id === m.id);
+      if (p && this.onEmote) this.onEmote(p, m.i);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }
+  }
+
+  // anyone: react — rate-limited so nobody can carpet the stream
+  sendEmote(idx) {
+    const now = performance.now();
+    if ((this._lastEmote || 0) > now - 700) return;
+    this._lastEmote = now;
+    if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'emote', i: idx }));
   }
 
   // host: move the whole room to another world

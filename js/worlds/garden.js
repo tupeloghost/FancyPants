@@ -437,16 +437,20 @@ export function createGarden() {
         }
 
         const show = gAlive[i] ? 1 : gPop[i];
-        const pulse = 1 + Math.sin(time * 5 + i * 2) * 0.15 + audio.beatIntensity * 0.35;
-        const h01 = gCol[i] === -1 ? 0.06 : gCol[i] === 3 ? 0.13 : TRIO[gCol[i]];
-        const sat = gCol[i] === -1 ? 0.15 : 0.95;
+        const isThorn = gCol[i] === -1;
+        // thorns stab on the beat and look sickly; flowers breathe invitingly
+        const pulse = isThorn
+          ? 1 + audio.beatIntensity * 0.9
+          : 1 + Math.sin(time * 5 + i * 2) * 0.15 + audio.beatIntensity * 0.35;
+        const h01 = isThorn ? 0.98 : gCol[i] === 3 ? 0.13 : TRIO[gCol[i]];
+        const sat = isThorn ? 0.85 : 0.95;
         const isStreak = false; // all flowers are equal now — just don't miss
         gc.position.setXYZ(i, gx, gy, -t);
         gh.position.setXYZ(i, gx, gy, -t);
         gr.position.setXYZ(i, gx, py(t) + 0.15, -t);
-        color.setHSL(h01, sat, gCol[i] === -1 ? 0.24 : 0.55).multiplyScalar(show * pulse * (isStreak ? 1.6 : 1));
+        color.setHSL(h01, sat, isThorn ? 0.3 : 0.55).multiplyScalar(show * pulse * (isStreak ? 1.6 : 1));
         gc.color.setXYZ(i, color.r, color.g, color.b);
-        color.multiplyScalar(0.5);
+        color.multiplyScalar(isThorn ? 0.25 : 0.5); // thorns cast almost no glow — they lurk
         gh.color.setXYZ(i, color.r, color.g, color.b);
         gr.color.setXYZ(i, color.r * 0.8, color.g * 0.8, color.b * 0.8);
       }

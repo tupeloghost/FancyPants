@@ -469,6 +469,71 @@
   #score-badge.bump { animation: scorebump 0.3s ease-out; }
   @keyframes scorebump { 30% { transform: scale(1.25); } }
 
+  /* world intro — every world tells you the game in one line */
+  #world-intro {
+    position: fixed; left: 50%; top: 20%; z-index: 94;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    pointer-events: none; text-align: center;
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  #world-intro.gone { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  #world-intro b {
+    font: 800 30px 'SF Mono', Menlo, monospace; letter-spacing: 8px;
+    color: var(--accent);
+    text-shadow: 0 0 24px hsla(var(--accent-h), 90%, 65%, 0.9);
+  }
+  #world-intro span {
+    font: 500 13px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    color: var(--ink); text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    background: rgba(6,9,20,0.5); padding: 6px 14px; border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  @media (max-width: 620px) {
+    #world-intro b { font-size: 20px; letter-spacing: 4px; }
+    #world-intro span { font-size: 11px; }
+  }
+
+  /* emote bar — one tap, everyone smiles */
+  #emote-bar {
+    position: fixed; left: 14px; bottom: 14px; z-index: 95;
+    display: flex; gap: 7px;
+  }
+  #emote-bar button {
+    width: 42px; height: 42px; border-radius: 50%;
+    font-size: 20px; line-height: 1; padding: 0;
+    background: var(--glass); border: 1px solid var(--accent-line);
+    backdrop-filter: blur(10px); cursor: pointer;
+    transition: transform 0.12s, background 0.12s;
+  }
+  #emote-bar button:hover { transform: translateY(-3px) scale(1.12); background: var(--accent-soft); }
+  #emote-bar button:active { transform: scale(0.9); }
+  @media (max-width: 620px) {
+    #emote-bar { left: 10px; bottom: calc(64vh + 14px); flex-direction: column; }
+    #panel.collapsed ~ #emote-bar, body:has(#panel.collapsed) #emote-bar { bottom: 70px; flex-direction: row; }
+    #emote-bar button { width: 40px; height: 40px; }
+  }
+
+  /* emote burst — the emoji sails up with the sender's name */
+  .emote-burst {
+    position: fixed; z-index: 97; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    animation: emoteup 2.1s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+  }
+  .emote-burst .e { font-size: 42px; animation: emotewob 0.7s ease-in-out infinite alternate; }
+  .emote-burst .n {
+    font: 700 11px 'SF Mono', Menlo, monospace; letter-spacing: 1px;
+    color: #fff; text-shadow: 0 0 8px currentColor, 0 1px 3px rgba(0,0,0,0.9);
+  }
+  @keyframes emoteup {
+    0%   { opacity: 0; transform: translate(-50%, 0) scale(0.4); }
+    10%  { opacity: 1; transform: translate(-50%, -20px) scale(1.25); }
+    22%  { transform: translate(-50%, -34px) scale(1); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -150px) scale(0.9); }
+  }
+  @keyframes emotewob { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+
   /* big-moment announcer — MAGIC NUMBER ×4, SUPERBLOOM, ABDUCTED… */
   .announce {
     position: fixed; left: 50%; top: 30%; z-index: 96;
@@ -575,6 +640,16 @@
 
 <div id="room-badge" class="hidden"></div>
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
+
+<div id="world-intro" class="gone"><b id="intro-name"></b><span id="intro-goal"></span></div>
+
+<div id="emote-bar">
+  <button data-e="0">&#127800;</button>
+  <button data-e="1">&#128293;</button>
+  <button data-e="2">&#128514;</button>
+  <button data-e="3">&#10024;</button>
+  <button data-e="4">&#128004;</button>
+</div>
 
 <div id="plist" class="hidden">
   <div class="plist-title">participants — click to hide a name</div>
@@ -690,6 +765,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=26"></script>
+<script type="module" src="js/main.js?v=27"></script>
 </body>
 </html>

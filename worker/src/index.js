@@ -129,6 +129,17 @@ export class FancyPantsRoom {
       return;
     }
 
+    // emotes: anyone can react, everyone sees it (server-side rate limit too)
+    if (m.t === 'emote') {
+      const p = this.peers.get(connId);
+      if (!p) return;
+      if (now - (p.lastEmote || 0) < 600) return;
+      p.lastEmote = now;
+      const i = Math.max(0, Math.min(4, Number(m.i) || 0));
+      this.broadcast(JSON.stringify({ t: 'emote', id: connId, i }), connId);
+      return;
+    }
+
     // host switches the world; the whole room follows
     if (m.t === 'world') {
       if (connId !== this.ownerId) return; // only the host steers the room
