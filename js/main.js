@@ -218,6 +218,7 @@ function switchWorld(key) {
   $('opt-pattern').style.display = caps.includes('pattern') ? '' : 'none';
   $('opt-shape').style.display = caps.includes('shape') ? '' : 'none';
   $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
+  document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
 }
 
 // ── Panel wiring ──
@@ -240,11 +241,16 @@ document.querySelectorAll('#tabs .tab').forEach(t => {
   if (saved) document.querySelector(`#tabs .tab[data-tab="${saved}"]`)?.click();
 }
 
-// world select
+// world select (hidden element keeps URL/param plumbing) + visible chip grid
 for (const [key, w] of Object.entries(WORLDS)) {
   const opt = document.createElement('option');
   opt.value = key; opt.textContent = w.label;
   $('world-select').appendChild(opt);
+
+  const b = document.createElement('button');
+  b.className = 'wchip'; b.dataset.key = key; b.textContent = w.label;
+  b.addEventListener('click', () => { $('world-select').value = key; switchWorld(key); });
+  $('world-chips').appendChild(b);
 }
 $('world-select').addEventListener('change', e => switchWorld(e.target.value));
 
@@ -666,12 +672,17 @@ function startRoom(code, name, asOwner) {
   net.local.name = name;
   localStorage.setItem('fp_name', name);
   $('room-badge').textContent = code;
+  $('room-badge').dataset.url = location.host.includes('localhost')
+    ? '' : location.host + location.pathname.replace(/\/$/, '');
   $('room-badge').classList.remove('hidden');
   net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = 'pick another name'; };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
   dismissOverlay();
   updateURL();
 }
+$('join-name').value = localStorage.getItem('fp_name') || '';
+$('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+$('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
 $('btn-join').addEventListener('click', () => {
   const code = $('join-room').value.trim().toUpperCase();
   if (code.length < 4) { $('join-msg').textContent = 'enter a room code'; return; }

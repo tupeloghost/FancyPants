@@ -309,27 +309,60 @@
     animation: breathe 3s ease-in-out infinite;
   }
   /* ── Join card ── */
+  #join-tag {
+    font-size: 11px; letter-spacing: 2px; color: var(--ink-dim);
+    margin: -6px 0 6px; text-align: center;
+  }
   #join-card {
-    display: flex; flex-direction: column; gap: 9px; width: 250px;
+    display: flex; flex-direction: column; gap: 9px; width: 270px;
     letter-spacing: normal;
+    background: hsla(228, 45%, 7%, 0.6);
+    border: 1px solid hsla(var(--accent-h), 60%, 60%, 0.18);
+    border-radius: 18px; padding: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 14px 50px rgba(0,0,0,0.5);
   }
   #join-card input {
-    padding: 10px 12px; border-radius: 10px; text-align: center;
+    padding: 11px 12px; border-radius: 11px; text-align: center;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
     border: 1px solid var(--accent-line); font: 14px 'SF Mono', Menlo, monospace;
-    letter-spacing: 2px; outline: none;
+    letter-spacing: 2px; outline: none; min-width: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
   #join-card input:focus { border-color: var(--accent); box-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.4); }
   #join-card input::placeholder { color: var(--ink-faint); letter-spacing: 1px; }
   .join-row { display: flex; gap: 7px; }
+  .join-row input { flex: 1.2; text-transform: uppercase; }
   .join-row button {
-    flex: 1; padding: 9px 0; border-radius: 10px; cursor: pointer;
-    background: var(--accent-soft); color: var(--accent);
-    border: 1px solid var(--accent-line);
-    font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    flex: 1; padding: 9px 0; border-radius: 11px; cursor: pointer;
+    background: linear-gradient(160deg, hsla(var(--accent-h), 90%, 62%, 0.9), hsla(calc(var(--accent-h) + 40), 90%, 55%, 0.9));
+    color: #04070f; border: none;
+    font: 800 13px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    box-shadow: 0 4px 18px hsla(var(--accent-h), 90%, 60%, 0.35);
+    transition: transform 0.12s, box-shadow 0.12s;
   }
-  .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
-  #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
+  .join-row button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px hsla(var(--accent-h), 90%, 60%, 0.55); }
+  .join-or {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--ink-faint); font-size: 10px; letter-spacing: 2px;
+  }
+  .join-or::before, .join-or::after {
+    content: ''; flex: 1; height: 1px;
+    background: hsla(var(--accent-h), 50%, 60%, 0.18);
+  }
+  .join-alt {
+    display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+    text-align: left; padding: 10px 14px; border-radius: 11px; cursor: pointer;
+    background: var(--well); border: 1px solid transparent; color: var(--ink);
+    font: 12px 'SF Mono', Menlo, monospace;
+    transition: border-color 0.15s, background 0.15s, transform 0.12s;
+  }
+  .join-alt:hover { border-color: var(--accent-line); background: var(--accent-soft); transform: translateY(-1px); }
+  .join-alt b { font-size: 12px; letter-spacing: 2px; color: var(--accent); font-weight: 700; }
+  .join-alt span { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.5px; }
+  #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; text-align: center; }
+  #join-msg:empty { display: none; }
 
   /* room code — prominent, part of the broadcast frame */
   #room-badge {
@@ -344,6 +377,30 @@
     font-size: 9px; letter-spacing: 4px; color: var(--ink-faint); text-shadow: none;
   }
   #room-badge.hidden { display: none; }
+  #room-badge::after {
+    content: attr(data-url); display: block;
+    font: 400 10px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    color: var(--ink-dim); text-shadow: none; margin-top: 3px;
+  }
+
+  /* world grid — the show, visible at a glance */
+  #world-select { display: none; }
+  #world-chips {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 4px; margin-bottom: 10px;
+  }
+  .wchip {
+    padding: 7px 2px; font-size: 9.5px; letter-spacing: 0.8px;
+    border-radius: 8px; background: var(--well);
+    border: 1px solid transparent; color: var(--ink-dim);
+    transition: border-color 0.12s, background 0.12s, color 0.12s, transform 0.12s;
+  }
+  .wchip:hover { border-color: var(--accent-line); color: var(--ink); transform: translateY(-1px); }
+  .wchip.on {
+    background: var(--accent-soft); color: var(--accent);
+    border-color: var(--accent-line);
+    box-shadow: 0 0 12px hsla(var(--accent-h), 90%, 65%, 0.25);
+  }
 
   /* participants overlay (P) */
   #plist {
@@ -385,8 +442,10 @@
   /* touch devices of any size (incl. iPad): no-zoom inputs, roomier taps */
   @media (pointer: coarse) {
     #join-card input { font-size: 16px; }
-    .join-row button { padding: 12px 0; }
+    .join-row button { padding: 12px 8px; }
+    .join-alt { padding: 13px 14px; }
     .chip:not(.chip-preset) { min-width: 34px; min-height: 27px; }
+    .wchip { padding: 10px 2px; font-size: 10px; }
   }
 </style>
 </head>
@@ -396,15 +455,23 @@
 
 <div id="tap-to-start">
   <div class="big">FANCY PANTS</div>
+  <div id="join-tag">worlds that dance to the music &mdash; together</div>
   <div id="join-card">
     <input id="join-name" maxlength="14" placeholder="your name" autocomplete="off">
-    <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
-    <div id="join-msg"></div>
     <div class="join-row">
-      <button id="btn-join">JOIN</button>
-      <button id="btn-host">HOST</button>
-      <button id="btn-solo">SOLO</button>
+      <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
+      <button id="btn-join">JOIN &rarr;</button>
     </div>
+    <div id="join-msg"></div>
+    <div class="join-or"><span>or</span></div>
+    <button class="join-alt" id="btn-host">
+      <b>&#10022; HOST A ROOM</b>
+      <span>get a code your friends join with</span>
+    </button>
+    <button class="join-alt" id="btn-solo">
+      <b>&#9654; PLAY SOLO</b>
+      <span>just you and the music</span>
+    </button>
   </div>
 </div>
 
@@ -451,9 +518,9 @@
     </div>
 
     <div class="tab-page" id="page-style">
-      <div class="row">
-        <select id="world-select"></select>
-      </div>
+      <div class="mini-label">worlds</div>
+      <div id="world-chips"></div>
+      <select id="world-select"></select>
       <div class="row seg">
         <button id="btn-attract">&#9678; watch</button>
         <button id="btn-interactive" class="on">&#9654; play</button>
@@ -484,23 +551,23 @@
 
     <div class="tab-page" id="page-tune">
       <div class="grid2">
-        <div class="slider">
+        <div class="slider" title="how hard the visuals hit with the music">
           <label>reactivity <span class="val" id="react-val">1.0</span></label>
           <input type="range" id="reactivity" min="0" max="200" value="100">
         </div>
-        <div class="slider">
+        <div class="slider" title="lower = more beats detected, higher = only the big ones">
           <label>beats <span class="val" id="beat-val">1.40</span></label>
           <input type="range" id="beat-sens" min="105" max="250" value="140">
         </div>
-        <div class="slider">
+        <div class="slider" title="softens the audio signal — high = dreamy, low = twitchy">
           <label>smoothing <span class="val" id="smooth-val">0.70</span></label>
           <input type="range" id="smoothing" min="0" max="95" value="70">
         </div>
-        <div class="slider">
+        <div class="slider" title="the glow around bright things">
           <label>bloom <span class="val" id="bloom-val">0.7</span></label>
           <input type="range" id="bloom" min="0" max="300" value="70">
         </div>
-        <div class="slider">
+        <div class="slider" title="pushes colors past full brightness">
           <label>hdr <span class="val" id="hdr-val">1.0</span></label>
           <input type="range" id="hdr" min="0" max="200" value="100">
         </div>
