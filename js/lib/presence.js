@@ -11,21 +11,29 @@ const MAX_GHOSTS = 64; // rendered ghosts; beyond this, presence is ambient
 
 function makeNameTexture(name, colorHex) {
   const c = document.createElement('canvas');
-  c.width = 512; c.height = 128;
+  c.width = 1024; c.height = 256;
   const g = c.getContext('2d');
   const col = '#' + colorHex.toString(16).padStart(6, '0');
-  g.font = '700 64px "SF Mono", Menlo, monospace';
+  g.font = '800 132px "SF Mono", Menlo, monospace';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  // glow stack: color halo, then bright core — legible at stream size
+  // dark plate behind the letters — contrast is what reads, not glow
+  g.shadowColor = 'rgba(0,0,0,0.9)';
+  g.shadowBlur = 24;
+  g.lineWidth = 14;
+  g.strokeStyle = 'rgba(0,0,0,0.85)';
+  g.strokeText(name, 512, 128);
+  g.shadowBlur = 0;
+  // slim color halo, then a crisp white core with no blur on it
   g.shadowColor = col;
-  g.shadowBlur = 26;
+  g.shadowBlur = 14;
   g.fillStyle = col;
-  g.fillText(name, 256, 64);
-  g.shadowBlur = 10;
+  g.fillText(name, 512, 128);
+  g.shadowBlur = 0;
   g.fillStyle = '#ffffff';
-  g.fillText(name, 256, 64);
+  g.fillText(name, 512, 128);
   const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
   return tex;
 }
 
