@@ -190,6 +190,7 @@ export function createPaint() {
   let cellNum = null, cellDone = null, cellPop = null, cellWave = null, cellRegion = null;
   let regionOfSize = null;
   let doneCount = 0, needCount = 0, plateIndex = 0;
+  let remaining = {};        // cells still owed, per paint number
   let used = [];                       // which paint numbers this plate uses
   let held = 1;
   let completion = 0, finale = 0, denyFlash = 0;
@@ -283,8 +284,12 @@ export function createPaint() {
     needCount = N * N;
     doneCount = 0;
     completion = 0;
+    remaining = {};
     const seen = new Set();
-    for (let i = 0; i < N * N; i++) seen.add(cellNum[i]);
+    for (let i = 0; i < N * N; i++) {
+      seen.add(cellNum[i]);
+      remaining[cellNum[i]] = (remaining[cellNum[i]] || 0) + 1;
+    }
     used = [...seen].sort((a, b) => a - b);
     held = used[0];
     numDirty = true;
@@ -420,7 +425,9 @@ export function createPaint() {
         for (let k = 0; k < used.length; k++) {
           const rx = k * CELL * 1.7 - span / 2;
           if (Math.abs(wx - rx) < CELL * 0.85) {
-            held = used[k];
+            const n = used[k];
+            if (remaining[n] === 0) { denyFlash = 1; return; }  // nothing left to paint
+            held = n;
             spark(rx, rackY, paint(held).h, 10, 0.5);
             return;
           }
@@ -450,6 +457,12 @@ export function createPaint() {
       }
       if (!filled) return;
       numDirty = true;
+      remaining[held] = Math.max(0, (remaining[held] || 0) - filled);
+      // that colour is done — step to the next one still owing
+      if (remaining[held] === 0) {
+        const nxt = used.find(n => remaining[n] > 0);
+        if (nxt) held = nxt;
+      }
       doneCount += filled;
       scoreQueue += 2 * filled;
       spark(cellX(c), cellY(r), hue, Math.min(26, 8 + filled), 0.7);
@@ -541,8 +554,8 @@ export function createPaint() {
               const a = numN[n - 1];
               numA[n - 1].position.setXYZ(a, x, y, 0.5);
               // ink, darker still on the cells you can fill right now
-              const ink = ready ? 0.08 : 0.17;
-              color.setHSL(ready ? P.h : 0.08, ready ? 0.85 : 0.15, ink);
+              const ink = ready ? 0.06 : 0.20;
+              color.setHSL(0.08, ready ? 0.5 : 0.12, ink);
               numA[n - 1].color.setXYZ(a, color.r, color.g, color.b);
               numN[n - 1]++;
             }
@@ -576,21 +589,26 @@ export function createPaint() {
       {
         const rackY = cellY(N - 1) - CELL * 2.6;
         const span = (used.length - 1) * CELL * 1.7;
+        for (const lab of rackNums) lab.visible = false;
         for (let k = 0; k < PAINTS.length; k++) {
-          const s = rackPots[k], lab = rackNums[k];
-          if (k >= used.length) { s.material.opacity = 0; lab.visible = false; continue; }
+          const s = rackPots[k];
+          if (k >= used.length) { s.material.opacity = 0; continue; }
           const n = used[k], P = paint(n);
+          const lab = rackNums[n - 1];       // the pot's OWN numeral, not its slot's
           const rx = k * CELL * 1.7 - span / 2;
           const on = held === n;
+          const spent = remaining[n] === 0;  // this colour is finished
           s.position.set(rx, rackY + (on ? 0.4 : 0), 0);
-          s.scale.setScalar(2.9 * (on ? 1.4 : 1) * (1 + audio.beatIntensity * 0.1));
-          color.setHSL(P.h, P.s, on ? P.l + 0.16 : P.l * 0.8);
+          s.scale.setScalar(2.9 * (on ? 1.4 : 1) * (1 + (spent ? 0 : audio.beatIntensity * 0.1)));
+          if (spent) color.setHSL(P.h, 0.05, 0.16);          // used up: greyed out
+          else color.setHSL(P.h, P.s, on ? P.l + 0.16 : P.l * 0.8);
           s.material.color.copy(color);
-          s.material.opacity = on ? 1 : 0.6;
+          s.material.opacity = spent ? 0.22 : (on ? 1 : 0.6);
           lab.visible = true;
           lab.position.set(rx, rackY + (on ? 0.4 : 0), 0.8);
           lab.scale.setScalar(on ? 2.0 : 1.5);
-          lab.material.color.setHex(on ? 0x08090d : 0x1a1d26);
+          lab.material.color.setHex(spent ? 0x3a3f4a : (on ? 0x08090d : 0x1a1d26));
+          lab.material.opacity = spent ? 0.5 : 1;
         }
       }
 

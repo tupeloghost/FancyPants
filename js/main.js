@@ -914,6 +914,7 @@ function showWorldIntro(key) {
   const el = $('world-intro');
   $('intro-name').textContent = w.label;
   $('intro-goal').textContent = w.goal || '';
+  el.classList.toggle('long', (w.label || '').length > 10);
   el.classList.remove('gone');
   clearTimeout(introTimer);
   introTimer = setTimeout(() => el.classList.add('gone'), 4200);

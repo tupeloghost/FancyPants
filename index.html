@@ -566,12 +566,16 @@
     font: 400 52px 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Playfair Display',
           'Hoefler Text', Baskerville, Georgia, serif;
     letter-spacing: 16px; text-indent: 16px;   /* indent balances the tracking */
+    white-space: nowrap;                        /* long names must not stack */
+    max-width: 96vw;
     color: hsl(var(--accent-h), 70%, 93%);
     text-shadow:
       0 0 30px hsla(var(--accent-h), 90%, 70%, 0.55),
       0 0 80px hsla(var(--accent-h), 90%, 60%, 0.3);
   }
   /* a hairline rule between title and line, the way a plate is captioned */
+  #world-intro.long b { font-size: 34px; letter-spacing: 9px; text-indent: 9px; }
+  @media (max-width: 620px) { #world-intro.long b { font-size: 19px; letter-spacing: 4px; text-indent: 4px; } }
   #world-intro i {
     display: block; width: 132px; height: 1px; margin: 3px 0 5px;
     background: linear-gradient(90deg,
@@ -585,7 +589,7 @@
     text-shadow: 0 1px 10px rgba(0, 0, 0, 0.95);
   }
   @media (max-width: 620px) {
-    #world-intro b { font-size: 32px; letter-spacing: 9px; text-indent: 9px; }
+    #world-intro b { font-size: 26px; letter-spacing: 6px; text-indent: 6px; }
     #world-intro i { width: 92px; }
     #world-intro span { font-size: 13px; letter-spacing: 2px; }
   }
@@ -796,6 +800,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=61"></script>
+<script type="module" src="js/main.js?v=63"></script>
 </body>
 </html>
