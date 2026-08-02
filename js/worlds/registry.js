@@ -14,6 +14,7 @@ import { createSlinky } from './slinky.js';
 import { createBlacktop } from './blacktop.js';
 import { createWaterslide } from './waterslide.js';
 import { createGarden } from './garden.js';
+import { createPaint } from './paint.js';
 
 export const WORLDS = {
   tunnel: { goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -30,5 +31,6 @@ export const WORLDS = {
   slinky: { goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { goal: 'hold for NITRO — survive the UFO for +40', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
+  paint:  { goal: 'load a colour · fill every cell wearing its number', label: 'PAINT BY NUMBERS', create: createPaint },
   garden: { goal: 'gather runes · fuse three alike · set each cell its number', label: 'LUMEN', create: createGarden },
 };
