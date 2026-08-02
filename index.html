@@ -142,6 +142,20 @@
   }
   body.guest #guest-note { display: block; }
   body.guest .host-only, body.guest #transport { display: none; }
+  /* a guest's panel holds only what's actually theirs: what's playing, their
+     own volume, and where everyone stands. The host drives the rest. */
+  body.guest #tabs { display: none; }
+  body.guest #page-worlds, body.guest #page-looks { display: none !important; }
+  body.guest #page-music { display: block !important; }
+  body.guest #panel { width: 244px; }
+  body.guest #panel-stats { display: none; }   /* framerate isn't a guest's problem */
+  body.guest #guest-world {
+    display: block; margin-bottom: 9px; text-align: center;
+    font: 400 11px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 4px;
+    color: hsl(var(--accent-h), 45%, 80%);
+  }
+  #guest-world { display: none; }
+  @media (max-width: 620px) { body.guest #panel { width: auto; } }
 
   .row { margin-bottom: 8px; }
   .row:last-child { margin-bottom: 0; }
@@ -700,6 +714,7 @@
 
     <div class="tab-page on" id="page-music">
       <canvas id="spectrum" width="236" height="30"></canvas>
+      <div id="guest-world"></div>
       <div id="guest-note">&#9834; <span id="guest-track">the host is driving the music</span></div>
       <div class="row host-only">
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
@@ -800,6 +815,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=74"></script>
+<script type="module" src="js/main.js?v=76"></script>
 </body>
 </html>

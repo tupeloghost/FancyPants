@@ -227,6 +227,7 @@ function switchWorld(key) {
   $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
   document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
   if (window.__applyWorldBloom) window.__applyWorldBloom(key); // world's bloom default (or your remembered tweak)
+  $('guest-world').textContent = WORLDS[key] ? WORLDS[key].label : '';
   showWorldIntro(key); // nobody should ever wonder what this world wants
   net.sendWorld(key); // no-op unless we're the connected host
 }
