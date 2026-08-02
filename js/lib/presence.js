@@ -7,6 +7,14 @@ import * as THREE from 'three';
 import { glowSprite } from './glow.js';
 import { PALETTE } from '../net.js';
 
+const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
+const RANK_AT = [0, 120, 350, 800, 1600];
+function rankOf(score) {
+  let r = 0;
+  for (let i = 1; i < RANK_AT.length; i++) if ((score || 0) >= RANK_AT[i]) r = i;
+  return r;
+}
+
 const MAX_GHOSTS = 64; // rendered ghosts; beyond this, presence is ambient
 
 export class Presence {
@@ -31,7 +39,7 @@ export class Presence {
 
     for (let i = 0; i < MAX_GHOSTS; i++) {
       const core = new THREE.Mesh(
-        new THREE.SphereGeometry(0.32, 12, 12),
+        new THREE.SphereGeometry(0.46, 14, 14),
         new THREE.MeshBasicMaterial({ toneMapped: false })
       );
       const halo = glowSprite(2.6);
@@ -62,11 +70,20 @@ export class Presence {
       const g = this._ghosts[gi++];
       const colorHex = PALETTE[p.color % PALETTE.length];
 
+      const rk = rankOf(p.score);
+      if (g.id !== p.id || g.rank !== rk) {
+        g.rank = rk;
+        const css = '#' + colorHex.toString(16).padStart(6, '0');
+        g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
+        g.dot.style.background = css;
+        g.dot.style.boxShadow = `0 0 9px ${css}, 0 0 3px ${css}`;
+        g.tag.style.borderColor = css + (rk >= 3 ? 'cc' : '66');
+      }
       if (g.id !== p.id) {
         g.id = p.id;
         g.flare = 1.6; // join flare — the payoff moment
         const css = '#' + colorHex.toString(16).padStart(6, '0');
-        g.txt.textContent = p.name;
+        g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
         g.dot.style.background = css;
         g.dot.style.boxShadow = `0 0 9px ${css}, 0 0 3px ${css}`;
         g.tag.style.borderColor = css + '66';
@@ -79,19 +96,19 @@ export class Presence {
       placeGhost(p, i - 1, pos);
       g.core.visible = true;
       g.core.position.copy(pos);
-      const pulse = 1 + beatIntensity * 0.35 + (p.action === 'pulse' || p.action === 'tap' ? 0.5 : 0);
+      const pulse = 1 + beatIntensity * 0.35 + (p.action === 'pulse' || p.action === 'tap' ? 1.1 : 0) + rk * 0.08;
       const flareBoost = 1 + g.flare * 2.2;
       g.core.scale.setScalar(pulse * flareBoost);
       this._color.setHex(colorHex);
       if (g.flare > 1.0) this._color.lerp(new THREE.Color(0xffffff), (g.flare - 1.0) / 0.6);
-      this._color.multiplyScalar(1.2 + beatIntensity * 0.5);
+      this._color.multiplyScalar(1.2 + beatIntensity * 0.5 + rk * 0.14 + (p.action === 'tap' ? 0.8 : 0));
       g.core.material.color.copy(this._color);
 
       g.halo.visible = true;
       g.halo.position.copy(pos);
-      g.halo.scale.setScalar(2.6 * pulse * flareBoost);
+      g.halo.scale.setScalar(3.4 * pulse * flareBoost);
       g.halo.material.color.setHex(colorHex);
-      g.halo.material.opacity = 0.5 + beatIntensity * 0.3 + g.flare * 0.4;
+      g.halo.material.opacity = 0.62 + beatIntensity * 0.3 + g.flare * 0.4 + (p.action === 'tap' ? 0.3 : 0);
 
       // nameplate: project into screen space, sized by distance
       const showName = this.namesVisible && camera && !this.hiddenNames.has(p.name);

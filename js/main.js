@@ -214,6 +214,7 @@ function switchWorld(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
+  zoom = 1;   // never carry a pinch into a new world
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   world.init(scene, camera);
@@ -680,6 +681,29 @@ window.addEventListener('pointermove', e => {
   steerFromPointer(e.clientX, e.clientY);
 });
 
+// ── Pinch to zoom: the viewer frames the shot, not the world ──
+// worlds keep driving camera.fov; this is a multiplier applied after them.
+let zoom = 1;                       // 1 = as the world intends
+let pinchStart = 0, pinchZoom0 = 1;
+const pinchDist = e => {
+  const [a, b] = [e.touches[0], e.touches[1]];
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+};
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) { pinchStart = pinchDist(e); pinchZoom0 = zoom; }
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length !== 2 || !pinchStart) return;
+  // spread fingers = zoom in = narrower field of view
+  zoom = Math.max(0.55, Math.min(2.2, pinchZoom0 * (pinchStart / pinchDist(e))));
+}, { passive: true });
+canvas.addEventListener('touchend', e => { if (e.touches.length < 2) pinchStart = 0; }, { passive: true });
+// desktop gets the same control on the scroll wheel
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.55, Math.min(2.2, zoom * (1 + Math.sign(e.deltaY) * 0.08)));
+}, { passive: false });
+
 // touch steering — drag-relative, so repeated swipes keep carrying you and a
 // portrait phone can steer the full range without reaching for landscape.
 // Worlds where x IS an angle get unbounded x (keep swiping = keep circling).
@@ -744,6 +768,34 @@ function addScore(n, x, y) {
   $('score-val').textContent = score;
   badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
 }
+
+// points buy standing: a rank everyone in the room can see
+export const RANKS = [0, 120, 350, 800, 1600];
+export function rankOf(score) {
+  let r = 0;
+  for (let i = 1; i < RANKS.length; i++) if ((score || 0) >= RANKS[i]) r = i;
+  return r;
+}
+const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
+
+// standings: always on screen, no keyboard needed — phones can see it too
+function renderStandings() {
+  const box = $('standings');
+  const ranked = [...participants].sort((a, b) => (b.score || 0) - (a.score || 0));
+  const anyScore = ranked.some(p => (p.score || 0) > 0);
+  if (!anyScore && ranked.length < 2) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '';
+  for (const p of ranked.slice(0, 6)) {
+    const row = document.createElement('div');
+    row.className = 'st' + (p.local ? ' me' : '');
+    const mark = RANK_MARK[rankOf(p.score)] || '';
+    row.innerHTML = `<span class="rk">${mark}</span><span class="nm"></span><span class="pt">${p.score || 0}</span>`;
+    row.querySelector('.nm').textContent = p.name || '—';
+    box.appendChild(row);
+  }
+}
+setInterval(renderStandings, 600);
 
 // a world can name what's on its easel and how far along it is
 window.__setFigure = (name, done, total) => {
@@ -990,6 +1042,17 @@ function frame(now) {
     time,
     addScore,
   });
+
+  // the viewer's pinch/wheel trim, applied over whatever the world asked for,
+  // plus a nudge wider in portrait so phones aren't looking through a straw
+  {
+    const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
+    const want = Math.max(24, Math.min(125, camera.fov * zoom * portrait));
+    if (Math.abs(want - camera.fov) > 0.01) {
+      camera.fov = want;
+      camera.updateProjectionMatrix();
+    }
+  }
 
   updateDust(dt, a, time);
 
