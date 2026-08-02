@@ -214,7 +214,7 @@ function switchWorld(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
-  zoom = 1;   // never carry a pinch into a new world
+  zoom = zoomTarget = 1;   // never carry a pinch into a new world
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   world.init(scene, camera);
@@ -684,25 +684,39 @@ window.addEventListener('pointermove', e => {
 // ── Pinch to zoom: the viewer frames the shot, not the world ──
 // worlds keep driving camera.fov; this is a multiplier applied after them.
 let zoom = 1;                       // 1 = as the world intends
+let zoomTarget = 1;                 // eased toward, so nothing ever jumps
+const clampZoom = z => Math.max(0.75, Math.min(1.5, z));
 let pinchStart = 0, pinchZoom0 = 1;
 const pinchDist = e => {
   const [a, b] = [e.touches[0], e.touches[1]];
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 };
 canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) { pinchStart = pinchDist(e); pinchZoom0 = zoom; }
+  if (e.touches.length === 2) { pinchStart = pinchDist(e); pinchZoom0 = zoomTarget; }
 }, { passive: true });
 canvas.addEventListener('touchmove', e => {
   if (e.touches.length !== 2 || !pinchStart) return;
   // spread fingers = zoom in = narrower field of view
-  zoom = Math.max(0.55, Math.min(2.2, pinchZoom0 * (pinchStart / pinchDist(e))));
+  zoomTarget = clampZoom(pinchZoom0 * (pinchStart / pinchDist(e)));
 }, { passive: true });
 canvas.addEventListener('touchend', e => { if (e.touches.length < 2) pinchStart = 0; }, { passive: true });
-// desktop gets the same control on the scroll wheel
+// desktop gets the same control on the scroll wheel — gently, and never
+// stealing the browser's own ctrl/cmd-zoom
 canvas.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey) return;         // that one belongs to the browser
   e.preventDefault();
-  zoom = Math.max(0.55, Math.min(2.2, zoom * (1 + Math.sign(e.deltaY) * 0.08)));
+  zoomTarget = clampZoom(zoomTarget * (1 + Math.sign(e.deltaY) * 0.025));
 }, { passive: false });
+
+// double-click (or double-tap) puts the framing back where the world wants it
+canvas.addEventListener('dblclick', () => { zoomTarget = 1; });
+let lastTapT = 0;
+canvas.addEventListener('touchend', e => {
+  if (e.touches.length) return;
+  const now = performance.now();
+  if (now - lastTapT < 300) zoomTarget = 1;   // double-tap resets
+  lastTapT = now;
+}, { passive: true });
 
 // touch steering — drag-relative, so repeated swipes keep carrying you and a
 // portrait phone can steer the full range without reaching for landscape.
@@ -1046,6 +1060,7 @@ function frame(now) {
   // the viewer's pinch/wheel trim, applied over whatever the world asked for,
   // plus a nudge wider in portrait so phones aren't looking through a straw
   {
+    zoom += (zoomTarget - zoom) * Math.min(1, dt * 6);   // glide, never jump
     const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
     const want = Math.max(24, Math.min(125, camera.fov * zoom * portrait));
     if (Math.abs(want - camera.fov) > 0.01) {
