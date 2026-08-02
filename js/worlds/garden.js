@@ -225,11 +225,13 @@ export function createGarden() {
 
   // ── lattice ──
   let fig = null, cols = 0, rows = 0;
-  let cellTier = null, cellFilled = null, cellLight = null, cellCount = 0;
+  let cellTier = null, cellFilled = null, cellLight = null, cellWave = null, cellCount = 0;
   let filledCount = 0, needCount = 0;
   let figIndex = 0;
   let completion = 0;      // 0..1 eased, drives how lit the room is
   let finale = 0;          // burst after the last cell lands
+  let waveT = 999;         // beat wave travelling out through the set gems
+  let waveDiag = false;    // alternates radial / diagonal so it never tires
 
   // ── runes ──
   const rx = new Float32Array(RUNES), ry = new Float32Array(RUNES), rz = new Float32Array(RUNES);
@@ -281,6 +283,7 @@ export function createGarden() {
     cellTier = new Uint8Array(cellCount);
     cellFilled = new Uint8Array(cellCount);
     cellLight = new Float32Array(cellCount);
+    cellWave = new Float32Array(cellCount);
     needCount = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -528,6 +531,16 @@ export function createGarden() {
         }
       }
 
+      // set gems come alive: each depth answers its own part of the music,
+      // and every beat sends a wave out through the whole picture
+      if (audio.beat) { waveT = 0; waveDiag = !waveDiag; }
+      waveT += dt * (26 + audio.energy * 22);
+      const voice = [
+        audio.bass * reactivity,
+        audio.mid * reactivity,
+        audio.treble * reactivity,
+      ];
+
       const want = needCount ? filledCount / needCount : 0;
       completion += (want - completion) * Math.min(1, dt * 1.6);
       const lit = completion * (1 + finale * 1.4);
@@ -561,9 +574,14 @@ export function createGarden() {
             cellLight[i] += (1 - cellLight[i]) * Math.min(1, dt * 2.2);
             const wob = Math.sin(time * 1.6 + i * 0.7) * 0.04;
             const pop = cellLight[i];
-            dummy.position.set(x, y, (pop - 1) * 3);
-            dummy.scale.setScalar(0.9 + wob + (pop - 1) * 0.5 + beat * 0.06);
-            dummy.rotation.z = wob * 0.3;
+            // the wave front: radial one beat, diagonal the next
+            const reach = waveDiag ? (x + y) * 0.7 + 26 : Math.hypot(x, y);
+            cellWave[i] = Math.max(0, 1 - Math.abs(reach - waveT) * 0.4);
+            const v = voice[t - 1];
+            dummy.position.set(x, y, (pop - 1) * 3 + cellWave[i] * 1.4);
+            dummy.scale.setScalar(0.9 + wob + (pop - 1) * 0.5 + beat * 0.06
+              + v * 0.09 + cellWave[i] * 0.14);
+            dummy.rotation.z = wob * 0.3 + cellWave[i] * 0.08;
           } else {
             // unearned: a bare dark plate, barely there
             dummy.position.set(x, y, 0);
@@ -580,8 +598,13 @@ export function createGarden() {
             // itself. The theme only breathes a little life across it.
             themePaint(colorMode, tierHue(t), c / cols, r / rows, time, audio.energy, (i * 7.3) % 1, tp);
             const h = tierHue(t) + (tp[0] - tierHue(t)) * 0.18;
-            const lum = (0.17 + t * 0.12) * Math.min(1.4, tp[2]) + audio.beatIntensity * 0.05 * t;
-            color.setHSL((h + 1) % 1, 0.78, Math.min(0.62, lum * cellLight[i]));
+            // three voices: outline rides the bass, body the mids, heart the
+            // treble — so a finished picture sings in parts
+            const lum = (0.17 + t * 0.12) * Math.min(1.4, tp[2])
+              + audio.beatIntensity * 0.05 * t
+              + voice[t - 1] * 0.2
+              + cellWave[i] * 0.3;
+            color.setHSL((h + 1) % 1, 0.78, Math.min(0.72, lum * cellLight[i]));
             if (finale > 0) color.multiplyScalar(1 + finale * 1.2);
           } else {
             // waiting cells: a faint plate of the figure's own color, and it
@@ -597,7 +620,7 @@ export function createGarden() {
           if (t && cellFilled[i]) {
             // a set gem blooms softly into the room
             glowA.position.setXYZ(glowN, x, y, -0.6);
-            color.multiplyScalar(0.75);
+            color.multiplyScalar(0.75 + cellWave[i] * 0.9 + voice[t - 1] * 0.5);
             glowA.color.setXYZ(glowN, color.r, color.g, color.b);
             glowN++;
           } else if (t) {
