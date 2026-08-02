@@ -209,9 +209,26 @@ export class FancyPantsRoom {
   }
 }
 
+// Only this project's own pages may use the relay — otherwise anyone who
+// spots the pattern can proxy audio on our bandwidth.
+const ALLOWED = [
+  'https://tupeloghost.github.io',
+  'http://localhost:8807',
+  'http://127.0.0.1:8807',
+];
+function allowedOrigin(request) {
+  const o = request.headers.get('Origin') || '';
+  if (o) return ALLOWED.includes(o);
+  const r = request.headers.get('Referer') || '';
+  return ALLOWED.some(a => r.startsWith(a));
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/suno') && !allowedOrigin(request)) {
+      return new Response('not available', { status: 403 });
+    }
 
     // audio relay: browsers can't analyse cross-origin audio without CORS,
     // so Suno tracks stream through here with the right headers attached.

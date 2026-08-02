@@ -4,8 +4,8 @@
 // Worlds only supply placeGhost(participant, index, outVector3).
 
 import * as THREE from 'three';
-import { glowSprite } from './glow.js?v=81';
-import { PALETTE } from '../net.js?v=81';
+import { glowSprite } from './glow.js?v=82';
+import { PALETTE } from '../net.js?v=82';
 
 const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
 const RANK_AT = [0, 120, 350, 800, 1600];

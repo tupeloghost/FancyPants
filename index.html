@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#02040c">
+<meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
+<meta name="author" content="RockyPaw Beats">
+<meta name="copyright" content="© 2026 RockyPaw Beats. All rights reserved.">
 <title>Fancy Pants</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8C%80%3C/text%3E%3C/svg%3E">
 <style>
@@ -392,6 +395,10 @@
   #tune-drawer[open] { border-top: 1px solid hsla(var(--accent-h), 50%, 60%, 0.12); }
   #tune-drawer .grid2 { margin-top: 8px; }
 
+  #rights {
+    font: 400 8.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.2px;
+    color: var(--ink-faint); text-align: center; margin-top: 12px; opacity: 0.75;
+  }
   #audio-stamp {
     font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
     color: var(--ink-faint); text-align: center; margin-top: 8px; opacity: 0.8;
@@ -825,8 +832,9 @@
           <input type="range" id="hdr" min="0" max="200" value="100">
         </div>
       </div>
+      <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 81</div>
+      <div id="build-stamp">build 82</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -840,6 +848,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=81"></script>
+<script type="module" src="js/main.js?v=82"></script>
 </body>
 </html>
