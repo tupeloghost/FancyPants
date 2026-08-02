@@ -495,20 +495,34 @@
     transition: opacity 0.6s, transform 0.6s;
   }
   #world-intro.gone { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  /* the title: a high-contrast display serif, set wide — fashion-plate,
+     not terminal. Falls back gracefully wherever Didot isn't installed. */
   #world-intro b {
-    font: 800 30px 'SF Mono', Menlo, monospace; letter-spacing: 8px;
-    color: var(--accent);
-    text-shadow: 0 0 24px hsla(var(--accent-h), 90%, 65%, 0.9);
+    font: 400 52px 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Playfair Display',
+          'Hoefler Text', Baskerville, Georgia, serif;
+    letter-spacing: 16px; text-indent: 16px;   /* indent balances the tracking */
+    color: hsl(var(--accent-h), 70%, 93%);
+    text-shadow:
+      0 0 30px hsla(var(--accent-h), 90%, 70%, 0.55),
+      0 0 80px hsla(var(--accent-h), 90%, 60%, 0.3);
+  }
+  /* a hairline rule between title and line, the way a plate is captioned */
+  #world-intro i {
+    display: block; width: 132px; height: 1px; margin: 3px 0 5px;
+    background: linear-gradient(90deg,
+      transparent, hsla(var(--accent-h), 80%, 80%, 0.55), transparent);
   }
   #world-intro span {
-    font: 500 13px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
-    color: var(--ink); text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-    background: rgba(6,9,20,0.5); padding: 6px 14px; border-radius: 999px;
-    backdrop-filter: blur(8px);
+    font: italic 300 16px 'Didot', 'Bodoni 72', 'Cormorant Garamond',
+          'Hoefler Text', Baskerville, Georgia, serif;
+    letter-spacing: 3.5px;
+    color: hsla(var(--accent-h), 35%, 88%, 0.86);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.95);
   }
   @media (max-width: 620px) {
-    #world-intro b { font-size: 20px; letter-spacing: 4px; }
-    #world-intro span { font-size: 11px; }
+    #world-intro b { font-size: 32px; letter-spacing: 9px; text-indent: 9px; }
+    #world-intro i { width: 92px; }
+    #world-intro span { font-size: 13px; letter-spacing: 2px; }
   }
 
 
@@ -593,7 +607,7 @@
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
 
-<div id="world-intro" class="gone"><b id="intro-name"></b><span id="intro-goal"></span></div>
+<div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
 
 
 <div id="plist" class="hidden">
@@ -710,6 +724,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=36"></script>
+<script type="module" src="js/main.js?v=37"></script>
 </body>
 </html>
