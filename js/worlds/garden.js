@@ -18,16 +18,34 @@ const DEW = 340;
 
 export function createGarden() {
   let scene, camera, group, sky, dew, slats, railL, railR, gateCore, gateHalo, gateRing, avatar, avatarTrail, fireworks;
+  let dirtL, dirtR, grass;
+  const GRASS = 220;
+  const grassT = new Float32Array(GRASS);
+  const grassOff = new Float32Array(GRASS);
   const tp = [0, 0, 0];
   const color = new THREE.Color();
   const dummy = new THREE.Object3D();
   const pointer = { x: 0, y: 0, active: false };
 
   let travel = 0, lanePos = 0, speed = 18;
-  let multi = 1, streakColor = -1, streak = 0;
+  let multi = 1;
+  const seeds = [];                // the pouch: up to 3 seed colors you carry
   let comboFlash = 0, fizzle = 0, fever = 0;
   let nextGateT = 30;
   let scoreQueue = 0, scoreQX = 0, scoreQY = 0;
+  let seedPts;                     // the pouch made visible, orbiting the rider
+
+  // flower-trees your blooms leave along the vine
+  const TREES = 7;
+  const trees = [];                // {trunk, glows[], t, side, growth, hue, active}
+  function spawnTree(hue01) {
+    const tr = trees.find(q => !q.active) || trees[0];
+    tr.active = true;
+    tr.t = travel + 45;            // erupts AHEAD — you fly past your own bloom
+    tr.side = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2.6 + 3 + Math.random() * 4);
+    tr.growth = 0;
+    tr.hue = hue01;
+  }
 
   // path through the garden
   const px = t => Math.sin(t * 0.02) * 18 + Math.sin(t * 0.007) * 26;
@@ -112,6 +130,37 @@ export function createGarden() {
       avatar = glowSprite(4.5);
       group.add(avatar);
       avatarTrail = mkPts(24, 2.2, 0.7, group);
+      seedPts = mkPts(3, 2.6, 1, group); // your pouch, orbiting in plain sight
+
+      // flower-trees: trunk + stacked canopy glows, grown by your blooms
+      trees.length = 0;
+      const trunkMat = new THREE.MeshBasicMaterial({ color: 0x1a2410, toneMapped: false });
+      for (let i = 0; i < TREES; i++) {
+        const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.1, 10, 1.1), trunkMat);
+        trunk.visible = false;
+        group.add(trunk);
+        const glows = [glowSprite(9), glowSprite(7), glowSprite(5)];
+        glows.forEach(g => { g.material.opacity = 0; group.add(g); });
+        trees.push({ trunk, glows, t: 0, side: 0, growth: 0, hue: 0, active: false });
+      }
+
+      // dirt banks hugging the vine — the garden's soil, breathing with the bass
+      const dirtGeo = new THREE.BoxGeometry(LANE_W * 2.2, 0.5, SLAT_GAP * 0.95);
+      dirtL = new THREE.InstancedMesh(dirtGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), SLATS);
+      dirtR = new THREE.InstancedMesh(dirtGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), SLATS);
+      for (const d of [dirtL, dirtR]) {
+        d.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        d.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SLATS * 3), 3);
+        d.frustumCulled = false;
+        group.add(d);
+      }
+
+      // glowing grass sprouting from the banks
+      grass = mkPts(GRASS, 1.1, 0.7, group);
+      for (let i = 0; i < GRASS; i++) {
+        grassT[i] = Math.random() * 200;
+        grassOff[i] = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2 + 2 + Math.random() * 12);
+      }
 
       // dew stars floating through the garden night
       const dp = new Float32Array(DEW * 3);
@@ -130,7 +179,7 @@ export function createGarden() {
       group.add(sky);
 
       travel = 0; lanePos = 0; speed = 18;
-      multi = 1; streakColor = -1; streak = 0;
+      multi = 1; seeds.length = 0;
       comboFlash = 0; fizzle = 0; fever = 0;
       nextGateT = 30;
       for (let i = 0; i < GATES; i++) gAlive[i] = 0;
@@ -199,7 +248,8 @@ export function createGarden() {
       // avatar orb hovers ahead in your lane
       const at = travel + 7;
       avatar.position.set(px(at) + laneX, py(at) + 2.3 + Math.sin(time * 6) * 0.15, -at);
-      const avHue = streakColor >= 0 ? TRIO[streakColor] : (hue / 360);
+      const lastSeed = seeds.length ? seeds[seeds.length - 1] : -1;
+      const avHue = lastSeed >= 0 ? TRIO[lastSeed] : (hue / 360);
       color.setHSL(fever > 0 ? 0.13 : avHue, 0.95, 0.62).multiplyScalar(1.3 + audio.beatIntensity * 0.5);
       avatar.material.color.copy(color);
       avatar.scale.setScalar(4.5 * (1 + audio.beatIntensity * 0.3 + comboFlash * 0.5));
@@ -246,6 +296,90 @@ export function createGarden() {
       railR.geometry.attributes.position.needsUpdate = true;
       railR.geometry.attributes.color.needsUpdate = true;
 
+      // the pouch: your held seeds orbit the rider — everyone can read your hand
+      {
+        const sp = seedPts.geometry.attributes.position;
+        const sc = seedPts.geometry.attributes.color;
+        for (let k = 0; k < 3; k++) {
+          const a = time * 2.4 + k * 2.09;
+          sp.setXYZ(k,
+            avatar.position.x + Math.cos(a) * 1.9,
+            avatar.position.y + 0.9 + Math.sin(time * 3 + k) * 0.3,
+            avatar.position.z + Math.sin(a) * 1.9
+          );
+          if (k < seeds.length) {
+            color.setHSL(TRIO[seeds[k]], 0.95, 0.58).multiplyScalar(1.2 + audio.beatIntensity * 0.4);
+          } else {
+            color.setRGB(0.05, 0.06, 0.08); // empty slot: a faint husk of a dot
+          }
+          sc.setXYZ(k, color.r, color.g, color.b);
+        }
+        sp.needsUpdate = true; sc.needsUpdate = true;
+      }
+
+      // dirt banks + glowing grass: the garden the vine grows through
+      for (let s = 0; s < SLATS; s++) {
+        const t = travel - 8 + s * SLAT_GAP;
+        const bankX = LANE_W * 1.5 + 1 + LANE_W * 1.1;
+        const soil = 0.5 + ((s * 13) % 7) * 0.04; // lumpy, not machined
+        for (const [d, side] of [[dirtL, -1], [dirtR, 1]]) {
+          dummy.position.set(px(t) + side * bankX, py(t) - 0.9 - soil * 0.3, -t);
+          dummy.rotation.set(0, -(px(t + 1) - px(t)) * 0.4, side * 0.12);
+          dummy.scale.set(1, soil, 1);
+          dummy.updateMatrix();
+          d.setMatrixAt(s, dummy.matrix);
+          color.setHSL(0.09, 0.45, 0.028 + audio.bass * 0.02 + comboFlash * 0.02);
+          d.setColorAt(s, color);
+        }
+      }
+      dirtL.instanceMatrix.needsUpdate = true; dirtL.instanceColor.needsUpdate = true;
+      dirtR.instanceMatrix.needsUpdate = true; dirtR.instanceColor.needsUpdate = true;
+      {
+        const gp = grass.geometry.attributes.position;
+        const gcol = grass.geometry.attributes.color;
+        for (let i = 0; i < GRASS; i++) {
+          if (grassT[i] < travel - 10) {
+            grassT[i] = travel + 60 + Math.random() * 140;
+            grassOff[i] = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2 + 2 + Math.random() * 12);
+          }
+          const t = grassT[i];
+          gp.setXYZ(i, px(t) + grassOff[i], py(t) - 0.4 + Math.abs(Math.sin(i * 3.3)) * 1.2, -t);
+          color.setHSL(0.3 + Math.sin(i * 7.1) * 0.06, 0.8, 0.16 + audio.mid * 0.2 + (fever > 0 ? 0.12 : 0));
+          gcol.setXYZ(i, color.r, color.g, color.b);
+        }
+        gp.needsUpdate = true; gcol.needsUpdate = true;
+        grass.material.size = 1.1 + audio.mid * 0.8;
+      }
+
+      // flower-trees erupt where your blooms landed, and you fly past them
+      for (const tr of trees) {
+        if (!tr.active) continue;
+        if (tr.t < travel - 70) {
+          tr.active = false;
+          tr.trunk.visible = false;
+          tr.glows.forEach(g => g.material.opacity = 0);
+          continue;
+        }
+        tr.growth = Math.min(1, tr.growth + dt * 0.9);
+        const g2 = tr.growth * tr.growth * (3 - 2 * tr.growth); // ease
+        const bx2 = px(tr.t) + tr.side;
+        const by = py(tr.t);
+        tr.trunk.visible = true;
+        tr.trunk.position.set(bx2, by - 1 + g2 * 5.5, -tr.t);
+        tr.trunk.scale.set(g2, g2, g2);
+        tr.glows.forEach((g, k) => {
+          g.position.set(
+            bx2 + Math.sin(k * 2.1 + time * 0.6) * 1.6 * g2,
+            by + (4 + k * 3.2) * g2,
+            -tr.t + Math.cos(k * 1.7) * 1.2
+          );
+          g.scale.setScalar((9 - k * 2) * g2 * (1 + audio.beatIntensity * 0.25));
+          color.setHSL(tr.hue, 0.9, 0.5 + k * 0.05);
+          g.material.color.copy(color);
+          g.material.opacity = 0.5 * g2;
+        });
+      }
+
       // gates: spawn ahead, rush in, collect or dodge
       nextGateT -= speed * dt;
       if (nextGateT <= 0) {
@@ -269,8 +403,8 @@ export function createGarden() {
           gPop[i] = hit ? 1 : 0;
           if (hit) {
             if (gCol[i] === -1) {
-              // husk: streak dies, vine sours, world drags
-              fizzle = 1; multi = 1; streak = 0; streakColor = -1;
+              // husk: a pest — it eats your whole pouch
+              fizzle = 1; multi = 1; seeds.length = 0;
               boom(gx, gy, -t, 0.02, 16);
             } else if (gCol[i] === 3) {
               // SUPERBLOOM gold: everything pays
@@ -278,16 +412,18 @@ export function createGarden() {
               boom(gx, gy, -t, 0.13, 22);
               comboFlash = Math.max(comboFlash, 0.6);
             } else {
-              if (streakColor === -1 || gCol[i] === streakColor) {
-                streakColor = gCol[i];
-                streak++;
-                scoreQueue += 3; scoreQX = 0; scoreQY = 0;
-                boom(gx, gy, -t, TRIO[gCol[i]], 10);
-                if (streak >= 3) {
+              // a seed goes in the pouch — choose your colors out on the vine
+              seeds.push(gCol[i]);
+              scoreQueue += 3; scoreQX = 0; scoreQY = 0;
+              boom(gx, gy, -t, TRIO[gCol[i]], 10);
+              if (seeds.length >= 3) {
+                if (seeds[0] === seeds[1] && seeds[1] === seeds[2]) {
+                  // MAGIC NUMBER — three of a kind sows a flower-tree ahead
                   scoreQueue += 15 * multi;
                   multi = Math.min(5, multi + 1);
                   comboFlash = 1;
-                  streak = 0; streakColor = -1;
+                  spawnTree(TRIO[gCol[i]]);
+                  seeds.length = 0;
                   boom(gx, gy, -t, TRIO[gCol[i]], 40 + multi * 20);
                   if (window.__announce) window.__announce(`MAGIC NUMBER ×${multi}`, `hsl(${Math.round(TRIO[gCol[i]] * 360)}, 95%, 68%)`);
                   if (multi >= 5 && fever <= 0) {
@@ -295,13 +431,12 @@ export function createGarden() {
                     for (let k = 0; k < GATES; k++) if (gAlive[k]) gCol[k] = 3;
                     if (window.__announce) setTimeout(() => window.__announce('🌸 SUPERBLOOM 🌸', 'hsl(46, 100%, 62%)'), 500);
                   }
+                } else {
+                  // mixed pouch: the oldest seed composts out — dodge smarter
+                  seeds.shift();
+                  scoreQueue += 1; scoreQX = 0; scoreQY = 0;
+                  boom(gx, gy - 1.5, -t, 0.24, 5);
                 }
-              } else {
-                // wrong color — soft fizzle, start a new streak in that color
-                fizzle = Math.max(fizzle, 0.5); multi = Math.max(1, multi - 1);
-                streakColor = gCol[i]; streak = 1;
-                scoreQueue += 1; scoreQX = 0; scoreQY = 0;
-                boom(gx, gy, -t, TRIO[gCol[i]], 6);
               }
             }
           }
@@ -311,7 +446,7 @@ export function createGarden() {
         const pulse = 1 + Math.sin(time * 5 + i * 2) * 0.15 + audio.beatIntensity * 0.35;
         const h01 = gCol[i] === -1 ? 0.06 : gCol[i] === 3 ? 0.13 : TRIO[gCol[i]];
         const sat = gCol[i] === -1 ? 0.15 : 0.95;
-        const isStreak = gCol[i] === streakColor && streak > 0;
+        const isStreak = lastSeed >= 0 && gCol[i] === lastSeed; // the color you're building glows louder
         gc.position.setXYZ(i, gx, gy, -t);
         gh.position.setXYZ(i, gx, gy, -t);
         gr.position.setXYZ(i, gx, py(t) + 0.15, -t);
