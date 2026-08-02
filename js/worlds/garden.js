@@ -29,11 +29,11 @@ export function createGarden() {
 
   let travel = 0, lanePos = 0, speed = 18;
   let multi = 1;
-  const seeds = [];                // the pouch: up to 3 seed colors you carry
+  let count = 0;                   // blooms toward the next magic number (0..2)
   let comboFlash = 0, fizzle = 0, fever = 0;
   let nextGateT = 30;
   let scoreQueue = 0, scoreQX = 0, scoreQY = 0;
-  let seedPts;                     // the pouch made visible, orbiting the rider
+  let seedPts;                     // three progress dots orbiting the rider
 
   // flower-trees your blooms leave along the vine
   const TREES = 7;
@@ -179,7 +179,7 @@ export function createGarden() {
       group.add(sky);
 
       travel = 0; lanePos = 0; speed = 18;
-      multi = 1; seeds.length = 0;
+      multi = 1; count = 0;
       comboFlash = 0; fizzle = 0; fever = 0;
       nextGateT = 30;
       for (let i = 0; i < GATES; i++) gAlive[i] = 0;
@@ -248,8 +248,7 @@ export function createGarden() {
       // avatar orb hovers ahead in your lane
       const at = travel + 7;
       avatar.position.set(px(at) + laneX, py(at) + 2.3 + Math.sin(time * 6) * 0.15, -at);
-      const lastSeed = seeds.length ? seeds[seeds.length - 1] : -1;
-      const avHue = lastSeed >= 0 ? TRIO[lastSeed] : (hue / 360);
+      const avHue = hue / 360;
       color.setHSL(fever > 0 ? 0.13 : avHue, 0.95, 0.62).multiplyScalar(1.3 + audio.beatIntensity * 0.5);
       avatar.material.color.copy(color);
       avatar.scale.setScalar(4.5 * (1 + audio.beatIntensity * 0.3 + comboFlash * 0.5));
@@ -296,7 +295,7 @@ export function createGarden() {
       railR.geometry.attributes.position.needsUpdate = true;
       railR.geometry.attributes.color.needsUpdate = true;
 
-      // the pouch: your held seeds orbit the rider — everyone can read your hand
+      // three dots orbit the rider: your progress to the next magic number
       {
         const sp = seedPts.geometry.attributes.position;
         const sc = seedPts.geometry.attributes.color;
@@ -307,10 +306,10 @@ export function createGarden() {
             avatar.position.y + 0.9 + Math.sin(time * 3 + k) * 0.3,
             avatar.position.z + Math.sin(a) * 1.9
           );
-          if (k < seeds.length) {
-            color.setHSL(TRIO[seeds[k]], 0.95, 0.58).multiplyScalar(1.2 + audio.beatIntensity * 0.4);
+          if (k < count) {
+            color.setHSL(0.13, 0.9, 0.6).multiplyScalar(1.3 + audio.beatIntensity * 0.4); // lit: gold
           } else {
-            color.setRGB(0.05, 0.06, 0.08); // empty slot: a faint husk of a dot
+            color.setRGB(0.05, 0.06, 0.08); // unlit
           }
           sc.setXYZ(k, color.r, color.g, color.b);
         }
@@ -403,8 +402,8 @@ export function createGarden() {
           gPop[i] = hit ? 1 : 0;
           if (hit) {
             if (gCol[i] === -1) {
-              // husk: a pest — it eats your whole pouch
-              fizzle = 1; multi = 1; seeds.length = 0;
+              // thorn: the only thing that hurts — multiplier and dots gone
+              fizzle = 1; multi = 1; count = 0;
               boom(gx, gy, -t, 0.02, 16);
             } else if (gCol[i] === 3) {
               // SUPERBLOOM gold: everything pays
@@ -412,33 +411,28 @@ export function createGarden() {
               boom(gx, gy, -t, 0.13, 22);
               comboFlash = Math.max(comboFlash, 0.6);
             } else {
-              // a seed goes in the pouch — choose your colors out on the vine
-              seeds.push(gCol[i]);
+              // flower: +3, and every THIRD in a row is the magic number
+              count++;
               scoreQueue += 3; scoreQX = 0; scoreQY = 0;
               boom(gx, gy, -t, TRIO[gCol[i]], 10);
-              if (seeds.length >= 3) {
-                if (seeds[0] === seeds[1] && seeds[1] === seeds[2]) {
-                  // MAGIC NUMBER — three of a kind sows a flower-tree ahead
-                  scoreQueue += 15 * multi;
-                  multi = Math.min(5, multi + 1);
-                  comboFlash = 1;
-                  spawnTree(TRIO[gCol[i]]);
-                  seeds.length = 0;
-                  boom(gx, gy, -t, TRIO[gCol[i]], 40 + multi * 20);
-                  if (window.__announce) window.__announce(`MAGIC NUMBER ×${multi}`, `hsl(${Math.round(TRIO[gCol[i]] * 360)}, 95%, 68%)`);
-                  if (multi >= 5 && fever <= 0) {
-                    fever = 10;
-                    for (let k = 0; k < GATES; k++) if (gAlive[k]) gCol[k] = 3;
-                    if (window.__announce) setTimeout(() => window.__announce('🌸 SUPERBLOOM 🌸', 'hsl(46, 100%, 62%)'), 500);
-                  }
-                } else {
-                  // mixed pouch: the oldest seed composts out — dodge smarter
-                  seeds.shift();
-                  scoreQueue += 1; scoreQX = 0; scoreQY = 0;
-                  boom(gx, gy - 1.5, -t, 0.24, 5);
+              if (count >= 3) {
+                count = 0;
+                scoreQueue += 15 * multi;
+                multi = Math.min(5, multi + 1);
+                comboFlash = 1;
+                spawnTree(TRIO[gCol[i]]);
+                boom(gx, gy, -t, TRIO[gCol[i]], 40 + multi * 20);
+                if (window.__announce) window.__announce(`MAGIC NUMBER ×${multi}`, `hsl(${Math.round(TRIO[gCol[i]] * 360)}, 95%, 68%)`);
+                if (multi >= 5 && fever <= 0) {
+                  fever = 10;
+                  for (let k = 0; k < GATES; k++) if (gAlive[k]) gCol[k] = 3;
+                  if (window.__announce) setTimeout(() => window.__announce('🌸 SUPERBLOOM 🌸', 'hsl(46, 100%, 62%)'), 500);
                 }
               }
             }
+          } else if (gCol[i] !== -1 && gCol[i] !== 3) {
+            // let a flower sail past = your dots reset (thorns are FINE to dodge)
+            count = 0;
           }
         }
 
@@ -446,7 +440,7 @@ export function createGarden() {
         const pulse = 1 + Math.sin(time * 5 + i * 2) * 0.15 + audio.beatIntensity * 0.35;
         const h01 = gCol[i] === -1 ? 0.06 : gCol[i] === 3 ? 0.13 : TRIO[gCol[i]];
         const sat = gCol[i] === -1 ? 0.15 : 0.95;
-        const isStreak = lastSeed >= 0 && gCol[i] === lastSeed; // the color you're building glows louder
+        const isStreak = false; // all flowers are equal now — just don't miss
         gc.position.setXYZ(i, gx, gy, -t);
         gh.position.setXYZ(i, gx, gy, -t);
         gr.position.setXYZ(i, gx, py(t) + 0.15, -t);
