@@ -3,9 +3,9 @@
 // off the pool, and split like real wax. Bass = heat. Tap pokes a blob.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=84';
-import { themePaint } from '../lib/themes.js?v=84';
-import { PALETTE } from '../net.js?v=84';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=87';
+import { themePaint } from '../lib/themes.js?v=87';
+import { PALETTE } from '../net.js?v=87';
 
 const BLOBS = 9;            // moving blobs (+1 pool blob in the field)
 const H = 34;
@@ -396,7 +396,16 @@ export function createLavaLamp() {
         m.tube.material.opacity = 0.05 + m.flash * 0.12;
       }
 
-      camera.position.set(Math.sin(time * 0.04) * 16, 3 + Math.sin(time * 0.06) * 5, 52 - audio.bass * 3);
+      // stand back far enough that the whole lamp is in frame on any screen —
+      // a phone in portrait was cutting the cap and the base clean off
+      const halfH = H / 2 + 12, halfW = R_BOT + 5;
+      const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+      const fit = Math.max(halfH / Math.tan(vf), halfW / (Math.tan(vf) * camera.aspect)) * 1.08;
+      camera.position.set(
+        Math.sin(time * 0.04) * Math.min(16, fit * 0.28),
+        3 + Math.sin(time * 0.06) * 5,
+        fit - audio.bass * 3
+      );
       camera.lookAt(0, 0, 0);
       const fovT = 60 + audio.volume * 5 * reactivity;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 4);
