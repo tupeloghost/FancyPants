@@ -10,8 +10,8 @@
 // room draws a larger figure.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=82';
-import { themePaint } from '../lib/themes.js?v=82';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=84';
+import { themePaint } from '../lib/themes.js?v=84';
 
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [
@@ -556,10 +556,17 @@ export function createGarden() {
       // camera: a slow, considered drift — you're standing in a dark room
       const px2 = attract ? Math.sin(time * 0.13) * 0.5 : pointer.x;
       const py2 = attract ? Math.cos(time * 0.11) * 0.4 : pointer.y;
+      // stand back far enough that the whole lattice fits the screen — on a
+      // phone in portrait the board was wider than the view, so most of it
+      // (and most of the runes) sat off the edges where you couldn't reach
+      const halfW = cols * CELL * scaleUp / 2 + 3;
+      const halfH = rows * CELL * scaleUp / 2 + 3;
+      const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+      const fit = Math.max(halfH / Math.tan(vf), halfW / (Math.tan(vf) * camera.aspect)) * 1.06;
       camera.position.set(
         px2 * 6 + Math.sin(time * 0.09) * 1.3,
         py2 * 4 + Math.cos(time * 0.07) * 1.1,
-        34 - completion * 3 - audio.bass * 0.7
+        fit - completion * 3 - audio.bass * 0.7
       );
       camera.lookAt(px2 * 1.5, py2 * 1.2, 0);
       camera.rotation.z += Math.sin(time * 0.05) * 0.008;
@@ -666,7 +673,7 @@ export function createGarden() {
           if (rAlive[i]) continue;
           rAlive[i] = 1;
           rTier[i] = Math.random() < 0.82 ? 1 : 2;   // deeper runes are rare gifts
-          rx[i] = (Math.random() - 0.5) * 54;
+          rx[i] = (Math.random() - 0.5) * Math.min(54, cols * CELL * scaleUp * 1.5);
           ry[i] = -30;
           rz[i] = 10 + Math.random() * 12;
           rSpin[i] = Math.random() * 6;

@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=82';
-import { WORLDS } from './worlds/registry.js?v=82';
-import { Net, PALETTE } from './net.js?v=82';
-import { Presence } from './lib/presence.js?v=82';
-import { glowTexture } from './lib/glow.js?v=82';
+import { AudioEngine } from './audio-engine.js?v=84';
+import { WORLDS } from './worlds/registry.js?v=84';
+import { Net, PALETTE } from './net.js?v=84';
+import { Presence } from './lib/presence.js?v=84';
+import { glowTexture } from './lib/glow.js?v=84';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -173,6 +173,8 @@ function updateDust(dt, a, time) {
     m.material.color.multiplyScalar(1.5);
   }
 }
+
+let worldShot = null;   // the world's own framing, handed back next frame
 
 // ── Settings (live-tunable via panel) ──
 const settings = {
@@ -1153,6 +1155,13 @@ function frame(now) {
   gradePass.uniforms.contrast.value = 1.12 + clickPulse * 0.08;
   if (bloomPass.enabled) bloomPass.strength = bloomBase * (1 + clickPulse * 0.5);
 
+  // give the world back the camera it set last frame, before it moves it again
+  if (worldShot) {
+    if (camera.fov !== worldShot.fov) { camera.fov = worldShot.fov; camera.updateProjectionMatrix(); }
+    camera.position.set(worldShot.x, worldShot.y, worldShot.z);
+    worldShot = null;
+  }
+
   world.update(dt, a, participants, {
     reactivity: settings.reactivity,
     hue: hueEff,
@@ -1205,9 +1214,11 @@ function frame(now) {
 
   composer.render();
 
-  // hand the camera back exactly as the world left it
-  if (camera.fov !== shot.fov) { camera.fov = shot.fov; camera.updateProjectionMatrix(); }
-  camera.position.set(shot.x, shot.y, shot.z);
+  // NOTE: the camera deliberately keeps the viewer's framing until the next
+  // frame begins. Taps happen between frames, and they must hit-test against
+  // the camera actually on screen — restoring here made every tap on a phone
+  // land on the wrong cell, because portrait widens the view.
+  worldShot = shot;
 
   // PNG export must happen in the same frame as the render (no preserveDrawingBuffer)
   if (screenshotQueued) {
