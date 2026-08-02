@@ -231,6 +231,24 @@ const panel = $('panel');
 
 $('panel-head').addEventListener('click', () => panel.classList.toggle('collapsed'));
 
+// mobile: swipe down on the sheet (from its top, not mid-scroll) to dismiss
+if (IS_MOBILE) {
+  let sheetY0 = 0, sheetScroll0 = 0, sheetTracking = false;
+  panel.addEventListener('touchstart', e => {
+    sheetY0 = e.touches[0].clientY;
+    sheetScroll0 = panel.scrollTop;
+    sheetTracking = true;
+  }, { passive: true });
+  panel.addEventListener('touchmove', e => {
+    if (!sheetTracking) return;
+    const dy = e.touches[0].clientY - sheetY0;
+    if (dy > 55 && sheetScroll0 <= 0 && panel.scrollTop <= 0) {
+      panel.classList.add('collapsed');
+      sheetTracking = false;
+    }
+  }, { passive: true });
+}
+
 // tabs: music / style / tune — remembered across sessions
 document.querySelectorAll('#tabs .tab').forEach(t => {
   t.addEventListener('click', () => {
@@ -635,6 +653,11 @@ window.addEventListener('pointerup', () => pointerHeld = false);
 window.addEventListener('pointercancel', () => pointerHeld = false);
 let tapResetTimer = 0;
 canvas.addEventListener('pointerdown', e => {
+  // mobile: a tap outside the open panel just tucks the panel away
+  if (IS_MOBILE && !panel.classList.contains('collapsed') && !panel.classList.contains('hidden')) {
+    panel.classList.add('collapsed');
+    return;
+  }
   pointerHeld = true;
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   spawnRipple(e.clientX, e.clientY);
