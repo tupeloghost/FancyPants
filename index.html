@@ -468,6 +468,24 @@
   #score-badge.hidden { display: none; }
   #score-badge.bump { animation: scorebump 0.3s ease-out; }
   @keyframes scorebump { 30% { transform: scale(1.25); } }
+
+  /* big-moment announcer — MAGIC NUMBER ×4, SUPERBLOOM, ABDUCTED… */
+  .announce {
+    position: fixed; left: 50%; top: 30%; z-index: 96;
+    transform: translate(-50%, -50%);
+    font: 800 44px 'SF Mono', Menlo, monospace; letter-spacing: 6px;
+    color: #fff; pointer-events: none; white-space: nowrap;
+    animation: announcein 1.6s cubic-bezier(0.16, 1.3, 0.3, 1) forwards;
+  }
+  @keyframes announcein {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); filter: blur(6px); }
+    12%  { opacity: 1; transform: translate(-50%, -50%) scale(1.12); filter: blur(0) brightness(2); }
+    22%  { transform: translate(-50%, -50%) scale(1); filter: brightness(1.3); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -56%) scale(1.04); }
+  }
+  @media (max-width: 620px) { .announce { font-size: 26px; letter-spacing: 3px; } }
+
   .score-float {
     position: fixed; z-index: 95; pointer-events: none;
     font: 800 22px 'SF Mono', Menlo, monospace; color: #fff;
@@ -672,6 +690,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=22"></script>
+<script type="module" src="js/main.js?v=23"></script>
 </body>
 </html>

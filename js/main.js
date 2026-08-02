@@ -752,6 +752,18 @@ function addScore(n, x, y) {
   f.addEventListener('animationend', () => f.remove());
 }
 
+// big-moment announcer: any world can put six-foot letters on the screen
+window.__announce = (text, cssColor) => {
+  const a = document.createElement('div');
+  a.className = 'announce';
+  a.textContent = text;
+  const c = cssColor || `hsl(${settings.hue}, 95%, 70%)`;
+  a.style.color = c;
+  a.style.textShadow = `0 0 24px ${c}, 0 0 80px ${c}, 0 2px 6px rgba(0,0,0,0.9)`;
+  document.body.appendChild(a);
+  a.addEventListener('animationend', () => a.remove());
+};
+
 // someone else tapped: their click lands in OUR world too, in their color
 net.onRemoteTap = p => {
   clickPulse = Math.max(clickPulse, 0.6);

@@ -37,6 +37,30 @@ export function createGarden() {
   // chain state — the whole game
   let chainColor = -1, chainCount = 0, chainT = 0, multi = 1;
   let comboFlash = 0, fizzle = 0;
+  let fever = 0;                         // SUPERBLOOM: gold rush at ×5
+
+  // fireworks — the dopamine delivery system
+  const FW = 220;
+  let fireworks;
+  const fwVel = new Float32Array(FW * 3);
+  const fwLife = new Float32Array(FW);
+  const fwHue = new Float32Array(FW);
+  let fwNext = 0;
+  function launchFireworks(x, y, z, hue01, count) {
+    for (let k = 0; k < count; k++) {
+      const i = fwNext++ % FW;
+      const pos = fireworks.geometry.attributes.position;
+      pos.setXYZ(i, x, y, z);
+      const a = Math.random() * Math.PI * 2;
+      const up = 8 + Math.random() * 16;
+      const out = 2 + Math.random() * 9;
+      fwVel[i * 3] = Math.cos(a) * out;
+      fwVel[i * 3 + 1] = up;
+      fwVel[i * 3 + 2] = Math.sin(a) * out;
+      fwLife[i] = 1.2 + Math.random() * 0.9;
+      fwHue[i] = (hue01 + (Math.random() - 0.5) * 0.08 + 1) % 1;
+    }
+  }
   const chainPts = [];                   // positions of the current chain's pops
   let scoreQueue = 0, scoreQX = 0, scoreQY = 0;
 
@@ -115,6 +139,8 @@ export function createGarden() {
       budCore = mkPts(BUDS, 3.4, 1);
       budHalo = mkPts(BUDS, 9, 0.4);
       budRing = mkPts(BUDS, 5, 0.5);
+      fireworks = mkPts(FW, 1.6, 0.95);
+      for (let i = 0; i < FW; i++) fwLife[i] = 0;
 
       stems = new THREE.InstancedMesh(
         new THREE.BoxGeometry(0.16, 1, 0.16),
@@ -217,6 +243,17 @@ export function createGarden() {
       color.setHSL(hue01, 0.95, 0.6);
       r.material.color.copy(color);
 
+      // SUPERBLOOM: every bud is golden, every pop detonates
+      if (fever > 0) {
+        scoreQueue += 25; scoreQX = x; scoreQY = y;
+        launchFireworks(px2, groundY(px2, pz2) + 2.5, pz2, 0.13, 26);
+        for (let k = 0; k < 3; k++) {
+          plantDecoration(px2 + (Math.random() - 0.5) * 8, pz2 + (Math.random() - 0.5) * 8, 0.13);
+        }
+        comboFlash = Math.max(comboFlash, 0.7);
+        return;
+      }
+
       if (chainColor === -1 || bhue[i] === chainColor) {
         // right color — the chain climbs
         chainColor = bhue[i];
@@ -231,9 +268,19 @@ export function createGarden() {
           comboFlash = 1;
           chainColor = -1; chainCount = 0;
           chainPts.length = 0;
+          // FIREWORKS — the payoff you can feel, bigger every rung
+          launchFireworks(px2, groundY(px2, pz2) + 2.5, pz2, hue01, 30 + multi * 24);
+          if (window.__announce) {
+            window.__announce(`MAGIC NUMBER ×${multi}`, `hsl(${Math.round(hue01 * 360)}, 95%, 68%)`);
+          }
           // an eruption of decoration around the third pop
-          for (let k = 0; k < 5; k++) {
-            plantDecoration(px2 + (Math.random() - 0.5) * 10, pz2 + (Math.random() - 0.5) * 10, hue01);
+          for (let k = 0; k < 5 + multi * 2; k++) {
+            plantDecoration(px2 + (Math.random() - 0.5) * (10 + multi * 3), pz2 + (Math.random() - 0.5) * (10 + multi * 3), hue01);
+          }
+          // ×5 unlocks SUPERBLOOM — ten golden seconds where everything pays
+          if (multi >= 5) {
+            fever = 10;
+            if (window.__announce) setTimeout(() => window.__announce('🌸 SUPERBLOOM 🌸', 'hsl(46, 100%, 62%)'), 500);
           }
         } else {
           scoreQueue += 3; scoreQX = x; scoreQY = y; // a pop on the way up
@@ -262,6 +309,16 @@ export function createGarden() {
       comboFlash = Math.max(0, comboFlash - dt * 0.7);
       fizzle = Math.max(0, fizzle - dt * 1.6);
 
+      // SUPERBLOOM countdown — when it ends, you keep ×2 as a trophy
+      if (fever > 0) {
+        fever -= dt;
+        if (fever <= 0) {
+          fever = 0;
+          multi = 2;
+          if (window.__announce) window.__announce('the garden remembers ×2', `hsl(${Math.round(TRIO[0] * 360)}, 80%, 70%)`);
+        }
+      }
+
       travel += dt * (2.2 + audio.energy * 4);
       const camZ = -travel;
       const sway = Math.sin(time * 0.24) * 5;
@@ -276,7 +333,8 @@ export function createGarden() {
       spawnT -= dt;
       if (audio.beat || spawnT <= 0) {
         spawnBud(camZ);
-        spawnT = 2.2 - Math.min(1.4, audio.energy * 1.6);
+        if (fever > 0) spawnBud(camZ); // gold rush: twice the targets
+        spawnT = (fever > 0 ? 0.9 : 2.2) - Math.min(1.4, audio.energy * 1.6);
       }
 
       // draw the buds — pulsing targets, wilting as they age
@@ -299,7 +357,8 @@ export function createGarden() {
         const wilt = Math.max(0, 1 - Math.max(0, bage[i] - WILT * 0.6) / (WILT * 0.4)); // dims in its last stretch
         const pulse = 1 + Math.sin(time * 5 + i) * 0.18 + audio.beatIntensity * 0.4;
         const isChainColor = chainColor === bhue[i] && chainCount > 0;
-        color.setHSL(TRIO[bhue[i]], 0.95, 0.52 + (isChainColor ? 0.14 : 0)).multiplyScalar(wilt * pulse * (isChainColor ? 1.5 : 1));
+        const budHue = fever > 0 ? 0.13 : TRIO[bhue[i]]; // gold rush paints every bud gold
+        color.setHSL(budHue, 0.95, 0.52 + (isChainColor ? 0.14 : 0)).multiplyScalar(wilt * pulse * (isChainColor || fever > 0 ? 1.5 : 1));
         bc.color.setXYZ(i, color.r, color.g, color.b);
         color.multiplyScalar(0.5);
         bh2.color.setXYZ(i, color.r, color.g, color.b);
@@ -345,6 +404,27 @@ export function createGarden() {
       pp.position.needsUpdate = true; pp.color.needsUpdate = true;
       hp.position.needsUpdate = true; hp.color.needsUpdate = true;
 
+      // fireworks fly, arc, and fade
+      {
+        const fp = fireworks.geometry.attributes.position;
+        const fc = fireworks.geometry.attributes.color;
+        for (let i = 0; i < FW; i++) {
+          if (fwLife[i] <= 0) { fp.setXYZ(i, 0, -999, 0); continue; }
+          fwLife[i] -= dt;
+          fwVel[i * 3 + 1] -= 16 * dt; // gravity
+          fp.setXYZ(i,
+            fp.getX(i) + fwVel[i * 3] * dt,
+            Math.max(0.2, fp.getY(i) + fwVel[i * 3 + 1] * dt),
+            fp.getZ(i) + fwVel[i * 3 + 2] * dt
+          );
+          const l = Math.max(0, Math.min(1, fwLife[i]));
+          color.setHSL(fwHue[i], 0.95, 0.55 + l * 0.2).multiplyScalar(l * (1.4 + audio.beatIntensity * 0.5));
+          fc.setXYZ(i, color.r, color.g, color.b);
+        }
+        fp.needsUpdate = true; fc.needsUpdate = true;
+        fireworks.material.size = 1.6 + comboFlash * 1.2;
+      }
+
       for (const r of rings) {
         if (r.material.opacity <= 0.01) continue;
         r.material.opacity *= Math.pow(0.12, dt);
@@ -369,16 +449,16 @@ export function createGarden() {
 
       // the canopy is your multiplier made visible — solo or not
       const souls = participants ? participants.length : 1;
-      const canopyIn = Math.min(1, (multi - 1) / 4) * 0.8 + Math.min(0.2, (souls - 1) * 0.07);
+      const canopyIn = Math.min(1, (multi - 1) / 4) * 0.8 + Math.min(0.2, (souls - 1) * 0.07) + (fever > 0 ? 0.7 : 0);
       canopy.forEach((c, i) => {
-        c.material.color.setHSL(TRIO[i % 3], 0.8, 0.4);
-        c.material.opacity = canopyIn * (0.1 + 0.08 * Math.sin(time * 0.5 + i * 2)) * (1 + audio.energy * 0.8);
+        c.material.color.setHSL(fever > 0 ? 0.13 : TRIO[i % 3], 0.85, fever > 0 ? 0.5 : 0.4);
+        c.material.opacity = Math.min(0.4, canopyIn * (0.1 + 0.08 * Math.sin(time * 0.5 + i * 2)) * (1 + audio.energy * 0.8));
       });
 
       themePaint(colorMode, hue / 360, 0.1, 0, time, audio.energy, 0.4, tp);
       ground.material.color.setHSL(tp[0], tp[1] * 0.7, 0.028 + audio.bass * 0.03 + comboFlash * 0.06 - fizzle * 0.015);
-      dew.material.color.setHSL((hue / 360 + 0.45) % 1, 0.8, 0.55 + audio.high * 0.3);
-      dew.material.size = 0.9 + audio.high * 1.0 + comboFlash * 0.7;
+      dew.material.color.setHSL(fever > 0 ? 0.13 : (hue / 360 + 0.45) % 1, 0.85, 0.55 + audio.high * 0.3 + (fever > 0 ? 0.15 : 0));
+      dew.material.size = 0.9 + audio.high * 1.0 + comboFlash * 0.7 + (fever > 0 ? 0.8 : 0);
 
       sky.position.copy(camera.position);
       sky.material.color.setHSL(
