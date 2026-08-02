@@ -1,0 +1,7 @@
+{
+  "name": "fancy-pants-worker",
+  "private": true,
+  "dependencies": {
+    "leo-profanity": "^1.7.0"
+  }
+}

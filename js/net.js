@@ -66,14 +66,36 @@ export class Net {
     } else if (m.t === 'state') {
       const t = this._targets.get(m.id);
       if (t) { t.x = m.x; t.y = m.y; t.z = m.z; t.heading = m.heading; }
+      else this._who(m.id); // pruned them while our tab slept; ask who they are
       const p = this.participants.find(x => x.id === m.id);
       if (p) p.action = m.action;
       this._lastSeen.set(m.id, performance.now());
+    } else if (m.t === 'rejoin') {
+      // server pruned US while the tab slept; slip back in (throttled —
+      // several invites can already be queued behind one wake-up)
+      const now = performance.now();
+      if ((this._lastRejoin || 0) > now - 2000) return;
+      this._lastRejoin = now;
+      const name = this.local.name || localStorage.getItem('fp_name') || '';
+      if (name && this._ws && this._ws.readyState === 1) {
+        this._ws.send(JSON.stringify({ t: 'join', name, owner: this.owner }));
+      }
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
+    }
+  }
+
+  _who(id) {
+    // ask the server to replay a stranger's join card (throttled per id)
+    if (!this._whoAsked) this._whoAsked = new Map();
+    const now = performance.now();
+    if ((this._whoAsked.get(id) || 0) > now - 3000) return;
+    this._whoAsked.set(id, now);
+    if (this._ws && this._ws.readyState === 1) {
+      this._ws.send(JSON.stringify({ t: 'who', id }));
     }
   }
 
