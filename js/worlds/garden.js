@@ -187,7 +187,7 @@ const FIGURES = [
   },
 ];
 
-const CELL = 2.2;
+const CELL = 2.5;
 const MAXCELLS = 256;   // any figure fits; unused slots park offscreen
 const RUNES = 26;        // floating harvestables alive at once
 const TRAY_MAX = 6;
@@ -374,13 +374,15 @@ export function createGarden() {
 
       // ── the room behind the work: light shafts that answer the spectrum ──
       {
-        const g = new THREE.PlaneGeometry(2.6, 1);
+        const g = new THREE.PlaneGeometry(2.6, 1, 6, 8);
         g.translate(0, 0.5, 0);           // grow upward from the floor
         const pa = g.attributes.position;
         const vc = new Float32Array(pa.count * 3);
         for (let i = 0; i < pa.count; i++) {
-          const up = pa.getY(i);          // 0 at base, 1 at tip
-          const f = 1 - up * 0.92;        // shafts fade as they rise
+          const up = pa.getY(i);                     // 0 at base, 1 at tip
+          const side = Math.abs(pa.getX(i)) / 1.3;   // 0 at spine, 1 at edge
+          // soft on every axis: no rectangle edges anywhere
+          const f = Math.pow(1 - up, 1.7) * Math.pow(1 - side, 1.6);
           vc[i * 3] = f; vc[i * 3 + 1] = f; vc[i * 3 + 2] = f;
         }
         g.setAttribute('color', new THREE.BufferAttribute(vc, 3));
@@ -441,7 +443,7 @@ export function createGarden() {
       spawnT = 0; figIndex = 0; finale = 0;
       fuseFlash = 0; denyFlash = 0; placeFlash = 0;
 
-      camera.position.set(0, 0, 46);
+      camera.position.set(0, 0, 34);
       camera.lookAt(0, 0, 0);
       camera.fov = 62;
       camera.updateProjectionMatrix();
@@ -549,9 +551,9 @@ export function createGarden() {
       const px2 = attract ? Math.sin(time * 0.13) * 0.5 : pointer.x;
       const py2 = attract ? Math.cos(time * 0.11) * 0.4 : pointer.y;
       camera.position.set(
-        px2 * 7 + Math.sin(time * 0.09) * 1.5,
-        py2 * 5 + Math.cos(time * 0.07) * 1.2,
-        46 - completion * 4 - audio.bass * 0.8
+        px2 * 6 + Math.sin(time * 0.09) * 1.3,
+        py2 * 4 + Math.cos(time * 0.07) * 1.1,
+        34 - completion * 3 - audio.bass * 0.7
       );
       camera.lookAt(px2 * 1.5, py2 * 1.2, 0);
       camera.rotation.z += Math.sin(time * 0.05) * 0.008;
@@ -610,10 +612,10 @@ export function createGarden() {
             // waiting cells: a faint plate of the figure's own color, and it
             // warms whenever you're carrying the rune it wants
             const ready = tray.includes(t);
-            const idle = (ready ? 0.055 : 0.022)
-              + 0.014 * Math.sin(time * 1.3 + i * 0.35)
-              + denyFlash * 0.05;
-            color.setHSL(tierHue(t), ready ? 0.6 : 0.35, idle);
+            const idle = (ready ? 0.115 : 0.05)
+              + 0.02 * Math.sin(time * 1.3 + i * 0.35)
+              + denyFlash * 0.06;
+            color.setHSL(tierHue(t), ready ? 0.55 : 0.3, idle);
           }
           cellMesh.setColorAt(i, color);
 
@@ -627,7 +629,7 @@ export function createGarden() {
             // the cell states its depth in a fine numeral, and brightens the
             // moment you're carrying the rune it will accept
             const ready = tray.includes(t);
-            const g = ready ? 0.6 + 0.16 * Math.sin(time * 3.4 + i) : 0.26;
+            const g = ready ? 0.72 + 0.16 * Math.sin(time * 3.4 + i) : 0.4;
             const a = numN[t - 1];
             numA[t - 1].position.setXYZ(a, x, y, 0.5);
             color.setHSL(tierHue(t), ready ? 0.45 : 0.22, g);
@@ -689,8 +691,8 @@ export function createGarden() {
           if (k < tray.length) {
             const off = (k - (tray.length - 1) / 2) * 3.4;
             _v.copy(camera.position)
-              .addScaledVector(camDir, 20)
-              .add(new THREE.Vector3(off, -11.5 + Math.sin(time * 2.4 + k) * 0.25, 0));
+              .addScaledVector(camDir, 16)
+              .add(new THREE.Vector3(off, -9 + Math.sin(time * 2.4 + k) * 0.22, 0));
             ta.position.setXYZ(k, _v.x, _v.y, _v.z);
             const t = tray[k];
             color.setHSL(tierHue(t), 0.95, 0.4 + t * 0.08 + fuseFlash * 0.25)
@@ -728,10 +730,10 @@ export function createGarden() {
           const v = spec[bin] || 0;
           // wide and overlapping, so the band reads as one aurora curtain
           // rather than a row of bars — and it drifts as it breathes
-          const x = (i / (SHAFTS - 1) - 0.5) * 178 + Math.sin(time * 0.19 + i * 0.7) * 3;
-          const h = 10 + v * 74 * reactivity + audio.volume * 10;
+          const x = (i / (SHAFTS - 1) - 0.5) * 196 + Math.sin(time * 0.19 + i * 0.7) * 4;
+          const h = 14 + v * 66 * reactivity + audio.volume * 12;
           dummy.position.set(x, -52, -86);
-          dummy.scale.set(3.4, h, 1);
+          dummy.scale.set(6.2, h, 1);
           dummy.rotation.set(0, 0, Math.sin(time * 0.12 + i) * 0.03);
           dummy.updateMatrix();
           shafts.setMatrixAt(i, dummy.matrix);
