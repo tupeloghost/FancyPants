@@ -20,6 +20,7 @@ export function createFunhouse() {
   let pointer = { x: 0, y: 0, active: false };
   // first-person swim state
   const camVel = new THREE.Vector3();
+  let camVelY = 0;              // vertical drift — the pit is nearly weightless
   const fwd = new THREE.Vector3();
   let yaw = 0, pitch = 0;
 
@@ -124,6 +125,7 @@ export function createFunhouse() {
       camera.position.set(0, 6, ARENA * 0.7);
       yaw = 0; pitch = -0.05;
       camVel.set(0, 0, 0);
+      camVelY = 0;
       camera.fov = 74;
       camera.updateProjectionMatrix();
     },
@@ -297,11 +299,18 @@ export function createFunhouse() {
       camera.position.addScaledVector(camVel, dt);
       camVel.multiplyScalar(Math.max(0, 1 - dt * 2.2)); // lunge fades
 
-      // height: ride just above the pile crest; steering down dives in,
-      // steering up lifts toward the rim — but never under the pile
+      // height: you're BUOYANT in here, not falling through it. Steering up
+      // and down is thrust, the ball pile floats you, and what little gravity
+      // there is only sighs you back toward the crest.
       const pileTop2 = 1 + (active / PER_LAYER) * 0.95;
-      const targetY = pileTop2 + 1.4 + pitch * 5;
-      camera.position.y += (targetY - camera.position.y) * Math.min(1, dt * 2);
+      const floatY = pileTop2 + 1.8;   // where you naturally hang
+      if (!attract && pointer.active) camVelY += pointer.y * 20 * dt;   // thrust
+      if (audio.beat) camVelY += 3.2 * reactivity;                      // beats bounce you
+      const dY = camera.position.y - floatY;
+      // below the crest the balls shoulder you up hard; above it you drift
+      camVelY += (dY < 0 ? -dY * 6.5 : -dY * 0.5) * dt;
+      camVelY *= Math.max(0, 1 - dt * 1.5);                             // swim-like drag
+      camera.position.y += camVelY * dt;
 
       // soft walls: near the edge, the view bends back toward the pit —
       // you never end up staring at a wall
@@ -316,7 +325,9 @@ export function createFunhouse() {
       }
       if (Math.abs(camera.position.x) > m2) camera.position.x = Math.sign(camera.position.x) * m2;
       if (Math.abs(camera.position.z) > m2) camera.position.z = Math.sign(camera.position.z) * m2;
-      camera.position.y = Math.min(WALL_H - 2, Math.max(1.8, camera.position.y));
+      // you can rise right up to the rim and hang there
+      if (camera.position.y > WALL_H - 0.8) { camera.position.y = WALL_H - 0.8; camVelY = Math.min(camVelY, 0); }
+      if (camera.position.y < 1.6) { camera.position.y = 1.6; camVelY = Math.max(camVelY, 0); }
 
       camera.rotation.set(pitch * 0.5 - 0.22, yaw, Math.sin(time * 0.4) * 0.02 - pointer.x * 0.1 * (attract ? 0 : 1)); // gaze rests on the balls
 
