@@ -354,16 +354,22 @@ export function createGarden() {
       // numerals: a Points layer per depth, each with its own figure drawn fine
       numPts.length = 0;
       for (let n = 1; n <= 3; n++) {
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
-        g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
-        const p = new THREE.Points(g, new THREE.PointsMaterial({
-          size: CELL * 0.72, map: digitTexture(n), transparent: true, vertexColors: true,
-          blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
-        }));
-        p.frustumCulled = false;
-        group.add(p);
-        numPts.push(p);
+        // instanced planes, not points: real geometry keeps its size against
+        // the cell no matter how the framing moves
+        const m = new THREE.InstancedMesh(
+          new THREE.PlaneGeometry(CELL * 0.8, CELL * 0.8),
+          new THREE.MeshBasicMaterial({
+            map: digitTexture(n), transparent: true, blending: THREE.AdditiveBlending,
+            depthWrite: false, toneMapped: false,
+          }),
+          MAXCELLS
+        );
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXCELLS * 3), 3);
+        m.frustumCulled = false;
+        m.renderOrder = 2;
+        group.add(m);
+        numPts.push(m);
       }
 
       runePts = mkPts(RUNES, 3.4, 1);
@@ -558,14 +564,7 @@ export function createGarden() {
       camera.lookAt(px2 * 1.5, py2 * 1.2, 0);
       camera.rotation.z += Math.sin(time * 0.05) * 0.008;
 
-      {
-        const k = Math.tan(THREE.MathUtils.degToRad(62) / 2)
-                / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-        const want = CELL * 0.72 * k;
-        for (const p of numPts) if (Math.abs(p.material.size - want) > 0.01) p.material.size = want;
-      }
       // ── lattice ──
-      const numA = numPts.map(p => p.geometry.attributes);
       const numN = [0, 0, 0];
       const glowA = fillGlow.geometry.attributes;
       let glowN = 0;
@@ -637,17 +636,22 @@ export function createGarden() {
             const ready = tray.includes(t);
             const g = ready ? 0.72 + 0.16 * Math.sin(time * 3.4 + i) : 0.4;
             const a = numN[t - 1];
-            numA[t - 1].position.setXYZ(a, x, y, 0.5);
+            dummy.position.set(x, y, 0.5);
+            dummy.scale.setScalar(1);
+            dummy.rotation.set(0, 0, 0);
+            dummy.updateMatrix();
+            numPts[t - 1].setMatrixAt(a, dummy.matrix);
             color.setHSL(tierHue(t), ready ? 0.45 : 0.22, g);
-            numA[t - 1].color.setXYZ(a, color.r, color.g, color.b);
+            numPts[t - 1].setColorAt(a, color);
             numN[t - 1]++;
           }
         }
       }
       for (let n = 0; n < 3; n++) {
-        for (let k = numN[n]; k < MAXCELLS; k++) numA[n].position.setXYZ(k, 0, -999, 0);
-        numA[n].position.needsUpdate = true;
-        numA[n].color.needsUpdate = true;
+        const m = numPts[n];
+        m.count = numN[n];
+        m.instanceMatrix.needsUpdate = true;
+        if (m.instanceColor) m.instanceColor.needsUpdate = true;
       }
       for (let k = glowN; k < MAXCELLS; k++) glowA.position.setXYZ(k, 0, -999, 0);
       glowA.position.needsUpdate = true;

@@ -324,16 +324,20 @@ export function createPaint() {
 
       numPts.length = 0;
       for (let n = 1; n <= PAINTS.length; n++) {
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
-        g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
-        const p = new THREE.Points(g, new THREE.PointsMaterial({
-          size: CELL * 0.88, map: digitTexture(n), transparent: true, vertexColors: true,
-          depthWrite: false, depthTest: false, toneMapped: false,
-        }));
-        p.frustumCulled = false;
-        group.add(p);
-        numPts.push(p);
+        const m = new THREE.InstancedMesh(
+          new THREE.PlaneGeometry(CELL * 0.92, CELL * 0.92),
+          new THREE.MeshBasicMaterial({
+            map: digitTexture(n), transparent: true, depthWrite: false,
+            depthTest: false, toneMapped: false,
+          }),
+          MAXCELLS
+        );
+        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAXCELLS * 3), 3);
+        m.frustumCulled = false;
+        m.renderOrder = 2;              // always over the plate
+        group.add(m);
+        numPts.push(m);
       }
 
       rackPots.length = 0;
@@ -505,7 +509,6 @@ export function createPaint() {
 
       // ── the plate ──
       if (held !== lastHeld) { lastHeld = held; numDirty = true; }
-      const numA = numPts.map(p => p.geometry.attributes);
       const numN = new Array(PAINTS.length).fill(0);
       const glowA = fillGlow.geometry.attributes;
       let glowN = 0;
@@ -552,30 +555,26 @@ export function createPaint() {
 
             if (numDirty) {
               const a = numN[n - 1];
-              numA[n - 1].position.setXYZ(a, x, y, 0.5);
+              dummy.position.set(x, y, 0.5);
+              dummy.scale.setScalar(1);
+              dummy.rotation.set(0, 0, 0);
+              dummy.updateMatrix();
+              numPts[n - 1].setMatrixAt(a, dummy.matrix);
               // ink, darker still on the cells you can fill right now
               const ink = ready ? 0.06 : 0.20;
               color.setHSL(0.08, ready ? 0.5 : 0.12, ink);
-              numA[n - 1].color.setXYZ(a, color.r, color.g, color.b);
+              numPts[n - 1].setColorAt(a, color);
               numN[n - 1]++;
             }
           }
         }
       }
-      // point size in three.js ignores the field of view, so a numeral would
-      // stay the same pixel size while the cell under it grew — keep them
-      // locked to the cell by compensating for the current framing
-      {
-        const k = Math.tan(THREE.MathUtils.degToRad(60) / 2)
-                / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-        const want = CELL * 0.88 * k;
-        for (const p of numPts) if (Math.abs(p.material.size - want) > 0.01) p.material.size = want;
-      }
       if (numDirty) {
         for (let n = 0; n < PAINTS.length; n++) {
-          for (let k = numN[n]; k < MAXCELLS; k++) numA[n].position.setXYZ(k, 0, -999, 0);
-          numA[n].position.needsUpdate = true;
-          numA[n].color.needsUpdate = true;
+          const m = numPts[n];
+          m.count = numN[n];            // draw only the cells still owing
+          m.instanceMatrix.needsUpdate = true;
+          if (m.instanceColor) m.instanceColor.needsUpdate = true;
         }
         numDirty = false;
       }
