@@ -558,6 +558,12 @@ export function createGarden() {
       camera.lookAt(px2 * 1.5, py2 * 1.2, 0);
       camera.rotation.z += Math.sin(time * 0.05) * 0.008;
 
+      {
+        const k = Math.tan(THREE.MathUtils.degToRad(62) / 2)
+                / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+        const want = CELL * 0.72 * k;
+        for (const p of numPts) if (Math.abs(p.material.size - want) > 0.01) p.material.size = want;
+      }
       // ── lattice ──
       const numA = numPts.map(p => p.geometry.attributes);
       const numN = [0, 0, 0];

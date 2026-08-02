@@ -215,6 +215,7 @@ function switchWorld(key) {
   currentWorldKey = key;
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
+  pan.x = pan.y = 0;
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   world.init(scene, camera);
@@ -717,6 +718,24 @@ window.addEventListener('keydown', e => {
 
 const aim = { x: 0, y: 0 };   // last pointer position in clip space
 
+// ── Drag to shove the view about (worlds opt in with world.pannable) ──
+const pan = { x: 0, y: 0 };
+let dragging = false, dragPX = 0, dragPY = 0;
+canvas.addEventListener('pointerdown', e => { dragging = true; dragPX = e.clientX; dragPY = e.clientY; });
+window.addEventListener('pointerup', () => { dragging = false; });
+window.addEventListener('pointercancel', () => { dragging = false; });
+window.addEventListener('pointermove', e => {
+  if (!dragging || !world || !world.pannable) return;
+  // scale the shove to how tight the framing is, so it feels the same zoomed
+  const k = camera.fov * 0.0016;
+  pan.x -= (e.clientX - dragPX) * k;
+  pan.y += (e.clientY - dragPY) * k;
+  const lim = 40;
+  pan.x = Math.max(-lim, Math.min(lim, pan.x));
+  pan.y = Math.max(-lim, Math.min(lim, pan.y));
+  dragPX = e.clientX; dragPY = e.clientY;
+});
+
 // pointer steering (interactive mode) — mouse maps screen position directly
 function steerFromPointer(cx, cy) {
   aim.x = (cx / window.innerWidth) * 2 - 1;
@@ -776,12 +795,12 @@ function showZoom() {
   clearTimeout(zoomHideT);
   zoomHideT = setTimeout(() => el.classList.remove('on'), 1100);
 }
-canvas.addEventListener('dblclick', () => { zoomTarget = 1; showZoom(); });
+canvas.addEventListener('dblclick', () => { zoomTarget = 1; pan.x = pan.y = 0; showZoom(); });
 let lastTapT = 0;
 canvas.addEventListener('touchend', e => {
   if (e.touches.length) return;
   const now = performance.now();
-  if (now - lastTapT < 300) { zoomTarget = 1; showZoom(); }   // double-tap resets
+  if (now - lastTapT < 300) { zoomTarget = 1; pan.x = pan.y = 0; showZoom(); }   // double-tap resets
   lastTapT = now;
 }, { passive: true });
 
@@ -1139,6 +1158,10 @@ function frame(now) {
       const lean = (1 - zoom) * 26;
       camera.translateX(aim.x * lean);
       camera.translateY(aim.y * lean);
+    }
+    if (world && world.pannable && (pan.x || pan.y)) {
+      camera.translateX(pan.x);
+      camera.translateY(pan.y);
     }
   }
 

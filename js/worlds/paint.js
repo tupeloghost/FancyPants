@@ -181,7 +181,7 @@ export function createPaint() {
   let scene, camera, group, sky, motes, plate, fillGlow, sparkPts, keyLight, shafts;
   const numPts = [];
   const rackPots = [];
-  let rackNums;
+  let rackNums = [];
   const color = new THREE.Color();
   const dummy = new THREE.Object3D();
   const pointer = { x: 0, y: 0, active: false };
@@ -210,7 +210,7 @@ export function createPaint() {
     const c = document.createElement('canvas');
     c.width = c.height = 96;
     const g = c.getContext('2d');
-    g.font = '400 58px "Didot", "Bodoni 72", Georgia, serif';
+    g.font = '600 64px "Didot", "Bodoni 72", Georgia, serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillStyle = '#ffffff';   // white glyph, tinted per-cell by vertex colour
@@ -293,6 +293,7 @@ export function createPaint() {
 
   return {
     name: 'PAINT BY NUMBERS',
+    pannable: true,   // the plate is a page you can shove about
 
     init(_scene, _camera) {
       scene = _scene; camera = _camera;
@@ -322,7 +323,7 @@ export function createPaint() {
         g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
         g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAXCELLS * 3), 3).setUsage(THREE.DynamicDrawUsage));
         const p = new THREE.Points(g, new THREE.PointsMaterial({
-          size: CELL * 0.72, map: digitTexture(n), transparent: true, vertexColors: true,
+          size: CELL * 0.88, map: digitTexture(n), transparent: true, vertexColors: true,
           depthWrite: false, depthTest: false, toneMapped: false,
         }));
         p.frustumCulled = false;
@@ -337,7 +338,18 @@ export function createPaint() {
         group.add(s);
         rackPots.push(s);
       }
-      rackNums = mkPts(PAINTS.length, 1.9, 1);
+      // each pot wears its number, in ink, so the rack is readable
+      rackNums = [];
+      for (let n = 1; n <= PAINTS.length; n++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: digitTexture(n), transparent: true, depthWrite: false, depthTest: false,
+          toneMapped: false, color: 0x0b0d12,
+        }));
+        sp.scale.set(1.5, 1.5, 1);
+        sp.visible = false;
+        group.add(sp);
+        rackNums.push(sp);
+      }
 
       // the reactive room behind the easel
       {
@@ -529,13 +541,22 @@ export function createPaint() {
               const a = numN[n - 1];
               numA[n - 1].position.setXYZ(a, x, y, 0.5);
               // ink, darker still on the cells you can fill right now
-              const ink = ready ? 0.10 : 0.30;
-              color.setHSL(ready ? P.h : 0.08, ready ? 0.7 : 0.2, ink);
+              const ink = ready ? 0.08 : 0.17;
+              color.setHSL(ready ? P.h : 0.08, ready ? 0.85 : 0.15, ink);
               numA[n - 1].color.setXYZ(a, color.r, color.g, color.b);
               numN[n - 1]++;
             }
           }
         }
+      }
+      // point size in three.js ignores the field of view, so a numeral would
+      // stay the same pixel size while the cell under it grew — keep them
+      // locked to the cell by compensating for the current framing
+      {
+        const k = Math.tan(THREE.MathUtils.degToRad(60) / 2)
+                / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+        const want = CELL * 0.88 * k;
+        for (const p of numPts) if (Math.abs(p.material.size - want) > 0.01) p.material.size = want;
       }
       if (numDirty) {
         for (let n = 0; n < PAINTS.length; n++) {
@@ -555,24 +576,22 @@ export function createPaint() {
       {
         const rackY = cellY(N - 1) - CELL * 2.6;
         const span = (used.length - 1) * CELL * 1.7;
-        const ra = rackNums.geometry.attributes;
         for (let k = 0; k < PAINTS.length; k++) {
-          const s = rackPots[k];
-          if (k >= used.length) { s.material.opacity = 0; ra.position.setXYZ(k, 0, -999, 0); continue; }
+          const s = rackPots[k], lab = rackNums[k];
+          if (k >= used.length) { s.material.opacity = 0; lab.visible = false; continue; }
           const n = used[k], P = paint(n);
           const rx = k * CELL * 1.7 - span / 2;
           const on = held === n;
           s.position.set(rx, rackY + (on ? 0.4 : 0), 0);
-          s.scale.setScalar(2.6 * (on ? 1.4 : 1) * (1 + audio.beatIntensity * 0.1));
-          color.setHSL(P.h, P.s, on ? P.l + 0.12 : P.l * 0.7);
+          s.scale.setScalar(2.9 * (on ? 1.4 : 1) * (1 + audio.beatIntensity * 0.1));
+          color.setHSL(P.h, P.s, on ? P.l + 0.16 : P.l * 0.8);
           s.material.color.copy(color);
-          s.material.opacity = on ? 0.95 : 0.45;
-          ra.position.setXYZ(k, rx, rackY, 0.6);
-          color.setHSL(0, 0, on ? 0.95 : 0.35);
-          ra.color.setXYZ(k, color.r, color.g, color.b);
+          s.material.opacity = on ? 1 : 0.6;
+          lab.visible = true;
+          lab.position.set(rx, rackY + (on ? 0.4 : 0), 0.8);
+          lab.scale.setScalar(on ? 2.0 : 1.5);
+          lab.material.color.setHex(on ? 0x08090d : 0x1a1d26);
         }
-        ra.position.needsUpdate = true;
-        ra.color.needsUpdate = true;
       }
 
       // ── sparks ──
