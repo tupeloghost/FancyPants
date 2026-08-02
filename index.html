@@ -245,6 +245,16 @@
   .btnrow { display: flex; gap: 6px; }
   .btnrow button { flex: 1; }
 
+  /* suno link input */
+  #suno-input {
+    width: 100%; padding: 6px 9px; color: var(--ink);
+    background: var(--well); border: 1px solid transparent;
+    border-radius: 8px; font: inherit; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  #suno-input::placeholder { color: var(--ink-faint); }
+  #suno-input:focus { border-color: var(--accent-line); background: var(--accent-soft); }
+
   /* file picker — hide native chrome behind a styled label */
   #file-input { display: none; }
   #file-label {
@@ -576,6 +586,9 @@
         <label id="file-label" for="file-input">&#11014; load local file</label>
         <input type="file" id="file-input" accept="audio/*">
       </div>
+      <div class="row host-only">
+        <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
+      </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
         <div id="transport-right">
@@ -659,6 +672,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=19"></script>
+<script type="module" src="js/main.js?v=20"></script>
 </body>
 </html>

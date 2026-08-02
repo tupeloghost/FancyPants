@@ -200,6 +200,25 @@ export class FancyPantsRoom {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // audio relay: browsers can't analyse cross-origin audio without CORS,
+    // so Suno tracks stream through here with the right headers attached.
+    // Locked to Suno's CDN by construction — only a UUID passes through.
+    const suno = url.pathname.match(/^\/suno\/([0-9a-fA-F-]{36})\.mp3$/);
+    if (suno) {
+      const fwd = {};
+      const range = request.headers.get('Range');
+      if (range) fwd.Range = range;
+      let upstream = await fetch(`https://cdn1.suno.ai/${suno[1]}.mp3`, { headers: fwd });
+      if (upstream.status === 403 || upstream.status === 404) {
+        upstream = await fetch(`https://cdn2.suno.ai/${suno[1]}.mp3`, { headers: fwd });
+      }
+      const h = new Headers(upstream.headers);
+      h.set('Access-Control-Allow-Origin', '*');
+      h.set('Accept-Ranges', 'bytes');
+      return new Response(upstream.body, { status: upstream.status, headers: h });
+    }
+
     const m = url.pathname.match(/^\/party\/([A-Za-z0-9]{1,12})$/);
     if (!m) return new Response('Fancy Pants room server', { status: 200 });
     const room = m[1].toUpperCase();

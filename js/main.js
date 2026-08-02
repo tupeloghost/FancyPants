@@ -303,6 +303,32 @@ $('file-input').addEventListener('change', e => {
   updatePlayBtn();
 });
 
+// ── Suno: paste a song link, we stream it through our relay so the
+// analyser can actually see the audio (CORS) ──
+const SUNO_PROXY = window.FANCYPANTS_HOST ? `https://${window.FANCYPANTS_HOST}/suno/` : '';
+function sunoIdFrom(text) {
+  const m = String(text).match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  return m ? m[0] : null;
+}
+function loadSuno() {
+  const el = $('suno-input');
+  const id = sunoIdFrom(el.value);
+  if (!id || !SUNO_PROXY) {
+    el.value = '';
+    el.placeholder = "hmm — that doesn't look like a suno link";
+    return;
+  }
+  el.placeholder = '♪ paste a suno song link';
+  audio.loadURL(SUNO_PROXY + id + '.mp3');
+  $('track-select').value = '';
+  audio.play().catch(() => {});
+  updatePlayBtn();
+  el.value = '';
+  el.blur();
+}
+$('suno-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadSuno(); });
+$('suno-input').addEventListener('paste', () => setTimeout(loadSuno, 50));
+
 function updatePlayBtn() {
   $('btn-play').textContent = audio.playing ? '⏸' : '▶';
 }
@@ -318,8 +344,11 @@ audio.el.addEventListener('pause', updatePlayBtn);
 function hostSong() {
   const src = audio.el.src || '';
   const i = src.indexOf('audio/');
-  if (i === -1) return; // local files exist only on the host's disk — can't sync
-  net.sendSong(src.slice(i), audio.currentTime, audio.playing);
+  let share = '';
+  if (i !== -1) share = src.slice(i);                       // built-in track
+  else if (SUNO_PROXY && src.startsWith(SUNO_PROXY)) share = src; // suno relay URL works for everyone
+  if (!share) return; // local files exist only on the host's disk — can't sync
+  net.sendSong(share, audio.currentTime, audio.playing);
 }
 setInterval(() => { hostSong(); net.sendWorld(currentWorldKey); }, 4000);
 audio.el.addEventListener('play', hostSong);
@@ -328,13 +357,16 @@ audio.el.addEventListener('seeked', hostSong);
 
 // joiner: follow whatever the host plays
 net.onSong = s => {
-  if (!s || !s.url || !s.url.startsWith('audio/')) return;
+  if (!s || !s.url) return;
+  const isSuno = SUNO_PROXY && s.url.startsWith(SUNO_PROXY);
+  if (!s.url.startsWith('audio/') && !isSuno) return;
   if (!(audio.el.src || '').endsWith(s.url)) {
     audio.loadURL(s.url);
-    $('track-select').value = s.url;
+    $('track-select').value = isSuno ? '' : s.url;
   }
-  $('guest-track').textContent = decodeURIComponent(s.url.split('/').pop())
-    .replace(/\.\w+$/, '').replace(/_/g, ' ') + ' — picked by the host';
+  $('guest-track').textContent = isSuno
+    ? 'a suno track — picked by the host'
+    : decodeURIComponent(s.url.split('/').pop()).replace(/\.\w+$/, '').replace(/_/g, ' ') + ' — picked by the host';
   const apply = () => {
     if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);
     if (s.playing && !audio.playing) audio.play().catch(showTapToPlay);
