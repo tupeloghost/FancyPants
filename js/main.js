@@ -339,7 +339,15 @@ function loadSuno() {
   el.blur();
 }
 $('suno-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadSuno(); });
-$('suno-input').addEventListener('paste', () => setTimeout(loadSuno, 50));
+$('suno-input').addEventListener('paste', () => setTimeout(loadSuno, 60));
+// catch every other way text can arrive (long-press paste, drag, dictation,
+// autofill) — settle briefly so we read the finished value, not a keystroke
+let sunoTypeT = 0;
+$('suno-input').addEventListener('input', () => {
+  clearTimeout(sunoTypeT);
+  if (sunoPathFrom($('suno-input').value)) sunoTypeT = setTimeout(loadSuno, 350);
+});
+$('suno-input').addEventListener('drop', () => setTimeout(loadSuno, 60));
 
 function updatePlayBtn() {
   $('btn-play').textContent = audio.playing ? '⏸' : '▶';

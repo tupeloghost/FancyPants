@@ -28,7 +28,13 @@
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  input, textarea { -webkit-user-select: text; user-select: text; }
+  /* inputs must keep the OS text behaviours — disabling the callout globally
+     also kills the iOS long-press "Paste" menu, which made the suno box
+     look like it refused pasting */
+  input, textarea {
+    -webkit-user-select: text; user-select: text;
+    -webkit-touch-callout: default;
+  }
   body { cursor: none; }
   #panel, #panel * { cursor: default; }
   #panel select, #panel button, #panel input, #panel label, #panel #panel-head { cursor: pointer; }
@@ -747,6 +753,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=48"></script>
+<script type="module" src="js/main.js?v=49"></script>
 </body>
 </html>
