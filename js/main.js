@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=87';
-import { WORLDS } from './worlds/registry.js?v=87';
-import { Net, PALETTE } from './net.js?v=87';
-import { Presence } from './lib/presence.js?v=87';
-import { glowTexture } from './lib/glow.js?v=87';
+import { AudioEngine } from './audio-engine.js?v=88';
+import { WORLDS } from './worlds/registry.js?v=88';
+import { Net, PALETTE } from './net.js?v=88';
+import { Presence } from './lib/presence.js?v=88';
+import { glowTexture } from './lib/glow.js?v=88';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -293,9 +293,35 @@ fetch('audio/manifest.json?t=' + Date.now())
       const opt = document.createElement('option');
       opt.value = 'audio/' + f; opt.textContent = f;
       $('track-select').appendChild(opt);
+      trackList.push('audio/' + f);
     }
+    // if the room's already running and silent, start the music now
+    if (autoWanted && !audio.el.src) playAuto(false);
   })
   .catch(() => {});
+// Autoplay: nobody should have to go hunting for audio. When you start
+// solo or hosting, a track begins on its own, and the set rolls on when one
+// finishes. Any deliberate choice takes over immediately.
+let trackList = [];
+let autoOrder = [], autoAt = 0;
+function shuffled(a) {
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [b[i], b[j]] = [b[j], b[i]]; }
+  return b;
+}
+function playAuto(next) {
+  if (!trackList.length || document.body.classList.contains('guest')) return;
+  if (!autoOrder.length) { autoOrder = shuffled(trackList); autoAt = 0; }
+  if (next) autoAt = (autoAt + 1) % autoOrder.length;
+  const url = autoOrder[autoAt];
+  audio.loadURL(url);
+  $('track-select').value = url;
+  audio.play().catch(() => {});
+  updatePlayBtn();
+}
+// when a track runs out, roll straight into the next one
+audio.el.addEventListener('ended', () => playAuto(true));
+
 $('track-select').addEventListener('change', e => {
   if (!e.target.value) return;
   audio.loadURL(e.target.value);
@@ -1009,8 +1035,14 @@ const validName = n => /^[a-zA-Z0-9_]{3,14}$/.test(n);
 
 $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 
+let autoWanted = false;
 function dismissOverlay() {
   audio.ensureContext();
+  // start the music by itself — unless we're a guest, who follows the host
+  if (!document.body.classList.contains('guest')) {
+    autoWanted = true;
+    if (!audio.el.src) setTimeout(() => playAuto(false), 200);
+  }
   tap.classList.add('gone');
   showWorldIntro(currentWorldKey); // the greeting belongs AFTER the join card, not behind it
   // iOS: tilt controls need explicit permission, and the request must come
