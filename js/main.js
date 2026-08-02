@@ -510,7 +510,7 @@ slider('balls', 'balls-val', v => v, v => settings.balls = v);
 // per-world bloom defaults — TRAIL runs nearly clean so its colors read
 // true; every world still obeys the slider, and manual tweaks are
 // remembered per world for the session.
-const WORLD_BLOOM = { trail: 0.15 };
+const WORLD_BLOOM = { trail: 0.15, paint: 0.1 };  // a paper plate must not bloom
 const userBloom = {};
 let bloomBase = 0.7;
 function applyBloom(v) { // v in slider units (0-300)
