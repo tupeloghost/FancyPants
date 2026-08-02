@@ -1,20 +1,20 @@
 // World registry. Adding a world = one file in /worlds/ + one entry here.
-import { createTunnel } from './tunnel.js?v=89';
-import { createSurfer } from './surfer.js?v=89';
-import { createOrbit } from './orbit.js?v=89';
-import { createBloom } from './bloom.js?v=89';
-import { createTrail } from './trail.js?v=89';
-import { createSignal } from './signal.js?v=89';
-import { createRiver } from './river.js?v=89';
-import { createFunhouse } from './funhouse.js?v=89';
-import { createLavaLamp } from './lavalamp.js?v=89';
-import { createPlasma } from './plasma.js?v=89';
-import { createCherryLand } from './cherryland.js?v=89';
-import { createSlinky } from './slinky.js?v=89';
-import { createBlacktop } from './blacktop.js?v=89';
-import { createWaterslide } from './waterslide.js?v=89';
-import { createGarden } from './garden.js?v=89';
-import { createPaint } from './paint.js?v=89';
+import { createTunnel } from './tunnel.js?v=90';
+import { createSurfer } from './surfer.js?v=90';
+import { createOrbit } from './orbit.js?v=90';
+import { createBloom } from './bloom.js?v=90';
+import { createTrail } from './trail.js?v=90';
+import { createSignal } from './signal.js?v=90';
+import { createRiver } from './river.js?v=90';
+import { createFunhouse } from './funhouse.js?v=90';
+import { createLavaLamp } from './lavalamp.js?v=90';
+import { createPlasma } from './plasma.js?v=90';
+import { createCherryLand } from './cherryland.js?v=90';
+import { createSlinky } from './slinky.js?v=90';
+import { createBlacktop } from './blacktop.js?v=90';
+import { createWaterslide } from './waterslide.js?v=90';
+import { createGarden } from './garden.js?v=90';
+import { createPaint } from './paint.js?v=90';
 
 export const WORLDS = {
   tunnel: { goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },

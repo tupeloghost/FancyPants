@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=89';
-import { WORLDS } from './worlds/registry.js?v=89';
-import { Net, PALETTE } from './net.js?v=89';
-import { Presence } from './lib/presence.js?v=89';
-import { glowTexture } from './lib/glow.js?v=89';
+import { AudioEngine } from './audio-engine.js?v=90';
+import { WORLDS } from './worlds/registry.js?v=90';
+import { Net, PALETTE } from './net.js?v=90';
+import { Presence } from './lib/presence.js?v=90';
+import { glowTexture } from './lib/glow.js?v=90';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -82,6 +82,7 @@ const presence = new Presence();
 presence.init(scene);
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
+window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
