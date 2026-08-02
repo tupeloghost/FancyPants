@@ -209,8 +209,11 @@ function updateURL() {
 
 // ── World switcher ──
 let world = null;
+let currentWorldKey = 'tunnel';
 function switchWorld(key) {
   if (world) world.dispose();
+  currentWorldKey = key;
+  if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   world = WORLDS[key].create();
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
@@ -589,12 +592,29 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// pointer steering (interactive mode)
+// pointer steering (interactive mode) — mouse maps screen position directly
 function steerFromPointer(cx, cy) {
   if (settings.attract || !world || !world.setInput) return;
   world.setInput((cx / window.innerWidth) * 2 - 1, -((cy / window.innerHeight) * 2 - 1));
 }
-window.addEventListener('pointermove', e => steerFromPointer(e.clientX, e.clientY));
+window.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return; // touch steers by dragging, below
+  steerFromPointer(e.clientX, e.clientY);
+});
+
+// touch steering — drag-relative, so repeated swipes keep carrying you and a
+// portrait phone can steer the full range without reaching for landscape.
+// Worlds where x IS an angle get unbounded x (keep swiping = keep circling).
+const FULL_TURN = new Set(['slinky']);
+const touchSteer = { x: 0, y: 0, lastX: 0, lastY: 0, active: false, lastT: 0 };
+window.__touchSteer = touchSteer; // world switcher resets accumulated steer
+canvas.addEventListener('touchstart', e => {
+  if (!e.touches[0]) return;
+  touchSteer.active = true;
+  touchSteer.lastX = e.touches[0].clientX;
+  touchSteer.lastY = e.touches[0].clientY;
+}, { passive: true });
+window.addEventListener('touchend', () => { touchSteer.active = false; });
 
 // click/tap interaction — part of the world contract, works in both modes
 let clickPulse = 0;
@@ -637,12 +657,23 @@ function updateCursor(dt, a) {
     `translate(${cursor.x}px, ${cursor.y}px) scale(${cursor.scale.toFixed(3)}) rotate(${(performance.now() * 0.02) % 360}deg)`;
 }
 window.addEventListener('touchmove', e => {
-  if (e.touches[0]) steerFromPointer(e.touches[0].clientX, e.touches[0].clientY);
+  const t = e.touches[0];
+  if (!t || !touchSteer.active) return;
+  if (settings.attract || !world || !world.setInput) return;
+  // one full-screen swipe ≈ the full steering range; keep swiping for more
+  touchSteer.x += ((t.clientX - touchSteer.lastX) / window.innerWidth) * 2.4;
+  touchSteer.y += (-(t.clientY - touchSteer.lastY) / window.innerHeight) * 2.4;
+  touchSteer.y = Math.max(-1, Math.min(1, touchSteer.y));
+  if (!FULL_TURN.has(currentWorldKey)) touchSteer.x = Math.max(-1, Math.min(1, touchSteer.x));
+  touchSteer.lastX = t.clientX; touchSteer.lastY = t.clientY;
+  touchSteer.lastT = performance.now();
+  world.setInput(touchSteer.x, touchSteer.y);
 }, { passive: true });
 
-// tilt steering on mobile (interactive mode)
+// tilt steering on mobile (interactive mode) — yields to active drag steering
 window.addEventListener('deviceorientation', e => {
   if (settings.attract || !world || !world.setInput || e.gamma == null) return;
+  if (touchSteer.active || performance.now() - touchSteer.lastT < 2500) return;
   world.setInput(Math.max(-1, Math.min(1, e.gamma / 30)), Math.max(-1, Math.min(1, (e.beta - 45) / -30)));
 });
 
