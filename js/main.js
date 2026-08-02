@@ -82,6 +82,7 @@ const presence = new Presence();
 presence.init(scene);
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
+window.__world = () => world;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
 // world-agnostic so the dust toggle works everywhere ──

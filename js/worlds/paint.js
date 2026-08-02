@@ -203,6 +203,43 @@ function engrave(kind) {
   return idx;
 }
 
+// Which drawn thing owns this point. 0 = page furniture (ground, border,
+// stars) which stays put; everything else can be finished and lift away.
+function subjectAt(kind, x, y) {
+  if (Math.max(Math.abs(x), Math.abs(y)) > 0.87) return 0;   // the border
+  if (kind === 0) {
+    const rot = (cx, cy, a) => {
+      const dx = x - cx, dy = y - cy, co = Math.cos(a), si = Math.sin(a);
+      return [dx * co + dy * si, -dx * si + dy * co];
+    };
+    const [tu, tv] = rot(0.44, 0.42, -0.46);
+    if (Math.abs(tv) < 0.115 && tu > -0.42 && tu < 0.46) return 1;      // telescope
+    const mx = 0.41, my = 0.28;
+    for (const la of [-0.42, 0, 0.42]) {
+      const [lu, lv] = rot(mx + Math.sin(la) * 0.16, my - 0.20, la);
+      if (Math.abs(lu) < 0.03 && Math.abs(lv) < 0.21) return 1;         // its tripod
+    }
+    if (Math.abs(x - mx) < 0.07 && Math.abs(y - (my + 0.03)) < 0.06) return 1;
+    if (Math.hypot(x + 0.42, y + 0.30) < 0.55) return 2;               // astrolabe
+    if (Math.hypot(x + 0.42, y - 0.34) < 0.08) return 2;
+    for (let k = 0; k < 2; k++) {
+      const [ox, oy, rad, tilt] = [[0.60, -0.44, 0.115, 0.35], [-0.06, 0.60, 0.085, -0.25]][k];
+      const [pu, pv] = rot(ox, oy, tilt);
+      if (Math.hypot(pu / (rad * 2.3), pv / (rad * 0.42)) < 1.05) return 3 + k;
+    }
+    if (Math.hypot(x - 0.80, y + 0.78) < 0.30) return 5;               // the sun
+    return 0;
+  }
+  if (kind === 1) return Math.hypot(x, y) < 0.83 ? 1 : 0;              // the window
+  const mr = Math.hypot(x - 0.46, y - 0.5);
+  if (mr < 0.26) return 2;                                             // the moon
+  const wx = Math.abs(x), wy = y + 0.05;
+  if (wx < 0.06 && Math.abs(wy) < 0.55) return 1;
+  if (Math.hypot((wx - 0.34) / 0.34, (wy - 0.16) / 0.30) < 1) return 1;
+  if (Math.hypot((wx - 0.28) / 0.28, (wy + 0.26) / 0.24) < 1) return 1;
+  return 0;
+}
+
 const PLATES = [
   { name: 'CELESTIAL', kind: 0 },
   { name: 'ROSE WINDOW', kind: 1 },
@@ -238,6 +275,11 @@ export function createPaint() {
   const cellX = c => (c - (N - 1) / 2) * CELL;
   const cellY = r => ((N - 1) / 2 - r) * CELL;
   let edges = null, frame = null;            // region outlines and the mount
+  let cellSubj = null;                       // which drawn thing owns each cell
+  let subjLeft = {}, subjCells = {}, subjMid = {};
+  const lifts = [];                          // things that have left the page
+  let charge = 0, chargeReady = 0, lastFillT = 0, floodFlash = 0;
+  let hint = 0;                              // beats point at what's left
   const MAXEDGE = N * (N + 1) * 2;
   let palIndex = [];                        // display number -> palette slot
   const paint = n => PAINTS[palIndex[n - 1]] || PAINTS[0];
@@ -339,6 +381,14 @@ export function createPaint() {
     edges.instanceMatrix.needsUpdate = true;
   }
 
+  // always hand back the colour with the most work left — landing on one
+  // with a single cell hiding somewhere is how you get stuck
+  function advanceBrush() {
+    let best = 0, bestN = -1;
+    for (const n of used) if ((remaining[n] || 0) > best) { best = remaining[n]; bestN = n; }
+    if (bestN > 0) held = bestN;
+  }
+
   function loadPlate(index) {
     const p = PLATES[index % PLATES.length];
     const raw = engrave(p.kind);
@@ -360,10 +410,26 @@ export function createPaint() {
     doneCount = 0;
     completion = 0;
     remaining = {};
+    cellSubj = new Uint8Array(N * N);
+    subjLeft = {}; subjCells = {}; subjMid = {};
+    lifts.length = 0; charge = 0; chargeReady = 0;
     const seen = new Set();
     for (let i = 0; i < N * N; i++) {
       seen.add(cellNum[i]);
       remaining[cellNum[i]] = (remaining[cellNum[i]] || 0) + 1;
+      const r = (i / N) | 0, c = i % N;
+      const sx = (c / (N - 1)) * 2 - 1, sy = 1 - (r / (N - 1)) * 2;
+      const sj = subjectAt(p.kind, sx, sy);
+      cellSubj[i] = sj;
+      if (sj) {
+        subjLeft[sj] = (subjLeft[sj] || 0) + 1;
+        (subjCells[sj] || (subjCells[sj] = [])).push(i);
+      }
+    }
+    for (const sj of Object.keys(subjCells)) {
+      let mx = 0, my = 0;
+      for (const i of subjCells[sj]) { mx += cellX(i % N); my += cellY((i / N) | 0); }
+      subjMid[sj] = [mx / subjCells[sj].length, my / subjCells[sj].length];
     }
     used = [...seen].sort((a, b) => a - b);
     held = used[0];
@@ -524,6 +590,12 @@ export function createPaint() {
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
+    _debug() {
+      const live = {};
+      for (let i = 0; i < N * N; i++) if (!cellDone[i]) live[cellNum[i]] = (live[cellNum[i]] || 0) + 1;
+      return { held, used: used.slice(), remaining: { ...remaining }, actuallyLeft: live, charge, chargeReady };
+    },
+
     placeGhost(p, i, out) {
       const a = i * 1.6 + (this._t || 0) * 0.1;
       out.set(Math.cos(a) * 34, Math.sin(a * 0.7) * 20, 12 + Math.sin(a) * 6);
@@ -556,8 +628,48 @@ export function createPaint() {
       const r = Math.round((N - 1) / 2 - wy / CELL);
       if (c < 0 || c >= N || r < 0 || r >= N) return;
       const i = r * N + c;
+
+      // a charged brush doesn't fill a region — it floods the whole colour
+      if (chargeReady && !cellDone[i] && cellNum[i] === held) {
+        chargeReady = 0;
+        floodFlash = 1;
+        let n2 = 0;
+        for (let k = 0; k < N * N; k++) {
+          if (!cellDone[k] && cellNum[k] === held) {
+            cellDone[k] = 1;
+            cellPop[k] = 1.7 + Math.hypot(((k / N) | 0) - r, (k % N) - c) * 0.05;
+            n2++;
+          }
+        }
+        remaining[held] = 0;
+        doneCount += n2;
+        scoreQueue += 4 * n2;
+        numDirty = true;
+        for (const sj of Object.keys(subjCells)) {
+          const left = subjCells[sj].filter(k => !cellDone[k]).length;
+          subjLeft[sj] = left;
+          if (left === 0 && !lifts.some(l => l.sj === +sj)) {
+            lifts.push({ sj: +sj, t: 0, spin: (lifts.length % 2 ? 1 : -1) * 0.4,
+                         lane: lifts.length, mid: subjMid[sj] });
+            scoreQueue += 150;
+          }
+        }
+        for (let q = 0; q < 6; q++) {
+          spark((Math.random() - 0.5) * N * CELL, (Math.random() - 0.5) * N * CELL, paint(held).h, 26, 1.6);
+        }
+        advanceBrush();
+        if (window.__setFigure) window.__setFigure(PLATES[plateIndex % PLATES.length].name, doneCount, needCount);
+        if (doneCount >= needCount) { finale = 1; scoreQueue += 400; }
+        return;
+      }
+
       if (cellDone[i]) return;
-      if (cellNum[i] !== held) { denyFlash = 1; return; }
+      if (cellNum[i] !== held) {
+        // pick up the colour the cell is asking for — a tap always paints
+        held = cellNum[i];
+        numDirty = true;
+        spark(cellX(c), cellY(r), paint(held).h, 8, 0.5);
+      }
 
       // flood the whole region this cell belongs to
       const id = cellRegion[i];
@@ -574,12 +686,31 @@ export function createPaint() {
       }
       if (!filled) return;
       numDirty = true;
+
+      // a finished subject peels off the page and takes to the air
+      const touched = new Set();
+      for (let k = 0; k < N * N; k++) {
+        if (cellRegion[k] === id && cellSubj[k]) touched.add(cellSubj[k]);
+      }
+      for (const sj of touched) {
+        subjLeft[sj] -= subjCells[sj].filter(k => cellRegion[k] === id).length;
+        if (subjLeft[sj] <= 0 && !lifts.some(l => l.sj === sj)) {
+          lifts.push({ sj, t: 0, spin: (lifts.length % 2 ? 1 : -1) * (0.35 + Math.random() * 0.3),
+                       lane: lifts.length, mid: subjMid[sj] });
+          scoreQueue += 150;
+          const [cx2, cy2] = subjMid[sj];
+          for (let q = 0; q < 4; q++) spark(cx2, cy2, paint(held).h, 30, 1.5);
+        }
+      }
+
+      // painting quickly charges the brush; a full brush floods a whole colour
+      const nowT = performance.now();
+      charge = Math.min(1, charge + (nowT - lastFillT < 3500 ? 0.22 : 0.1));
+      lastFillT = nowT;
+      if (charge >= 1) { charge = 0; chargeReady = 1; }
       remaining[held] = Math.max(0, (remaining[held] || 0) - filled);
       // that colour is done — step to the next one still owing
-      if (remaining[held] === 0) {
-        const nxt = used.find(n => remaining[n] > 0);
-        if (nxt) held = nxt;
-      }
+      if (remaining[held] === 0) advanceBrush();
       doneCount += filled;
       scoreQueue += 2 * filled;
       spark(cellX(c), cellY(r), hue, Math.min(26, 8 + filled), 0.7);
@@ -611,7 +742,10 @@ export function createPaint() {
       completion += (want - completion) * Math.min(1, dt * 1.6);
       const lit = completion * (1 + finale * 1.3);
 
-      if (audio.beat) { waveT = 0; waveDiag = !waveDiag; }
+      if (audio.beat) { waveT = 0; waveDiag = !waveDiag; hint = 1; }
+      hint = Math.max(0, hint - dt * 1.8);
+      floodFlash = Math.max(0, floodFlash - dt * 0.9);
+      for (const l of lifts) l.t = Math.min(1, l.t + dt * 0.7);
       waveT += dt * (26 + audio.energy * 22);
       const voice = [audio.bass, audio.lowMid, audio.mid, audio.high, audio.treble, audio.volume];
 
@@ -648,13 +782,35 @@ export function createPaint() {
             const reach = waveDiag ? (x + y) * 0.7 + 24 : Math.hypot(x, y);
             cellWave[i] = Math.max(0, 1 - Math.abs(reach - waveT) * 0.34);
             const v = voice[(n - 1) % voice.length] * reactivity;
-            dummy.position.set(x, y, (cellPop[i] - 1) * 2.2 + cellWave[i] * 1.1);
-            dummy.scale.setScalar(0.98 + (cellPop[i] - 1) * 0.35 + v * 0.05 + cellWave[i] * 0.1);
+            const lift = cellSubj[i] ? lifts.find(l => l.sj === cellSubj[i]) : null;
+            if (lift) {
+              // peel away from the page: rise, turn, and hang there breathing
+              const e = lift.t * lift.t * (3 - 2 * lift.t);
+              const [mx2, my2] = lift.mid;
+              const ang = e * lift.spin + Math.sin(time * 0.4 + lift.lane) * 0.16 * e;
+              const co = Math.cos(ang), si = Math.sin(ang);
+              const rx2 = x - mx2, ry2 = y - my2;
+              const hoverY = my2 + e * (6 + lift.lane * 3) + Math.sin(time * 0.8 + lift.lane * 2) * 1.4 * e;
+              const hoverX = mx2 + e * Math.sin(time * 0.3 + lift.lane * 1.7) * 2.2;
+              dummy.position.set(
+                hoverX + (rx2 * co - ry2 * si) * (1 + e * 0.15),
+                hoverY + (rx2 * si + ry2 * co) * (1 + e * 0.15),
+                e * (16 + lift.lane * 4) + Math.sin(time * 1.1 + i * 0.2) * e * 0.8
+              );
+              dummy.scale.setScalar((0.98 + v * 0.06 + cellWave[i] * 0.1) * (1 + e * 0.12));
+              dummy.rotation.set(0, 0, ang);
+            } else {
+              dummy.position.set(x, y, (cellPop[i] - 1) * 2.2 + cellWave[i] * 1.1);
+              dummy.scale.setScalar(0.98 + (cellPop[i] - 1) * 0.35 + v * 0.05 + cellWave[i] * 0.1);
+              dummy.rotation.set(0, 0, 0);
+            }
             dummy.updateMatrix();
             plate.setMatrixAt(i, dummy.matrix);
-            const lum = P.l * (0.72 + v * 0.4 + cellWave[i] * 0.5 + audio.beatIntensity * 0.1);
-            color.setHSL(P.h, P.s, Math.min(0.8, lum * Math.min(1, cellPop[i])));
+            const liftGlow = lift ? 0.35 + lift.t * 0.45 + audio.beatIntensity * 0.25 : 0;
+            const lum = P.l * (0.72 + v * 0.4 + cellWave[i] * 0.5 + audio.beatIntensity * 0.1 + liftGlow);
+            color.setHSL(P.h, P.s, Math.min(0.85, lum * Math.min(1, cellPop[i])));
             if (finale > 0) color.multiplyScalar(1 + finale);
+            if (floodFlash > 0) color.multiplyScalar(1 + floodFlash * 0.8);
             plate.setColorAt(i, color);
 
             // only the livelier cells carry a bloom, or the plate goes to soup
@@ -673,7 +829,9 @@ export function createPaint() {
             // blush toward that colour so the next move is obvious
             const ready = held === n;
             const grain = ((i * 2654435761) % 1000) / 1000 * 0.022;   // laid paper
-            const paper = 0.80 - grain + (ready ? 0.07 + 0.03 * Math.sin(time * 4 + i * 0.2) : 0);
+            // every beat lights up what the loaded colour still owes
+            const paper = 0.80 - grain
+              + (ready ? 0.07 + 0.03 * Math.sin(time * 4 + i * 0.2) + hint * 0.14 : 0);
             color.setHSL(ready ? P.h : 0.10, ready ? 0.35 : 0.09, paper - denyFlash * 0.06);
             plate.setColorAt(i, color);
 
