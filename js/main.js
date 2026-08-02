@@ -872,7 +872,7 @@ function frame(now) {
   // ghosts render through the same path in every world
   presence.update(dt, participants,
     world.placeGhost ? world.placeGhost.bind(world) : (p, i, out) => out.set(p.x, p.y, p.z),
-    { beatIntensity: a.beatIntensity, time });
+    { beatIntensity: a.beatIntensity, time, camera });
 
   if (settings.broadcast) {
     // widen to frame the crowd, not the local player
