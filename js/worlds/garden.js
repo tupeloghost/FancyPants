@@ -213,6 +213,9 @@ function digitTexture(n) {
 export function createGarden() {
   let scene, camera, group, sky, motes;
   let cellMesh, runePts, runeGlow, trayPts, sparkPts, keyLight, fillGlow;
+  let shafts, halo;                    // the reactive room behind the work
+  const ripples = [];
+  const SHAFTS = 34;
   const numPts = [];   // one Points layer per depth, each drawn with its numeral
   const tp = [0, 0, 0];
   const color = new THREE.Color();
@@ -365,6 +368,49 @@ export function createGarden() {
       trayPts = mkPts(TRAY_MAX, 4.2, 1);
       sparkPts = mkPts(SPARK, 1.5, 0.95);
       for (let i = 0; i < SPARK; i++) sLife[i] = 0;
+
+      // ── the room behind the work: light shafts that answer the spectrum ──
+      {
+        const g = new THREE.PlaneGeometry(2.6, 1);
+        g.translate(0, 0.5, 0);           // grow upward from the floor
+        const pa = g.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const up = pa.getY(i);          // 0 at base, 1 at tip
+          const f = 1 - up * 0.92;        // shafts fade as they rise
+          vc[i * 3] = f; vc[i * 3 + 1] = f; vc[i * 3 + 2] = f;
+        }
+        g.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+        shafts = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({
+          vertexColors: true, transparent: true, opacity: 0.5,
+          blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+        }), SHAFTS);
+        shafts.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        shafts.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SHAFTS * 3), 3);
+        shafts.frustumCulled = false;
+        group.add(shafts);
+      }
+
+      // a low halo behind the lattice, breathing on the bass
+      halo = glowSprite(120);
+      halo.position.set(0, 0, -46);
+      halo.material.opacity = 0;
+      group.add(halo);
+
+      // rings that leave on the beat and travel out past the lattice
+      for (let i = 0; i < 4; i++) {
+        const r = new THREE.Mesh(
+          new THREE.RingGeometry(1, 1.06, 96),
+          new THREE.MeshBasicMaterial({
+            transparent: true, opacity: 0, toneMapped: false,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+          })
+        );
+        r.position.z = -22;
+        r.userData.r = 0;
+        group.add(r);
+        ripples.push(r);
+      }
 
       // ambient dust so the dark isn't empty
       const mp = new Float32Array(300 * 3);
@@ -651,13 +697,58 @@ export function createGarden() {
         sp.needsUpdate = true; sc.needsUpdate = true;
       }
 
+      // ── the reactive room: this is what makes it worth watching ──
+      {
+        const spec = audio.spectrum;
+        for (let i = 0; i < SHAFTS; i++) {
+          const bin = Math.floor((i / SHAFTS) * spec.length * 0.72);
+          const v = spec[bin] || 0;
+          // wide and overlapping, so the band reads as one aurora curtain
+          // rather than a row of bars — and it drifts as it breathes
+          const x = (i / (SHAFTS - 1) - 0.5) * 178 + Math.sin(time * 0.19 + i * 0.7) * 3;
+          const h = 10 + v * 74 * reactivity + audio.volume * 10;
+          dummy.position.set(x, -52, -86);
+          dummy.scale.set(3.4, h, 1);
+          dummy.rotation.set(0, 0, Math.sin(time * 0.12 + i) * 0.03);
+          dummy.updateMatrix();
+          shafts.setMatrixAt(i, dummy.matrix);
+          // the curtain wears the figure's own colors, so every level has a
+          // different night behind it
+          const h01 = tierHue(1 + (i % 3));
+          color.setHSL(h01, 0.72, (0.07 + v * 0.26) * (0.85 + lit * 0.35));
+          shafts.setColorAt(i, color);
+        }
+        shafts.instanceMatrix.needsUpdate = true;
+        shafts.instanceColor.needsUpdate = true;
+        shafts.material.opacity = 0.42 + lit * 0.18;
+      }
+
+      halo.material.color.setHSL(tierHue(2), 0.6, 0.5);
+      halo.material.opacity = 0.02 + audio.bass * 0.05 * reactivity + lit * 0.03;
+      halo.scale.setScalar(120 * (1 + audio.bass * 0.22 + lit * 0.15));
+
+      if (audio.beat) {
+        const r = ripples.find(q => q.material.opacity <= 0.02);
+        if (r) {
+          r.userData.r = 6;
+          r.material.opacity = 0.16 + audio.beatIntensity * 0.2;
+          r.material.color.setHSL(tierHue(3), 0.8, 0.6);
+        }
+      }
+      for (const r of ripples) {
+        if (r.material.opacity <= 0.02) continue;
+        r.userData.r += dt * (26 + audio.energy * 30);
+        r.scale.setScalar(r.userData.r);
+        r.material.opacity *= Math.pow(0.28, dt);
+      }
+
       // ── the room answers what you've built ──
       keyLight.material.color.setHSL(tierHue(2), 0.7, 0.5);
       keyLight.material.opacity = 0.03 + lit * 0.16 + placeFlash * 0.05;
       keyLight.scale.setScalar(90 * (1 + lit * 0.4 + finale * 0.5));
 
       motes.material.color.setHSL(tierHue(1), 0.6, 0.12 + lit * 0.3 + audio.high * 0.15);
-      motes.material.size = 0.55 + lit * 0.5 + audio.high * 0.4;
+      motes.material.size = 0.55 + lit * 0.5 + audio.high * 0.4 + audio.beatIntensity * 0.5;
       motes.rotation.y += dt * 0.012;
       motes.rotation.z += dt * 0.004;
 
