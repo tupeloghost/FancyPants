@@ -13,8 +13,8 @@
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 
-const N = 34;                 // plate is N x N cells
-const CELL = 1.42;
+const N = 44;                 // plate is N x N cells
+const CELL = 1.12;
 const MAXCELLS = N * N;
 const SPARK = 300;
 const SHAFTS = 30;
@@ -57,58 +57,91 @@ function engrave(kind) {
     if (edge > 0.87) return 17;
 
     if (kind === 0) {
-      // ASTROLABE — a great dialled disc, sunburst, orbs and a star field
-      const dx = x + 0.22, dy = y + 0.02;
-      const r = Math.hypot(dx, dy);
-      const a = Math.atan2(dy, dx);
+      // ── CELESTIAL: an astrolabe, a telescope on its tripod, ringed worlds ──
+      // drawn as actual objects rather than banded noise
+      const rot = (cx, cy, a) => {
+        const dx = x - cx, dy = y - cy, co = Math.cos(a), si = Math.sin(a);
+        return [dx * co + dy * si, -dx * si + dy * co];
+      };
+      const rect = (cx, cy, w, h, a) => {
+        const [u, v] = rot(cx, cy, a);
+        return Math.abs(u) < w / 2 && Math.abs(v) < h / 2;
+      };
 
-      if (r < 0.62) {
-        const spoke = Math.floor((a + Math.PI) / (Math.PI * 2) * 20);
-        if (r > 0.55) return (spoke % 2) ? 10 : 18;          // tick ring
-        if (r > 0.50) return 11;                              // numeral band
-        if (r > 0.46) return 8;
-        if (r > 0.30) {
-          // the tympan: a web of meridians and almucantars
-          const mer = Math.floor((a + Math.PI) / (Math.PI * 2) * 8) % 2;
-          const alm = Math.floor(r * 9) % 2;
-          return mer ^ alm ? 12 : 13;
-        }
-        if (r > 0.26) return 10;
-        // the rete at the heart, with its pointer
-        const petal = Math.cos(a * 4) * 0.09;
-        if (r < 0.20 + petal) return (Math.floor(r * 8) % 2) ? 9 : 11;
-        return 18;
+      // ── the telescope, upper right ──
+      const TA = -0.46, TX = 0.44, TY = 0.42;
+      const [tu, tv] = rot(TX, TY, TA);
+      if (Math.abs(tv) < 0.085 && tu > -0.42 && tu < 0.40) {
+        if (Math.abs(tv) > 0.062) return 18;                 // tube shadow
+        if (tu > 0.30) return 10;                            // objective collar
+        if (tu < -0.34) return 10;                           // eyepiece collar
+        return (Math.floor(tu * 7) % 2) ? 8 : 9;             // banded barrel
       }
-      // the alidade sweeping across the dial
-      const arm = Math.abs(dy - dx * 0.42);
-      if (arm < 0.022 && r < 0.86) return 16;
+      if (Math.abs(tv) < 0.115 && tu > 0.36 && tu < 0.46) return 18;   // lens hood
+      // tripod: three legs from under the barrel
+      const mx = TX - 0.03, my = TY - 0.14;
+      for (const la of [-0.42, 0, 0.42]) {
+        if (rect(mx + Math.sin(la) * 0.16, my - 0.20, 0.045, 0.42, la)) return 18;
+      }
+      if (rect(mx, my + 0.03, 0.13, 0.12, 0)) return 10;     // the mount head
 
-      // sunburst in the far corner
-      const sx = x - 0.74, sy = y - 0.74;
-      const sr = Math.hypot(sx, sy);
-      if (sr < 0.34) {
-        const ray = Math.floor((Math.atan2(sy, sx) + Math.PI) / (Math.PI * 2) * 14);
-        if (sr > 0.17) return (ray % 2) ? 9 : 10;
+      // ── the astrolabe, lower left ──
+      const dx0 = x + 0.42, dy0 = y + 0.30;
+      const r = Math.hypot(dx0, dy0);
+      const a0 = Math.atan2(dy0, dx0);
+      if (r < 0.50) {
+        if (r > 0.455) return 18;                            // rim
+        if (r > 0.40) {                                      // degree ring
+          const tick = Math.floor((a0 + Math.PI) / (Math.PI * 2) * 18);
+          return (tick % 2) ? 10 : 11;
+        }
+        if (r > 0.365) return 18;
+        if (r > 0.16) {                                      // the tympan web
+          const mer = Math.floor((a0 + Math.PI) / (Math.PI * 2) * 6) % 2;
+          const alm = Math.floor((r - 0.16) * 7) % 2;
+          return (mer ^ alm) ? 12 : 13;
+        }
+        if (r > 0.125) return 10;                            // the rete's collar
+        const petal = 0.06 + Math.cos(a0 * 3) * 0.045;       // trefoil heart
+        return r < petal + 0.055 ? 9 : 11;
+      }
+      if (r < 0.545) return 18;                              // the suspension ring
+      // the alidade laid across the dial
+      { const [au, av] = rot(-0.42, -0.30, 0.55);
+        if (Math.abs(av) < 0.028 && Math.abs(au) < 0.53) return 16; }
+      // the throne and hanging loop above it
+      if (rect(-0.42, 0.24, 0.14, 0.09, 0)) return 10;
+      if (Math.hypot(x + 0.42, y - 0.34) < 0.075 && Math.hypot(x + 0.42, y - 0.34) > 0.042) return 10;
+
+      // ── ringed worlds ──
+      for (const [ox, oy, rad, tilt] of [[0.60, -0.44, 0.115, 0.35], [-0.06, 0.60, 0.085, -0.25]]) {
+        const [pu, pv] = rot(ox, oy, tilt);
+        const pr = Math.hypot(pu, pv);
+        if (pr < rad) return (pv > rad * 0.25) ? 7 : 8;      // lit above, shaded below
+        const er = Math.hypot(pu / (rad * 2.3), pv / (rad * 0.42));
+        if (er < 1.05 && er > 0.72) return 10;               // its ring
+      }
+
+      // ── a corner sun ──
+      const sx = x - 0.80, sy = y + 0.78, sr = Math.hypot(sx, sy);
+      if (sr < 0.30) {
+        if (sr < 0.14) return 9;
+        const ray = Math.floor((Math.atan2(sy, sx) + Math.PI) / (Math.PI * 2) * 12);
         return (ray % 2) ? 10 : 11;
       }
 
-      // ringed orbs
-      const orbs = [[0.55, -0.55, 0.15], [0.30, 0.30, 0.10], [0.78, -0.05, 0.09]];
-      for (const [ox, oy, orad] of orbs) {
-        const ord = Math.hypot(x - ox, y - oy);
-        if (ord < orad) return (Math.floor((y - oy) * 7) % 2) ? 7 : 8;
-        if (Math.abs((y - oy) * 2.6) < 0.05 && ord < orad * 2.1) return 10; // its ring
+      // ── stars: proper four-pointed sparks, sparsely placed ──
+      for (const [sxp, syp, ss] of [
+        [0.05, 0.18, 0.075], [0.72, 0.14, 0.055], [-0.72, 0.62, 0.06],
+        [0.30, -0.72, 0.055], [-0.14, -0.52, 0.045], [0.86, -0.10, 0.045],
+      ]) {
+        const ax2 = Math.abs(x - sxp), ay2 = Math.abs(y - syp);
+        if (ax2 + ay2 < ss || (ax2 < ss * 0.24 && ay2 < ss * 1.7) || (ay2 < ss * 0.24 && ax2 < ss * 1.7)) return 11;
       }
 
-      // star field: four-pointed stars on a lattice
-      const gx = x * 3.2, gy = y * 3.2;
-      const cxg = Math.round(gx), cyg = Math.round(gy);
-      const sd = Math.abs(gx - cxg) + Math.abs(gy - cyg);
-      if (sd < 0.34 && ((cxg * 7 + cyg * 13) % 3 === 0)) return 11;
-
-      // the night itself: broad bands, no speckle
-      const swirl = Math.sin(x * 1.5 + Math.sin(y * 1.1) * 1.2) + Math.cos(y * 1.3);
-      return swirl > 0.75 ? 2 : swirl > -0.45 ? 1 : 17;
+      // ── the night: broad calm bands ──
+      const swirl = Math.sin(x * 1.2 + Math.sin(y * 0.9) * 1.1) + Math.cos(y * 1.15);
+      return swirl > 0.8 ? 2 : swirl > -0.5 ? 1 : 17;
     }
 
     if (kind === 1) {
@@ -171,7 +204,7 @@ function engrave(kind) {
 }
 
 const PLATES = [
-  { name: 'ASTROLABE', kind: 0 },
+  { name: 'CELESTIAL', kind: 0 },
   { name: 'ROSE WINDOW', kind: 1 },
   { name: 'MOTH & MOON', kind: 2 },
 ];
@@ -584,7 +617,11 @@ export function createPaint() {
 
       const px2 = attract ? Math.sin(time * 0.12) * 0.4 : pointer.x;
       const py2 = attract ? Math.cos(time * 0.1) * 0.3 : pointer.y;
-      camera.position.set(px2 * 7, py2 * 5, 40 - completion * 3 - audio.bass * 0.6);
+      // sit back far enough that the whole plate fits, whatever the screen
+      const span = N * CELL * 1.12;
+      const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
+      const fit = Math.max((span / 2) / Math.tan(vf), (span / 2) / (Math.tan(vf) * camera.aspect));
+      camera.position.set(px2 * 7, py2 * 5, fit - completion * 3 - audio.bass * 0.6);
       camera.lookAt(px2 * 2, py2 * 1.6, 0);
 
       // ── the plate ──

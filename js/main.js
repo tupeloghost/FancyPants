@@ -1144,16 +1144,16 @@ function frame(now) {
     addScore,
   });
 
-  // the viewer's pinch/wheel trim, applied over whatever the world asked for,
-  // plus a nudge wider in portrait so phones aren't looking through a straw
+  // The viewer's framing sits ON TOP of whatever the world asked for — and is
+  // handed straight back afterwards. Applying it in place would feed into the
+  // world's own easing next frame and compound away (which it did: the
+  // portrait nudge alone drove every world to the 125-degree ceiling).
+  const shot = { fov: camera.fov, x: camera.position.x, y: camera.position.y, z: camera.position.z };
   {
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 6);   // glide, never jump
     const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
-    const want = Math.max(18, Math.min(125, camera.fov * zoom * portrait));
-    if (Math.abs(want - camera.fov) > 0.01) {
-      camera.fov = want;
-      camera.updateProjectionMatrix();
-    }
+    camera.fov = Math.max(18, Math.min(125, shot.fov * zoom * portrait));
+    camera.updateProjectionMatrix();
     // zooming in should approach what you're pointing at, not the centre
     if (zoom < 0.995) {
       const lean = (1 - zoom) * 26;
@@ -1180,6 +1180,10 @@ function frame(now) {
   }
 
   composer.render();
+
+  // hand the camera back exactly as the world left it
+  if (camera.fov !== shot.fov) { camera.fov = shot.fov; camera.updateProjectionMatrix(); }
+  camera.position.set(shot.x, shot.y, shot.z);
 
   // PNG export must happen in the same frame as the render (no preserveDrawingBuffer)
   if (screenshotQueued) {
