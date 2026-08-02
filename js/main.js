@@ -320,6 +320,12 @@ function sunoPathFrom(text) {
   if (short) return `suno-s/${short[1]}.mp3`;
   return null;
 }
+function sunoSay(msg, kind) {
+  const st = $('suno-status');
+  st.textContent = msg || '';
+  st.className = kind || '';
+}
+let sunoLoading = null;
 function loadSuno() {
   const el = $('suno-input');
   if (!el.value.trim()) return;
@@ -328,22 +334,43 @@ function loadSuno() {
     // leave what they pasted alone — wiping it looks like paste is broken
     el.classList.add('bad');
     setTimeout(() => el.classList.remove('bad'), 1400);
+    sunoSay("that doesn't look like a suno link", 'err');
     return;
   }
+  if (sunoLoading === path) return;      // don't re-fire on the same link
+  sunoLoading = path;
   el.classList.remove('bad');
-  audio.loadURL(SUNO_PROXY + path);
-  $('track-select').value = '';
-  audio.play().catch(() => {});
-  updatePlayBtn();
-  el.value = '';
-  el.blur();
+  sunoSay('looking it up…');
+  // ask the relay what the track is before playing it: that gives us the
+  // title and artist, and turns a dead link into an honest error
+  const token = path.replace(/^suno-s\//, '').replace(/^suno\//, '').replace(/\.mp3$/, '');
+  fetch(`${SUNO_PROXY}suno-meta/${token}`)
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error('no song'))))
+    .then(info => {
+      if (!info.id) throw new Error('no song');
+      sunoTrack = [info.title, info.artist].filter(Boolean).join(' — ') || 'a suno track';
+      sunoSay(sunoTrack, 'ok');
+      audio.loadURL(`${SUNO_PROXY}suno/${info.id}.mp3`);
+      $('track-select').value = '';
+      audio.play().catch(() => {});
+      updatePlayBtn();
+      el.select();   // leave the link in place, selected, ready to be replaced
+    })
+    .catch(() => {
+      sunoLoading = null;
+      sunoTrack = '';
+      sunoSay("couldn't find that song — use the Share link from Suno", 'err');
+    });
 }
+let sunoTrack = '';   // what's playing, for the guests' now-playing line
+$('suno-go').addEventListener('click', () => { sunoLoading = null; loadSuno(); });
 $('suno-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadSuno(); });
 $('suno-input').addEventListener('paste', () => setTimeout(loadSuno, 60));
 // catch every other way text can arrive (long-press paste, drag, dictation,
 // autofill) — settle briefly so we read the finished value, not a keystroke
 let sunoTypeT = 0;
 $('suno-input').addEventListener('input', () => {
+  sunoLoading = null;
   clearTimeout(sunoTypeT);
   if (sunoPathFrom($('suno-input').value)) sunoTypeT = setTimeout(loadSuno, 350);
 });
@@ -368,7 +395,7 @@ function hostSong() {
   if (i !== -1) share = src.slice(i);                       // built-in track
   else if (SUNO_PROXY && src.startsWith(SUNO_PROXY)) share = src; // suno relay URL works for everyone
   if (!share) return; // local files exist only on the host's disk — can't sync
-  net.sendSong(share, audio.currentTime, audio.playing);
+  net.sendSong(share, audio.currentTime, audio.playing, sunoTrack);
 }
 setInterval(() => { hostSong(); net.sendWorld(currentWorldKey); }, 4000);
 audio.el.addEventListener('play', hostSong);
@@ -385,7 +412,7 @@ net.onSong = s => {
     $('track-select').value = isSuno ? '' : s.url;
   }
   $('guest-track').textContent = isSuno
-    ? 'a suno track — picked by the host'
+    ? (s.title ? `${s.title} — picked by the host` : 'a suno track — picked by the host')
     : decodeURIComponent(s.url.split('/').pop()).replace(/\.\w+$/, '').replace(/_/g, ' ') + ' — picked by the host';
   const apply = () => {
     if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);

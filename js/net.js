@@ -122,9 +122,9 @@ export class Net {
   }
 
   // host: tell the room what's playing (call on change and every few seconds)
-  sendSong(url, pos, playing) {
+  sendSong(url, pos, playing, title) {
     if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
-    this._ws.send(JSON.stringify({ t: 'song', url, pos, playing }));
+    this._ws.send(JSON.stringify({ t: 'song', url, pos, playing, title: title || '' }));
   }
 
   _who(id) {

@@ -260,6 +260,20 @@
   }
   #suno-input::placeholder { color: var(--ink-faint); }
   #suno-input:focus { border-color: var(--accent-line); background: var(--accent-soft); }
+  #suno-row { display: flex; gap: 6px; }
+  #suno-row #suno-input { flex: 1; min-width: 0; }
+  #suno-go {
+    width: 34px; flex: none; padding: 0; border-radius: 8px;
+    background: var(--accent-soft); border: 1px solid var(--accent-line);
+    color: var(--accent); font-size: 11px;
+  }
+  #suno-go:hover { background: hsla(var(--accent-h), 90%, 65%, 0.28); }
+  #suno-status {
+    font-size: 9.5px; letter-spacing: 0.5px; color: var(--ink-faint);
+    margin-top: 4px; min-height: 12px;
+  }
+  #suno-status.err { color: #ff8fa3; }
+  #suno-status.ok { color: var(--accent); }
   #suno-input.bad { border-color: #ff8fa3; animation: sunoshake 0.4s; }
   @keyframes sunoshake {
     25% { transform: translateX(-4px); } 75% { transform: translateX(4px); }
@@ -666,7 +680,11 @@
         <input type="file" id="file-input" accept="audio/*">
       </div>
       <div class="row host-only">
-        <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
+        <div id="suno-row">
+          <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
+          <button id="suno-go" title="load this link">&#9654;</button>
+        </div>
+        <div id="suno-status"></div>
       </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
@@ -753,6 +771,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=49"></script>
+<script type="module" src="js/main.js?v=51"></script>
 </body>
 </html>

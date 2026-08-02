@@ -34,8 +34,8 @@ export class FancyPantsRoom {
 
   songNow() {
     if (!this.song) return null;
-    const { url, pos, playing, at } = this.song;
-    return { url, playing, pos: playing ? pos + (Date.now() - at) / 1000 : pos };
+    const { url, title, pos, playing, at } = this.song;
+    return { url, title, playing, pos: playing ? pos + (Date.now() - at) / 1000 : pos };
   }
 
   async fetch(request) {
@@ -157,6 +157,7 @@ export class FancyPantsRoom {
       if (connId !== this.ownerId) return; // only the host drives the music
       this.song = {
         url: String(m.url || '').slice(0, 200),
+        title: String(m.title || '').slice(0, 120),
         pos: Number(m.pos) || 0,
         playing: !!m.playing,
         at: now,
@@ -231,6 +232,44 @@ export default {
 
     const suno = url.pathname.match(/^\/suno\/([0-9a-fA-F-]{36})\.mp3$/);
     if (suno) return streamSuno(suno[1]);
+
+    // resolve a link to {id, title, artist} so the panel can name the track —
+    // and so a link that ISN'T a song fails honestly instead of grabbing
+    // whatever id happens to be on the page
+    const meta = url.pathname.match(/^\/suno-meta\/([A-Za-z0-9_-]{4,64})$/);
+    if (meta) {
+      const token = meta[1];
+      const UUID = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+      const page = token.match(UUID)
+        ? `https://suno.com/song/${token}`
+        : `https://suno.com/s/${token}`;
+      const json = (o, status = 200) => new Response(JSON.stringify(o), {
+        status, headers: { 'Access-Control-Allow-Origin': '*', 'content-type': 'application/json' },
+      });
+      let html = '';
+      try {
+        const r = await fetch(page, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FancyPants/1.0)' },
+        });
+        html = await r.text();
+      } catch {
+        return json({ error: 'unreachable' }, 502);
+      }
+      // the audio id only ever appears as a real CDN url — no loose matching
+      const id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})/)?.[1]
+        || (token.match(UUID)?.[0] ?? null);
+      if (!id) return json({ error: 'not a song link' }, 404);
+      // "<title>Song by Artist | Suno</title>" carries both
+      const t = html.match(/<title>([^<]*)<\/title>/)?.[1] || '';
+      const m = t.match(/^(.*?)\s+by\s+(.*?)\s*\|\s*Suno/i);
+      const title = m?.[1] || html.match(/property="og:title"\s+content="([^"]*)"/)?.[1] || '';
+      const artist = m?.[2] || '';
+      // a share code that lands on a generic Suno page is a dead link, not a
+      // song — say so rather than handing back whatever id was lying around
+      if (!token.match(UUID) && !artist) return json({ error: 'not a song link' }, 404);
+      return json({ id, title, artist });
+    }
 
     // share links (suno.com/s/CODE) don't carry the song id — resolve them
     const short = url.pathname.match(/^\/suno-s\/([A-Za-z0-9_-]{4,40})\.mp3$/);
