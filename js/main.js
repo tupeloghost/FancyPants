@@ -715,8 +715,12 @@ window.addEventListener('keydown', e => {
   }
 });
 
+const aim = { x: 0, y: 0 };   // last pointer position in clip space
+
 // pointer steering (interactive mode) — mouse maps screen position directly
 function steerFromPointer(cx, cy) {
+  aim.x = (cx / window.innerWidth) * 2 - 1;
+  aim.y = -((cy / window.innerHeight) * 2 - 1);
   if (settings.attract || !world || !world.setInput) return;
   world.setInput((cx / window.innerWidth) * 2 - 1, -((cy / window.innerHeight) * 2 - 1));
 }
@@ -729,19 +733,27 @@ window.addEventListener('pointermove', e => {
 // worlds keep driving camera.fov; this is a multiplier applied after them.
 let zoom = 1;                       // 1 = as the world intends
 let zoomTarget = 1;                 // eased toward, so nothing ever jumps
-const clampZoom = z => Math.max(0.75, Math.min(1.5, z));
+const clampZoom = z => Math.max(0.4, Math.min(1.6, z));
 let pinchStart = 0, pinchZoom0 = 1;
 const pinchDist = e => {
   const [a, b] = [e.touches[0], e.touches[1]];
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 };
 canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) { pinchStart = pinchDist(e); pinchZoom0 = zoomTarget; }
+  if (e.touches.length === 2) {
+    pinchStart = pinchDist(e);
+    pinchZoom0 = zoomTarget;
+    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    aim.x = (mx / window.innerWidth) * 2 - 1;
+    aim.y = -((my / window.innerHeight) * 2 - 1);
+  }
 }, { passive: true });
 canvas.addEventListener('touchmove', e => {
   if (e.touches.length !== 2 || !pinchStart) return;
   // spread fingers = zoom in = narrower field of view
   zoomTarget = clampZoom(pinchZoom0 * (pinchStart / pinchDist(e)));
+  showZoom();
 }, { passive: true });
 canvas.addEventListener('touchend', e => { if (e.touches.length < 2) pinchStart = 0; }, { passive: true });
 // desktop gets the same control on the scroll wheel — gently, and never
@@ -749,16 +761,27 @@ canvas.addEventListener('touchend', e => { if (e.touches.length < 2) pinchStart 
 canvas.addEventListener('wheel', e => {
   if (e.ctrlKey || e.metaKey) return;         // that one belongs to the browser
   e.preventDefault();
+  aim.x = (e.clientX / window.innerWidth) * 2 - 1;
+  aim.y = -((e.clientY / window.innerHeight) * 2 - 1);
   zoomTarget = clampZoom(zoomTarget * (1 + Math.sign(e.deltaY) * 0.025));
+  showZoom();
 }, { passive: false });
 
 // double-click (or double-tap) puts the framing back where the world wants it
-canvas.addEventListener('dblclick', () => { zoomTarget = 1; });
+let zoomHideT = 0;
+function showZoom() {
+  const el = $('zoom-badge');
+  el.textContent = (1 / zoom).toFixed(2).replace(/\.?0+$/, '') + '\u00d7';
+  el.classList.add('on');
+  clearTimeout(zoomHideT);
+  zoomHideT = setTimeout(() => el.classList.remove('on'), 1100);
+}
+canvas.addEventListener('dblclick', () => { zoomTarget = 1; showZoom(); });
 let lastTapT = 0;
 canvas.addEventListener('touchend', e => {
   if (e.touches.length) return;
   const now = performance.now();
-  if (now - lastTapT < 300) zoomTarget = 1;   // double-tap resets
+  if (now - lastTapT < 300) { zoomTarget = 1; showZoom(); }   // double-tap resets
   lastTapT = now;
 }, { passive: true });
 
@@ -1106,10 +1129,16 @@ function frame(now) {
   {
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 6);   // glide, never jump
     const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
-    const want = Math.max(24, Math.min(125, camera.fov * zoom * portrait));
+    const want = Math.max(18, Math.min(125, camera.fov * zoom * portrait));
     if (Math.abs(want - camera.fov) > 0.01) {
       camera.fov = want;
       camera.updateProjectionMatrix();
+    }
+    // zooming in should approach what you're pointing at, not the centre
+    if (zoom < 0.995) {
+      const lean = (1 - zoom) * 26;
+      camera.translateX(aim.x * lean);
+      camera.translateY(aim.y * lean);
     }
   }
 

@@ -83,7 +83,7 @@
   /* ── Panel ── */
   #panel {
     position: fixed; top: 14px; right: 14px; z-index: 100;
-    width: 272px; color: var(--ink);
+    width: 278px; color: var(--ink);
     font: 11.5px/1.5 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
     background:
       linear-gradient(175deg, hsla(var(--accent-h), 60%, 55%, 0.07), transparent 90px),
@@ -108,9 +108,12 @@
   #panel:not(.collapsed) #panel-head { border-bottom: 1px solid hsla(var(--accent-h), 60%, 65%, 0.12); }
   #panel.collapsed #panel-body { display: none; }
   #panel-title {
-    font-weight: 700; font-size: 12px; letter-spacing: 2.5px; color: var(--accent);
-    text-shadow: 0 0 12px hsla(var(--accent-h), 90%, 65%, 0.5);
+    font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 3.6px; white-space: nowrap;
+    color: hsl(var(--accent-h), 55%, 92%);
+    text-shadow: 0 0 16px hsla(var(--accent-h), 90%, 70%, 0.45);
   }
+  #panel-stats { white-space: nowrap; }
   #panel-stats { margin-left: auto; color: var(--ink-faint); font-size: 10.5px; letter-spacing: 0.5px; }
   #panel-stats b { color: var(--ink-dim); font-weight: 400; }
   #chev { color: var(--ink-faint); font-size: 9px; transition: transform 0.2s; }
@@ -149,10 +152,11 @@
   }
   #tabs .tab {
     flex: 1; background: transparent; border: none; border-radius: 7px;
-    padding: 7px 0; color: var(--ink-faint); letter-spacing: 1px;
-    font-weight: 600;
-    transition: color 0.15s, background 0.15s;
+    padding: 8px 0; color: var(--ink-faint); letter-spacing: 2px;
+    font-size: 10.5px; font-weight: 500; text-transform: lowercase;
+    transition: color 0.2s, background 0.2s, letter-spacing 0.2s;
   }
+  #tabs .tab.on { letter-spacing: 2.6px; }
   #tabs .tab:hover { color: var(--ink-dim); }
   #tabs .tab.on {
     background: var(--accent-soft); color: var(--accent);
@@ -217,9 +221,15 @@
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 7px 10px; margin-bottom: 9px;
   }
+  /* section labels: fine caps with a hairline running off to the right */
   .mini-label {
-    font-size: 9.5px; letter-spacing: 2px; color: var(--ink-dim);
-    margin-bottom: 4px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 9px;
+    font: 400 9.5px 'SF Mono', Menlo, monospace; letter-spacing: 3px;
+    color: var(--ink-dim); margin-bottom: 7px; text-transform: uppercase;
+  }
+  .mini-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, hsla(var(--accent-h), 60%, 70%, 0.22), transparent);
   }
   optgroup { background: #0a0f1c; color: var(--ink-faint); font-style: normal; }
 
@@ -432,11 +442,12 @@
     gap: 4px; margin-bottom: 10px;
   }
   .wchip {
-    padding: 7px 2px; font-size: 9.5px; letter-spacing: 0.8px;
+    padding: 8px 2px; font-size: 9px; letter-spacing: 1.6px;
     border-radius: 8px; background: var(--well);
     border: 1px solid transparent; color: var(--ink-dim);
-    transition: border-color 0.12s, background 0.12s, color 0.12s, transform 0.12s;
+    transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.18s, letter-spacing 0.18s;
   }
+  .wchip.on { letter-spacing: 2.2px; }
   .wchip:hover { border-color: var(--accent-line); color: var(--ink); transform: translateY(-1px); }
   .wchip.on {
     background: var(--accent-soft); color: var(--accent);
@@ -508,6 +519,19 @@
   #standings .st .pt { color: var(--ink); font-variant-numeric: tabular-nums; }
   #standings .st.me .nm { color: var(--accent); }
   #standings .st.me .pt { color: var(--accent); }
+
+  /* zoom readout — appears while you're framing, then bows out */
+  #zoom-badge {
+    position: fixed; right: 22px; bottom: 22px; z-index: 96;
+    font: 400 26px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 3px;
+    color: hsl(var(--accent-h), 60%, 92%);
+    text-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.6), 0 1px 6px rgba(0,0,0,0.9);
+    pointer-events: none; user-select: none;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  #zoom-badge.on { opacity: 0.9; transform: none; }
+  @media (max-width: 620px) { #zoom-badge { bottom: auto; top: 22px; right: 18px; font-size: 20px; } }
 
   /* which figure is on the easel, and how far along it is */
   #figure-label {
@@ -647,6 +671,7 @@
 <div id="room-badge" class="hidden"></div>
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
+<div id="zoom-badge"></div>
 
 <div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
 
@@ -771,6 +796,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=57"></script>
+<script type="module" src="js/main.js?v=59"></script>
 </body>
 </html>
