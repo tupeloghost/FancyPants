@@ -29,6 +29,7 @@ export class Net {
     this.onReject = null;  // () => {} — "pick another name"
     this.onSong = null;    // ({url,pos,playing}) => {} — sync to the host's music
     this.onRemoteTap = null; // (participant) => {} — someone else clicked their world
+    this.onWorld = null;   // (key) => {} — the host moved the room to another world
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -64,6 +65,7 @@ export class Net {
       this.local.color = m.color;
       for (const p of m.roster || []) this._addPeer(p);
       if (m.song && !this.owner && this.onSong) this.onSong(m.song);
+      if (m.world && !this.owner && this.onWorld) this.onWorld(m.world);
     } else if (m.t === 'join') {
       this._addPeer(m.p, true);
     } else if (m.t === 'state') {
@@ -89,12 +91,20 @@ export class Net {
       }
     } else if (m.t === 'song') {
       if (!this.owner && this.onSong) this.onSong(m);
+    } else if (m.t === 'world') {
+      if (!this.owner && this.onWorld) this.onWorld(m.key);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }
+  }
+
+  // host: move the whole room to another world
+  sendWorld(key) {
+    if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'world', key }));
   }
 
   // host: tell the room what's playing (call on change and every few seconds)

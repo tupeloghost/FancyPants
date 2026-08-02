@@ -29,6 +29,7 @@ export class FancyPantsRoom {
     this.ownerId = null;         // conn allowed to reclaim the owner name
     this.nextColor = 0;
     this.song = null;            // {url, pos, playing, at} — what the host is playing
+    this.worldKey = null;        // which world the host has the room in
   }
 
   songNow() {
@@ -116,7 +117,7 @@ export class FancyPantsRoom {
       this.peers.set(connId, p);
 
       ws.send(JSON.stringify({
-        t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(),
+        t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(), world: this.worldKey,
         roster: [...this.peers.entries()]
           .filter(([id]) => id !== connId)
           .map(([id, q]) => ({ id, name: q.name, color: q.color, x: q.x, y: q.y, z: q.z })),
@@ -125,6 +126,18 @@ export class FancyPantsRoom {
         JSON.stringify({ t: 'join', p: { id: connId, name: p.name, color: p.color } }),
         connId
       );
+      return;
+    }
+
+    // host switches the world; the whole room follows
+    if (m.t === 'world') {
+      if (connId !== this.ownerId) return; // only the host steers the room
+      const key = String(m.key || '').slice(0, 24);
+      if (!/^[a-z]+$/.test(key)) return;
+      if (key !== this.worldKey) {
+        this.worldKey = key;
+        this.broadcast(JSON.stringify({ t: 'world', key }), connId);
+      }
       return;
     }
 

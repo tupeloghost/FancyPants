@@ -387,6 +387,14 @@
     border-color: var(--accent-line);
     box-shadow: 0 0 12px hsla(var(--accent-h), 90%, 65%, 0.25);
   }
+  /* guests ride along — the grid shows where the host has the room */
+  body.guest .wchip { pointer-events: none; opacity: 0.45; }
+  body.guest .wchip.on { opacity: 1; }
+  body.guest #world-note { display: block; }
+  #world-note {
+    display: none; font-size: 9px; letter-spacing: 0.5px;
+    color: var(--ink-faint); margin: -6px 0 8px;
+  }
 
   /* participants overlay (P) */
   #plist {
@@ -509,6 +517,7 @@
     <div class="tab-page" id="page-style">
       <div class="mini-label">worlds</div>
       <div id="world-chips"></div>
+      <div id="world-note">the host picks where the room goes</div>
       <select id="world-select"></select>
       <div class="row seg">
         <button id="btn-attract">&#9678; watch</button>

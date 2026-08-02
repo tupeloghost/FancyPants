@@ -222,6 +222,7 @@ function switchWorld(key) {
   $('opt-shape').style.display = caps.includes('shape') ? '' : 'none';
   $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
   document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
+  net.sendWorld(key); // no-op unless we're the connected host
 }
 
 // ── Panel wiring ──
@@ -301,7 +302,7 @@ function hostSong() {
   if (i === -1) return; // local files exist only on the host's disk — can't sync
   net.sendSong(src.slice(i), audio.currentTime, audio.playing);
 }
-setInterval(hostSong, 4000);
+setInterval(() => { hostSong(); net.sendWorld(currentWorldKey); }, 4000);
 audio.el.addEventListener('play', hostSong);
 audio.el.addEventListener('pause', hostSong);
 audio.el.addEventListener('seeked', hostSong);
@@ -323,6 +324,14 @@ net.onSong = s => {
   };
   if (audio.el.readyState >= 1) apply();
   else audio.el.addEventListener('loadedmetadata', apply, { once: true });
+};
+
+// guest: follow the host between worlds
+net.onWorld = key => {
+  if (WORLDS[key] && key !== currentWorldKey) {
+    $('world-select').value = key;
+    switchWorld(key);
+  }
 };
 
 // phones block audio that doesn't start from a tap — offer the tap
