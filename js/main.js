@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=80';
-import { WORLDS } from './worlds/registry.js?v=80';
-import { Net, PALETTE } from './net.js?v=80';
-import { Presence } from './lib/presence.js?v=80';
-import { glowTexture } from './lib/glow.js?v=80';
+import { AudioEngine } from './audio-engine.js?v=81';
+import { WORLDS } from './worlds/registry.js?v=81';
+import { Net, PALETTE } from './net.js?v=81';
+import { Presence } from './lib/presence.js?v=81';
+import { glowTexture } from './lib/glow.js?v=81';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -463,6 +463,15 @@ $('scrub').addEventListener('input', e => {
   setFill(e.target);
 });
 $('scrub').addEventListener('change', () => { scrubbing = false; });
+
+// iOS frequently hands back a sleeping audio context even inside a gesture;
+// nudge it awake on any interaction until it's genuinely running
+['pointerdown', 'touchend'].forEach(ev =>
+  window.addEventListener(ev, () => audio.ensureContext(), { passive: true }));
+setInterval(() => {
+  const el = $('audio-stamp');
+  if (el) el.textContent = 'audio: ' + audio.status;
+}, 700);
 
 $('btn-mute').addEventListener('click', () => {
   audio.setMuted(!audio.muted);

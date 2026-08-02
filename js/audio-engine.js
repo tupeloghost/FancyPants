@@ -39,7 +39,12 @@ export class AudioEngine {
   // Must be called from a user gesture.
   ensureContext() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      this.graphError = String(e && e.message || e);
+      return;                       // no graph: level falls back to the element
+    }
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
     this.analyser.smoothingTimeConstant = 0.5; // extra smoothing is ours, tunable
@@ -50,8 +55,18 @@ export class AudioEngine {
     this.gain.connect(this.ctx.destination);
     this.el.volume = 1;           // the graph carries the level from here on
     this._applyGain();
+    // iOS can hand back a context that's still asleep even inside a gesture
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     this._freq = new Uint8Array(this.analyser.frequencyBinCount);
     this._wave = new Uint8Array(this.analyser.fftSize);
+  }
+
+  // what the audio graph is actually doing — so a phone can be diagnosed
+  // instead of guessed at
+  get status() {
+    if (this.graphError) return 'no graph (' + this.graphError.slice(0, 24) + ')';
+    if (!this.ctx) return 'no graph yet';
+    return this.ctx.state + (this.gain ? ' · graph ok' : ' · no gain');
   }
 
   loadURL(url) {

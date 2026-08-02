@@ -392,6 +392,10 @@
   #tune-drawer[open] { border-top: 1px solid hsla(var(--accent-h), 50%, 60%, 0.12); }
   #tune-drawer .grid2 { margin-top: 8px; }
 
+  #audio-stamp {
+    font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    color: var(--ink-faint); text-align: center; margin-top: 8px; opacity: 0.8;
+  }
   #build-stamp {
     font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
     color: var(--ink-faint); text-align: center; margin-top: 10px; opacity: 0.7;
@@ -821,7 +825,8 @@
           <input type="range" id="hdr" min="0" max="200" value="100">
         </div>
       </div>
-      <div id="build-stamp">build 80</div>
+      <div id="audio-stamp">audio: —</div>
+      <div id="build-stamp">build 81</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -835,6 +840,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=80"></script>
+<script type="module" src="js/main.js?v=81"></script>
 </body>
 </html>
