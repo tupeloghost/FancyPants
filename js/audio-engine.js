@@ -48,6 +48,8 @@ export class AudioEngine {
     this.sourceNode.connect(this.analyser);
     this.analyser.connect(this.gain);
     this.gain.connect(this.ctx.destination);
+    this.el.volume = 1;           // the graph carries the level from here on
+    this._applyGain();
     this._freq = new Uint8Array(this.analyser.frequencyBinCount);
     this._wave = new Uint8Array(this.analyser.fftSize);
   }
@@ -86,7 +88,16 @@ export class AudioEngine {
   play() { this.ensureContext(); return this.el.play(); }
   pause() { this.el.pause(); }
   get playing() { return !this.el.paused && !this.el.ended; }
-  setVolume(v) { this.el.volume = v; }
+  // Volume and mute act on the gain node, which sits AFTER the analyser —
+  // so silencing your own speakers leaves the visuals at full strength.
+  setVolume(v) { this._vol = v; this._applyGain(); }
+  setMuted(m) { this._muted = !!m; this._applyGain(); }
+  get muted() { return !!this._muted; }
+  _applyGain() {
+    const v = this._muted ? 0 : (this._vol == null ? 0.8 : this._vol);
+    if (this.gain) { this.gain.gain.value = v; this.el.volume = 1; }
+    else this.el.volume = v;      // before the graph exists there's nowhere else
+  }
   get duration() { return this.el.duration || 0; }
   get currentTime() { return this.el.currentTime || 0; }
   seek(t) { if (this.duration) this.el.currentTime = t; }

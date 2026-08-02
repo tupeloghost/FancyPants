@@ -464,6 +464,12 @@ $('scrub').addEventListener('input', e => {
 });
 $('scrub').addEventListener('change', () => { scrubbing = false; });
 
+$('btn-mute').addEventListener('click', () => {
+  audio.setMuted(!audio.muted);
+  $('btn-mute').classList.toggle('on', audio.muted);
+  $('btn-mute').textContent = audio.muted ? 'muted' : 'mute';
+});
+
 $('volume').addEventListener('input', e => {
   audio.setVolume(e.target.value / 100);
   $('vol-val').textContent = e.target.value;
