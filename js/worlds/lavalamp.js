@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
+import { PALETTE } from '../net.js';
 
 const BLOBS = 9;            // moving blobs (+1 pool blob in the field)
 const H = 34;
@@ -16,6 +17,9 @@ export function createLavaLamp() {
   const blobs = [];
   const splashes = [];       // short-lived droplets thrown off by taps
   let heatKick = 0;          // tap heat surge
+  let scoreQueue = 0, scoreQX = 0, scoreQY = 0;
+  const miniLamps = [];      // one little lamp per player, on the shelf behind
+  const MINI = 10;
   const tp = [0, 0, 0];
   const colBot = new THREE.Color(), colTop = new THREE.Color(), colRim = new THREE.Color();
   let pointer = { x: 0, y: 0, active: false };
@@ -184,6 +188,37 @@ export function createLavaLamp() {
       motes = new THREE.Points(mg, glowPoints(0.4, 0.4));
       group.add(motes);
 
+      // ── the shelf: one mini lamp per player, arced behind the big one ──
+      miniLamps.length = 0;
+      const miniDark = new THREE.MeshBasicMaterial({ color: 0x0a0b14, toneMapped: false });
+      for (let j = 0; j < MINI; j++) {
+        const a = ((j % 2 ? -(j + 1) : j + 2) / 2 / (MINI / 2)) * Math.PI * 0.42; // fan out from center
+        const lx = Math.sin(a) * 46, lz = -16 - Math.cos(a) * 20;
+        const g = new THREE.Group();
+        g.position.set(lx, -4, lz);
+        g.scale.setScalar(0.5);
+        const tube = new THREE.Mesh(
+          new THREE.CylinderGeometry(R_TOP + 0.6, R_BOT + 0.6, H, 18, 1, true),
+          new THREE.MeshBasicMaterial({
+            transparent: true, opacity: 0.1, toneMapped: false,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+          })
+        );
+        const mbase = new THREE.Mesh(new THREE.CylinderGeometry(R_BOT + 0.8, R_BOT + 4, 8, 18), miniDark);
+        mbase.position.y = -H / 2 - 4;
+        const mcap = new THREE.Mesh(new THREE.CylinderGeometry(1.4, R_TOP + 0.7, 5, 18), miniDark);
+        mcap.position.y = H / 2 + 2.5;
+        // two fake wax blobs riding sines — cheap but alive from a distance
+        const blobA = glowSprite(9);
+        const blobB = glowSprite(6.5);
+        const bulb = glowSprite(13);
+        bulb.position.y = -H / 2 - 1;
+        g.add(tube, mbase, mcap, blobA, blobB, bulb);
+        g.visible = false;
+        group.add(g);
+        miniLamps.push({ g, tube, blobA, blobB, bulb, phase: j * 2.7, x: lx, z: lz, flash: 0 });
+      }
+
       sky = skyDome(200);
       group.add(sky);
 
@@ -194,6 +229,12 @@ export function createLavaLamp() {
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
     placeGhost(p, i, out) {
+      // every player hovers over their own lamp on the shelf
+      if (i < MINI) {
+        const m = miniLamps[i];
+        out.set(m.x, -4 + (H / 2 + 6) * 0.5 + 2.5, m.z);
+        return;
+      }
       const a = (this._t || 0) * 0.25 + i * 1.9;
       out.set(Math.cos(a) * (19 + p.x * 4), Math.sin(a * 0.7 + i) * H * 0.4, Math.sin(a) * (19 + p.x * 4));
     },
@@ -209,17 +250,34 @@ export function createLavaLamp() {
         if (d < bestD) { bestD = d; best = b; }
       }
       if (best) {
-        best.poke = 1;
-        best.vy += 6;
         heatKick = 1; // the whole lamp answers: brighter bulb, livelier wax
-        // droplets shear off the poked blob and fall back — real splitting
-        for (let i = 0; i < 2; i++) {
-          splashes.push({
-            x: best.x, y: best.y, z: best.z,
-            vx: (Math.random() - 0.5) * 10, vy: 5 + Math.random() * 5, vz: (Math.random() - 0.5) * 10,
-            r: best.size * 0.42, life: 1.4,
-          });
-          if (splashes.length > 2) splashes.shift();
+        const altitude = (best.y + H / 2) / H;
+        if (altitude > 0.55) {
+          // BURST: pop a blob that made it near the top — it rains back down
+          best.y = -H / 2 + 1.5;
+          best.vy = 0;
+          best.poke = 1;
+          scoreQueue += 10; scoreQX = x; scoreQY = y;
+          for (let i = 0; i < 2; i++) {
+            splashes.push({
+              x: best.x, y: best.y + H * altitude, z: best.z,
+              vx: (Math.random() - 0.5) * 14, vy: 3 + Math.random() * 6, vz: (Math.random() - 0.5) * 14,
+              r: best.size * 0.5, life: 1.6,
+            });
+            if (splashes.length > 2) splashes.shift();
+          }
+        } else {
+          // poke: shove it upward and shear droplets off
+          best.poke = 1;
+          best.vy += 8;
+          for (let i = 0; i < 2; i++) {
+            splashes.push({
+              x: best.x, y: best.y, z: best.z,
+              vx: (Math.random() - 0.5) * 10, vy: 5 + Math.random() * 5, vz: (Math.random() - 0.5) * 10,
+              r: best.size * 0.42, life: 1.4,
+            });
+            if (splashes.length > 2) splashes.shift();
+          }
         }
       }
     },
@@ -233,8 +291,12 @@ export function createLavaLamp() {
         participants[0].y = 0;
       }
 
+      if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue, scoreQX, scoreQY); scoreQueue = 0; }
+
       heatKick *= Math.pow(0.08, dt);
-      const heat = Math.min(1, audio.bass * 0.9 * reactivity + audio.energy * 0.4 + heatKick * 0.45);
+      // holding = hand on the heat knob: wax runs hotter and looser
+      const stirring = opts.holding && !attract;
+      const heat = Math.min(1, audio.bass * 0.9 * reactivity + audio.energy * 0.4 + heatKick * 0.45 + (stirring ? 0.3 : 0));
 
       // wax physics — slow, viscous, cyclical
       const u = wax.material.uniforms;
@@ -260,6 +322,11 @@ export function createLavaLamp() {
         const breathe = 0.55 + 0.45 * Math.sin(time * 0.09 + b.phase * 2); // lanes wander
         b.x = Math.cos(ang) * maxOff * b.laneR * breathe;
         b.z = Math.sin(ang) * maxOff * b.laneR * breathe;
+        // stirring: the wax leans toward your hand and rides your vertical drag
+        if (stirring) {
+          b.x += (pointer.x * maxOff - b.x) * Math.min(1, dt * 2.5);
+          b.vy += pointer.y * dt * 7;
+        }
 
         const wob = 1 + Math.sin(time * 1.4 + b.phase * 3) * 0.05 + b.poke * 0.2 + audio.bass * 0.08;
         u.uBlobs.value[slot++].set(b.x, b.y, b.z, b.size * wob);
@@ -303,7 +370,33 @@ export function createLavaLamp() {
       sky.position.copy(camera.position);
       sky.material.color.copy(colBot).multiplyScalar(0.3);
 
-      camera.position.set(Math.sin(time * 0.04) * 14, 2 + Math.sin(time * 0.06) * 5, 44 - audio.bass * 3);
+      // the shelf: light a mini lamp for each player, in their color
+      const others = participants ? participants.length - 1 : 0;
+      const mc = new THREE.Color();
+      for (let j = 0; j < MINI; j++) {
+        const m = miniLamps[j];
+        const on = j < others;
+        m.g.visible = on;
+        if (!on) continue;
+        const p = participants[j + 1];
+        mc.setHex(PALETTE[p.color % PALETTE.length]);
+        m.flash = Math.max(0, m.flash - dt * 2);
+        if (p.action === 'tap') m.flash = 1; // their tap lights their lamp
+        const glow = 1 + m.flash * 1.6 + audio.beatIntensity * 0.3;
+        // two fake blobs cruising their own slow loops
+        m.blobA.position.y = Math.sin(time * 0.31 + m.phase) * H * 0.34;
+        m.blobB.position.y = Math.sin(time * 0.23 + m.phase * 1.7 + 2) * H * 0.3 - 2;
+        m.blobA.material.color.copy(mc);
+        m.blobB.material.color.copy(mc);
+        m.blobA.material.opacity = 0.55 * glow;
+        m.blobB.material.opacity = 0.42 * glow;
+        m.bulb.material.color.copy(mc);
+        m.bulb.material.opacity = 0.3 + m.flash * 0.5 + heat * 0.15;
+        m.tube.material.color.copy(mc);
+        m.tube.material.opacity = 0.05 + m.flash * 0.12;
+      }
+
+      camera.position.set(Math.sin(time * 0.04) * 16, 3 + Math.sin(time * 0.06) * 5, 52 - audio.bass * 3);
       camera.lookAt(0, 0, 0);
       const fovT = 60 + audio.volume * 5 * reactivity;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 4);
