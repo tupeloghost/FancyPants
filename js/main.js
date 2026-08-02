@@ -653,10 +653,24 @@ let pointerHeld = false;
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('pointerup', () => pointerHeld = false);
 window.addEventListener('pointercancel', () => pointerHeld = false);
+// mobile: a tap outside the open panel just tucks the panel away.
+// touchstart is the most reliable first event on iOS — catch it there and
+// swallow the matching pointerdown so the tap doesn't leak into the world.
+let sheetDismissedThisTap = false;
+function sheetIsOpen() {
+  return !panel.classList.contains('collapsed') && !panel.classList.contains('hidden');
+}
+canvas.addEventListener('touchstart', () => {
+  if (sheetIsOpen()) {
+    panel.classList.add('collapsed');
+    sheetDismissedThisTap = true;
+  }
+}, { passive: true });
+
 let tapResetTimer = 0;
 canvas.addEventListener('pointerdown', e => {
-  // mobile: a tap outside the open panel just tucks the panel away
-  if (IS_MOBILE && !panel.classList.contains('collapsed') && !panel.classList.contains('hidden')) {
+  if (sheetDismissedThisTap) { sheetDismissedThisTap = false; return; }
+  if (e.pointerType === 'touch' && sheetIsOpen()) {
     panel.classList.add('collapsed');
     return;
   }
