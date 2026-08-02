@@ -205,7 +205,8 @@ export function createPaint() {
 
   const cellX = c => (c - (N - 1) / 2) * CELL;
   const cellY = r => ((N - 1) / 2 - r) * CELL;
-  const paint = n => PAINTS[n - 1] || PAINTS[0];
+  let palIndex = [];                        // display number -> palette slot
+  const paint = n => PAINTS[palIndex[n - 1]] || PAINTS[0];
 
   function digitTexture(n) {
     const c = document.createElement('canvas');
@@ -276,7 +277,17 @@ export function createPaint() {
 
   function loadPlate(index) {
     const p = PLATES[index % PLATES.length];
-    cellNum = engrave(p.kind);
+    const raw = engrave(p.kind);
+
+    // the engraver reaches into the palette wherever it likes, which leaves
+    // holes in the numbering. Renumber the plate 1..K, in palette order, and
+    // remember which paint each number now means.
+    const slots = [...new Set(raw)].sort((a, b) => a - b);
+    palIndex = slots.map(v => v - 1);
+    const remap = new Uint8Array(PAINTS.length + 1);
+    slots.forEach((v, k) => { remap[v] = k + 1; });
+    cellNum = new Uint8Array(N * N);
+    for (let i = 0; i < N * N; i++) cellNum[i] = remap[raw[i]];
     cellDone = new Uint8Array(N * N);
     cellPop = new Float32Array(N * N);
     cellWave = new Float32Array(N * N);
