@@ -5,19 +5,24 @@
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
+import { PALETTE } from '../net.js';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
 const STEP_H = 5, STEP_D = 8;
 const STAIRS = 26;
+const CROWD = 6;            // other players' slinkies on the staircase
+const CROWD_COILS = 26;     // fewer coils each — they read at a distance
 
 export function createSlinky() {
   let scene, camera, group, coils, stairs, edges, sky, dustF, spot;
+  let crowd = null;           // every other player's slinky, in their colour
   let impacts = [];
   let echo = null;           // motion-blur ghost of the spring
   let beatWave = 99;         // index of the brightness wave from the last beat
   let walk = 0, walkVel = 0;
   let boing = 0, landPulse = 0, lastStep = 0;
+  let stepPhase = 0;        // 0 at the lip, 1 at the slap — drives the gait
   const camPos = new THREE.Vector3(30, 0, 0);
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
@@ -26,6 +31,9 @@ export function createSlinky() {
   const Z_AXIS = new THREE.Vector3(0, 0, 1);
   const quat = new THREE.Quaternion();
   let pointer = { x: 0, active: false };
+
+  // where each player's slinky walks, fanned out either side of yours
+  const laneX = i => (i % 2 ? 1 : -1) * (13 + Math.floor(i / 2) * 11);
 
   // slinky end-over-end path: each unit of p is one stair
   function pathAt(p, out) {
@@ -69,6 +77,18 @@ export function createSlinky() {
       group.add(coils);
 
       // echo: a delayed ghost copy of the spring — motion made visible
+      crowd = new THREE.InstancedMesh(
+        new THREE.TorusGeometry(RING_R * 0.72, 0.26, 8, 30),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, vertexColors: true, transparent: true, opacity: 0.92,
+        }),
+        CROWD * CROWD_COILS
+      );
+      crowd.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      crowd.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CROWD * CROWD_COILS * 3), 3);
+      crowd.frustumCulled = false;
+      group.add(crowd);
+
       echo = new THREE.InstancedMesh(
         coils.geometry,
         new THREE.MeshBasicMaterial({
@@ -149,6 +169,12 @@ export function createSlinky() {
 
     // fellow slinkies-in-spirit: motes hopping down neighboring stair lines
     placeGhost(p, i, out) {
+      if (i < CROWD) {
+        pathAt(walk - 0.6 - (i + 1) * 0.55, out);   // their own head on the stairs
+        out.x += laneX(i);
+        out.y += RING_R + 4;
+        return;
+      }
       const gp = walk - 3 - (i % 5) * 1.3;
       pathAt(gp, out);
       out.x += (i % 2 ? 1 : -1) * (12 + (i % 4) * 3) + p.x * 4;
@@ -169,12 +195,16 @@ export function createSlinky() {
         participants[0].y = 0;
       }
 
-      // the walk: constant amble + beats shove it over the lip
+      // the walk: a slinky doesn't glide — it hangs at the lip, tips, falls
+      // fast under gravity, then slaps flat. The gait below is that rhythm.
       const targetVel = 0.35 + audio.volume * 0.9 * reactivity;
       walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
       if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
       beatWave += dt * 90; // the pulse races down the spring
-      walk += walkVel * dt;
+      stepPhase = walk - Math.floor(walk);
+      // slow over the edge, quick through the drop, slow into the landing
+      const gait = 0.28 + 1.72 * Math.sin(Math.PI * stepPhase) ** 1.4;
+      walk += walkVel * gait * dt;
       boing *= Math.pow(0.04, dt);
       landPulse *= Math.pow(0.03, dt);
       if (Math.floor(walk) !== lastStep) {
@@ -197,13 +227,62 @@ export function createSlinky() {
         m.material.opacity = m.userData.life * 0.8;
       }
 
+      // ── everyone else walks the same staircase, in their own colour ──
+      {
+        const others = participants ? Math.min(CROWD, participants.length - 1) : 0;
+        let n = 0;
+        for (let g = 0; g < CROWD; g++) {
+          const pt = others > g ? participants[g + 1] : null;
+          for (let i = 0; i < CROWD_COILS; i++) {
+            if (!pt) {
+              dummy.position.set(0, -9999, 0);
+              dummy.scale.setScalar(0.001);
+              dummy.quaternion.identity();
+              dummy.updateMatrix();
+              crowd.setMatrixAt(n, dummy.matrix);
+              n++;
+              continue;
+            }
+            // each slinky walks its own step, staggered so the stairs stay busy
+            const off = 0.42 + g * 0.37;
+            const gp = walk - off - i * 0.052 * (1 + Math.sin(Math.PI * stepPhase) * 0.4);
+            pathAt(gp, P);
+            pathAt(gp + 0.02, P2);
+            TAN.subVectors(P2, P).normalize();
+            quat.setFromUnitVectors(Z_AXIS, TAN);
+            dummy.position.copy(P);
+            dummy.position.x += laneX(g) + (pt.x || 0) * 3;
+            dummy.position.y += RING_R * 0.72 + 0.4;
+            dummy.quaternion.copy(quat);
+            dummy.scale.setScalar(1 + audio.bass * 0.1 * reactivity
+              + (pt.action === 'tap' ? 0.22 : 0));
+            dummy.updateMatrix();
+            crowd.setMatrixAt(n, dummy.matrix);
+
+            color.setHex(PALETTE[(pt.color || 0) % PALETTE.length]);
+            const fade = 1 - i / CROWD_COILS * 0.32;           // tail dims away
+            const waveG = Math.max(0, 1 - Math.abs(i - beatWave * 0.4) * 0.16);
+            color.multiplyScalar((0.95 + audio.volume * 0.35 + waveG * 0.55
+              + (pt.action === 'tap' ? 0.8 : 0)) * fade);
+            crowd.setColorAt(n, color);
+            n++;
+          }
+        }
+        crowd.instanceMatrix.needsUpdate = true;
+        crowd.instanceColor.needsUpdate = true;
+      }
+
       // coils: phase-offset copies along the path, compression waves running
       // through the spacing (bass breathes it, boing snaps it)
       for (let i = 0; i < RINGS; i++) {
         const squeeze =
           Math.sin(walk * 2.2 - i * 0.31) * (0.012 + audio.bass * 0.02 * reactivity) +
           Math.sin(time * 9 - i * 0.8) * boing * 0.028;
-        const p = walk - i * (0.052 + squeeze * 0.5) - 0.0001;
+        // the spring pays out as it falls and gathers back in on the slap,
+        // with the tail lagging the head — that's what makes it walk
+        const lag = Math.min(1, i * 0.035);
+        const stretch = 1 + Math.sin(Math.PI * stepPhase) * 0.5 * (1 - lag * 0.5) - landPulse * 0.3 * (1 - lag);
+        const p = walk - i * (0.052 * stretch + squeeze * 0.5) - 0.0001;
         pathAt(p, P);
         pathAt(p + 0.02, P2);
         TAN.subVectors(P2, P).normalize();
@@ -275,17 +354,19 @@ export function createSlinky() {
 
       // camera: full orbit around the slinky — every angle, always moving.
       // In play mode your pointer steers anywhere on the circle.
-      pathAt(walk - RINGS * 0.026, P); // middle of the slinky
+      pathAt(walk - RINGS * 0.033, P); // middle of the spring, allowing for stretch
       const ang = (pointer.active && !attract)
         ? pointer.x * Math.PI + time * 0.02
         : time * 0.08;
+      // orbit outside the whole party — the far lane sits at 35
+      const orbitR = 43;
       camPos.set(
-        Math.cos(ang) * 33,
-        P.y + 9 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing
-        P.z - 4 + Math.sin(ang) * 33
+        Math.cos(ang) * orbitR,
+        P.y + 13 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing
+        P.z - 4 + Math.sin(ang) * orbitR
       );
       camera.position.lerp(camPos, Math.min(1, dt * 2.5));
-      camera.lookAt(0, P.y + 3, P.z - 6);
+      camera.lookAt(0, P.y + 4, P.z - 8);
 
       spot.position.set(0, P.y - 2, P.z - 4);
       spot.material.opacity = 0.14 + audio.volume * 0.12 + landPulse * 0.1;
