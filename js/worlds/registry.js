@@ -30,5 +30,5 @@ export const WORLDS = {
   slinky: { label: 'SLINKY', create: createSlinky },
   blacktop: { label: 'BLACKTOP', create: createBlacktop },
   waterslide: { label: 'SLIDE', create: createWaterslide },
-  garden: { label: 'MAGIC GARDEN', create: createGarden },
+  garden: { label: 'MAGIC RUN', create: createGarden },
 };
