@@ -142,12 +142,11 @@
   }
   body.guest #guest-note { display: block; }
   body.guest .host-only, body.guest #transport { display: none; }
-  /* a guest's panel holds only what's actually theirs: what's playing, their
-     own volume, and where everyone stands. The host drives the rest. */
-  body.guest #tabs { display: none; }
-  body.guest #page-worlds, body.guest #page-looks { display: none !important; }
-  body.guest #page-music { display: block !important; }
-  body.guest #panel { width: 244px; }
+  /* A guest keeps everything that only changes THEIR screen — the whole looks
+     tab is theirs to play with — and loses only what belongs to the host:
+     the music controls and the world the room is in. */
+  body.guest #tabs .tab[data-tab="worlds"] { display: none; }
+  body.guest #page-worlds { display: none !important; }
   body.guest #panel-stats { display: none; }   /* framerate isn't a guest's problem */
   body.guest #guest-world {
     display: block; margin-bottom: 9px; text-align: center;
@@ -815,6 +814,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=76"></script>
+<script type="module" src="js/main.js?v=77"></script>
 </body>
 </html>

@@ -1018,6 +1018,13 @@ function startRoom(code, name, asOwner) {
   net.join(code, name, asOwner); // no host configured → runs solo, silently
   // guests ride the host's soundtrack — no track/transport controls for them
   document.body.classList.toggle('guest', !asOwner);
+  if (!asOwner) {
+    // the worlds tab is gone for them; don't strand them on a blank page
+    const cur = document.querySelector('#tabs .tab.on');
+    if (cur && cur.dataset.tab === 'worlds') {
+      document.querySelector('#tabs .tab[data-tab="looks"]').click();
+    }
+  }
   dismissOverlay();
   updateURL();
 }
