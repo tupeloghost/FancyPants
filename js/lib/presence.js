@@ -4,8 +4,8 @@
 // Worlds only supply placeGhost(participant, index, outVector3).
 
 import * as THREE from 'three';
-import { glowSprite } from './glow.js?v=88';
-import { PALETTE } from '../net.js?v=88';
+import { glowSprite, glowPoints } from './glow.js?v=89';
+import { PALETTE } from '../net.js?v=89';
 
 const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
 const RANK_AT = [0, 120, 350, 800, 1600];
@@ -16,6 +16,7 @@ function rankOf(score) {
 }
 
 const MAX_GHOSTS = 64; // rendered ghosts; beyond this, presence is ambient
+const TAIL = 14;       // trail samples behind each person
 
 export class Presence {
   constructor() {
@@ -46,6 +47,16 @@ export class Presence {
       core.visible = halo.visible = false;
       this.group.add(core, halo);
 
+      // a short tail, so a person reads as moving rather than hovering
+      const tg = new THREE.BufferGeometry();
+      tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TAIL * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      tg.setAttribute('color', new THREE.BufferAttribute(new Float32Array(TAIL * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      const tail = new THREE.Points(tg, glowPoints(1.5, 0.55));
+      tail.material.vertexColors = true;
+      tail.frustumCulled = false;
+      tail.visible = false;
+      this.group.add(tail);
+
       const tag = document.createElement('div');
       tag.className = 'ptag';
       const dot = document.createElement('i');
@@ -53,7 +64,7 @@ export class Presence {
       tag.append(dot, txt);
       this._layer.appendChild(tag);
 
-      this._ghosts.push({ core, halo, tag, dot, txt, id: null, flare: 0 });
+      this._ghosts.push({ core, halo, tail, tag, dot, txt, id: null, flare: 0, seeded: false });
     }
   }
 
@@ -81,6 +92,7 @@ export class Presence {
       }
       if (g.id !== p.id) {
         g.id = p.id;
+        g.seeded = false;              // a new person starts a fresh trail
         g.flare = 1.6; // join flare — the payoff moment
         const css = '#' + colorHex.toString(16).padStart(6, '0');
         g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
@@ -103,6 +115,29 @@ export class Presence {
       if (g.flare > 1.0) this._color.lerp(new THREE.Color(0xffffff), (g.flare - 1.0) / 0.6);
       this._color.multiplyScalar(1.2 + beatIntensity * 0.5 + rk * 0.14 + (p.action === 'tap' ? 0.8 : 0));
       g.core.material.color.copy(this._color);
+
+      // shuffle the tail along, newest first
+      {
+        const tp2 = g.tail.geometry.attributes.position;
+        const tc = g.tail.geometry.attributes.color;
+        if (!g.seeded) {
+          for (let k = 0; k < TAIL; k++) tp2.setXYZ(k, pos.x, pos.y, pos.z);
+          g.seeded = true;
+        } else {
+          for (let k = TAIL - 1; k > 0; k--) {
+            tp2.setXYZ(k, tp2.getX(k - 1), tp2.getY(k - 1), tp2.getZ(k - 1));
+          }
+          tp2.setXYZ(0, pos.x, pos.y, pos.z);
+        }
+        this._color.setHex(colorHex);
+        for (let k = 0; k < TAIL; k++) {
+          const f = (1 - k / TAIL) * 0.85;
+          tc.setXYZ(k, this._color.r * f, this._color.g * f, this._color.b * f);
+        }
+        tp2.needsUpdate = true; tc.needsUpdate = true;
+        g.tail.visible = true;
+        g.tail.material.size = 1.5 * (1 + beatIntensity * 0.3);
+      }
 
       g.halo.visible = true;
       g.halo.position.copy(pos);
@@ -136,8 +171,10 @@ export class Presence {
       const g = this._ghosts[gi];
       if (!g.core.visible && g.tag.style.display === 'none') break;
       g.core.visible = g.halo.visible = false;
+      if (g.tail) g.tail.visible = false;
       g.tag.style.display = 'none';
       g.id = null;
+      g.seeded = false;
     }
   }
 

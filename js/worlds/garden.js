@@ -10,8 +10,8 @@
 // room draws a larger figure.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=88';
-import { themePaint } from '../lib/themes.js?v=88';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=89';
+import { themePaint } from '../lib/themes.js?v=89';
 
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [
@@ -458,9 +458,12 @@ export function createGarden() {
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
     placeGhost(p, i, out) {
-      // fellow gardeners drift at the edges of the room
+      // hug the lattice edge — a fixed radius fell outside the frame once the
+      // board started fitting itself to the screen, so nobody could see anyone
       const a = i * 1.7 + (this._t || 0) * 0.15;
-      out.set(Math.cos(a) * 34, Math.sin(a * 0.8) * 20, 6 + Math.sin(a) * 8);
+      const rx = cols * CELL * scaleUp / 2 + 1.4;
+      const ry = rows * CELL * scaleUp / 2 + 1.4;
+      out.set(Math.cos(a) * rx, Math.sin(a) * ry, 7 + Math.sin(a * 1.3) * 5);
     },
 
     // one gesture, two meanings: catch a rune, or set one into the lattice
