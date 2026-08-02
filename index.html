@@ -21,7 +21,14 @@
     --well: hsla(var(--accent-h), 35%, 55%, 0.10);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; background: #000;
+    /* holding/dragging is gameplay — never text selection or a callout */
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input, textarea { -webkit-user-select: text; user-select: text; }
   body { cursor: none; }
   #panel, #panel * { cursor: default; }
   #panel select, #panel button, #panel input, #panel label, #panel #panel-head { cursor: pointer; }

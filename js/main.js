@@ -649,6 +649,8 @@ window.addEventListener('touchend', () => { touchSteer.active = false; });
 // click/tap interaction — part of the world contract, works in both modes
 let clickPulse = 0;
 let pointerHeld = false;
+// long-press is hold-to-nitro etc., never a context menu / magnifier
+canvas.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('pointerup', () => pointerHeld = false);
 window.addEventListener('pointercancel', () => pointerHeld = false);
 let tapResetTimer = 0;

@@ -176,7 +176,7 @@ export function createSignal() {
       }
 
       // constant forward flight — faster when the music surges
-      const speed = 9 + audio.energy * 26 * reactivity + audio.volume * 8;
+      const speed = 17 + audio.energy * 38 * reactivity + audio.volume * 11;
       travel += speed * dt;
       const wander = Math.sin(travel * 0.01) * 7;
       camera.position.set(wander, 6.5 + Math.sin(time * 0.2) * 1.5, -travel);
