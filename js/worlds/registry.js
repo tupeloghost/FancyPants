@@ -13,6 +13,7 @@ import { createCherryLand } from './cherryland.js';
 import { createSlinky } from './slinky.js';
 import { createBlacktop } from './blacktop.js';
 import { createWaterslide } from './waterslide.js';
+import { createGarden } from './garden.js';
 
 export const WORLDS = {
   tunnel: { label: 'TUNNEL', create: createTunnel },
@@ -29,4 +30,5 @@ export const WORLDS = {
   slinky: { label: 'SLINKY', create: createSlinky },
   blacktop: { label: 'BLACKTOP', create: createBlacktop },
   waterslide: { label: 'SLIDE', create: createWaterslide },
+  garden: { label: 'MAGIC GARDEN', create: createGarden },
 };
