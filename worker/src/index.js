@@ -28,6 +28,13 @@ export class FancyPantsRoom {
     this.ownerName = null;
     this.ownerId = null;         // conn allowed to reclaim the owner name
     this.nextColor = 0;
+    this.song = null;            // {url, pos, playing, at} — what the host is playing
+  }
+
+  songNow() {
+    if (!this.song) return null;
+    const { url, pos, playing, at } = this.song;
+    return { url, playing, pos: playing ? pos + (Date.now() - at) / 1000 : pos };
   }
 
   async fetch(request) {
@@ -109,7 +116,7 @@ export class FancyPantsRoom {
       this.peers.set(connId, p);
 
       ws.send(JSON.stringify({
-        t: 'welcome', id: connId, color: p.color, spectator,
+        t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(),
         roster: [...this.peers.entries()]
           .filter(([id]) => id !== connId)
           .map(([id, q]) => ({ id, name: q.name, color: q.color, x: q.x, y: q.y, z: q.z })),
@@ -118,6 +125,19 @@ export class FancyPantsRoom {
         JSON.stringify({ t: 'join', p: { id: connId, name: p.name, color: p.color } }),
         connId
       );
+      return;
+    }
+
+    // host announces what's playing; fan out so every phone syncs to it
+    if (m.t === 'song') {
+      if (connId !== this.ownerId) return; // only the host drives the music
+      this.song = {
+        url: String(m.url || '').slice(0, 200),
+        pos: Number(m.pos) || 0,
+        playing: !!m.playing,
+        at: now,
+      };
+      this.broadcast(JSON.stringify({ t: 'song', ...this.songNow() }), connId);
       return;
     }
 

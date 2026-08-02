@@ -27,6 +27,7 @@ export class Net {
     this.owner = false;
     this.onJoin = null;    // (participant) => {} — the payoff moment
     this.onReject = null;  // () => {} — "pick another name"
+    this.onSong = null;    // ({url,pos,playing}) => {} — sync to the host's music
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -61,6 +62,7 @@ export class Net {
       this.local.id = m.id;
       this.local.color = m.color;
       for (const p of m.roster || []) this._addPeer(p);
+      if (m.song && !this.owner && this.onSong) this.onSong(m.song);
     } else if (m.t === 'join') {
       this._addPeer(m.p, true);
     } else if (m.t === 'state') {
@@ -80,12 +82,20 @@ export class Net {
       if (name && this._ws && this._ws.readyState === 1) {
         this._ws.send(JSON.stringify({ t: 'join', name, owner: this.owner }));
       }
+    } else if (m.t === 'song') {
+      if (!this.owner && this.onSong) this.onSong(m);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }
+  }
+
+  // host: tell the room what's playing (call on change and every few seconds)
+  sendSong(url, pos, playing) {
+    if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'song', url, pos, playing }));
   }
 
   _who(id) {

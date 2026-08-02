@@ -284,6 +284,56 @@ $('btn-play').addEventListener('click', () => {
 audio.el.addEventListener('play', updatePlayBtn);
 audio.el.addEventListener('pause', updatePlayBtn);
 
+// ── song sync: the host's music follows everyone into the room ──
+// host: announce the current track + position on any change and every 4s
+function hostSong() {
+  const src = audio.el.src || '';
+  const i = src.indexOf('audio/');
+  if (i === -1) return; // local files exist only on the host's disk — can't sync
+  net.sendSong(src.slice(i), audio.currentTime, audio.playing);
+}
+setInterval(hostSong, 4000);
+audio.el.addEventListener('play', hostSong);
+audio.el.addEventListener('pause', hostSong);
+audio.el.addEventListener('seeked', hostSong);
+
+// joiner: follow whatever the host plays
+net.onSong = s => {
+  if (!s || !s.url || !s.url.startsWith('audio/')) return;
+  if (!(audio.el.src || '').endsWith(s.url)) {
+    audio.loadURL(s.url);
+    $('track-select').value = s.url;
+  }
+  const apply = () => {
+    if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);
+    if (s.playing && !audio.playing) audio.play().catch(showTapToPlay);
+    if (!s.playing && audio.playing) audio.pause();
+    updatePlayBtn();
+  };
+  if (audio.el.readyState >= 1) apply();
+  else audio.el.addEventListener('loadedmetadata', apply, { once: true });
+};
+
+// phones block audio that doesn't start from a tap — offer the tap
+let tapPlayBtn = null;
+function showTapToPlay() {
+  if (tapPlayBtn) return;
+  tapPlayBtn = document.createElement('button');
+  tapPlayBtn.textContent = '▶ tap to join the music';
+  Object.assign(tapPlayBtn.style, {
+    position: 'fixed', left: '50%', bottom: '18%', transform: 'translateX(-50%)',
+    zIndex: 60, padding: '14px 26px', borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.35)', background: 'rgba(10,12,24,0.75)',
+    color: '#fff', font: '600 16px system-ui', backdropFilter: 'blur(8px)',
+  });
+  tapPlayBtn.addEventListener('click', () => {
+    audio.play().catch(() => {});
+    updatePlayBtn();
+    tapPlayBtn.remove(); tapPlayBtn = null;
+  });
+  document.body.appendChild(tapPlayBtn);
+}
+
 // scrub
 let scrubbing = false;
 $('scrub').addEventListener('input', e => {
