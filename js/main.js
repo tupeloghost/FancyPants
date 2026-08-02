@@ -10,7 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { AudioEngine } from './audio-engine.js';
 import { WORLDS } from './worlds/registry.js';
-import { Net } from './net.js';
+import { Net, PALETTE } from './net.js';
 import { Presence } from './lib/presence.js';
 import { glowTexture } from './lib/glow.js';
 
@@ -313,6 +313,8 @@ net.onSong = s => {
     audio.loadURL(s.url);
     $('track-select').value = s.url;
   }
+  $('guest-track').textContent = decodeURIComponent(s.url.split('/').pop())
+    .replace(/\.\w+$/, '').replace(/_/g, ' ') + ' — picked by the host';
   const apply = () => {
     if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);
     if (s.playing && !audio.playing) audio.play().catch(showTapToPlay);
@@ -587,6 +589,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 's' || e.key === 'S') screenshotQueued = true;
   if (e.key === ' ') {
     e.preventDefault();
+    if (document.body.classList.contains('guest')) return; // host drives the music
     audio.playing ? audio.pause() : audio.play().catch(() => {});
     updatePlayBtn();
   }
@@ -621,13 +624,27 @@ let clickPulse = 0;
 let pointerHeld = false;
 window.addEventListener('pointerup', () => pointerHeld = false);
 window.addEventListener('pointercancel', () => pointerHeld = false);
+let tapResetTimer = 0;
 canvas.addEventListener('pointerdown', e => {
   pointerHeld = true;
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   spawnRipple(e.clientX, e.clientY);
+  // broadcast the tap — everyone's world feels it, not just ours
+  net.local.action = 'tap';
+  clearTimeout(tapResetTimer);
+  tapResetTimer = setTimeout(() => { if (net.local.action === 'tap') net.local.action = 'idle'; }, 250);
   if (!world || !world.onTap) return;
   world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
 });
+
+// someone else tapped: their click lands in OUR world too, in their color
+net.onRemoteTap = p => {
+  clickPulse = Math.max(clickPulse, 0.6);
+  const sx = ((p.x || 0) + 1) / 2 * window.innerWidth;
+  const sy = (1 - ((p.y || 0) + 1) / 2) * window.innerHeight;
+  spawnRipple(sx, sy, PALETTE[p.color % PALETTE.length]);
+  if (world && world.onTap) world.onTap(p.x || 0, p.y || 0);
+};
 
 // ── Custom cursor: glowing reticle, lerps to the pointer, pulses with the beat ──
 const cursorEl = $('cursor');
@@ -638,11 +655,16 @@ window.addEventListener('pointermove', e => {
 });
 window.addEventListener('pointerleave', () => cursorEl.classList.remove('live'));
 
-function spawnRipple(x, y) {
+function spawnRipple(x, y, colorHex) {
   const r = document.createElement('div');
   r.className = 'cursor-ripple';
   r.style.transform = '';
   r.style.left = x + 'px'; r.style.top = y + 'px';
+  if (colorHex != null) {
+    const c = '#' + colorHex.toString(16).padStart(6, '0');
+    r.style.borderColor = c;
+    r.style.boxShadow = `0 0 18px ${c}`;
+  }
   document.body.appendChild(r);
   r.addEventListener('animationend', () => r.remove());
 }
@@ -708,6 +730,8 @@ function startRoom(code, name, asOwner) {
   $('room-badge').classList.remove('hidden');
   net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = 'pick another name'; };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
+  // guests ride the host's soundtrack — no track/transport controls for them
+  document.body.classList.toggle('guest', !asOwner);
   dismissOverlay();
   updateURL();
 }

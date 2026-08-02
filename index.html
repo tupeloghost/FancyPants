@@ -117,6 +117,16 @@
     background: var(--well);
   }
 
+  /* guests: the host drives the music — hide the controls, show what's on */
+  #guest-note {
+    display: none; padding: 8px 10px; margin-bottom: 8px;
+    border-radius: 8px; background: var(--well);
+    color: var(--ink-dim); font-size: 10.5px; letter-spacing: 0.5px;
+    text-align: center;
+  }
+  body.guest #guest-note { display: block; }
+  body.guest .host-only, body.guest #transport { display: none; }
+
   .row { margin-bottom: 8px; }
   .row:last-child { margin-bottom: 0; }
 
@@ -475,10 +485,11 @@
 
     <div class="tab-page on" id="page-music">
       <canvas id="spectrum" width="236" height="30"></canvas>
-      <div class="row">
+      <div id="guest-note">&#9834; <span id="guest-track">the host is driving the music</span></div>
+      <div class="row host-only">
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
-      <div class="row">
+      <div class="row host-only">
         <label id="file-label" for="file-input">&#11014; load local file</label>
         <input type="file" id="file-input" accept="audio/*">
       </div>

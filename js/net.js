@@ -28,6 +28,7 @@ export class Net {
     this.onJoin = null;    // (participant) => {} — the payoff moment
     this.onReject = null;  // () => {} — "pick another name"
     this.onSong = null;    // ({url,pos,playing}) => {} — sync to the host's music
+    this.onRemoteTap = null; // (participant) => {} — someone else clicked their world
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -70,7 +71,11 @@ export class Net {
       if (t) { t.x = m.x; t.y = m.y; t.z = m.z; t.heading = m.heading; }
       else this._who(m.id); // pruned them while our tab slept; ask who they are
       const p = this.participants.find(x => x.id === m.id);
-      if (p) p.action = m.action;
+      if (p) {
+        // rising edge of a tap → replay their click in our world
+        if (m.action === 'tap' && p.action !== 'tap' && this.onRemoteTap) this.onRemoteTap(p);
+        p.action = m.action;
+      }
       this._lastSeen.set(m.id, performance.now());
     } else if (m.t === 'rejoin') {
       // server pruned US while the tab slept; slip back in (throttled —
