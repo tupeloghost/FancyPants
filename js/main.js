@@ -308,21 +308,30 @@ $('file-input').addEventListener('change', e => {
 
 // ── Suno: paste a song link, we stream it through our relay so the
 // analyser can actually see the audio (CORS) ──
-const SUNO_PROXY = window.FANCYPANTS_HOST ? `https://${window.FANCYPANTS_HOST}/suno/` : '';
-function sunoIdFrom(text) {
-  const m = String(text).match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
-  return m ? m[0] : null;
+const SUNO_PROXY = window.FANCYPANTS_HOST ? `https://${window.FANCYPANTS_HOST}/` : '';
+// suno gives out two link shapes: the long song page (…/song/<uuid>) and the
+// short share link (…/s/<code>). Take either — the worker resolves the short
+// one by following it to the song.
+function sunoPathFrom(text) {
+  const t = String(text).trim();
+  const uuid = t.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  if (uuid) return `suno/${uuid[0]}.mp3`;
+  const short = t.match(/suno\.com\/s\/([A-Za-z0-9_-]{4,40})/);
+  if (short) return `suno-s/${short[1]}.mp3`;
+  return null;
 }
 function loadSuno() {
   const el = $('suno-input');
-  const id = sunoIdFrom(el.value);
-  if (!id || !SUNO_PROXY) {
-    el.value = '';
-    el.placeholder = "hmm — that doesn't look like a suno link";
+  if (!el.value.trim()) return;
+  const path = sunoPathFrom(el.value);
+  if (!path || !SUNO_PROXY) {
+    // leave what they pasted alone — wiping it looks like paste is broken
+    el.classList.add('bad');
+    setTimeout(() => el.classList.remove('bad'), 1400);
     return;
   }
-  el.placeholder = '♪ paste a suno song link';
-  audio.loadURL(SUNO_PROXY + id + '.mp3');
+  el.classList.remove('bad');
+  audio.loadURL(SUNO_PROXY + path);
   $('track-select').value = '';
   audio.play().catch(() => {});
   updatePlayBtn();

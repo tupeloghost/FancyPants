@@ -214,20 +214,48 @@ export default {
 
     // audio relay: browsers can't analyse cross-origin audio without CORS,
     // so Suno tracks stream through here with the right headers attached.
-    // Locked to Suno's CDN by construction — only a UUID passes through.
-    const suno = url.pathname.match(/^\/suno\/([0-9a-fA-F-]{36})\.mp3$/);
-    if (suno) {
+    // Locked to Suno by construction — only an id or short code passes through.
+    const streamSuno = async id => {
       const fwd = {};
       const range = request.headers.get('Range');
       if (range) fwd.Range = range;
-      let upstream = await fetch(`https://cdn1.suno.ai/${suno[1]}.mp3`, { headers: fwd });
+      let upstream = await fetch(`https://cdn1.suno.ai/${id}.mp3`, { headers: fwd });
       if (upstream.status === 403 || upstream.status === 404) {
-        upstream = await fetch(`https://cdn2.suno.ai/${suno[1]}.mp3`, { headers: fwd });
+        upstream = await fetch(`https://cdn2.suno.ai/${id}.mp3`, { headers: fwd });
       }
       const h = new Headers(upstream.headers);
       h.set('Access-Control-Allow-Origin', '*');
       h.set('Accept-Ranges', 'bytes');
       return new Response(upstream.body, { status: upstream.status, headers: h });
+    };
+
+    const suno = url.pathname.match(/^\/suno\/([0-9a-fA-F-]{36})\.mp3$/);
+    if (suno) return streamSuno(suno[1]);
+
+    // share links (suno.com/s/CODE) don't carry the song id — resolve them
+    const short = url.pathname.match(/^\/suno-s\/([A-Za-z0-9_-]{4,40})\.mp3$/);
+    if (short) {
+      const UUID = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+      let id = null;
+      try {
+        const page = await fetch(`https://suno.com/s/${short[1]}`, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FancyPants/1.0)' },
+        });
+        id = (page.url || '').match(UUID)?.[0] || null;
+        if (!id) {
+          const html = await page.text();
+          id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})/)?.[1]
+            || html.match(/"(?:clip_id|audio_url|id)"\s*:\s*"[^"]*?([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/)?.[1]
+            || html.match(UUID)?.[0] || null;
+        }
+      } catch { /* fall through to the 404 below */ }
+      if (!id) {
+        return new Response('could not resolve that suno link', {
+          status: 404, headers: { 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+      return streamSuno(id);
     }
 
     const m = url.pathname.match(/^\/party\/([A-Za-z0-9]{1,12})$/);

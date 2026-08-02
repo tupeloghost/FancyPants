@@ -254,6 +254,10 @@
   }
   #suno-input::placeholder { color: var(--ink-faint); }
   #suno-input:focus { border-color: var(--accent-line); background: var(--accent-soft); }
+  #suno-input.bad { border-color: #ff8fa3; animation: sunoshake 0.4s; }
+  @keyframes sunoshake {
+    25% { transform: translateX(-4px); } 75% { transform: translateX(4px); }
+  }
 
   /* file picker — hide native chrome behind a styled label */
   #file-input { display: none; }
@@ -743,6 +747,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=47"></script>
+<script type="module" src="js/main.js?v=48"></script>
 </body>
 </html>
