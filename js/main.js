@@ -222,6 +222,7 @@ function switchWorld(key) {
   $('opt-shape').style.display = caps.includes('shape') ? '' : 'none';
   $('opt-balls').style.display = caps.includes('balls') ? '' : 'none';
   document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
+  if (window.__applyWorldBloom) window.__applyWorldBloom(key); // world's bloom default (or your remembered tweak)
   net.sendWorld(key); // no-op unless we're the connected host
 }
 
@@ -427,12 +428,25 @@ slider('hue', 'hue-val', v => v, v => {
 });
 slider('hdr', 'hdr-val', v => (v / 100).toFixed(1), v => settings.hdr = v / 100);
 slider('balls', 'balls-val', v => v, v => settings.balls = v);
+// per-world bloom defaults — TRAIL runs nearly clean so its colors read
+// true; every world still obeys the slider, and manual tweaks are
+// remembered per world for the session.
+const WORLD_BLOOM = { trail: 0.15 };
+const userBloom = {};
 let bloomBase = 0.7;
-slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
+function applyBloom(v) { // v in slider units (0-300)
   bloomBase = v / 100;
   bloomPass.strength = bloomBase;
   bloomPass.enabled = v > 0;
+  $('bloom').value = v;
+  $('bloom-val').textContent = (v / 100).toFixed(1);
+  setFill($('bloom'));
+}
+slider('bloom', 'bloom-val', v => (v / 100).toFixed(1), v => {
+  userBloom[currentWorldKey] = v; // this world, your way
+  applyBloom(v);
 });
+window.__applyWorldBloom = key => applyBloom(userBloom[key] ?? (WORLD_BLOOM[key] ?? 0.7) * 100);
 
 // mode toggle
 function setAttract(on) {
