@@ -36,6 +36,7 @@ export function createCherryLand() {
   let juice = null;
   const juiceVel = new Float32Array(26 * 3);
   let juiceLife = 0;
+  let scoreQueue = 0, scoreQX = 0, scoreQY = 0; // taps bank points; update() pays out
 
   const pathX = z => Math.sin(z * 0.012) * 18;
   const hillY = (x, z) => Math.sin(x * 0.045 + 1) * 1.6 + Math.sin(z * 0.03) * 1.9;
@@ -216,6 +217,7 @@ export function createCherryLand() {
           juiceVel[k * 3 + 2] = (Math.random() - 0.5) * 14;
         }
         jpos.needsUpdate = true;
+        scoreQueue += 15; scoreQX = x; scoreQY = y; // clean pick — a direct hit
         return;
       }
 
@@ -240,6 +242,7 @@ export function createCherryLand() {
         cfvy[ci] = 1 + Math.random() * 2;
         cfvx[ci] = (Math.random() - 0.5) * 4;
         cfvz[ci] = (Math.random() - 0.5) * 4;
+        scoreQueue += 5; scoreQX = x; scoreQY = y; // shaken loose — bulk harvest
         const b = bursts.find(x2 => !x2.visible);
         if (b && c2 === 0) {
           b.visible = true;
@@ -253,6 +256,8 @@ export function createCherryLand() {
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+
+      if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue, scoreQX, scoreQY); scoreQueue = 0; }
 
       travel += dt * (4 + audio.volume * 9 + audio.energy * 4);
       const camZ = -travel;

@@ -699,6 +699,27 @@ canvas.addEventListener('pointerdown', e => {
   world.onTap((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1));
 });
 
+// ── Scoring: worlds award points; your score rides the state blob ──
+let score = 0;
+function addScore(n, x, y) {
+  if (settings.attract) return; // watching earns nothing
+  score += n;
+  net.local.score = score;
+  const badge = $('score-badge');
+  badge.classList.remove('hidden');
+  $('score-val').textContent = score;
+  badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
+  // floating +n where the action happened (screen-normalized coords in, px out)
+  const fx = x != null ? ((x + 1) / 2) * window.innerWidth : window.innerWidth / 2;
+  const fy = y != null ? (1 - (y + 1) / 2) * window.innerHeight : window.innerHeight * 0.4;
+  const f = document.createElement('div');
+  f.className = 'score-float';
+  f.textContent = '+' + n;
+  f.style.left = fx + 'px'; f.style.top = fy + 'px';
+  document.body.appendChild(f);
+  f.addEventListener('animationend', () => f.remove());
+}
+
 // someone else tapped: their click lands in OUR world too, in their color
 net.onRemoteTap = p => {
   clickPulse = Math.max(clickPulse, 0.6);
@@ -825,10 +846,11 @@ switchWorld(startWorld);
 function renderPlist() {
   const box = $('plist-rows');
   box.innerHTML = '';
-  for (const p of participants) {
+  const ranked = [...participants].sort((a, b) => (b.score || 0) - (a.score || 0));
+  for (const p of ranked) {
     const row = document.createElement('div');
     row.className = 'plist-row' + (presence.hiddenNames.has(p.name) ? ' muted' : '');
-    row.innerHTML = `<span>${p.name}</span><span>${p.local ? 'you' : ''}</span>`;
+    row.innerHTML = `<span>${p.name}${p.local ? ' ·you' : ''}</span><span>${p.score || 0}</span>`;
     row.addEventListener('click', () => {
       presence.hiddenNames.has(p.name) ? presence.hiddenNames.delete(p.name) : presence.hiddenNames.add(p.name);
       renderPlist();
@@ -918,6 +940,7 @@ function frame(now) {
     balls: settings.balls,
     holding: pointerHeld,
     time,
+    addScore,
   });
 
   updateDust(dt, a, time);

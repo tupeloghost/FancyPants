@@ -77,6 +77,7 @@ export class Net {
         // rising edge of a tap → replay their click in our world
         if (m.action === 'tap' && p.action !== 'tap' && this.onRemoteTap) this.onRemoteTap(p);
         p.action = m.action;
+        p.score = m.score || 0;
       }
       this._lastSeen.set(m.id, performance.now());
     } else if (m.t === 'rejoin') {
@@ -199,7 +200,7 @@ export class Net {
         const l = this.local;
         this._ws.send(JSON.stringify({
           t: 'state', x: +l.x.toFixed(2), y: +l.y.toFixed(2), z: +l.z.toFixed(2),
-          heading: +l.heading.toFixed(2), action: l.action,
+          heading: +l.heading.toFixed(2), action: l.action, score: l.score || 0,
         }));
       }
     }

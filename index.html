@@ -445,6 +445,31 @@
     100% { filter: none; }
   }
 
+  /* ── Score ── */
+  #score-badge {
+    position: fixed; top: 76px; left: 18px; z-index: 90;
+    font: 700 20px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.8);
+    user-select: none; pointer-events: none;
+    transition: transform 0.15s;
+  }
+  #score-badge em { font: 400 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); font-style: normal; margin-left: 4px; letter-spacing: 2px; }
+  #score-badge.hidden { display: none; }
+  #score-badge.bump { animation: scorebump 0.3s ease-out; }
+  @keyframes scorebump { 30% { transform: scale(1.25); } }
+  .score-float {
+    position: fixed; z-index: 95; pointer-events: none;
+    font: 800 22px 'SF Mono', Menlo, monospace; color: #fff;
+    text-shadow: 0 0 12px hsla(var(--accent-h), 95%, 70%, 0.9), 0 1px 3px rgba(0,0,0,0.8);
+    animation: scorefloat 0.9s ease-out forwards;
+  }
+  @keyframes scorefloat {
+    from { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+    30%  { transform: translate(-50%, -20px) scale(1.15); }
+    to   { opacity: 0; transform: translate(-50%, -64px) scale(1); }
+  }
+
   /* participants overlay (P) */
   #plist {
     position: fixed; left: 18px; bottom: 18px; z-index: 90;
@@ -521,6 +546,7 @@
 </div>
 
 <div id="room-badge" class="hidden"></div>
+<div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
 
 <div id="plist" class="hidden">
   <div class="plist-title">participants — click to hide a name</div>
@@ -633,6 +659,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=17"></script>
+<script type="module" src="js/main.js?v=18"></script>
 </body>
 </html>

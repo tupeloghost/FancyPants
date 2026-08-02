@@ -30,7 +30,9 @@ export function createBlacktop() {
   const bh = new Float32Array(BUILDINGS), bband = new Uint8Array(BUILDINGS);
   let speedLines = [];
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
-  let cow = null, beam = null, abduct = { z: 0, x: 0, on: false };
+  let cow = null, beam = null, abduct = { z: 0, x: 0, on: false, target: -2, p2: 0 };
+  // abduct.target: -2 = the cow, -1 = YOU, >=0 = that ghost gets taken
+  let nitroClock = 0, survived = false;
 
   const roadX = z => Math.sin(z * 0.008) * 26;
   const roadYaw = z => Math.atan2(roadX(z - 8) - roadX(z + 8), 16);
@@ -200,6 +202,11 @@ export function createBlacktop() {
 
     // rivals: glowing cars in the lanes ahead, taillights to you
     placeGhost(p, i, out) {
+      // the beam takes whoever it takes — everyone watches them rise and spin
+      if (abduct.on && abduct.target === i) {
+        out.set(abduct.x + Math.sin(abduct.p2 * 25) * 0.7, 1.6 + abduct.p2 * 20, abduct.z);
+        return;
+      }
       const z = camera.position.z - 22 - (i % 7) * 14;
       out.set(roadX(z) + (((i % 3) - 1) * 7) + p.x * 3, 1.6, z);
     },
@@ -228,6 +235,20 @@ export function createBlacktop() {
       camera.position.set(cx, 2.6 + audio.bass * 0.4, camZ);
       camera.lookAt(roadX(camZ - 60), 2.2, camZ - 60);
       camera.rotation.z += steer * -0.09 + nitro * Math.sin(time * 40) * 0.006; // nitro judder
+
+      // when the beam has YOU: lifted, spun, dropped back on the asphalt
+      if (abduct.on && abduct.target === -1) {
+        const lift = Math.sin(abduct.p2 * Math.PI) * 12;
+        camera.position.y += lift;
+        camera.rotation.z += Math.sin(time * 6) * 0.06 * (lift / 12);
+        camera.rotation.y += Math.sin(abduct.p2 * 9) * 0.12 * (lift / 12);
+      }
+
+      // nitro discipline pays: +2 for every full second floored
+      if (nitro > 0.7 && !attract) {
+        nitroClock += dt;
+        if (nitroClock >= 1) { nitroClock = 0; if (opts.addScore) opts.addScore(2); }
+      } else nitroClock = 0;
 
       road.position.set(0, 0, camZ - SPAN / 2 + 40);
       // bend the road plane to the curve
@@ -334,10 +355,21 @@ export function createBlacktop() {
       // UFO visits: swoops across the skyline, wobbles, slips away
       if (ufoT < 0) {
         ufoNext -= dt;
-        if (ufoNext <= 0) { ufoT = 0; ufo.visible = true; ufo.userData.side = Math.random() < 0.5 ? -1 : 1; }
+        if (ufoNext <= 0) {
+          ufoT = 0; ufo.visible = true; ufo.userData.side = Math.random() < 0.5 ? -1 : 1;
+          // who's getting taken this time? cow, a ghost, or YOU
+          const ghosts = participants ? participants.length - 1 : 0;
+          const r = Math.random();
+          abduct.target = r < 0.4 ? -2 : ghosts > 0 ? Math.floor(Math.random() * ghosts) : -1;
+          survived = false;
+        }
       } else {
         ufoT += dt / 9; // ~9s visit
-        if (ufoT >= 1) { ufoT = -1; ufo.visible = false; beam.visible = false; cow.visible = false; abduct.on = false; ufoNext = 14 + Math.random() * 22; }
+        if (ufoT >= 1) {
+          ufoT = -1; ufo.visible = false; beam.visible = false; cow.visible = false; abduct.on = false;
+          ufoNext = 14 + Math.random() * 22;
+          if (survived && opts.addScore) opts.addScore(40); // rode the beam, lived to race
+        }
         else {
           const side = ufo.userData.side;
           const swoop = Math.sin(ufoT * Math.PI); // in and out
@@ -350,24 +382,33 @@ export function createBlacktop() {
           }
           if (!abducting) abduct.on = false;
           if (abducting) {
+            const p2 = (ufoT - 0.35) / 0.43; // 0..1 through the abduction
+            abduct.p2 = p2;
+            if (abduct.target === -1) {
+              // it's coming for YOU — the beam keeps pace with the car
+              abduct.x = camera.position.x;
+              abduct.z = camera.position.z - 6;
+              survived = true;
+            }
             ufo.position.set(
               abduct.x + Math.sin(time * 1.6) * 0.8,
               24 + Math.sin(time * 2.2) * 0.8,
               abduct.z
             );
-            const p2 = (ufoT - 0.35) / 0.43; // 0..1 through the abduction
             beam.visible = true;
             beam.position.set(abduct.x, 12.2, abduct.z);
             beam.scale.set(1, 23, 1);
             color.setHSL(0.28, 0.8, 0.6);
             beam.material.color.copy(color);
             beam.material.opacity = 0.14 + Math.sin(time * 9) * 0.04 + audio.beatIntensity * 0.08;
-            cow.visible = true;
-            cow.position.set(abduct.x, 1.5 + p2 * 21, abduct.z);
-            cow.rotation.y += dt * (1.5 + p2 * 6); // spins faster as it rises
-            cow.rotation.z = Math.sin(time * 2.5) * 0.15;
-            const shrink = p2 > 0.85 ? 1 - (p2 - 0.85) / 0.15 : 1;
-            cow.scale.setScalar(Math.max(0.01, shrink));
+            cow.visible = abduct.target === -2; // ghosts and drivers rise via the beam instead
+            if (cow.visible) {
+              cow.position.set(abduct.x, 1.5 + p2 * 21, abduct.z);
+              cow.rotation.y += dt * (1.5 + p2 * 6); // spins faster as it rises
+              cow.rotation.z = Math.sin(time * 2.5) * 0.15;
+              const shrink = p2 > 0.85 ? 1 - (p2 - 0.85) / 0.15 : 1;
+              cow.scale.setScalar(Math.max(0.01, shrink));
+            }
           } else {
             beam.visible = false;
             cow.visible = false;

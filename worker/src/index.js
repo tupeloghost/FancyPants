@@ -174,6 +174,7 @@ export class FancyPantsRoom {
       p.x = m.x; p.y = m.y; p.z = m.z;
       this.broadcast(JSON.stringify({
         t: 'state', id: connId, x: m.x, y: m.y, z: m.z, heading: m.heading, action: m.action,
+        score: Number(m.score) || 0,
       }), connId);
 
       // opportunistic prune of the silent

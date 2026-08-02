@@ -156,6 +156,7 @@ export function createSignal() {
       const b = balls.find(x2 => !x2.visible) || balls[0];
       b.visible = true;
       b.userData.t = 0;
+      b.userData.hits = 0; // fresh throw, fresh multiplier
       // aim through the click point, not the screen center — the corridor's
       // middle lane is empty, so a centerline shot would never hit anything
       b.userData.vel.set(x, y, 0.5).unproject(camera).sub(camera.position);
@@ -300,6 +301,10 @@ export function createSignal() {
             mFallDX[i] = b.userData.vel.x / len;
             mFallDZ[i] = b.userData.vel.z / len;
             mLit[i] = 1; // flare on impact
+            b.userData.hits = (b.userData.hits || 0) + 1;
+            // strikes pay: each extra column on one throw is worth more,
+            // but a throw's payout caps at 5 columns (a ball mows a whole lane)
+            if (opts.addScore && b.userData.hits <= 5) opts.addScore(10 * b.userData.hits);
           }
         }
       }
