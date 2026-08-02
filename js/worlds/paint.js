@@ -617,12 +617,18 @@ export function createPaint() {
 
       const px2 = attract ? Math.sin(time * 0.12) * 0.4 : pointer.x;
       const py2 = attract ? Math.cos(time * 0.1) * 0.3 : pointer.y;
-      // sit back far enough that the whole plate fits, whatever the screen
-      const span = N * CELL * 1.12;
+      // frame the plate AND the rack — on a wide screen, fitting the plate
+      // alone pushed the pots off the bottom edge and left you unable to pick
+      // up a colour at all
+      const halfW = N * CELL / 2 + 4;
+      const top = N * CELL / 2 + 4;
+      const bottom = cellY(N - 1) - CELL * 2.6 - 3.2;      // under the pots
+      const midY = (top + bottom) / 2;
+      const halfH = (top - bottom) / 2;
       const vf = THREE.MathUtils.degToRad(camera.fov) / 2;
-      const fit = Math.max((span / 2) / Math.tan(vf), (span / 2) / (Math.tan(vf) * camera.aspect));
-      camera.position.set(px2 * 7, py2 * 5, fit - completion * 3 - audio.bass * 0.6);
-      camera.lookAt(px2 * 2, py2 * 1.6, 0);
+      const fit = Math.max(halfH / Math.tan(vf), halfW / (Math.tan(vf) * camera.aspect)) * 1.04;
+      camera.position.set(px2 * 6, midY + py2 * 4, fit - completion * 3 - audio.bass * 0.6);
+      camera.lookAt(px2 * 1.6, midY + py2 * 1.3, 0);
 
       // ── the plate ──
       if (held !== lastHeld) { lastHeld = held; numDirty = true; }
