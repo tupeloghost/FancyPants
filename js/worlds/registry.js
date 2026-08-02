@@ -30,5 +30,5 @@ export const WORLDS = {
   slinky: { goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { goal: 'hold for NITRO — survive the UFO for +40', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
-  garden: { goal: 'catch blooms · dodge thorns · 3 in a row = MAGIC', label: 'MAGIC RUN', create: createGarden },
+  garden: { goal: 'dig runes · fuse three · set them in the lattice', label: 'LUMEN', create: createGarden },
 };

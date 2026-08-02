@@ -742,15 +742,6 @@ function addScore(n, x, y) {
   badge.classList.remove('hidden');
   $('score-val').textContent = score;
   badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
-  // floating +n where the action happened (screen-normalized coords in, px out)
-  const fx = x != null ? ((x + 1) / 2) * window.innerWidth : window.innerWidth / 2;
-  const fy = y != null ? (1 - (y + 1) / 2) * window.innerHeight : window.innerHeight * 0.4;
-  const f = document.createElement('div');
-  f.className = 'score-float';
-  f.textContent = '+' + n;
-  f.style.left = fx + 'px'; f.style.top = fy + 'px';
-  document.body.appendChild(f);
-  f.addEventListener('animationend', () => f.remove());
 }
 
 // ── World intro: name + the one line that explains the whole game ──
@@ -765,41 +756,6 @@ function showWorldIntro(key) {
   clearTimeout(introTimer);
   introTimer = setTimeout(() => el.classList.add('gone'), 4200);
 }
-
-// ── Emotes: one tap, everyone in the room smiles ──
-const EMOJI = ['🌸', '🔥', '😂', '✨', '🐄'];
-function burstEmote(idx, name, colorHex) {
-  const b = document.createElement('div');
-  b.className = 'emote-burst';
-  const c = '#' + (colorHex ?? 0xffffff).toString(16).padStart(6, '0');
-  b.innerHTML = `<span class="e">${EMOJI[idx] || '✨'}</span><span class="n" style="color:${c}">${name || ''}</span>`;
-  // scatter across the lower half so a flurry doesn't stack into one column
-  b.style.left = (12 + Math.random() * 76) + 'vw';
-  b.style.top = (58 + Math.random() * 18) + 'vh';
-  document.body.appendChild(b);
-  b.addEventListener('animationend', () => b.remove());
-}
-document.querySelectorAll('#emote-bar button').forEach(btn => {
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const idx = +btn.dataset.e;
-    burstEmote(idx, net.local.name || 'you', PALETTE[net.local.color % PALETTE.length]);
-    net.sendEmote(idx);
-  });
-});
-net.onEmote = (p, idx) => burstEmote(idx, p.name, PALETTE[p.color % PALETTE.length]);
-
-// big-moment announcer: any world can put six-foot letters on the screen
-window.__announce = (text, cssColor) => {
-  const a = document.createElement('div');
-  a.className = 'announce';
-  a.textContent = text;
-  const c = cssColor || `hsl(${settings.hue}, 95%, 70%)`;
-  a.style.color = c;
-  a.style.textShadow = `0 0 24px ${c}, 0 0 80px ${c}, 0 2px 6px rgba(0,0,0,0.9)`;
-  document.body.appendChild(a);
-  a.addEventListener('animationend', () => a.remove());
-};
 
 // someone else tapped: their click lands in OUR world too, in their color
 net.onRemoteTap = p => {

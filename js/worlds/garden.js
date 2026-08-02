@@ -1,506 +1,514 @@
-// MAGIC RUN — drop in and watch the path unfold. An infinite runner along a
-// glowing vine through the night garden: three lanes (magenta / cyan /
-// electric blue), bloom-gates rushing at you, and the rule of the song —
-// THREE of the same color in a row is the MAGIC NUMBER. Combos build speed
-// and multiplier; gray husks fizzle the streak; ×5 ignites SUPERBLOOM.
+// LUMEN — a dark room, a hidden lattice, and a picture that has to be earned.
+//
+// Runes rise out of the black. Catch three and they fuse into a deeper rune;
+// three of those fuse again. The lattice in front of you is a botanical
+// figure drawn in three depths — outline, body, heart — and each cell will
+// only accept a rune of its own depth. Set them and the figure comes up out
+// of the dark, one gem at a time, until the whole room is lit by what you built.
+//
+// Multiplayer: everyone's placements land in the same lattice, and a crowded
+// room draws a larger figure.
 
 import * as THREE from 'three';
 import { glowSprite, glowPoints, skyDome } from '../lib/glow.js';
 import { themePaint } from '../lib/themes.js';
 
-const TRIO = [0.86, 0.5, 0.62];  // magenta / cyan / electric blue
-const SLATS = 130;               // vine plank pool
-const SLAT_GAP = 2.2;
-const LANE_W = 4.6;              // lane center offsets: -LANE_W, 0, +LANE_W
-const GATES = 12;
-const FW = 220;
-const DEW = 340;
+// Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
+const FIGURES = [
+  {
+    name: 'BLOOM',
+    hues: [0.72, 0.86, 0.06],
+    rows: [
+      '....333....',
+      '...32223...',
+      '..3211123..',
+      '..3211123..',
+      '...32223...',
+      '....333....',
+      '.....2.....',
+      '....2.2....',
+      '...22.22...',
+      '....2.2....',
+      '.....2.....',
+      '.....1.....',
+      '...11111...',
+    ],
+  },
+  {
+    name: 'AGAVE',
+    hues: [0.42, 0.34, 0.14],
+    rows: [
+      '....3.3....',
+      '.....2.....',
+      '.....2.....',
+      '...2.2.2...',
+      '...2.2.2...',
+      '...22222...',
+      '.....2.....',
+      '.....2.....',
+      '.....2.....',
+      '...11111...',
+      '...11111...',
+    ],
+  },
+  {
+    name: 'LANTERN',
+    hues: [0.55, 0.5, 0.13],
+    rows: [
+      '...33333...',
+      '..3333333..',
+      '.333333333.',
+      '.333333333.',
+      '..3333333..',
+      '...22222...',
+      '....222....',
+      '....222....',
+      '...22222...',
+      '...11111...',
+      '....111....',
+    ],
+  },
+];
+
+const CELL = 2.5;
+const RUNES = 26;        // floating harvestables alive at once
+const TRAY_MAX = 6;
+const SPARK = 260;       // celebration sparks
 
 export function createGarden() {
-  let scene, camera, group, sky, dew, slats, railL, railR, gateCore, gateHalo, gateRing, avatar, avatarTrail, fireworks;
-  let dirtL, dirtR, grass;
-  const GRASS = 220;
-  const grassT = new Float32Array(GRASS);
-  const grassOff = new Float32Array(GRASS);
+  let scene, camera, group, sky, motes;
+  let cellMesh, pipPts, runePts, runeGlow, trayPts, sparkPts, keyLight;
   const tp = [0, 0, 0];
   const color = new THREE.Color();
   const dummy = new THREE.Object3D();
   const pointer = { x: 0, y: 0, active: false };
+  const _v = new THREE.Vector3();
 
-  let travel = 0, lanePos = 0, speed = 18;
-  let multi = 1;
-  let count = 0;                   // blooms toward the next magic number (0..2)
-  let comboFlash = 0, fizzle = 0, fever = 0;
-  let nextGateT = 30;
-  let scoreQueue = 0, scoreQX = 0, scoreQY = 0;
-  let seedPts;                     // three progress dots orbiting the rider
+  // ── lattice ──
+  let fig = null, cols = 0, rows = 0;
+  let cellTier = null, cellFilled = null, cellLight = null, cellCount = 0;
+  let filledCount = 0, needCount = 0;
+  let figIndex = 0;
+  let completion = 0;      // 0..1 eased, drives how lit the room is
+  let finale = 0;          // burst after the last cell lands
 
-  // flower-trees your blooms leave along the vine
-  const TREES = 7;
-  const trees = [];                // {trunk, glows[], t, side, growth, hue, active}
-  function spawnTree(hue01) {
-    const tr = trees.find(q => !q.active) || trees[0];
-    tr.active = true;
-    tr.t = travel + 45;            // erupts AHEAD — you fly past your own bloom
-    tr.side = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2.6 + 3 + Math.random() * 4);
-    tr.growth = 0;
-    tr.hue = hue01;
-  }
+  // ── runes ──
+  const rx = new Float32Array(RUNES), ry = new Float32Array(RUNES), rz = new Float32Array(RUNES);
+  const rTier = new Uint8Array(RUNES), rAlive = new Uint8Array(RUNES), rSpin = new Float32Array(RUNES);
+  let spawnT = 0;
 
-  // path through the garden
-  const px = t => Math.sin(t * 0.02) * 18 + Math.sin(t * 0.007) * 26;
-  const py = t => Math.sin(t * 0.015) * 5;
+  // ── tray ──
+  const tray = [];         // tiers you're holding
+  let fuseFlash = 0, denyFlash = 0, placeFlash = 0;
+  let scoreQueue = 0;
 
-  // gates
-  const gT = new Float32Array(GATES);      // path distance
-  const gLane = new Int8Array(GATES);      // -1 / 0 / 1
-  const gCol = new Int8Array(GATES);       // 0..2 into TRIO, -1 = husk
-  const gAlive = new Uint8Array(GATES);
-  const gPop = new Float32Array(GATES);    // pop flash after collect
+  // ── sparks ──
+  const sVel = new Float32Array(SPARK * 3);
+  const sLife = new Float32Array(SPARK);
+  const sHue = new Float32Array(SPARK);
+  let sNext = 0;
 
-  // fireworks
-  const fwVel = new Float32Array(FW * 3);
-  const fwLife = new Float32Array(FW);
-  const fwHue = new Float32Array(FW);
-  let fwNext = 0;
-  function boom(x, y, z, hue01, count) {
-    const pos = fireworks.geometry.attributes.position;
-    for (let k = 0; k < count; k++) {
-      const i = fwNext++ % FW;
-      pos.setXYZ(i, x, y, z);
-      const a = Math.random() * Math.PI * 2;
-      fwVel[i * 3] = Math.cos(a) * (3 + Math.random() * 10);
-      fwVel[i * 3 + 1] = 7 + Math.random() * 15;
-      fwVel[i * 3 + 2] = Math.sin(a) * (3 + Math.random() * 10);
-      fwLife[i] = 1.1 + Math.random() * 0.8;
-      fwHue[i] = (hue01 + (Math.random() - 0.5) * 0.08 + 1) % 1;
-    }
-  }
-
-  function spawnGate(minT) {
-    let i = -1;
-    for (let k = 0; k < GATES; k++) if (!gAlive[k]) { i = k; break; }
-    if (i < 0) return;
-    gAlive[i] = 1;
-    gPop[i] = 0;
-    gT[i] = minT;
-    gLane[i] = Math.floor(Math.random() * 3) - 1;
-    // mostly colors; sometimes a husk you must dodge
-    gCol[i] = fever > 0 ? 3 : (Math.random() < 0.16 ? -1 : Math.floor(Math.random() * 3));
-  }
-
-  const mkPts = (n, size, op, parent) => {
+  const mkPts = (n, size, op) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
     const p = new THREE.Points(g, glowPoints(size, op));
     p.material.vertexColors = true;
     p.frustumCulled = false;
-    parent.add(p);
+    group.add(p);
     return p;
   };
 
+  function spark(x, y, z, hue01, count, power = 1) {
+    const pos = sparkPts.geometry.attributes.position;
+    for (let k = 0; k < count; k++) {
+      const i = sNext++ % SPARK;
+      pos.setXYZ(i, x, y, z);
+      const a = Math.random() * Math.PI * 2;
+      const sp = (2 + Math.random() * 9) * power;
+      sVel[i * 3] = Math.cos(a) * sp;
+      sVel[i * 3 + 1] = Math.sin(a) * sp + 3 * power;
+      sVel[i * 3 + 2] = (Math.random() - 0.5) * 5;
+      sLife[i] = 0.7 + Math.random() * 0.8;
+      sHue[i] = (hue01 + (Math.random() - 0.5) * 0.06 + 1) % 1;
+    }
+  }
+
+  function loadFigure(index, crowd) {
+    fig = FIGURES[index % FIGURES.length];
+    const src = fig.rows;
+    rows = src.length; cols = src[0].length;
+    cellCount = rows * cols;
+    cellTier = new Uint8Array(cellCount);
+    cellFilled = new Uint8Array(cellCount);
+    cellLight = new Float32Array(cellCount);
+    needCount = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const ch = src[r][c];
+        const t = ch === '.' ? 0 : +ch;
+        cellTier[r * cols + c] = t;
+        if (t) needCount++;
+      }
+    }
+    filledCount = 0;
+    completion = 0;
+    // a crowded room gets a bigger canvas: the figure is drawn larger
+    scaleUp = crowd >= 3 ? 1.25 : 1;
+  }
+
+  let scaleUp = 1;
+  const cellX = c => (c - (cols - 1) / 2) * CELL * scaleUp;
+  const cellY = r => ((rows - 1) / 2 - r) * CELL * scaleUp;
+
+  function tierHue(t) { return fig.hues[Math.max(0, t - 1)]; }
+
+  // fuse three alike into one deeper rune — the heart of the thing
+  function tryFuse() {
+    for (let t = 1; t <= 2; t++) {
+      let n = 0;
+      for (const q of tray) if (q === t) n++;
+      if (n >= 3) {
+        let removed = 0;
+        for (let i = tray.length - 1; i >= 0 && removed < 3; i--) {
+          if (tray[i] === t) { tray.splice(i, 1); removed++; }
+        }
+        tray.push(t + 1);
+        fuseFlash = 1;
+        scoreQueue += 10 * t;
+        spark(0, -13, 16, tierHue(t + 1), 26, 0.8);
+        return true;
+      }
+    }
+    return false;
+  }
+
   return {
-    name: 'MAGIC RUN',
+    name: 'LUMEN',
 
     init(_scene, _camera) {
       scene = _scene; camera = _camera;
       group = new THREE.Group();
       scene.add(group);
-      scene.fog = new THREE.FogExp2(0x020409, 0.0085);
+      scene.fog = null;
 
-      // the vine: glowing planks + two bright rails
-      const sg = new THREE.BoxGeometry(LANE_W * 3 + 2, 0.35, SLAT_GAP * 0.82);
-      slats = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ toneMapped: false }), SLATS);
-      slats.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      slats.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SLATS * 3), 3);
-      slats.frustumCulled = false;
-      group.add(slats);
-      railL = mkPts(SLATS, 1.5, 0.85, group);
-      railR = mkPts(SLATS, 1.5, 0.85, group);
+      loadFigure(0, 1);
 
-      gateCore = mkPts(GATES, 4.2, 1, group);
-      gateHalo = mkPts(GATES, 11, 0.4, group);
-      gateRing = mkPts(GATES, 6, 0.5, group);
+      // lattice cells — one instanced quad per cell, dark until earned
+      cellMesh = new THREE.InstancedMesh(
+        new THREE.PlaneGeometry(CELL * 0.82, CELL * 0.82),
+        new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 1 }),
+        rows * cols
+      );
+      cellMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      cellMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(rows * cols * 3), 3);
+      cellMesh.frustumCulled = false;
+      group.add(cellMesh);
 
-      fireworks = mkPts(FW, 1.6, 0.95, group);
-      for (let i = 0; i < FW; i++) fwLife[i] = 0;
+      pipPts = mkPts(rows * cols * 3, 0.9, 0.85);   // depth marks on empty cells
+      runePts = mkPts(RUNES, 3.4, 1);
+      runeGlow = mkPts(RUNES, 9, 0.4);
+      trayPts = mkPts(TRAY_MAX, 4.2, 1);
+      sparkPts = mkPts(SPARK, 1.5, 0.95);
+      for (let i = 0; i < SPARK; i++) sLife[i] = 0;
 
-      // your rider: a bright orb with a comet trail
-      avatar = glowSprite(4.5);
-      group.add(avatar);
-      avatarTrail = mkPts(24, 2.2, 0.7, group);
-      seedPts = mkPts(3, 2.6, 1, group); // your pouch, orbiting in plain sight
-
-      // flower-trees: trunk + stacked canopy glows, grown by your blooms
-      trees.length = 0;
-      const trunkMat = new THREE.MeshBasicMaterial({ color: 0x1a2410, toneMapped: false });
-      for (let i = 0; i < TREES; i++) {
-        const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.1, 10, 1.1), trunkMat);
-        trunk.visible = false;
-        group.add(trunk);
-        const glows = [glowSprite(9), glowSprite(7), glowSprite(5)];
-        glows.forEach(g => { g.material.opacity = 0; group.add(g); });
-        trees.push({ trunk, glows, t: 0, side: 0, growth: 0, hue: 0, active: false });
+      // ambient dust so the dark isn't empty
+      const mp = new Float32Array(300 * 3);
+      for (let i = 0; i < 300; i++) {
+        mp[i * 3] = (Math.random() - 0.5) * 120;
+        mp[i * 3 + 1] = (Math.random() - 0.5) * 80;
+        mp[i * 3 + 2] = -40 + Math.random() * 80;
       }
+      const mg = new THREE.BufferGeometry();
+      mg.setAttribute('position', new THREE.BufferAttribute(mp, 3));
+      motes = new THREE.Points(mg, glowPoints(0.55, 0.35));
+      motes.frustumCulled = false;
+      group.add(motes);
 
-      // dirt banks hugging the vine — the garden's soil, breathing with the bass
-      const dirtGeo = new THREE.BoxGeometry(LANE_W * 2.2, 0.5, SLAT_GAP * 0.95);
-      dirtL = new THREE.InstancedMesh(dirtGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), SLATS);
-      dirtR = new THREE.InstancedMesh(dirtGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), SLATS);
-      for (const d of [dirtL, dirtR]) {
-        d.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        d.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SLATS * 3), 3);
-        d.frustumCulled = false;
-        group.add(d);
-      }
-
-      // glowing grass sprouting from the banks
-      grass = mkPts(GRASS, 1.1, 0.7, group);
-      for (let i = 0; i < GRASS; i++) {
-        grassT[i] = Math.random() * 200;
-        grassOff[i] = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2 + 2 + Math.random() * 12);
-      }
-
-      // dew stars floating through the garden night
-      const dp = new Float32Array(DEW * 3);
-      for (let i = 0; i < DEW; i++) {
-        dp[i * 3] = (Math.random() - 0.5) * 260;
-        dp[i * 3 + 1] = -8 + Math.random() * 60;
-        dp[i * 3 + 2] = (Math.random() - 0.5) * 260;
-      }
-      const dg = new THREE.BufferGeometry();
-      dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-      dew = new THREE.Points(dg, glowPoints(0.8, 0.5));
-      dew.frustumCulled = false;
-      group.add(dew);
+      keyLight = glowSprite(90);
+      keyLight.position.set(0, 0, -18);
+      keyLight.material.opacity = 0;
+      group.add(keyLight);
 
       sky = skyDome(300);
       group.add(sky);
 
-      travel = 0; lanePos = 0; speed = 18;
-      multi = 1; count = 0;
-      comboFlash = 0; fizzle = 0; fever = 0;
-      nextGateT = 30;
-      for (let i = 0; i < GATES; i++) gAlive[i] = 0;
-      for (let k = 0; k < 5; k++) spawnGate(35 + k * 16);
+      tray.length = 0;
+      for (let i = 0; i < RUNES; i++) rAlive[i] = 0;
+      spawnT = 0; figIndex = 0; finale = 0;
+      fuseFlash = 0; denyFlash = 0; placeFlash = 0;
 
-      camera.fov = 74;
+      camera.position.set(0, 0, 46);
+      camera.lookAt(0, 0, 0);
+      camera.fov = 62;
       camera.updateProjectionMatrix();
     },
 
     setInput(x, y) { pointer.x = x; pointer.y = y; pointer.active = true; },
 
     placeGhost(p, i, out) {
-      // friends run their own vines alongside yours
-      const t = travel + 10 + (i % 5) * 8;
-      const side = (i % 2 ? 1 : -1) * (14 + (i % 3) * 6);
-      out.set(px(t) + side + p.x * 2, py(t) + 3, -t);
+      // fellow gardeners drift at the edges of the room
+      const a = i * 1.7 + (this._t || 0) * 0.15;
+      out.set(Math.cos(a) * 34, Math.sin(a * 0.8) * 20, 6 + Math.sin(a) * 8);
     },
 
-    // tap: pulse — snap toward the tapped side AND pop the nearest gate ahead
-    onTap(x) {
-      lanePos = Math.max(-1, Math.min(1, x * 1.6));
+    // one gesture, two meanings: catch a rune, or set one into the lattice
+    onTap(x, y) {
+      // 1) is a floating rune under the tap?
       let best = -1, bestD = 1e9;
-      for (let i = 0; i < GATES; i++) {
-        if (!gAlive[i]) continue;
-        const d = gT[i] - travel;
-        if (d > 2 && d < 26 && d < bestD) { bestD = d; best = i; }
+      for (let i = 0; i < RUNES; i++) {
+        if (!rAlive[i]) continue;
+        _v.set(rx[i], ry[i], rz[i]).project(camera);
+        const d = Math.hypot(_v.x - x, _v.y - y);
+        if (d < bestD) { bestD = d; best = i; }
       }
-      if (best >= 0 && gCol[best] !== -1) gT[best] = travel + 2.5; // yank it in
+      if (best >= 0 && bestD < 0.09) {
+        if (tray.length < TRAY_MAX) {
+          tray.push(rTier[best]);
+          spark(rx[best], ry[best], rz[best], tierHue(rTier[best]), 12, 0.7);
+          scoreQueue += 2;
+          rAlive[best] = 0;
+          tryFuse();
+        } else {
+          denyFlash = 1;
+        }
+        return;
+      }
+
+      // 2) otherwise: which lattice cell did the ray cross?
+      _v.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
+      const t = -camera.position.z / _v.z;
+      const wx = camera.position.x + _v.x * t;
+      const wy = camera.position.y + _v.y * t;
+      const c = Math.round(wx / (CELL * scaleUp) + (cols - 1) / 2);
+      const r = Math.round((rows - 1) / 2 - wy / (CELL * scaleUp));
+      if (c < 0 || c >= cols || r < 0 || r >= rows) return;
+      const idx = r * cols + c;
+      const need = cellTier[idx];
+      if (!need || cellFilled[idx]) return;
+
+      const have = tray.indexOf(need);
+      if (have === -1) { denyFlash = 1; return; }
+
+      tray.splice(have, 1);
+      cellFilled[idx] = 1;
+      cellLight[idx] = 1.6;         // lands bright, settles into its color
+      filledCount++;
+      placeFlash = 1;
+      scoreQueue += need === 1 ? 5 : need === 2 ? 20 : 60;
+      spark(cellX(c), cellY(r), 1, tierHue(need), 14 + need * 8, 0.6 + need * 0.2);
+
+      if (filledCount >= needCount) {
+        finale = 1;
+        scoreQueue += 300;
+        for (let k = 0; k < 5; k++) {
+          spark((Math.random() - 0.5) * cols * CELL, (Math.random() - 0.5) * rows * CELL, 2, tierHue(3), 40, 1.6);
+        }
+      }
     },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      this._t = time;
 
-      if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue, scoreQX, scoreQY); scoreQueue = 0; }
+      if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue); scoreQueue = 0; }
 
-      comboFlash = Math.max(0, comboFlash - dt * 0.8);
-      fizzle = Math.max(0, fizzle - dt * 1.4);
-      if (fever > 0) {
-        fever -= dt;
-        if (fever <= 0) {
-          fever = 0;
-          multi = 2;
-          if (window.__announce) window.__announce('the vine remembers ×2', 'hsl(310, 80%, 70%)');
-          for (let i = 0; i < GATES; i++) if (gAlive[i] && gCol[i] === 3) gCol[i] = Math.floor(Math.random() * 3);
+      fuseFlash = Math.max(0, fuseFlash - dt * 1.6);
+      denyFlash = Math.max(0, denyFlash - dt * 2.4);
+      placeFlash = Math.max(0, placeFlash - dt * 1.8);
+
+      // the figure completes, holds, then the room resets with a new one
+      if (finale > 0) {
+        finale -= dt * 0.22;
+        if (finale <= 0) {
+          finale = 0;
+          figIndex++;
+          loadFigure(figIndex, participants ? participants.length : 1);
         }
       }
 
-      // speed IS the reward: combos and music push the throttle
-      const targetSpeed = (18 + audio.energy * 16 * reactivity + multi * 4 + (fever > 0 ? 14 : 0)) * (1 - fizzle * 0.45);
-      speed += (targetSpeed - speed) * Math.min(1, dt * 2);
-      travel += speed * dt;
+      const want = needCount ? filledCount / needCount : 0;
+      completion += (want - completion) * Math.min(1, dt * 1.6);
+      const lit = completion * (1 + finale * 1.4);
 
-      // steering: pointer eases you across the three lanes
-      if (attract) lanePos += (Math.sin(time * 0.6) - lanePos) * Math.min(1, dt * 2);
-      else lanePos += (Math.max(-1, Math.min(1, pointer.x * 1.6)) - lanePos) * Math.min(1, dt * 6);
-      const laneX = lanePos * LANE_W;
+      // camera: a slow, considered drift — you're standing in a dark room
+      const px2 = attract ? Math.sin(time * 0.13) * 0.5 : pointer.x;
+      const py2 = attract ? Math.cos(time * 0.11) * 0.4 : pointer.y;
+      camera.position.set(
+        px2 * 7 + Math.sin(time * 0.09) * 1.5,
+        py2 * 5 + Math.cos(time * 0.07) * 1.2,
+        46 - completion * 4 - audio.bass * 0.8
+      );
+      camera.lookAt(px2 * 1.5, py2 * 1.2, 0);
+      camera.rotation.z += Math.sin(time * 0.05) * 0.008;
 
-      // camera rides the vine
-      const cx = px(travel), cy = py(travel);
-      const aheadX = px(travel + 24), aheadY = py(travel + 24);
-      const bank = (aheadX - cx) * 0.02 + lanePos * 0.12;
-      camera.position.set(cx + laneX * 0.6, cy + 5.2 + audio.bass * 0.5, -travel);
-      camera.lookAt(aheadX + laneX * 0.4, aheadY + 3.2, -(travel + 24));
-      camera.rotation.z += -bank;
+      // ── lattice ──
+      const pipA = pipPts.geometry.attributes;
+      let pip = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = r * cols + c;
+          const t = cellTier[i];
+          const x = cellX(c), y = cellY(r);
+          const beat = audio.beatIntensity * reactivity;
 
-      // avatar orb hovers ahead in your lane
-      const at = travel + 7;
-      avatar.position.set(px(at) + laneX, py(at) + 2.3 + Math.sin(time * 6) * 0.15, -at);
-      const avHue = hue / 360;
-      color.setHSL(fever > 0 ? 0.13 : avHue, 0.95, 0.62).multiplyScalar(1.3 + audio.beatIntensity * 0.5);
-      avatar.material.color.copy(color);
-      avatar.scale.setScalar(4.5 * (1 + audio.beatIntensity * 0.3 + comboFlash * 0.5));
-      {
-        const tp2 = avatarTrail.geometry.attributes.position;
-        const tc = avatarTrail.geometry.attributes.color;
-        for (let i = 23; i > 0; i--) {
-          tp2.setXYZ(i, tp2.getX(i - 1), tp2.getY(i - 1), tp2.getZ(i - 1));
-          color.setHSL(fever > 0 ? 0.13 : avHue, 0.9, 0.5).multiplyScalar((1 - i / 24) * 1.1);
-          tc.setXYZ(i, color.r, color.g, color.b);
-        }
-        tp2.setXYZ(0, avatar.position.x, avatar.position.y, avatar.position.z);
-        color.setHSL(fever > 0 ? 0.13 : avHue, 0.95, 0.6);
-        tc.setXYZ(0, color.r, color.g, color.b);
-        tp2.needsUpdate = true; tc.needsUpdate = true;
-      }
-
-      // vine planks recycle ahead, painted by theme + streak
-      for (let s = 0; s < SLATS; s++) {
-        const t = travel - 8 + s * SLAT_GAP;
-        const wob = Math.sin(t * 0.3 + time * 2) * 0.06;
-        dummy.position.set(px(t), py(t) - 0.4 + wob, -t);
-        dummy.rotation.set(0, -(px(t + 1) - px(t)) * 0.4, (px(t + 2) - px(t)) * 0.05);
-        dummy.updateMatrix();
-        slats.setMatrixAt(s, dummy.matrix);
-        const level = audio[['bass', 'lowMid', 'mid', 'high', 'treble'][s % 5]];
-        themePaint(colorMode, hue / 360, (s % 10) / 10, t * 0.01, time, level, (s * 7.3) % 1, tp);
-        const glow = 0.10 + level * 0.30 * reactivity + comboFlash * 0.12;
-        color.setHSL(fever > 0 ? 0.13 : tp[0], Math.max(0.6, tp[1]), Math.min(0.5, glow * Math.min(1.5, tp[2])));
-        slats.setColorAt(s, color);
-
-        const rl = railL.geometry.attributes, rr = railR.geometry.attributes;
-        const edge = LANE_W * 1.5 + 1;
-        rl.position.setXYZ(s, px(t) - edge, py(t) + 0.25, -t);
-        rr.position.setXYZ(s, px(t) + edge, py(t) + 0.25, -t);
-        color.setHSL(fever > 0 ? 0.13 : (hue / 360 + 0.08) % 1, 0.9, 0.4 + audio.volume * 0.25).multiplyScalar(1 + comboFlash);
-        rl.color.setXYZ(s, color.r, color.g, color.b);
-        rr.color.setXYZ(s, color.r, color.g, color.b);
-      }
-      slats.instanceMatrix.needsUpdate = true;
-      slats.instanceColor.needsUpdate = true;
-      railL.geometry.attributes.position.needsUpdate = true;
-      railL.geometry.attributes.color.needsUpdate = true;
-      railR.geometry.attributes.position.needsUpdate = true;
-      railR.geometry.attributes.color.needsUpdate = true;
-
-      // three dots orbit the rider: your progress to the next magic number
-      {
-        const sp = seedPts.geometry.attributes.position;
-        const sc = seedPts.geometry.attributes.color;
-        for (let k = 0; k < 3; k++) {
-          const a = time * 2.4 + k * 2.09;
-          sp.setXYZ(k,
-            avatar.position.x + Math.cos(a) * 1.9,
-            avatar.position.y + 0.9 + Math.sin(time * 3 + k) * 0.3,
-            avatar.position.z + Math.sin(a) * 1.9
-          );
-          if (k < count) {
-            color.setHSL(0.13, 0.9, 0.6).multiplyScalar(1.3 + audio.beatIntensity * 0.4); // lit: gold
+          if (!t) {
+            dummy.position.set(0, 0, -999); dummy.scale.setScalar(0.001);
+          } else if (cellFilled[i]) {
+            cellLight[i] += (1 - cellLight[i]) * Math.min(1, dt * 2.2);
+            const wob = Math.sin(time * 1.6 + i * 0.7) * 0.04;
+            const pop = cellLight[i];
+            dummy.position.set(x, y, (pop - 1) * 3);
+            dummy.scale.setScalar(0.9 + wob + (pop - 1) * 0.5 + beat * 0.06);
+            dummy.rotation.z = wob * 0.3;
           } else {
-            color.setRGB(0.05, 0.06, 0.08); // unlit
+            // unearned: a bare dark plate, barely there
+            dummy.position.set(x, y, 0);
+            dummy.scale.setScalar(0.9);
+            dummy.rotation.z = 0;
           }
-          sc.setXYZ(k, color.r, color.g, color.b);
+          dummy.updateMatrix();
+          cellMesh.setMatrixAt(i, dummy.matrix);
+
+          if (!t) {
+            color.setRGB(0, 0, 0);
+          } else if (cellFilled[i]) {
+            // the figure keeps its own palette — a picture should look like
+            // itself. The theme only breathes a little life across it.
+            themePaint(colorMode, tierHue(t), c / cols, r / rows, time, audio.energy, (i * 7.3) % 1, tp);
+            const h = tierHue(t) + (tp[0] - tierHue(t)) * 0.18;
+            const lum = (0.17 + t * 0.12) * Math.min(1.4, tp[2]) + audio.beatIntensity * 0.05 * t;
+            color.setHSL((h + 1) % 1, 0.78, Math.min(0.62, lum * cellLight[i]));
+            if (finale > 0) color.multiplyScalar(1 + finale * 1.2);
+          } else {
+            // waiting cells: a faint plate of the figure's own color, and it
+            // warms whenever you're carrying the rune it wants
+            const ready = tray.includes(t);
+            const idle = (ready ? 0.055 : 0.022)
+              + 0.014 * Math.sin(time * 1.3 + i * 0.35)
+              + denyFlash * 0.05;
+            color.setHSL(tierHue(t), ready ? 0.6 : 0.35, idle);
+          }
+          cellMesh.setColorAt(i, color);
+
+          // depth marks: 1, 2, or 3 pips telling you what the cell will accept
+          if (t && !cellFilled[i]) {
+            for (let k = 0; k < t; k++) {
+              const off = (k - (t - 1) / 2) * 0.42;
+              pipA.position.setXYZ(pip, x + off, y, 0.4);
+              const held = tray.includes(t);
+              const g = held ? 0.5 + 0.18 * Math.sin(time * 4 + i) : 0.19;
+              color.setHSL(tierHue(t), 0.8, g);
+              pipA.color.setXYZ(pip, color.r, color.g, color.b);
+              pip++;
+            }
+          }
+        }
+      }
+      for (; pip < rows * cols * 3; pip++) pipA.position.setXYZ(pip, 0, -999, 0);
+      cellMesh.instanceMatrix.needsUpdate = true;
+      cellMesh.instanceColor.needsUpdate = true;
+      pipA.position.needsUpdate = true;
+      pipA.color.needsUpdate = true;
+
+      // ── runes rise out of the dark; the music decides how generously ──
+      spawnT -= dt;
+      if ((audio.beat && Math.random() < 0.5) || spawnT <= 0) {
+        for (let i = 0; i < RUNES; i++) {
+          if (rAlive[i]) continue;
+          rAlive[i] = 1;
+          rTier[i] = Math.random() < 0.82 ? 1 : 2;   // deeper runes are rare gifts
+          rx[i] = (Math.random() - 0.5) * 54;
+          ry[i] = -30;
+          rz[i] = 10 + Math.random() * 12;
+          rSpin[i] = Math.random() * 6;
+          break;
+        }
+        spawnT = 0.85 - Math.min(0.5, audio.energy * 0.6);
+      }
+      const rp = runePts.geometry.attributes, rg = runeGlow.geometry.attributes;
+      for (let i = 0; i < RUNES; i++) {
+        if (!rAlive[i]) { rp.position.setXYZ(i, 0, -999, 0); rg.position.setXYZ(i, 0, -999, 0); continue; }
+        ry[i] += dt * (5 + audio.volume * 4);
+        rx[i] += Math.sin(time * 0.9 + rSpin[i]) * dt * 1.6;
+        if (ry[i] > 32) { rAlive[i] = 0; continue; }
+        rp.position.setXYZ(i, rx[i], ry[i], rz[i]);
+        rg.position.setXYZ(i, rx[i], ry[i], rz[i]);
+        const shimmer = 0.5 + 0.5 * Math.sin(time * 3 + rSpin[i] * 2);
+        color.setHSL(tierHue(rTier[i]), 0.9, 0.42 + shimmer * 0.16 + rTier[i] * 0.05)
+          .multiplyScalar(1.1 + audio.beatIntensity * 0.4);
+        rp.color.setXYZ(i, color.r, color.g, color.b);
+        color.multiplyScalar(0.42);
+        rg.color.setXYZ(i, color.r, color.g, color.b);
+      }
+      rp.position.needsUpdate = true; rp.color.needsUpdate = true;
+      rg.position.needsUpdate = true; rg.color.needsUpdate = true;
+
+      // ── tray: what you're carrying, laid out along the bottom of the room ──
+      {
+        const ta = trayPts.geometry.attributes;
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        for (let k = 0; k < TRAY_MAX; k++) {
+          if (k < tray.length) {
+            const off = (k - (tray.length - 1) / 2) * 3.4;
+            _v.copy(camera.position)
+              .addScaledVector(camDir, 20)
+              .add(new THREE.Vector3(off, -11.5 + Math.sin(time * 2.4 + k) * 0.25, 0));
+            ta.position.setXYZ(k, _v.x, _v.y, _v.z);
+            const t = tray[k];
+            color.setHSL(tierHue(t), 0.95, 0.4 + t * 0.08 + fuseFlash * 0.25)
+              .multiplyScalar(1.2 + audio.beatIntensity * 0.3 + fuseFlash);
+            ta.color.setXYZ(k, color.r, color.g, color.b);
+          } else {
+            ta.position.setXYZ(k, 0, -999, 0);
+          }
+        }
+        ta.position.needsUpdate = true; ta.color.needsUpdate = true;
+        trayPts.material.size = 4.2 * (1 + fuseFlash * 0.5);
+      }
+
+      // ── sparks ──
+      {
+        const sp = sparkPts.geometry.attributes.position;
+        const sc = sparkPts.geometry.attributes.color;
+        for (let i = 0; i < SPARK; i++) {
+          if (sLife[i] <= 0) { sp.setXYZ(i, 0, -999, 0); continue; }
+          sLife[i] -= dt;
+          sVel[i * 3 + 1] -= 7 * dt;
+          sp.setXYZ(i, sp.getX(i) + sVel[i * 3] * dt, sp.getY(i) + sVel[i * 3 + 1] * dt, sp.getZ(i) + sVel[i * 3 + 2] * dt);
+          const l = Math.max(0, Math.min(1, sLife[i]));
+          color.setHSL(sHue[i], 0.9, 0.5).multiplyScalar(l * 1.5);
+          sc.setXYZ(i, color.r, color.g, color.b);
         }
         sp.needsUpdate = true; sc.needsUpdate = true;
       }
 
-      // dirt banks + glowing grass: the garden the vine grows through
-      for (let s = 0; s < SLATS; s++) {
-        const t = travel - 8 + s * SLAT_GAP;
-        const bankX = LANE_W * 1.5 + 1 + LANE_W * 1.1;
-        const soil = 0.5 + ((s * 13) % 7) * 0.04; // lumpy, not machined
-        for (const [d, side] of [[dirtL, -1], [dirtR, 1]]) {
-          dummy.position.set(px(t) + side * bankX, py(t) - 0.9 - soil * 0.3, -t);
-          dummy.rotation.set(0, -(px(t + 1) - px(t)) * 0.4, side * 0.12);
-          dummy.scale.set(1, soil, 1);
-          dummy.updateMatrix();
-          d.setMatrixAt(s, dummy.matrix);
-          color.setHSL(0.09, 0.45, 0.028 + audio.bass * 0.02 + comboFlash * 0.02);
-          d.setColorAt(s, color);
-        }
-      }
-      dirtL.instanceMatrix.needsUpdate = true; dirtL.instanceColor.needsUpdate = true;
-      dirtR.instanceMatrix.needsUpdate = true; dirtR.instanceColor.needsUpdate = true;
-      {
-        const gp = grass.geometry.attributes.position;
-        const gcol = grass.geometry.attributes.color;
-        for (let i = 0; i < GRASS; i++) {
-          if (grassT[i] < travel - 10) {
-            grassT[i] = travel + 60 + Math.random() * 140;
-            grassOff[i] = (Math.random() < 0.5 ? -1 : 1) * (LANE_W * 2 + 2 + Math.random() * 12);
-          }
-          const t = grassT[i];
-          gp.setXYZ(i, px(t) + grassOff[i], py(t) - 0.4 + Math.abs(Math.sin(i * 3.3)) * 1.2, -t);
-          color.setHSL(0.3 + Math.sin(i * 7.1) * 0.06, 0.8, 0.16 + audio.mid * 0.2 + (fever > 0 ? 0.12 : 0));
-          gcol.setXYZ(i, color.r, color.g, color.b);
-        }
-        gp.needsUpdate = true; gcol.needsUpdate = true;
-        grass.material.size = 1.1 + audio.mid * 0.8;
-      }
+      // ── the room answers what you've built ──
+      keyLight.material.color.setHSL(tierHue(2), 0.7, 0.5);
+      keyLight.material.opacity = 0.03 + lit * 0.16 + placeFlash * 0.05;
+      keyLight.scale.setScalar(90 * (1 + lit * 0.4 + finale * 0.5));
 
-      // flower-trees erupt where your blooms landed, and you fly past them
-      for (const tr of trees) {
-        if (!tr.active) continue;
-        if (tr.t < travel - 70) {
-          tr.active = false;
-          tr.trunk.visible = false;
-          tr.glows.forEach(g => g.material.opacity = 0);
-          continue;
-        }
-        tr.growth = Math.min(1, tr.growth + dt * 0.9);
-        const g2 = tr.growth * tr.growth * (3 - 2 * tr.growth); // ease
-        const bx2 = px(tr.t) + tr.side;
-        const by = py(tr.t);
-        tr.trunk.visible = true;
-        tr.trunk.position.set(bx2, by - 1 + g2 * 5.5, -tr.t);
-        tr.trunk.scale.set(g2, g2, g2);
-        tr.glows.forEach((g, k) => {
-          g.position.set(
-            bx2 + Math.sin(k * 2.1 + time * 0.6) * 1.6 * g2,
-            by + (4 + k * 3.2) * g2,
-            -tr.t + Math.cos(k * 1.7) * 1.2
-          );
-          g.scale.setScalar((9 - k * 2) * g2 * (1 + audio.beatIntensity * 0.25));
-          color.setHSL(tr.hue, 0.9, 0.5 + k * 0.05);
-          g.material.color.copy(color);
-          g.material.opacity = 0.5 * g2;
-        });
-      }
+      motes.material.color.setHSL(tierHue(1), 0.6, 0.12 + lit * 0.3 + audio.high * 0.15);
+      motes.material.size = 0.55 + lit * 0.5 + audio.high * 0.4;
+      motes.rotation.y += dt * 0.012;
+      motes.rotation.z += dt * 0.004;
 
-      // gates: spawn ahead, rush in, collect or dodge
-      nextGateT -= speed * dt;
-      if (nextGateT <= 0) {
-        spawnGate(travel + 110 + Math.random() * 30);
-        nextGateT = (fever > 0 ? 7 : 13) + Math.random() * 8;
-      }
-      const gc = gateCore.geometry.attributes, gh = gateHalo.geometry.attributes, gr = gateRing.geometry.attributes;
-      for (let i = 0; i < GATES; i++) {
-        if (!gAlive[i]) {
-          if (gPop[i] > 0.02) gPop[i] *= Math.pow(0.05, dt);
-          else { gc.position.setXYZ(i, 0, -999, 0); gh.position.setXYZ(i, 0, -999, 0); gr.position.setXYZ(i, 0, -999, 0); continue; }
-        }
-        const t = gT[i];
-        const gx = px(t) + gLane[i] * LANE_W;
-        const gy = py(t) + 2.3;
-
-        if (gAlive[i] && t < travel + 3.2) {
-          // the moment of truth: are you in its lane?
-          const hit = Math.abs(laneX - gLane[i] * LANE_W) < LANE_W * 0.55;
-          gAlive[i] = 0;
-          gPop[i] = hit ? 1 : 0;
-          if (hit) {
-            if (gCol[i] === -1) {
-              // thorn: the only thing that hurts — multiplier and dots gone
-              fizzle = 1; multi = 1; count = 0;
-              boom(gx, gy, -t, 0.02, 16);
-            } else if (gCol[i] === 3) {
-              // SUPERBLOOM gold: everything pays
-              scoreQueue += 25; scoreQX = 0; scoreQY = 0;
-              boom(gx, gy, -t, 0.13, 22);
-              comboFlash = Math.max(comboFlash, 0.6);
-            } else {
-              // flower: +3, and every THIRD in a row is the magic number
-              count++;
-              scoreQueue += 3; scoreQX = 0; scoreQY = 0;
-              boom(gx, gy, -t, TRIO[gCol[i]], 10);
-              if (count >= 3) {
-                count = 0;
-                scoreQueue += 15 * multi;
-                multi = Math.min(5, multi + 1);
-                comboFlash = 1;
-                spawnTree(TRIO[gCol[i]]);
-                boom(gx, gy, -t, TRIO[gCol[i]], 40 + multi * 20);
-                if (window.__announce) window.__announce(`MAGIC NUMBER ×${multi}`, `hsl(${Math.round(TRIO[gCol[i]] * 360)}, 95%, 68%)`);
-                if (multi >= 5 && fever <= 0) {
-                  fever = 10;
-                  for (let k = 0; k < GATES; k++) if (gAlive[k]) gCol[k] = 3;
-                  if (window.__announce) setTimeout(() => window.__announce('🌸 SUPERBLOOM 🌸', 'hsl(46, 100%, 62%)'), 500);
-                }
-              }
-            }
-          } else if (gCol[i] !== -1 && gCol[i] !== 3) {
-            // let a flower sail past = your dots reset (thorns are FINE to dodge)
-            count = 0;
-          }
-        }
-
-        const show = gAlive[i] ? 1 : gPop[i];
-        const isThorn = gCol[i] === -1;
-        // thorns stab on the beat and look sickly; flowers breathe invitingly
-        const pulse = isThorn
-          ? 1 + audio.beatIntensity * 0.9
-          : 1 + Math.sin(time * 5 + i * 2) * 0.15 + audio.beatIntensity * 0.35;
-        const h01 = isThorn ? 0.98 : gCol[i] === 3 ? 0.13 : TRIO[gCol[i]];
-        const sat = isThorn ? 0.85 : 0.95;
-        const isStreak = false; // all flowers are equal now — just don't miss
-        gc.position.setXYZ(i, gx, gy, -t);
-        gh.position.setXYZ(i, gx, gy, -t);
-        gr.position.setXYZ(i, gx, py(t) + 0.15, -t);
-        color.setHSL(h01, sat, isThorn ? 0.3 : 0.55).multiplyScalar(show * pulse * (isStreak ? 1.6 : 1));
-        gc.color.setXYZ(i, color.r, color.g, color.b);
-        color.multiplyScalar(isThorn ? 0.25 : 0.5); // thorns cast almost no glow — they lurk
-        gh.color.setXYZ(i, color.r, color.g, color.b);
-        gr.color.setXYZ(i, color.r * 0.8, color.g * 0.8, color.b * 0.8);
-      }
-      gc.position.needsUpdate = true; gc.color.needsUpdate = true;
-      gh.position.needsUpdate = true; gh.color.needsUpdate = true;
-      gr.position.needsUpdate = true; gr.color.needsUpdate = true;
-      gateHalo.material.size = 11 * (1 + comboFlash * 0.4);
-
-      // fireworks physics
-      {
-        const fp = fireworks.geometry.attributes.position;
-        const fc = fireworks.geometry.attributes.color;
-        for (let i = 0; i < FW; i++) {
-          if (fwLife[i] <= 0) { fp.setXYZ(i, 0, -999, 0); continue; }
-          fwLife[i] -= dt;
-          fwVel[i * 3 + 1] -= 15 * dt;
-          fp.setXYZ(i, fp.getX(i) + fwVel[i * 3] * dt, fp.getY(i) + fwVel[i * 3 + 1] * dt, fp.getZ(i) + fwVel[i * 3 + 2] * dt);
-          const l = Math.max(0, Math.min(1, fwLife[i]));
-          color.setHSL(fwHue[i], 0.95, 0.55).multiplyScalar(l * 1.5);
-          fc.setXYZ(i, color.r, color.g, color.b);
-        }
-        fp.needsUpdate = true; fc.needsUpdate = true;
-      }
-
-      // night garden dressing
-      dew.position.z = -travel;
-      dew.rotation.y = time * 0.01;
-      dew.material.color.setHSL(fever > 0 ? 0.13 : (hue / 360 + 0.45) % 1, 0.8, 0.5 + audio.high * 0.3);
-      dew.material.size = 0.8 + audio.high * 0.8 + comboFlash * 0.6;
       sky.position.copy(camera.position);
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
-      sky.material.color.setHSL(
-        fizzle > 0.4 ? 0.02 : fever > 0 ? 0.13 : tp[0],
-        tp[1] * 0.5,
-        0.15 + audio.energy * 0.1 + comboFlash * 0.13
-      );
+      sky.material.color.setHSL(tp[0], tp[1] * 0.55, 0.012 + lit * 0.09 + finale * 0.06);
 
-      // speed you can feel
-      const fovT = 74 + speed * 0.28 + comboFlash * 8;
-      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
+      const fovT = 62 - lit * 2 + audio.volume * 2 * reactivity;
+      camera.fov += (fovT - camera.fov) * Math.min(1, dt * 4);
       camera.updateProjectionMatrix();
 
       if (participants && participants[0]) {
-        participants[0].x = lanePos;
-        participants[0].y = 0;
+        participants[0].x = pointer.x;
+        participants[0].y = pointer.y;
       }
     },
 
     dispose() {
-      scene.fog = null;
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       scene.remove(group);
     },
