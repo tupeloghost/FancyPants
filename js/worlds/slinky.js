@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=117';
-import { themePaint } from '../lib/themes.js?v=117';
-import { PALETTE } from '../net.js?v=117';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=119';
+import { themePaint } from '../lib/themes.js?v=119';
+import { PALETTE } from '../net.js?v=119';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -400,7 +400,22 @@ export function createSlinky() {
       // flight between the lens and the slinkies. Now it swings within a
       // limited arc on the open side — enough movement to feel alive, never
       // enough to put the stairs in the way.
-      pathAt(walk - RINGS * 0.033, P); // middle of the spring, allowing for stretch
+      // Racing, the camera has to hold the race, not just you. It frames a
+      // point biased towards your spring but pulled towards the leader, and
+      // backs off as the field spreads — so you can always see yourself AND
+      // who you are chasing. Solo, or idling, it just watches your spring.
+      let focus = walk - RINGS * 0.033;
+      let spread = 0;
+      if (racing && participants && participants.length > 1) {
+        let lead = walk;
+        for (let i = 1; i < participants.length; i++) {
+          const z = participants[i].z || 0;
+          if (z > lead) lead = z;
+        }
+        spread = Math.max(0, lead - walk);
+        focus += Math.min(spread * 0.30, 7);   // lean towards the leader, never lose yourself
+      }
+      pathAt(focus, P);
       // The flight rises 5 units for every 8 it goes back, so any camera placed
       // uphill of the spring sits *under* the stairs above it — that is the
       // whole upper half of the old orbit, and it is why the view kept ending
@@ -410,7 +425,8 @@ export function createSlinky() {
         ? Math.max(-1, Math.min(1, pointer.x))
         : Math.sin(time * 0.08) * 0.55;
       const ang = -Math.PI / 2 + swing * 1.25;   // sweeps side to side, never uphill
-      const orbitR = 62;                         // holds the full width of the field
+      // back off as the field strings out, so nobody drops off the frame
+      const orbitR = 62 + Math.min(spread * 0.9, 20);
       camPos.set(
         Math.cos(ang) * orbitR,
         P.y + 13 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing

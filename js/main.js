@@ -8,16 +8,16 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=117';
-import { WORLDS } from './worlds/registry.js?v=117';
-import { Net, PALETTE } from './net.js?v=117';
-import { Presence } from './lib/presence.js?v=117';
-import { Pulses } from './lib/pulse.js?v=117';
-import { BeatClock } from './lib/beatclock.js?v=117';
-import { BeatCue } from './lib/beatcue.js?v=117';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=117';
-import { Race, placeOf } from './lib/race.js?v=117';
-import { glowTexture } from './lib/glow.js?v=117';
+import { AudioEngine } from './audio-engine.js?v=119';
+import { WORLDS } from './worlds/registry.js?v=119';
+import { Net, PALETTE } from './net.js?v=119';
+import { Presence } from './lib/presence.js?v=119';
+import { Pulses } from './lib/pulse.js?v=119';
+import { BeatClock } from './lib/beatclock.js?v=119';
+import { BeatCue } from './lib/beatcue.js?v=119';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=119';
+import { Race, placeOf, standings } from './lib/race.js?v=119';
+import { glowTexture } from './lib/glow.js?v=119';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -385,11 +385,62 @@ audio.el.addEventListener('loadstart', () => {
   beatCue.reset();
   chartTrack(audio.el.currentSrc || audio.el.src);
 });
+// ── Results ── the reveal. A round without one is just activity that stops.
+// Shown when you reach the bottom, or when the music ends — the song's last
+// note is the hard bell, and whoever is deepest at that moment takes it.
+const ORDINAL = ['', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH', 'SEVENTH', 'EIGHTH'];
+let resultsShown = false;
+let resultsTimer = 0;
+
+function hideResults() {
+  resultsShown = false;
+  clearTimeout(resultsTimer);
+  $('results').classList.remove('show');
+}
+
+function showResults(reason) {
+  if (resultsShown || !race.active) return;
+  resultsShown = true;
+
+  const solo = participants.length <= 1;
+  const board = standings(participants);
+  const place = board.findIndex(e => e.i === 0) + 1;
+
+  $('results-place').textContent = solo
+    ? (race.finished ? 'THE BOTTOM' : 'TIME')
+    : (ORDINAL[place] || place + 'TH');
+  $('results-sub').textContent = solo
+    ? (race.finished ? 'you reached the foot of the stairs' : Math.round(race.fraction * 100) + '% of the way down')
+    : (race.finished ? 'reached the bottom' : 'when the music stopped');
+
+  const rows = board.slice(0, 8).map(e => {
+    const p = e.p;
+    const css = '#' + PALETTE[(p.color || 0) % PALETTE.length].toString(16).padStart(6, '0');
+    const pct = race.finish ? Math.min(100, Math.round(e.depth / race.finish * 100)) : 0;
+    return `<div class="rrow${e.i === 0 ? ' me' : ''}">`
+      + `<i style="background:${css};box-shadow:0 0 8px ${css}"></i>`
+      + `<span>${(p.name || 'guest').replace(/[<>&]/g, '')}</span>`
+      + `<b>${pct}%</b></div>`;
+  }).join('');
+  $('results-board').innerHTML = rows;
+
+  $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
+  $('rs-streak').textContent = race.bestStreak;
+  $('rs-notes').textContent = race.perfect + race.good;
+
+  $('results').classList.add('show');
+  impact(0.9);
+  // it clears itself — nobody should have to dismiss a scoreboard mid-stream
+  resultsTimer = setTimeout(hideResults, 11000);
+}
+audio.el.addEventListener('ended', () => { if (race.active) showResults('ended'); });
+
 // A race belongs to one track in one rhythm world — one song, one round.
 function startRaceIfReady() {
   if (!document.body.classList.contains('rhythm') || !beatCue.chart) { race.reset(); return; }
   race.start(beatCue.chart.duration);
   seenMissed = beatCue.stats.missed;
+  hideResults();
 }
 window.__startRace = startRaceIfReady;
 
@@ -1513,7 +1564,9 @@ function frame(now) {
   if (document.body.classList.contains('rhythm')) {
     beatCue.update(beatClock, audio.currentTime);
     while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
+    const wasFinished = race.finished;
     race.update(dt, audio.currentTime);
+    if (race.finished && !wasFinished) showResults('finished');
     // progress rides on z, which is already on the wire and already
     // interpolated — the field on screen is everyone's real position
     net.local.z = race.progress;
