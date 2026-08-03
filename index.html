@@ -153,6 +153,41 @@
     body:has(#panel.hidden) #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4px); }
   }
 
+  /* ── Tempo strip (T) ── proof the beat grid is real: predicted beats as
+     rules, the detector's raw onsets as marks. Locked = the marks sit on the
+     rules. This is a instrument, not decoration — it earns its keep or it goes. */
+  #tempo {
+    position: fixed; z-index: 96; left: 18px; bottom: 18px;
+    width: 268px; padding: 11px 13px 9px;
+    border-radius: 13px;
+    background: hsla(var(--accent-h), 30%, 6%, 0.62);
+    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.16);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    font: 11px/1.4 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    color: var(--ink-dim);
+  }
+  #tempo.hidden { display: none; }
+  #tempo-head { display: flex; align-items: baseline; gap: 8px; }
+  #tempo-bpm {
+    font: 400 22px 'Didot', 'Bodoni 72', Georgia, serif;
+    color: hsl(var(--accent-h), 55%, 92%);
+    font-variant-numeric: tabular-nums; letter-spacing: 1px;
+  }
+  #tempo-bpm small { font-size: 10px; letter-spacing: 2px; color: var(--ink-faint); margin-left: 3px; }
+  #tempo-state {
+    margin-left: auto; font-size: 8px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  #tempo-state.lock { color: hsl(var(--accent-h), 80%, 72%); }
+  #tempo-conf { height: 2px; margin: 7px 0 8px; background: hsla(var(--accent-h), 50%, 60%, 0.14); border-radius: 2px; }
+  #tempo-conf i { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width 180ms ease; }
+  #tempo-strip { display: block; width: 100%; height: 42px; }
+  #tempo-legend { display: flex; gap: 12px; margin-top: 5px; font-size: 8px; letter-spacing: 1.3px; text-transform: uppercase; color: var(--ink-faint); }
+  #tempo-legend b { font-weight: 400; color: var(--ink-dim); }
+  body.clean #tempo { display: none !important; }
+  @media (max-width: 620px) { #tempo { display: none; } }
+
   /* ── Panel ── */
   #panel {
     position: fixed; top: 14px; right: 14px; z-index: 100;
@@ -854,6 +889,16 @@
   <div id="plist-rows"></div>
 </div>
 
+<div id="tempo" class="hidden">
+  <div id="tempo-head">
+    <span id="tempo-bpm">--<small>BPM</small></span>
+    <span id="tempo-state">searching</span>
+  </div>
+  <div id="tempo-conf"><i style="width:0%"></i></div>
+  <canvas id="tempo-strip" width="536" height="84"></canvas>
+  <div id="tempo-legend"><span><b>|</b> predicted</span><span><b>&#9679;</b> detected</span></div>
+</div>
+
 <div id="qbar">
   <button class="qb" id="qb-prev" title="previous track  ←"><i>&#9666;</i><em>back</em></button>
   <button class="qb" id="qb-play" title="play / pause  space"><i>&#9654;</i><em>play</em></button>
@@ -975,7 +1020,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 101</div>
+      <div id="build-stamp">build 108</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -989,6 +1034,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=101"></script>
+<script type="module" src="js/main.js?v=108"></script>
 </body>
 </html>

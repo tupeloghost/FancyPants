@@ -8,12 +8,13 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=101';
-import { WORLDS } from './worlds/registry.js?v=101';
-import { Net, PALETTE } from './net.js?v=101';
-import { Presence } from './lib/presence.js?v=101';
-import { Pulses } from './lib/pulse.js?v=101';
-import { glowTexture } from './lib/glow.js?v=101';
+import { AudioEngine } from './audio-engine.js?v=108';
+import { WORLDS } from './worlds/registry.js?v=108';
+import { Net, PALETTE } from './net.js?v=108';
+import { Presence } from './lib/presence.js?v=108';
+import { Pulses } from './lib/pulse.js?v=108';
+import { BeatClock } from './lib/beatclock.js?v=108';
+import { glowTexture } from './lib/glow.js?v=108';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -83,11 +84,13 @@ const presence = new Presence();
 presence.init(scene);
 const pulses = new Pulses();
 pulses.init(scene);
+const beatClock = new BeatClock(audio.analyser);
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
 window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
 window.__pulses = pulses; window.__scene = scene;
+window.__beat = beatClock;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
 // world-agnostic so the dust toggle works everywhere ──
@@ -338,6 +341,9 @@ function playPrev() {
   audio.play().catch(() => {});
   updatePlayBtn();
 }
+// a tempo lock is only meaningful for the track it was fitted to
+audio.el.addEventListener('loadstart', () => { beatClock.setAnalyser(audio.analyser); beatClock.reset(); });
+
 // when a track runs out, roll straight into the next one
 audio.el.addEventListener('ended', () => playAuto(true));
 
@@ -816,6 +822,73 @@ $('btn-stardust').addEventListener('click', () => {
   updateURL();
 });
 
+// ── Tempo strip: the last few seconds of song, predicted grid against the
+// detector's raw onsets. If the marks sit on the rules, the grid is real. ──
+const tempoEl = $('tempo');
+const tempoCv = $('tempo-strip');
+const tctx = tempoCv.getContext('2d');
+const SPAN = 4.0;               // seconds of history shown
+let onsetMarks = [];            // song-times of raw detections
+let gridFlash = 0, onsetFlash = 0;
+
+function drawTempo(gridBeat, rawOnset) {
+  if (gridBeat) gridFlash = 1;
+  if (rawOnset) { onsetFlash = 1; onsetMarks.push(audio.currentTime); }
+  gridFlash *= 0.86; onsetFlash *= 0.86;
+  if (tempoEl.classList.contains('hidden')) return;
+
+  const now = audio.currentTime;
+  while (onsetMarks.length && now - onsetMarks[0] > SPAN + 1) onsetMarks.shift();
+
+  const W = tempoCv.width, H = tempoCv.height;
+  const x = t => ((t - (now - SPAN)) / SPAN) * W;
+  tctx.clearRect(0, 0, W, H);
+
+  const hue = settings.hue;
+  // predicted grid — full-height rules
+  if (beatClock.locked) {
+    const first = Math.ceil((now - SPAN - beatClock.anchor) / beatClock.period);
+    const last = Math.floor((now - beatClock.anchor) / beatClock.period);
+    for (let k = first; k <= last; k++) {
+      const t = beatClock.anchor + k * beatClock.period;
+      const px = x(t);
+      const age = 1 - (now - t) / SPAN;
+      tctx.strokeStyle = `hsla(${hue}, 80%, 72%, ${(0.20 + age * 0.5).toFixed(3)})`;
+      tctx.lineWidth = 2;
+      tctx.beginPath(); tctx.moveTo(px, 6); tctx.lineTo(px, H - 6); tctx.stroke();
+    }
+    // where the NEXT beat lands — the anticipation the detector cannot give
+    const nb = beatClock.nextBeat(now);
+    if (nb != null && nb < now + 0.35) {
+      tctx.strokeStyle = `hsla(${hue}, 90%, 80%, 0.28)`;
+      tctx.setLineDash([3, 3]);
+      const px = x(nb);
+      tctx.beginPath(); tctx.moveTo(px, 6); tctx.lineTo(px, H - 6); tctx.stroke();
+      tctx.setLineDash([]);
+    }
+  }
+
+  // raw onsets — dots on the centre line
+  for (const t of onsetMarks) {
+    const px = x(t);
+    if (px < 0 || px > W) continue;
+    const age = 1 - (now - t) / SPAN;
+    tctx.fillStyle = `hsla(${(hue + 40) % 360}, 90%, 74%, ${(0.25 + age * 0.7).toFixed(3)})`;
+    tctx.beginPath(); tctx.arc(px, H / 2, 3.4, 0, Math.PI * 2); tctx.fill();
+  }
+
+  // the playhead
+  tctx.strokeStyle = `hsla(0, 0%, 100%, ${0.35 + gridFlash * 0.55})`;
+  tctx.lineWidth = 1;
+  tctx.beginPath(); tctx.moveTo(W - 1, 0); tctx.lineTo(W - 1, H); tctx.stroke();
+
+  $('tempo-bpm').innerHTML = (beatClock.bpm ? beatClock.bpm.toFixed(1) : '--') + '<small>BPM</small>';
+  const st = $('tempo-state');
+  st.textContent = beatClock.locked ? 'locked' : 'searching';
+  st.classList.toggle('lock', beatClock.locked);
+  $('tempo-conf').firstElementChild.style.width = Math.round(beatClock.confidence * 100) + '%';
+}
+
 // hotkeys
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -832,6 +905,7 @@ window.addEventListener('keydown', e => {
 
   // clean capture — nothing on screen but the world
   if (e.key === 'f' || e.key === 'F') document.body.classList.toggle('clean');
+  if (e.key === 't' || e.key === 'T') tempoEl.classList.toggle('hidden');
 
   // the mid-song moves, so a host never has to reach for the panel
   if (e.key === 'w') stepWorld(1);
@@ -1358,6 +1432,13 @@ function frame(now) {
   updateDust(dt, a, time);
 
   // ghosts render through the same path in every world
+  // predicted beat grid — fires through the gaps the onset detector misses
+  // the audio graph is built lazily on first play — adopt the analyser
+  // whenever it appears or is replaced
+  if (beatClock.analyser !== audio.analyser) beatClock.setAnalyser(audio.analyser);
+  const gridBeat = beatClock.update(audio.currentTime);
+  drawTempo(gridBeat, beatClock.onsetAt != null);
+
   pulses.update(dt, a.beatIntensity);
 
   presence.update(dt, participants,
