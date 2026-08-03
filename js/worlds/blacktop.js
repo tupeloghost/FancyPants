@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=126';
-import { themePaint } from '../lib/themes.js?v=126';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=133';
+import { themePaint } from '../lib/themes.js?v=133';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -17,6 +17,10 @@ const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 export function createBlacktop() {
   let scene, camera, group, road, dashes, rails, poles, lampGlow, buildings, sky, lines;
   let travel = 0, nitro = 0;
+  // A race step is an abstract unit the harness owns; this is how much road it
+  // buys here. Tuned so a full-momentum run drives at the pace this world
+  // already felt right at.
+  const ROAD_PER_STEP = 70;
   let steer = 0, steerTarget = 0;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
@@ -214,13 +218,24 @@ export function createBlacktop() {
     onTap() { nitro = 1; }, // NITRO (hold the mouse to keep it floored)
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null } = opts;
+      const racing = !!(race && race.active);
 
-      // hold to keep the nitro pinned; release and it bleeds off
-      if (opts.holding && !attract) nitro = 1;
-      else nitro *= Math.pow(0.25, dt);
-      const speed = 26 + audio.volume * 70 * reactivity + nitro * 85;
-      travel += speed * dt;
+      // Racing, the road is driven by your playing rather than by the mix, and
+      // momentum IS the nitro — a streak literally floors it. Everything below
+      // still reads as driving because only the speed source changed.
+      let speed;
+      if (racing) {
+        nitro = race.momentum;
+        speed = race.speed * ROAD_PER_STEP;
+        travel = race.progress * ROAD_PER_STEP;
+      } else {
+        // hold to keep the nitro pinned; release and it bleeds off
+        if (opts.holding && !attract) nitro = 1;
+        else nitro *= Math.pow(0.25, dt);
+        speed = 26 + audio.volume * 70 * reactivity + nitro * 85;
+        travel += speed * dt;
+      }
       const camZ = -travel;
 
       if (attract) steerTarget = Math.sin(time * 0.3) * 0.5;

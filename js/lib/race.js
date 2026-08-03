@@ -29,8 +29,20 @@ const TIERS = [
   { at: 6,  mult: 1.18 },
 ];
 
+// The race measures in abstract steps so every world can map them to its own
+// motion — stairs in Slinky, road in Blacktop. Feet is what a player is told,
+// because "412 steps" means nothing and "412 ft" is a distance you can picture.
+//
+// The scale has to be per world, though. A giant slinky covers a few feet a
+// stair; a car on a highway covers tens. Sharing one number had Blacktop
+// racing a whole song at 4mph, which reads as broken rather than as a race.
+const DEFAULT_FEET_PER_STEP = 3;
+
 export class Race {
-  constructor() { this.reset(); }
+  constructor() { this.feetPerStep = DEFAULT_FEET_PER_STEP; this.reset(); }
+
+  // set from the world's registry entry when it loads
+  setScale(feetPerStep) { this.feetPerStep = feetPerStep || DEFAULT_FEET_PER_STEP; }
 
   reset() {
     this.active = false;
@@ -64,6 +76,12 @@ export class Race {
 
   // 0..1 to the bottom
   get fraction() { return this.finish ? Math.min(1, this.progress / this.finish) : 0; }
+
+  // what the player is shown
+  get feet() { return Math.round(this.progress * this.feetPerStep); }
+  get feetTotal() { return Math.round(this.finish * this.feetPerStep); }
+  get feetLeft() { return Math.max(0, this.feetTotal - this.feet); }
+  get mph() { return +(this.speed * this.feetPerStep * 3600 / 5280).toFixed(1); }
 
   hit(rank) {
     if (!this.active || this.finished) return;

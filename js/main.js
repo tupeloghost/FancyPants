@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=126';
-import { WORLDS } from './worlds/registry.js?v=126';
-import { Net, PALETTE } from './net.js?v=126';
-import { Presence } from './lib/presence.js?v=126';
-import { Pulses } from './lib/pulse.js?v=126';
-import { BeatClock } from './lib/beatclock.js?v=126';
-import { BeatCue } from './lib/beatcue.js?v=126';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=126';
-import { Race, placeOf, standings } from './lib/race.js?v=126';
-import { RouteMap } from './lib/map.js?v=126';
-import { glowTexture } from './lib/glow.js?v=126';
+import { AudioEngine } from './audio-engine.js?v=133';
+import { WORLDS } from './worlds/registry.js?v=133';
+import { Net, PALETTE } from './net.js?v=133';
+import { Presence } from './lib/presence.js?v=133';
+import { Pulses } from './lib/pulse.js?v=133';
+import { BeatClock } from './lib/beatclock.js?v=133';
+import { BeatCue } from './lib/beatcue.js?v=133';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=133';
+import { Race, placeOf, standings } from './lib/race.js?v=133';
+import { RouteMap } from './lib/map.js?v=133';
+import { glowTexture } from './lib/glow.js?v=133';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -237,7 +237,9 @@ function switchWorld(key) {
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
+  race.setScale(WORLDS[key].feetPerStep);
   document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
+  if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
   startRaceIfReady();
   world.init(scene, camera);
@@ -1725,6 +1727,12 @@ function frame(now) {
       : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
   }
   if (document.body.classList.contains('rhythm')) {
+    // The one instruction, retired as soon as the player is clearly landing
+    // notes — or after twelve seconds, whichever comes first. Three good
+    // presses is proof enough that it has been understood.
+    const landed = beatCue.stats.perfect + beatCue.stats.good;
+    $('press-hint').classList.toggle('show',
+      race.active && landed < 3 && audio.currentTime < 14);
     beatCue.update(beatClock, audio.currentTime);
     while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
     const wasFinished = race.finished;
@@ -1735,6 +1743,8 @@ function frame(now) {
     net.local.z = race.progress;
     beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
       fraction: race.fraction,
+      feet: race.feet,
+      feetLeft: race.feetLeft,
       mult: race.multiplier,
       place: placeOf(participants),
       rivals: participants.slice(1, 12).map(p => ({

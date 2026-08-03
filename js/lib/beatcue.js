@@ -58,6 +58,7 @@ export class BeatCue {
     this.notes = [];
     this._at = 0;
     this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
+    this.hint = 1;   // teaches the press, then gets out of the way
   }
 
   // A chart is the analysed track: every note, where the music actually put
@@ -148,6 +149,7 @@ export class BeatCue {
     best.state = 'hit'; best.flash = 1; best.rank = rank;
     this.lineFlash = 1;
     this.lastRank = rank;
+    this.hint = Math.max(0, this.hint - 0.34);   // three good presses and it goes
     this.stats[rank === 'perfect' ? 'perfect' : 'good']++;
     this.stats.streak++;
     if (this.stats.streak > this.stats.bestStreak) this.stats.bestStreak = this.stats.streak;
@@ -201,12 +203,24 @@ export class BeatCue {
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(at(field.fraction), y, 6.6, 0, Math.PI * 2); ctx.stroke();
 
+    // Distance, in feet. "412 steps" means nothing; a distance you can picture
+    // is what makes the rail read as a race rather than a progress bar.
+    if (field.feet != null) {
+      ctx.font = "600 23px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.textAlign = 'left';
+      ctx.fillStyle = `hsla(${hue}, 55%, 90%, 0.9)`;
+      ctx.fillText(field.feet.toLocaleString() + ' FT', x0, y + 34);
+      ctx.font = "18px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.fillStyle = `hsla(${hue}, 30%, 74%, 0.5)`;
+      ctx.fillText(field.feetLeft.toLocaleString() + ' to go', x0, y + 58);
+    }
+
     // a streak worth having announces itself, quietly
     if (field.mult > 1) {
       ctx.fillStyle = `hsla(${hue}, 85%, 80%, 0.85)`;
-      ctx.font = "600 15px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.font = "600 28px 'SF Mono', ui-monospace, Menlo, monospace";
       ctx.textAlign = 'right';
-      ctx.fillText('\u00d7' + field.mult.toFixed(2).replace(/0$/, ''), x1, y + 30);
+      ctx.fillText('\u00d7' + field.mult.toFixed(2).replace(/0$/, ''), x1, y + 38);
     }
   }
 
@@ -216,8 +230,8 @@ export class BeatCue {
     ctx.clearRect(0, 0, W, H);
 
     const hitX = W * 0.18;
-    const midY = H * 0.5;
-    const laneH = H * 0.42;
+    const midY = H * 0.44;      // lane above centre; the hint lives below it
+    const laneH = H * 0.34;
 
     // ── the lane ──
     ctx.strokeStyle = `hsla(${hue}, 40%, 60%, 0.22)`;
@@ -229,12 +243,24 @@ export class BeatCue {
       // charted: the lane is live even if the realtime clock has no opinion
     } else if (!clock.locked) {
       ctx.fillStyle = `hsla(${hue}, 20%, 65%, 0.30)`;
-      ctx.font = "9px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.font = "17px 'SF Mono', ui-monospace, Menlo, monospace";
       ctx.textAlign = 'center';
       ctx.fillText('L I S T E N I N G', W / 2, midY + 3);
       this.drawField(field, hue);
       return;
     }
+
+    // ── the strike zone ──
+    // "It is not clear when to press" was the flaw, and a single line is a
+    // thin thing to aim at. A banded zone the width of the timing window says
+    // where the press lives, not just where the line is.
+    const zoneW = 26;
+    const zg = ctx.createLinearGradient(hitX - zoneW, 0, hitX + zoneW, 0);
+    zg.addColorStop(0, `hsla(${hue}, 85%, 70%, 0)`);
+    zg.addColorStop(0.5, `hsla(${hue}, 85%, 70%, ${(0.13 + this.lineFlash * 0.2).toFixed(3)})`);
+    zg.addColorStop(1, `hsla(${hue}, 85%, 70%, 0)`);
+    ctx.fillStyle = zg;
+    ctx.fillRect(hitX - zoneW, midY - laneH * 0.72, zoneW * 2, laneH * 1.44);
 
     // ── the hit line: where a note must be when you press ──
     const lf = this.lineFlash;
@@ -281,6 +307,15 @@ export class BeatCue {
       // live: brightens as it nears the line, so the moment is unmistakable
       const near = Math.max(0, 1 - dt / LEAD);
       const imminent = Math.pow(Math.max(0, 1 - Math.abs(dt) / 0.22), 2);
+      // a halo on the note that is arriving NOW — the single clearest signal
+      // that this is the one to press
+      if (imminent > 0.05) {
+        const hg = ctx.createRadialGradient(x, midY, 0, x, midY, h * 0.9);
+        hg.addColorStop(0, `hsla(${hue}, 95%, 86%, ${(imminent * 0.42).toFixed(3)})`);
+        hg.addColorStop(1, `hsla(${hue}, 95%, 86%, 0)`);
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.arc(x, midY, h * 0.9, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.strokeStyle = `hsla(${hue}, ${72 + near * 24}%, ${64 + near * 24 + imminent * 12}%, ${(0.38 + near * 0.55 + imminent * 0.25).toFixed(3)})`;
       ctx.lineWidth = (n.accent ? 4.5 : 3) + imminent * 2;
       ctx.beginPath();
