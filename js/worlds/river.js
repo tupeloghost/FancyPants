@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=156';
-import { themePaint } from '../lib/themes.js?v=156';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=159';
+import { themePaint } from '../lib/themes.js?v=159';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -29,13 +29,17 @@ export function createRiver() {
   // the channel you are on. Blossoms are worth gathering, rocks are worth
   // missing, and both arrive on the beat — so the music writes the pattern and
   // your hands answer it with position rather than timing.
-  const DRIFT_RATE = 26;        // units/sec — constant, so arrivals land on the beat
+  const DRIFT_RATE = 26;        // the river's own pace
+  const BOOST_ADD = 30;         // what an arrow is worth, on top of it
+  const AHEAD = 115;            // where things appear, in front of you
+  const EVERY = 7;              // one object every N notes — occasional, not a wall
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
   let drifters = [];
   let riverChartAt = 0;
   let gatherFlash = 0, rockFlash = 0;
+  let boost = 0;                // 0..1, decays; an arrow tops it back up
 
   const lz = new Float32Array(LANTERNS);
   const lside = new Float32Array(LANTERNS);
@@ -168,34 +172,28 @@ export function createRiver() {
       for (let i = 0; i < MAX_DRIFTERS; i++) {
         const g = new THREE.Group();
 
-        // A SPEED RAMP. A blossom is pretty but says nothing about what to do
-        // with it — a ramp with chevrons pointing the way you are travelling
-        // reads as "go through this" without a word of explanation, which is
-        // the whole job of the thing you are meant to aim at.
+        // A BOOST ARROW. Not a ramp-shaped object you have to interpret — an
+        // actual arrow, pointing up, glowing yellow. Whatever else is on
+        // screen, an arrow means go.
         const bloom = new THREE.Group();
         const petalMat = new THREE.MeshBasicMaterial({ toneMapped: false });
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.35, 4.4), petalMat);
-        deck.rotation.x = -0.26;                 // tipped up, like a ramp
-        deck.position.y = 0.35;
-        bloom.add(deck);
-        // side rails, so it reads as built rather than floating debris
-        for (const sx of [-2.9, 2.9]) {
-          const rail = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.0, 4.4), petalMat);
-          rail.rotation.x = -0.26;
-          rail.position.set(sx, 0.7, 0);
-          bloom.add(rail);
-        }
-        // three chevrons pointing downstream — the instruction, in shape
+        // three stacked chevrons, the middle one largest
         for (let k = 0; k < 3; k++) {
+          const scale = 1 - Math.abs(k - 1) * 0.22;
           for (const sgn of [-1, 1]) {
-            const arm = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.14, 0.5), petalMat);
-            arm.position.set(sgn * 0.75, 0.62 + k * 0.02, -1.3 + k * 1.25);
-            arm.rotation.set(-0.26, sgn * 0.62, 0);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 0.55), petalMat);
+            arm.position.set(sgn * 0.85 * scale, 1.0 + k * 1.6, 0);
+            arm.scale.setScalar(scale);
+            // -sgn, not sgn: positive z-rotation lifts a bar's +X end, so the
+            // LEFT arm needs a positive tilt to raise its inner end. With the
+            // sign the other way every arrow pointed down, which is the exact
+            // opposite of the instruction it exists to give.
+            arm.rotation.z = -sgn * 0.72;        // the two halves of a ^
             bloom.add(arm);
           }
         }
-        const halo = glowSprite(4.5);
-        halo.position.y = 0.6;
+        const halo = glowSprite(6);
+        halo.position.y = 3.0;
         bloom.add(halo);
 
         // a rock: matte, heavy, and unmistakably not a flower
@@ -248,10 +246,13 @@ export function createRiver() {
       if (dodging) this._buildDodge();
 
       if (dodging) {
-        // A steady current. Variable speed would make arrivals drift off the
-        // beat, and the whole pattern is written by the music.
-        drift += dt * DRIFT_RATE;
-        rush *= Math.pow(0.3, dt);
+        // Objects are placed a fixed DISTANCE ahead rather than at a fixed
+        // time, so speed is free to change: the music decides when one appears,
+        // and how fast you are going decides how soon you meet it. That is what
+        // makes a boost feel like a boost instead of a number going up.
+        boost = Math.max(0, boost - dt * 0.42);
+        drift += dt * (DRIFT_RATE + boost * BOOST_ADD);
+        rush = Math.max(rush * Math.pow(0.3, dt), boost);
         gatherFlash *= Math.pow(0.02, dt);
         rockFlash *= Math.pow(0.05, dt);
       } else if (racing) {
@@ -310,10 +311,10 @@ export function createRiver() {
           d.mesh.position.set(wx, d.rock ? 1.7 : 0.7, wz);
           d.mesh.rotation.y = d.rock ? d.spin + time * 0.3 : 0;   // ramps face downstream
           if (!d.rock) {
-            // a fixed bright cyan-green, NOT the theme colour: "safe to hit"
-            // has to mean the same thing in every palette, or the one piece of
-            // information the player needs changes with the looks tab
-            color.setHSL(0.42, 0.85, 0.56 + audio.volume * 0.16);
+            // Fixed yellow, NOT the theme colour: "go" has to mean the same
+            // thing in every palette, or the one piece of information the
+            // player needs changes with the looks tab.
+            color.setHSL(0.135, 1, 0.55 + Math.sin(time * 6 + d.spin) * 0.08 + audio.volume * 0.12);
             d.petalMat.color.copy(color);
             d.halo.material.color.copy(color);
             d.halo.material.opacity = 0.45 + audio.volume * 0.3;
@@ -322,14 +323,18 @@ export function createRiver() {
           // Resolve just BEFORE it reaches the lens. Resolving at zero means
           // the last frame of every object is drawn from inside it, which
           // filled the whole screen with a cyan wall on every single ramp.
-          if (ahead <= 4) {
+          // Resolve well clear of the lens. An arrow is several units tall
+          // with a wide halo, so anything under about ten units still fills
+          // the frame on its last drawn frame.
+          if (ahead <= 11) {
             const touching = Math.abs(wx - playerX) < HIT_W;
             if (touching && d.rock) {
-              race.drop(2); rockFlash = 1; rush = 0;
+              race.drop(2); rockFlash = 1; boost = 0;   // a rock kills your speed
               if (opts.impact) opts.impact(0.9);
             } else if (touching) {
-              race.collect(1); gatherFlash = 1; rush = Math.min(1, rush + 0.5);
-              if (opts.impact) opts.impact(0.3);
+              race.collect(1); gatherFlash = 1;
+              boost = Math.min(1, boost + 0.85);      // the surge you can feel
+              if (opts.impact) opts.impact(0.5);
             } else if (!d.rock) {
               race.drop(0);                    // a blossom missed breaks the run
             }
