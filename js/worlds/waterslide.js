@@ -3,8 +3,8 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js?v=139';
-import { themePaint } from '../lib/themes.js?v=139';
+import { glowPoints, skyDome } from '../lib/glow.js?v=141';
+import { themePaint } from '../lib/themes.js?v=141';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)

@@ -54,11 +54,28 @@ export class BeatCue {
     this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
   }
 
+  // How you did, and by how much. A rhythm game that will not tell you whether
+  // you were early or late is one you cannot get better at, and getting better
+  // is the entire pleasure.
+  _verdict(rank, offset, pressed = true) {
+    this.verdict = { rank, offset, age: 0, pressed };
+    // Only a real press belongs in the scatter. A note that timed out has no
+    // timing error — recording it as 0 would read as "dead on the beat", which
+    // is the opposite of what happened.
+    if (!pressed) return;
+    this.scatter.push(offset);
+    if (this.scatter.length > 9) this.scatter.shift();
+  }
+
   reset() {
+    this.verdict = null;
+    this.scatter = [];
     this.notes = [];
     this._at = 0;
     this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
     this.hint = 1;   // teaches the press, then gets out of the way
+    this.verdict = null;
+    this.scatter = [];   // signed timing errors of recent presses
   }
 
   // A chart is the analysed track: every note, where the music actually put
@@ -142,10 +159,13 @@ export class BeatCue {
     if (!best || bestD > GOOD) {
       this.lastRank = 'miss';
       this.stats.streak = 0;
-      return { rank: 'miss', q: 0, late: best ? songTime > best.t : false };
+      const lateM = best ? songTime > best.t : false;
+      this._verdict('miss', best ? songTime - best.t : 0);
+      return { rank: 'miss', q: 0, late: lateM };
     }
     const late = songTime > best.t;
     const rank = bestD <= PERFECT ? 'perfect' : 'good';
+    this._verdict(rank, songTime - best.t);
     best.state = 'hit'; best.flash = 1; best.rank = rank;
     this.lineFlash = 1;
     this.lastRank = rank;
@@ -157,6 +177,7 @@ export class BeatCue {
   }
 
   update(clock, songTime) {
+    if (this.verdict) this.verdict.age += 1 / 60;
     if (this.chart) this._reveal(songTime);
     else this._schedule(clock, songTime);
     for (const n of this.notes) {
@@ -164,6 +185,7 @@ export class BeatCue {
         n.state = 'miss'; n.flash = 1;
         this.stats.missed++;
         this.stats.streak = 0;
+        this._verdict('miss', 0, false);
       }
       if (n.flash) n.flash *= 0.9;
     }
@@ -314,6 +336,52 @@ export class BeatCue {
     ctx.strokeStyle = `hsla(${hue}, 70%, 88%, ${(0.20 + lf * 0.3).toFixed(3)})`;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(cx, cy, rOrb - 7, 0, Math.PI * 2); ctx.stroke();
+
+    // ── the verdict ──
+    // Rhythm games all show this because it is the only way to improve: not
+    // just hit or miss, but which side of the beat you were on. Restrained
+    // typography and a fast fade, so it informs without becoming a pop-up.
+    const v = this.verdict;
+    if (v && v.age < 0.75) {
+      const f = 1 - v.age / 0.75;
+      const perfect = v.rank === 'perfect', miss = v.rank === 'miss';
+      const ms = Math.round(v.offset * 1000);
+      const side = miss ? '' : (Math.abs(ms) < 12 ? '' : (ms > 0 ? '  LATE' : '  EARLY'));
+
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = Math.min(1, f * 1.6);
+      ctx.font = "600 13px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.fillStyle = perfect ? `hsl(${hue}, 70%, 96%)`
+        : miss ? `hsla(${hue}, 10%, 62%, 0.75)`
+               : `hsl(${hue}, 60%, 84%)`;
+      const word = perfect ? 'P E R F E C T' : miss ? 'M I S S' : 'G O O D';
+      ctx.fillText(word + side.split('').join(' '), cx, cy + rOrb + 34);
+      ctx.globalAlpha = 1;
+    }
+
+    // ── the scatter ──
+    // Your last few presses as ticks either side of the beat. A drift to one
+    // side is a habit you can correct, which a per-hit verdict alone never
+    // reveals.
+    if (this.scatter.length) {
+      const sw = rOrb * 2.4, sy = cy + rOrb + 52;
+      ctx.strokeStyle = `hsla(${hue}, 40%, 65%, 0.20)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx - sw, sy); ctx.lineTo(cx + sw, sy); ctx.stroke();
+      // the beat itself
+      ctx.strokeStyle = `hsla(${hue}, 80%, 85%, 0.55)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx, sy - 5); ctx.lineTo(cx, sy + 5); ctx.stroke();
+
+      for (let i = 0; i < this.scatter.length; i++) {
+        const off = this.scatter[i];
+        const age = (this.scatter.length - i) / this.scatter.length;
+        const x = cx + Math.max(-1, Math.min(1, off / GOOD)) * sw;
+        ctx.strokeStyle = `hsla(${hue}, 75%, 82%, ${(0.15 + age * 0.6).toFixed(3)})`;
+        ctx.lineWidth = i === this.scatter.length - 1 ? 2.4 : 1.4;
+        ctx.beginPath(); ctx.moveTo(x, sy - 4); ctx.lineTo(x, sy + 4); ctx.stroke();
+      }
+    }
 
     this.drawField(field, hue, W, H);
   }
