@@ -3,22 +3,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=119';
-import { createSurfer } from './surfer.js?v=119';
-import { createOrbit } from './orbit.js?v=119';
-import { createBloom } from './bloom.js?v=119';
-import { createTrail } from './trail.js?v=119';
-import { createSignal } from './signal.js?v=119';
-import { createRiver } from './river.js?v=119';
-import { createFunhouse } from './funhouse.js?v=119';
-import { createLavaLamp } from './lavalamp.js?v=119';
-import { createPlasma } from './plasma.js?v=119';
-import { createCherryLand } from './cherryland.js?v=119';
-import { createSlinky } from './slinky.js?v=119';
-import { createBlacktop } from './blacktop.js?v=119';
-import { createWaterslide } from './waterslide.js?v=119';
-import { createGarden } from './garden.js?v=119';
-import { createPaint } from './paint.js?v=119';
+import { createTunnel } from './tunnel.js?v=121';
+import { createSurfer } from './surfer.js?v=121';
+import { createOrbit } from './orbit.js?v=121';
+import { createBloom } from './bloom.js?v=121';
+import { createTrail } from './trail.js?v=121';
+import { createSignal } from './signal.js?v=121';
+import { createRiver } from './river.js?v=121';
+import { createFunhouse } from './funhouse.js?v=121';
+import { createLavaLamp } from './lavalamp.js?v=121';
+import { createPlasma } from './plasma.js?v=121';
+import { createCherryLand } from './cherryland.js?v=121';
+import { createSlinky } from './slinky.js?v=121';
+import { createBlacktop } from './blacktop.js?v=121';
+import { createWaterslide } from './waterslide.js?v=121';
+import { createGarden } from './garden.js?v=121';
+import { createPaint } from './paint.js?v=121';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },

@@ -153,6 +153,67 @@
     body:has(#panel.hidden) #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4px); }
   }
 
+  /* ── Mode choice ── shown AFTER hosting, never on the entrance. The join
+     card stays exactly as it was. ── */
+  #mode-card, #round-intro {
+    position: fixed; z-index: 150; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 45%, hsla(var(--accent-h),40%,8%,0.72), rgba(0,0,0,0.88));
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #mode-card.show, #round-intro.show { display: flex; }
+  #mode-inner { width: min(440px, 88vw); text-align: center; }
+  #mode-inner h2 {
+    font: 400 clamp(26px, 6vw, 34px)/1.1 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 5px; color: hsl(var(--accent-h), 55%, 94%); font-weight: 400;
+  }
+  #mode-inner p {
+    margin-top: 8px; font: 9px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--ink-faint);
+  }
+  #mode-opts { display: flex; gap: 12px; margin-top: 26px; }
+  .mode-opt {
+    flex: 1; padding: 20px 16px 18px; cursor: pointer;
+    border-radius: 15px; border: 1px solid var(--accent-line);
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.08), var(--glass));
+    transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+  }
+  .mode-opt:hover { transform: translateY(-3px); border-color: hsla(var(--accent-h),80%,70%,0.6); }
+  .mode-opt b {
+    display: block; font: 400 20px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 3.4px; color: hsl(var(--accent-h), 55%, 93%);
+  }
+  .mode-opt em {
+    display: block; margin-top: 7px; font-style: normal;
+    font: 10px/1.55 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+  }
+
+  /* ── Round intro ── the beat before a round, and where charting hides ── */
+  #round-inner { text-align: center; }
+  #ri-round {
+    font: 9px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 4px; text-transform: uppercase; color: var(--ink-faint);
+  }
+  #ri-world {
+    margin-top: 14px;
+    font: 400 clamp(34px, 9vw, 58px)/1 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 8px; color: hsl(var(--accent-h), 55%, 95%);
+    text-shadow: 0 0 34px hsla(var(--accent-h), 90%, 70%, 0.42);
+  }
+  #ri-track {
+    margin-top: 12px; font: 11px/1.5 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 2px; color: var(--ink-dim);
+  }
+  #ri-state {
+    margin-top: 20px; font: 8px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 2.4px; text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  /* a round owns the music — no skipping mid-race */
+  body.play #qb-prev, body.play #qb-play, body.play #qb-next,
+  body.play #qb-world, body.play #qsep-1 { display: none; }
+  body.play #page-music, body.play #page-worlds { opacity: 0.32; pointer-events: none; }
+
   /* ── Results ── the reveal at the end of a round. Restrained: a rule, a
      placement, the standings, and what you actually did. No confetti. ── */
   #results {
@@ -966,6 +1027,26 @@
   <div id="plist-rows"></div>
 </div>
 
+<div id="mode-card">
+  <div id="mode-inner">
+    <h2>HOW ARE WE PLAYING</h2>
+    <p>you can change your mind between rounds</p>
+    <div id="mode-opts">
+      <div class="mode-opt" id="opt-vibe"><b>VIBE</b><em>free run of every world and every track. nothing to win.</em></div>
+      <div class="mode-opt" id="opt-play"><b>PLAY</b><em>four rounds. one song each. deepest down the stairs takes it.</em></div>
+    </div>
+  </div>
+</div>
+
+<div id="round-intro">
+  <div id="round-inner">
+    <div id="ri-round">round 1 of 4</div>
+    <div id="ri-world">SLINKY</div>
+    <div id="ri-track"></div>
+    <div id="ri-state">preparing</div>
+  </div>
+</div>
+
 <div id="results">
   <div id="results-place">&mdash;</div>
   <div id="results-sub"></div>
@@ -1111,7 +1192,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 119</div>
+      <div id="build-stamp">build 121</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1125,6 +1206,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=119"></script>
+<script type="module" src="js/main.js?v=121"></script>
 </body>
 </html>

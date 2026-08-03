@@ -8,16 +8,16 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=119';
-import { WORLDS } from './worlds/registry.js?v=119';
-import { Net, PALETTE } from './net.js?v=119';
-import { Presence } from './lib/presence.js?v=119';
-import { Pulses } from './lib/pulse.js?v=119';
-import { BeatClock } from './lib/beatclock.js?v=119';
-import { BeatCue } from './lib/beatcue.js?v=119';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=119';
-import { Race, placeOf, standings } from './lib/race.js?v=119';
-import { glowTexture } from './lib/glow.js?v=119';
+import { AudioEngine } from './audio-engine.js?v=121';
+import { WORLDS } from './worlds/registry.js?v=121';
+import { Net, PALETTE } from './net.js?v=121';
+import { Presence } from './lib/presence.js?v=121';
+import { Pulses } from './lib/pulse.js?v=121';
+import { BeatClock } from './lib/beatclock.js?v=121';
+import { BeatCue } from './lib/beatcue.js?v=121';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=121';
+import { Race, placeOf, standings } from './lib/race.js?v=121';
+import { glowTexture } from './lib/glow.js?v=121';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -433,7 +433,14 @@ function showResults(reason) {
   // it clears itself — nobody should have to dismiss a scoreboard mid-stream
   resultsTimer = setTimeout(hideResults, 11000);
 }
-audio.el.addEventListener('ended', () => { if (race.active) showResults('ended'); });
+audio.el.addEventListener('ended', () => {
+  if (race.active) showResults('ended');
+  if (setList && setPhase === 'racing') {
+    setPhase = 'between';
+    scoreRound();
+    roundTimer = setTimeout(nextRound, 8000);   // let the reveal land first
+  }
+});
 
 // A race belongs to one track in one rhythm world — one song, one round.
 function startRaceIfReady() {
@@ -449,7 +456,7 @@ window.__startRace = startRaceIfReady;
 audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 
 // when a track runs out, roll straight into the next one
-audio.el.addEventListener('ended', () => playAuto(true));
+audio.el.addEventListener('ended', () => { if (!setList) playAuto(true); });
 
 $('track-select').addEventListener('change', e => {
   if (!e.target.value) return;
@@ -1392,6 +1399,125 @@ function startRoom(code, name, asOwner) {
   dismissOverlay();
   updateURL();
 }
+// ── Sets ── PLAY is a run of rounds: one song, one world, one race each.
+// VIBE is everything as it was. The choice comes AFTER hosting, never on the
+// entrance — the join card is not the place to ask a question.
+//
+// Only worlds with a race can hold a round, so a set is drawn from those. With
+// one rhythm world today a set is four different tracks; as more worlds get a
+// race the same code gives real variety without changing.
+const RHYTHM_WORLDS = Object.keys(WORLDS).filter(k => WORLDS[k].rhythm);
+const SET_POINTS = [0, 5, 3, 2, 1];     // by placement
+let setList = null, setAt = -1, setPhase = 'idle';
+let setScores = new Map();
+let roundTimer = 0;
+
+function askMode() {
+  if (!trackList.length) return;          // nothing to build a set from
+  $('mode-card').classList.add('show');
+}
+$('opt-vibe').addEventListener('click', () => {
+  $('mode-card').classList.remove('show');
+  endSet();
+});
+$('opt-play').addEventListener('click', () => {
+  $('mode-card').classList.remove('show');
+  startSet(4);
+});
+
+function startSet(rounds) {
+  const picks = shuffled(trackList).slice(0, Math.max(1, Math.min(rounds, trackList.length)));
+  setList = picks.map((t, i) => ({ track: t, world: RHYTHM_WORLDS[i % RHYTHM_WORLDS.length] }));
+  setAt = -1;
+  setScores = new Map();
+  document.body.classList.add('play');
+  nextRound();
+}
+
+function endSet() {
+  clearTimeout(roundTimer);
+  setList = null; setAt = -1; setPhase = 'idle';
+  document.body.classList.remove('play');
+  $('round-intro').classList.remove('show');
+}
+
+function nextRound() {
+  clearTimeout(roundTimer);
+  hideResults();
+  setAt++;
+  if (!setList || setAt >= setList.length) { showSetResults(); return; }
+  const r = setList[setAt];
+  setPhase = 'intro';
+
+  $('ri-round').textContent = `round ${setAt + 1} of ${setList.length}`;
+  $('ri-world').textContent = WORLDS[r.world].label;
+  $('ri-track').textContent = prettyTrack(r.track);
+  $('ri-state').textContent = 'preparing';
+  $('round-intro').classList.add('show');
+
+  switchWorld(r.world);
+  $('world-select').value = r.world;
+  // load now so the track charts during the intro rather than in silence
+  audio.loadURL(r.track);
+  $('track-select').value = r.track;
+
+  // Hold the intro until the track is charted. Analysis takes a few seconds
+  // and it belongs here, behind a title card, rather than as dead air with the
+  // music already running and no notes on the lane.
+  const minUntil = performance.now() + 4200;
+  (function waitThenStart() {
+    if (!setList || setPhase !== 'intro') return;
+    const ready = chartProgress < 0 && !!beatCue.chart;
+    if (!ready || performance.now() < minUntil) {
+      roundTimer = setTimeout(waitThenStart, 200);
+      return;
+    }
+    startRound();
+  })();
+}
+
+function startRound() {
+  if (!setList) return;
+  setPhase = 'racing';
+  $('round-intro').classList.remove('show');
+  audio.play().catch(() => {});
+  updatePlayBtn();
+  startRaceIfReady();
+}
+
+function prettyTrack(url) {
+  return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
+}
+
+// award the round, then roll on
+function scoreRound() {
+  const board = standings(participants);
+  board.forEach((e, idx) => {
+    const key = e.p.name || ('p' + e.i);
+    setScores.set(key, (setScores.get(key) || 0) + (SET_POINTS[idx + 1] || 1));
+  });
+}
+
+function showSetResults() {
+  document.body.classList.remove('play');
+  setPhase = 'idle';
+  const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (!rows.length) { endSet(); return; }
+  $('results-place').textContent = rows[0][0] === (net.local.name || 'you') ? 'YOU WIN' : 'FULL TIME';
+  $('results-sub').textContent = 'the set is over';
+  $('results-board').innerHTML = rows.map(([name, pts]) =>
+    `<div class="rrow${name === net.local.name ? ' me' : ''}">`
+    + `<i style="background:hsl(var(--accent-h),80%,70%)"></i>`
+    + `<span>${name.replace(/[<>&]/g, '')}</span><b>${pts}</b></div>`).join('');
+  $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
+  $('rs-streak').textContent = race.bestStreak;
+  $('rs-notes').textContent = race.perfect + race.good;
+  resultsShown = true;
+  $('results').classList.add('show');
+  clearTimeout(resultsTimer);
+  resultsTimer = setTimeout(() => { hideResults(); setList = null; }, 15000);
+}
+
 $('join-name').value = localStorage.getItem('fp_name') || '';
 $('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
@@ -1402,10 +1528,12 @@ $('btn-join').addEventListener('click', () => {
 });
 $('btn-host').addEventListener('click', () => {
   startRoom(genCode(), $('join-name').value.trim() || 'host', true);
+  setTimeout(askMode, 400);
 });
 $('btn-solo').addEventListener('click', () => {
   if ($('join-name').value.trim()) net.local.name = $('join-name').value.trim();
   dismissOverlay();
+  setTimeout(askMode, 400);
 });
 // clicking outside the card still starts solo (the old behavior)
 tap.addEventListener('click', e => { if (e.target === tap) dismissOverlay(); });
@@ -1561,6 +1689,11 @@ function frame(now) {
   if (beatClock.analyser !== audio.analyser) beatClock.setAnalyser(audio.analyser);
   const gridBeat = beatClock.update(audio.currentTime);
   drawTempo(gridBeat, beatClock.onsetAt != null);
+  if (setPhase === 'intro') {
+    $('ri-state').textContent = chartProgress >= 0
+      ? 'charting ' + Math.round(chartProgress * 100) + '%'
+      : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
+  }
   if (document.body.classList.contains('rhythm')) {
     beatCue.update(beatClock, audio.currentTime);
     while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
