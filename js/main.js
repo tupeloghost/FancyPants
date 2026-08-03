@@ -8,16 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=121';
-import { WORLDS } from './worlds/registry.js?v=121';
-import { Net, PALETTE } from './net.js?v=121';
-import { Presence } from './lib/presence.js?v=121';
-import { Pulses } from './lib/pulse.js?v=121';
-import { BeatClock } from './lib/beatclock.js?v=121';
-import { BeatCue } from './lib/beatcue.js?v=121';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=121';
-import { Race, placeOf, standings } from './lib/race.js?v=121';
-import { glowTexture } from './lib/glow.js?v=121';
+import { AudioEngine } from './audio-engine.js?v=126';
+import { WORLDS } from './worlds/registry.js?v=126';
+import { Net, PALETTE } from './net.js?v=126';
+import { Presence } from './lib/presence.js?v=126';
+import { Pulses } from './lib/pulse.js?v=126';
+import { BeatClock } from './lib/beatclock.js?v=126';
+import { BeatCue } from './lib/beatcue.js?v=126';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=126';
+import { Race, placeOf, standings } from './lib/race.js?v=126';
+import { RouteMap } from './lib/map.js?v=126';
+import { glowTexture } from './lib/glow.js?v=126';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1409,6 +1410,8 @@ function startRoom(code, name, asOwner) {
 const RHYTHM_WORLDS = Object.keys(WORLDS).filter(k => WORLDS[k].rhythm);
 const SET_POINTS = [0, 5, 3, 2, 1];     // by placement
 let setList = null, setAt = -1, setPhase = 'idle';
+const routeMap = new RouteMap(document.getElementById('map-canvas'));
+window.__map = routeMap;
 let setScores = new Map();
 let roundTimer = 0;
 
@@ -1428,8 +1431,16 @@ $('opt-play').addEventListener('click', () => {
 function startSet(rounds) {
   const picks = shuffled(trackList).slice(0, Math.max(1, Math.min(rounds, trackList.length)));
   setList = picks.map((t, i) => ({ track: t, world: RHYTHM_WORLDS[i % RHYTHM_WORLDS.length] }));
+  // Name each stop by whatever actually varies along the route. With one
+  // rhythm world every medallion would otherwise read SLINKY, which tells the
+  // room nothing; the track is the thing that changes.
+  const distinctWorlds = new Set(setList.map(r => r.world)).size;
+  routeMap.setRoute(setList.map(r => ({
+    label: distinctWorlds > 1 ? WORLDS[r.world].label : prettyTrack(r.track).toUpperCase(),
+  })));
   setAt = -1;
   setScores = new Map();
+  nodeReached.clear();
   document.body.classList.add('play');
   nextRound();
 }
@@ -1449,6 +1460,7 @@ function nextRound() {
   const r = setList[setAt];
   setPhase = 'intro';
 
+  routeMap.at = setAt;
   $('ri-round').textContent = `round ${setAt + 1} of ${setList.length}`;
   $('ri-world').textContent = WORLDS[r.world].label;
   $('ri-track').textContent = prettyTrack(r.track);
@@ -1485,6 +1497,14 @@ function startRound() {
   startRaceIfReady();
 }
 
+// Where a player stands on the route. Everyone advances together after each
+// round — no turn order, because a room of twenty cannot watch one person move.
+const nodeReached = new Map();
+function setNodeOf(p, i) {
+  const key = p.name || ('p' + i);
+  return nodeReached.has(key) ? nodeReached.get(key) : setAt;
+}
+
 function prettyTrack(url) {
   return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
 }
@@ -1495,6 +1515,9 @@ function scoreRound() {
   board.forEach((e, idx) => {
     const key = e.p.name || ('p' + e.i);
     setScores.set(key, (setScores.get(key) || 0) + (SET_POINTS[idx + 1] || 1));
+    // everyone moves on, the leaders a medallion further — the map is where a
+    // bad round stops being fatal
+    nodeReached.set(key, Math.min((setList ? setList.length - 1 : 0), setAt + 1));
   });
 }
 
@@ -1690,6 +1713,13 @@ function frame(now) {
   const gridBeat = beatClock.update(audio.currentTime);
   drawTempo(gridBeat, beatClock.onsetAt != null);
   if (setPhase === 'intro') {
+    routeMap.setTokens(participants.map((p, i) => ({
+      name: p.name || ('p' + i),
+      color: PALETTE[(p.color || 0) % PALETTE.length],
+      at: setNodeOf(p, i),
+      me: i === 0,
+    })));
+    routeMap.draw(dt, settings.hue);
     $('ri-state').textContent = chartProgress >= 0
       ? 'charting ' + Math.round(chartProgress * 100) + '%'
       : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
