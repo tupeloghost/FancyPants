@@ -3,8 +3,8 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js?v=133';
-import { themePaint } from '../lib/themes.js?v=133';
+import { glowPoints, skyDome } from '../lib/glow.js?v=135';
+import { themePaint } from '../lib/themes.js?v=135';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -15,6 +15,8 @@ const WATER_N = 240;
 export function createWaterslide() {
   let scene, camera, group, wall, water, spray, sky;
   let travel = 0, boost = 0;
+  // flume bought by one abstract race step
+  const SLIDE_PER_STEP = 38;
   let steer = 0, steerTarget = 0;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
@@ -122,11 +124,21 @@ export function createWaterslide() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow' , race = null } = opts;
+      const racing = !!(race && race.active);
 
       boost *= Math.pow(0.2, dt);
-      const speed = 16 + audio.volume * 42 * reactivity + boost * 34;
-      travel += speed * dt;
+      // Racing, the flume runs at the pace you have earned and momentum is the
+      // boost — the shot of speed a tap used to give is now a streak.
+      let speed;
+      if (racing) {
+        boost = race.momentum;
+        speed = race.speed * SLIDE_PER_STEP;
+        travel = race.progress * SLIDE_PER_STEP;
+      } else {
+        speed = 16 + audio.volume * 42 * reactivity + boost * 34;
+        travel += speed * dt;
+      }
 
       if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
       steer += (steerTarget - steer) * Math.min(1, dt * 4);
@@ -152,8 +164,14 @@ export function createWaterslide() {
       // (camera lives at z = -travel), and -ringZ is its path parameter.
       let idx = 0;
       for (let r = 0; r < RINGS; r++) {
-        if (ringZ[r] > -travel + RING_SPACING * 1.5) {
-          ringZ[r] -= RINGS * RING_SPACING;
+        // Recycle by however many spans it takes, not one per frame. Stepping
+        // back once assumes travel only ever creeps forward; a seek, a rejoin
+        // or a race correction can move it by thousands at once, and the flume
+        // would then be left behind the rider entirely.
+        const limit = -travel + RING_SPACING * 1.5;
+        if (ringZ[r] > limit) {
+          const span = RINGS * RING_SPACING;
+          ringZ[r] -= Math.ceil((ringZ[r] - limit) / span) * span;
           ringSeed[r] = Math.random();
         }
         const t = -ringZ[r];              // distance along the flume

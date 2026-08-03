@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=133';
-import { themePaint } from '../lib/themes.js?v=133';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=135';
+import { themePaint } from '../lib/themes.js?v=135';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -15,6 +15,9 @@ export function createRiver() {
   let scene, camera, group, water, lanterns, lanternGlow, fireflies, sky, moon, foam, banks;
   const foamLat = new Float32Array(240);
   let drift = 0, rush = 0;   // taps shoot the current forward
+  // how much river one abstract race step buys, tuned to the pace this world
+  // already drifted at
+  const RIVER_PER_STEP = 15;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -167,11 +170,20 @@ export function createRiver() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null } = opts;
+      const racing = !!(race && race.active);
 
-      // lazy drift — the river never hurries, even on drops
-      rush *= Math.pow(0.18, dt); // surge, then ease back to the stream's pace
-      drift += dt * (8 + audio.energy * 11 + audio.volume * 5 + rush * 34);
+      // Racing, the current is your playing: momentum becomes the rush, so a
+      // streak carries you downstream. Everything below still reads as a river
+      // because only the source of the drift changed.
+      if (racing) {
+        rush = race.momentum;
+        drift = race.progress * RIVER_PER_STEP;
+      } else {
+        // lazy drift — the river never hurries, even on drops
+        rush *= Math.pow(0.18, dt); // surge, then ease back to the stream's pace
+        drift += dt * (8 + audio.energy * 11 + audio.volume * 5 + rush * 34);
+      }
       const camZ = -drift;
       if (attract || !pointer.active) steer += (Math.sin(time * 0.2) * 0.4 - steer) * Math.min(1, dt);
       else steer += (pointer.x - steer) * Math.min(1, dt * 1.5);
