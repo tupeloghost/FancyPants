@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=97';
-import { themePaint } from '../lib/themes.js?v=97';
-import { PALETTE } from '../net.js?v=97';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=98';
+import { themePaint } from '../lib/themes.js?v=98';
+import { PALETTE } from '../net.js?v=98';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -77,8 +77,24 @@ export function createSlinky() {
       group.add(coils);
 
       // echo: a delayed ghost copy of the spring — motion made visible
+      // The crowd material asks for vertexColors, so the geometry must carry a
+      // `color` attribute — without one the shader reads an unbound attribute,
+      // which comes back black and swallows the per-player instance colour
+      // whole. That is why nobody could see which colour anyone had chosen.
+      // Baking the same top-lit gloss the main spring uses fixes the colour
+      // and makes their slinkies read as the same shiny plastic.
+      const crowdGeo = new THREE.TorusGeometry(RING_R * 0.72, 0.26, 8, 30);
+      {
+        const pa = crowdGeo.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.62 + (pa.getY(i) / (RING_R * 0.72 + 0.26) + 1) * 0.24;
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        crowdGeo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
       crowd = new THREE.InstancedMesh(
-        new THREE.TorusGeometry(RING_R * 0.72, 0.26, 8, 30),
+        crowdGeo,
         new THREE.MeshBasicMaterial({
           toneMapped: false, vertexColors: true, transparent: true, opacity: 0.92,
         }),
@@ -274,6 +290,13 @@ export function createSlinky() {
 
       // coils: phase-offset copies along the path, compression waves running
       // through the spacing (bass breathes it, boing snaps it)
+      // A spring is a running sum: every coil sits a positive distance behind
+      // the one in front of it. Placing coil i at `i * its own local spacing`
+      // is not the same thing — when the spacing varies along the spring (and
+      // squeeze, lag and stretch all vary with i) the positions stop being
+      // monotonic, coils overtake each other, and the spring folds back
+      // through itself. That was the tangle.
+      let acc = 0;
       for (let i = 0; i < RINGS; i++) {
         const squeeze =
           Math.sin(walk * 2.2 - i * 0.31) * (0.012 + audio.bass * 0.02 * reactivity) +
@@ -282,7 +305,9 @@ export function createSlinky() {
         // with the tail lagging the head — that's what makes it walk
         const lag = Math.min(1, i * 0.035);
         const stretch = 1 + Math.sin(Math.PI * stepPhase) * 0.5 * (1 - lag * 0.5) - landPulse * 0.3 * (1 - lag);
-        const p = walk - i * (0.052 * stretch + squeeze * 0.5) - 0.0001;
+        const p = walk - acc - 0.0001;
+        // coils may crowd together hard, but never pass through one another
+        acc += Math.max(0.011, 0.052 * stretch + squeeze * 0.5);
         pathAt(p, P);
         pathAt(p + 0.02, P2);
         TAN.subVectors(P2, P).normalize();
