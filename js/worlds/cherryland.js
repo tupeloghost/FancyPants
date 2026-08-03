@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=147';
-import { themePaint } from '../lib/themes.js?v=147';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=152';
+import { themePaint } from '../lib/themes.js?v=152';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -36,6 +36,7 @@ export function createCherryLand() {
   const CATCH_W = 2.9;         // forgiveness, in world units
   const MAX_FALLERS = 40;
   let basket = null, basketX = 0, basketLip = null;
+  let catchTree = null, catchCanopy = null;
   let fallers = [];            // {x, t0, bomb, alive, mesh}
   let chartAt = 0;             // read head into the chart
   let catchFlash = 0, bombFlash = 0;
@@ -193,7 +194,7 @@ export function createCherryLand() {
       basket = new THREE.Group();
 
       const cup = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.6, 1.7, 1.9, 22, 1, true),
+        new THREE.CylinderGeometry(3.0, 2.0, 2.2, 22, 1, true),
         new THREE.MeshBasicMaterial({
           color: 0x2a1206, toneMapped: false, side: THREE.DoubleSide,
           transparent: true, opacity: 0.92,
@@ -201,20 +202,89 @@ export function createCherryLand() {
       );
       basket.add(cup);
       basketLip = new THREE.Mesh(
-        new THREE.TorusGeometry(2.6, 0.16, 8, 34),
+        new THREE.TorusGeometry(3.0, 0.2, 8, 34),
         new THREE.MeshBasicMaterial({ toneMapped: false })
       );
       basketLip.rotation.x = Math.PI / 2;
-      basketLip.position.y = 0.95;
+      basketLip.position.y = 1.1;
       basket.add(basketLip);
       group.add(basket);
 
-      const fruitGeo = new THREE.SphereGeometry(0.62, 12, 12);
+      // ── the tree the fruit falls from ──
+      // A basket in an open field is not a scene. The round happens under a
+      // canopy, so the cherries have somewhere to fall FROM.
+      catchTree = new THREE.Group();
+      // Sized to the shot, not to a real tree. At 21 units ahead a 30-unit
+      // canopy sits 51 degrees above the horizon — entirely out of frame. This
+      // one fills the top of the picture, so you are plainly standing under it.
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.1, 1.9, 13, 12),
+        new THREE.MeshBasicMaterial({ color: 0x2a1409, toneMapped: false })
+      );
+      trunk.position.y = 6.5;
+      const canopy = new THREE.Mesh(
+        new THREE.SphereGeometry(13, 20, 14),
+        new THREE.MeshBasicMaterial({ toneMapped: false })
+      );
+      canopy.position.y = 16;
+      canopy.scale.set(1.5, 0.62, 1.15);
+      catchCanopy = canopy;
+      catchTree.add(trunk, canopy);
+      group.add(catchTree);
+
+      // ── a cherry that looks like a cherry: a glossy pair on a stem ──
+      const berry = new THREE.SphereGeometry(0.66, 14, 14);
+      {
+        const pa = berry.attributes.position;
+        const vc = new Float32Array(pa.count * 3);
+        for (let i = 0; i < pa.count; i++) {
+          const t = 0.55 + (pa.getY(i) / 0.66 + 1) * 0.3;   // top-lit gloss
+          vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
+        }
+        berry.setAttribute('color', new THREE.BufferAttribute(vc, 3));
+      }
+      const stemGeo = new THREE.CylinderGeometry(0.075, 0.055, 2.1, 6);
+      const bombGeo = new THREE.SphereGeometry(0.86, 16, 16);
+      const fuseGeo = new THREE.CylinderGeometry(0.07, 0.07, 1.1, 6);
+
       for (let i = 0; i < MAX_FALLERS; i++) {
-        const m = new THREE.Mesh(fruitGeo, new THREE.MeshBasicMaterial({ toneMapped: false }));
-        m.visible = false;
-        group.add(m);
-        fallers.push({ mesh: m, alive: false, x: 0, t0: 0, bomb: false });
+        const g = new THREE.Group();
+
+        // cherry: two berries hanging off a forked stem
+        const fruit = new THREE.Group();
+        const mat = new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true });
+        const b1 = new THREE.Mesh(berry, mat);
+        const b2 = new THREE.Mesh(berry, mat);
+        b1.position.set(-0.52, 0, 0);
+        b2.position.set(0.5, -0.16, 0.1);
+        b2.scale.setScalar(0.88);
+        const stemMat = new THREE.MeshBasicMaterial({ color: 0x4f7a24, toneMapped: false });
+        const s1 = new THREE.Mesh(stemGeo, stemMat);
+        s1.position.set(-0.3, 0.95, 0); s1.rotation.z = 0.28;
+        const s2 = new THREE.Mesh(stemGeo, stemMat);
+        s2.position.set(0.3, 0.9, 0.05); s2.rotation.z = -0.24;
+        fruit.add(b1, b2, s1, s2);
+
+        // bomb: a matte black ball with a fuse and a live spark
+        const bomb = new THREE.Group();
+        const shell = new THREE.Mesh(bombGeo, new THREE.MeshBasicMaterial({
+          color: 0x0a0a0c, toneMapped: false,
+        }));
+        const collar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.34, 0.34, 10),
+          new THREE.MeshBasicMaterial({ color: 0x241f22, toneMapped: false })
+        );
+        collar.position.y = 0.82;
+        const fuse = new THREE.Mesh(fuseGeo, new THREE.MeshBasicMaterial({ color: 0x7a6a4a, toneMapped: false }));
+        fuse.position.set(0.16, 1.4, 0); fuse.rotation.z = -0.42;
+        const spark = glowSprite(2.4);
+        spark.position.set(0.42, 1.9, 0);
+        bomb.add(shell, collar, fuse, spark);
+
+        g.add(fruit, bomb);
+        g.visible = false;
+        group.add(g);
+        fallers.push({ mesh: g, fruit, bomb, spark, mat, alive: false, x: 0, t0: 0, isBomb: false });
       }
     },
 
@@ -331,10 +401,18 @@ export function createCherryLand() {
         // the basket follows your thumb, and stays on the orchard floor
         const want = (pointer.active ? pointer.x : Math.sin(time * 0.5) * 0.4) * REACH;
         basketX += (want - basketX) * Math.min(1, dt * 9);
+        // camZ is authoritative now that the catch shot is derived from it too
         const bz = camZ - 21;
         basket.position.set(pathX(bz) + basketX, hillY(pathX(bz) + basketX, bz) + 1.2, bz);
         color.setHSL((hue / 360 + 0.02) % 1, 0.7, 0.5 + catchFlash * 0.4);
         basketLip.material.color.copy(color);
+
+        // the tree the fruit falls out of, standing right over the basket
+        catchTree.position.set(pathX(bz) + basketX * 0.12, hillY(pathX(bz), bz), bz - 3);
+        themePaint(colorMode, hue / 360, 0.6, time * 0.05, time, audio.mid, 0.4, tp);
+        color.setHSL(tp[0], Math.min(0.85, tp[1] + 0.15), 0.24 + audio.volume * 0.1);
+        catchCanopy.material.color.copy(color);
+        catchCanopy.scale.set(1.5 + audio.bass * 0.06, 0.62 + audio.bass * 0.04, 1.15);
 
         // Drop a cherry for every note, timed so it ARRIVES on the beat — the
         // music still writes the round, the hands just answer it differently.
@@ -347,9 +425,12 @@ export function createCherryLand() {
             f.alive = true;
             f.t0 = n.t;                                    // when it lands
             // bombs on the weakest beats, so the fruit rides the music
-            f.bomb = !n.accent && ((chartAt * 7919) % 100) < 18;
+            f.isBomb = !n.accent && ((chartAt * 7919) % 100) < 18;
             f.x = (((chartAt * 2654435761) % 2000) / 1000 - 1) * REACH;
+            f.spin = ((chartAt * 37) % 100) / 100 * 6.28;
             f.mesh.visible = true;
+            f.fruit.visible = !f.isBomb;
+            f.bomb.visible = f.isBomb;
           }
         }
 
@@ -360,7 +441,7 @@ export function createCherryLand() {
           const fz = camZ - 21;
           const fx = pathX(fz) + f.x;
           const groundY = hillY(fx, fz) + 1.2;
-          f.mesh.position.set(fx, groundY + (1 - u) * 26, fz);
+          f.mesh.position.set(fx, groundY + (1 - u) * 13.5, fz);   // out of the canopy
           // A cherry is red. Deriving its colour from the theme made them turn
           // blue under a cool palette, which is both wrong and unreadable —
           // the whole game is telling fruit from bombs at a glance.
@@ -371,13 +452,13 @@ export function createCherryLand() {
 
           if (left <= 0) {
             const caught = Math.abs(f.x - basketX) < CATCH_W;
-            if (caught && f.bomb) {
+            if (caught && f.isBomb) {
               race.drop(4); bombFlash = 1;
               if (opts.impact) opts.impact(0.8);
             } else if (caught) {
               race.collect(1); catchFlash = 1;
               if (opts.impact) opts.impact(0.28);
-            } else if (!f.bomb) {
+            } else if (!f.isBomb) {
               race.drop(0);            // a fumble breaks the streak, costs nothing
             }
             f.alive = false;
@@ -391,8 +472,18 @@ export function createCherryLand() {
         participants[0].y = 0;
       }
 
-      camera.position.set(pathX(camZ) + steer * 9, 4.8 + Math.sin(time * 0.4) * 0.5, camZ);
-      camera.lookAt(pathX(camZ - 50), 7.5, camZ - 50);
+      if (catching) {
+        // A catching game needs its own shot: the basket low in the frame with
+        // clear air above it for the fruit to fall through, and the canopy
+        // overhead. The wandering orchard camera looks UP and puts the basket
+        // on the horizon, which is unplayable.
+        const bx = pathX(camZ - 21);
+        camera.position.set(bx + basketX * 0.25, 11.5, camZ);
+        camera.lookAt(bx + basketX * 0.5, 3.4, camZ - 21);
+      } else {
+        camera.position.set(pathX(camZ) + steer * 9, 4.8 + Math.sin(time * 0.4) * 0.5, camZ);
+        camera.lookAt(pathX(camZ - 50), 7.5, camZ - 50);
+      }
       camera.rotation.z += steer * -0.04;
 
       // ground: themed dusk meadow

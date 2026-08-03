@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=147';
-import { WORLDS } from './worlds/registry.js?v=147';
-import { Net, PALETTE } from './net.js?v=147';
-import { Presence } from './lib/presence.js?v=147';
-import { Pulses } from './lib/pulse.js?v=147';
-import { BeatClock } from './lib/beatclock.js?v=147';
-import { BeatCue } from './lib/beatcue.js?v=147';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=147';
-import { Race, placeOf, standings } from './lib/race.js?v=147';
-import { RouteMap } from './lib/map.js?v=147';
-import { glowTexture } from './lib/glow.js?v=147';
+import { AudioEngine } from './audio-engine.js?v=152';
+import { WORLDS } from './worlds/registry.js?v=152';
+import { Net, PALETTE } from './net.js?v=152';
+import { Presence } from './lib/presence.js?v=152';
+import { Pulses } from './lib/pulse.js?v=152';
+import { BeatClock } from './lib/beatclock.js?v=152';
+import { BeatCue } from './lib/beatcue.js?v=152';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=152';
+import { Race, placeOf, standings } from './lib/race.js?v=152';
+import { RouteMap } from './lib/map.js?v=152';
+import { glowTexture } from './lib/glow.js?v=152';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -239,10 +239,16 @@ function switchWorld(key) {
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   race.setScale(WORLDS[key].feetPerStep);
   race.setMode(WORLDS[key].mode, WORLDS[key].unit);
-  // A CATCH world is played with the basket, not the orb — showing both would
-  // be two games at once, each contradicting the other about what a press does.
+  // Two different questions, and they were sharing one answer:
+  //   `round` — does this world run a round at all? (any rhythm world)
+  //   `orb`   — is it played by pressing on the beat? (not CATCH, which is
+  //             played with the basket; showing both would be two games at
+  //             once, each contradicting the other about what a press does)
+  // Conflating them meant a CATCH world silently had no round: the race was
+  // reset on entry and never updated, so nothing reached the wire.
   const w = WORLDS[key];
-  document.body.classList.toggle('rhythm', !!w.rhythm && w.mode !== 'CATCH');
+  document.body.classList.toggle('round', !!w.rhythm);
+  document.body.classList.toggle('orb', !!w.rhythm && w.mode !== 'CATCH');
   if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
   startRaceIfReady();
@@ -515,7 +521,7 @@ audio.el.addEventListener('ended', () => {
 
 // A race belongs to one track in one rhythm world — one song, one round.
 function startRaceIfReady() {
-  if (!document.body.classList.contains('rhythm') || !beatCue.chart) { race.reset(); return; }
+  if (!document.body.classList.contains('round') || !beatCue.chart) { race.reset(); return; }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   seenMissed = beatCue.stats.missed;
   hideResults();
@@ -1255,7 +1261,7 @@ canvas.addEventListener('pointerdown', e => {
   }
   pointerHeld = true;
   // in a rhythm world, the tap is judged against the predicted grid
-  if (document.body.classList.contains('rhythm')) {
+  if (document.body.classList.contains('orb')) {
     lastJudge = beatCue.press(audio.currentTime);
     if (lastJudge) {
       if (lastJudge.rank === 'miss') {
@@ -1807,13 +1813,14 @@ function frame(now) {
       ? 'charting ' + Math.round(chartProgress * 100) + '%'
       : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
   }
-  if (document.body.classList.contains('rhythm')) {
+  if (document.body.classList.contains('round')) {
     // The one instruction, retired as soon as the player is clearly landing
     // notes — or after twelve seconds, whichever comes first. Three good
     // presses is proof enough that it has been understood.
+    const onOrb = document.body.classList.contains('orb');
     const landed = beatCue.stats.perfect + beatCue.stats.good;
     $('press-hint').classList.toggle('show',
-      race.active && landed < 3 && audio.currentTime < 14);
+      onOrb && race.active && landed < 3 && audio.currentTime < 14);
     beatCue.update(beatClock, audio.currentTime);
     while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
     const wasFinished = race.finished;
@@ -1822,7 +1829,7 @@ function frame(now) {
     // progress rides on z, which is already on the wire and already
     // interpolated — the field on screen is everyone's real position
     net.local.z = race.progress;
-    beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
+    if (onOrb) beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
       fraction: race.fractionShown,
       feet: race.feet,
       feetLeft: race.feetLeft,
