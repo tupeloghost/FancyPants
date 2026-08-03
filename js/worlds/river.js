@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=152';
-import { themePaint } from '../lib/themes.js?v=152';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=154';
+import { themePaint } from '../lib/themes.js?v=154';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -23,6 +23,19 @@ export function createRiver() {
   const color = new THREE.Color();
   let pointer = { x: 0, active: false };
   let steer = 0;
+
+  // ── DODGE: the river stops being a race and becomes a line to thread ──
+  // You drift at a steady pace and the only thing you control is which side of
+  // the channel you are on. Blossoms are worth gathering, rocks are worth
+  // missing, and both arrive on the beat — so the music writes the pattern and
+  // your hands answer it with position rather than timing.
+  const DRIFT_RATE = 26;        // units/sec — constant, so arrivals land on the beat
+  const LANE = 9;               // how far either side of the channel things sit
+  const HIT_W = 3.4;            // how close counts as touching it
+  const MAX_DRIFTERS = 34;
+  let drifters = [];
+  let riverChartAt = 0;
+  let gatherFlash = 0, rockFlash = 0;
 
   const lz = new Float32Array(LANTERNS);
   const lside = new Float32Array(LANTERNS);
@@ -147,6 +160,47 @@ export function createRiver() {
 
     setInput(x) { pointer.x = x; pointer.active = true; },
 
+    _buildDodge() {
+      if (drifters.length) return;
+      riverChartAt = 0;
+      const petalGeo = new THREE.SphereGeometry(0.95, 14, 10);
+      const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
+      for (let i = 0; i < MAX_DRIFTERS; i++) {
+        const g = new THREE.Group();
+
+        // a blossom riding the surface, with its own reflection glow
+        const bloom = new THREE.Group();
+        const petalMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+        for (let k = 0; k < 5; k++) {
+          const pt = new THREE.Mesh(petalGeo, petalMat);
+          const a = (k / 5) * Math.PI * 2;
+          pt.position.set(Math.cos(a) * 0.85, 0, Math.sin(a) * 0.85);
+          pt.scale.set(1, 0.34, 0.72);
+          bloom.add(pt);
+        }
+        const halo = glowSprite(5);
+        bloom.add(halo);
+
+        // a rock: matte, heavy, and unmistakably not a flower
+        const rock = new THREE.Mesh(rockGeo, new THREE.MeshBasicMaterial({
+          color: 0x191a1f, toneMapped: false,
+        }));
+        rock.scale.set(1.5, 0.9, 1.3);
+        const foam = glowSprite(4.5);
+        foam.material.color.setHex(0xbfd4e8);
+        foam.material.opacity = 0.3;
+        foam.position.y = -0.3;
+        const rockGrp = new THREE.Group();
+        rockGrp.add(rock, foam);
+
+        g.add(bloom, rockGrp);
+        g.visible = false;
+        group.add(g);
+        drifters.push({ mesh: g, bloom, rockGrp, petalMat, halo,
+                        alive: false, z: 0, x: 0, rock: false, spin: 0 });
+      }
+    },
+
     // fellow floaters drifting the same river
     placeGhost(p, i, out) {
       const z = camera.position.z - 16 - (i % 6) * 9;
@@ -170,13 +224,20 @@ export function createRiver() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null } = opts;
-      const racing = !!(race && race.active);
+      const { reactivity, hue, attract, time, colorMode = 'rainbow',
+              race = null, chart = null, songTime = 0 } = opts;
+      const dodging = !!(race && race.active && race.mode === 'DODGE');
+      const racing = !!(race && race.active && race.mode === 'RACE');
+      if (dodging) this._buildDodge();
 
-      // Racing, the current is your playing: momentum becomes the rush, so a
-      // streak carries you downstream. Everything below still reads as a river
-      // because only the source of the drift changed.
-      if (racing) {
+      if (dodging) {
+        // A steady current. Variable speed would make arrivals drift off the
+        // beat, and the whole pattern is written by the music.
+        drift += dt * DRIFT_RATE;
+        rush *= Math.pow(0.3, dt);
+        gatherFlash *= Math.pow(0.02, dt);
+        rockFlash *= Math.pow(0.05, dt);
+      } else if (racing) {
         rush = race.momentum;
         drift = race.progress * RIVER_PER_STEP;
       } else {
@@ -191,6 +252,66 @@ export function createRiver() {
       if (participants && participants[0]) {
         participants[0].x = steer;
         participants[0].y = 0;
+      }
+
+      // ── the line to thread ──
+      if (dodging) {
+        const playerX = riverX(-drift) + steer * 8;
+
+        // place each arrival exactly where the current will carry it to the
+        // player on its own beat — constant speed makes that simple arithmetic
+        if (chart) {
+          while (riverChartAt < chart.length && chart[riverChartAt].t - 3.2 <= songTime) {
+            const n = chart[riverChartAt++];
+            if (n.t < songTime) continue;
+            const d = drifters.find(x => !x.alive);
+            if (!d) continue;
+            d.alive = true;
+            d.z = -(drift + DRIFT_RATE * (n.t - songTime));
+            // rocks on the off-beats, blossom on the accents: the music decides
+            // which side of the channel is safe
+            // 42% rocks at three apiece meant twelve gathered blossoms and a
+            // handful of rocks netted nothing — deliberate play has to pay
+            // clearly better than careless play or there is no reason to steer.
+            d.rock = !n.accent && ((riverChartAt * 7717) % 100) < 26;
+            d.x = (((riverChartAt * 48271) % 200) / 100 - 1) * LANE;
+            d.spin = ((riverChartAt * 53) % 100) / 100 * 6.28;
+            d.mesh.visible = true;
+            d.bloom.visible = !d.rock;
+            d.rockGrp.visible = d.rock;
+          }
+        }
+
+        for (const d of drifters) {
+          if (!d.alive) continue;
+          const wz = d.z;
+          const ahead = -drift - wz;          // >0 while it is still upstream
+          const wx = riverX(wz) + d.x;
+          const ride = swellAt ? 0 : 0;
+          d.mesh.position.set(wx, 1.4, wz);
+          d.mesh.rotation.y = d.spin + time * (d.rock ? 0.3 : 0.9);
+          if (!d.rock) {
+            color.setHSL((hue / 360 + 0.08) % 1, 0.75, 0.55 + audio.volume * 0.15);
+            d.petalMat.color.copy(color);
+            d.halo.material.color.copy(color);
+            d.halo.material.opacity = 0.4 + audio.volume * 0.25;
+          }
+
+          if (ahead <= 0) {                    // it has reached you
+            const touching = Math.abs(wx - playerX) < HIT_W;
+            if (touching && d.rock) {
+              race.drop(2); rockFlash = 1; rush = 0;
+              if (opts.impact) opts.impact(0.9);
+            } else if (touching) {
+              race.collect(1); gatherFlash = 1; rush = Math.min(1, rush + 0.5);
+              if (opts.impact) opts.impact(0.3);
+            } else if (!d.rock) {
+              race.drop(0);                    // a blossom missed breaks the run
+            }
+            d.alive = false;
+            d.mesh.visible = false;
+          }
+        }
       }
 
       // FLOATING: sit just above the surface and ride the actual swell

@@ -100,12 +100,12 @@ export class Race {
 
   // what the player is shown
   get feet() {
-    return (this.mode === 'COLLECT' || this.mode === 'CATCH')
+    return this.mode !== 'RACE'
       ? Math.round(this.progress)
       : Math.round(this.progress * this.feetPerStep);
   }
   get feetTotal() {
-    return (this.mode === 'COLLECT' || this.mode === 'CATCH')
+    return this.mode !== 'RACE'
       ? Math.round(this.finish)
       : Math.round(this.finish * this.feetPerStep);
   }
@@ -161,7 +161,7 @@ export class Race {
     if (!this.active) return;
     // Nothing carries you in a COLLECT round — the tally only moves when you
     // catch something, so there is no speed to integrate.
-    if (this.mode === 'COLLECT' || this.mode === 'CATCH') return;
+    if (this.mode === 'COLLECT' || this.mode === 'CATCH' || this.mode === 'DODGE') return;
     if (this.finished) { this.speed = 0; this.momentum = 0; return; }
     this.momentum = Math.max(0, this.momentum - DECAY * dt);
     this.speed = BASE + this.momentum * TOP;

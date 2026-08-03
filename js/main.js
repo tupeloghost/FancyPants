@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=152';
-import { WORLDS } from './worlds/registry.js?v=152';
-import { Net, PALETTE } from './net.js?v=152';
-import { Presence } from './lib/presence.js?v=152';
-import { Pulses } from './lib/pulse.js?v=152';
-import { BeatClock } from './lib/beatclock.js?v=152';
-import { BeatCue } from './lib/beatcue.js?v=152';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=152';
-import { Race, placeOf, standings } from './lib/race.js?v=152';
-import { RouteMap } from './lib/map.js?v=152';
-import { glowTexture } from './lib/glow.js?v=152';
+import { AudioEngine } from './audio-engine.js?v=154';
+import { WORLDS } from './worlds/registry.js?v=154';
+import { Net, PALETTE } from './net.js?v=154';
+import { Presence } from './lib/presence.js?v=154';
+import { Pulses } from './lib/pulse.js?v=154';
+import { BeatClock } from './lib/beatclock.js?v=154';
+import { BeatCue } from './lib/beatcue.js?v=154';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=154';
+import { Race, placeOf, standings } from './lib/race.js?v=154';
+import { RouteMap } from './lib/map.js?v=154';
+import { glowTexture } from './lib/glow.js?v=154';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -248,7 +248,7 @@ function switchWorld(key) {
   // reset on entry and never updated, so nothing reached the wire.
   const w = WORLDS[key];
   document.body.classList.toggle('round', !!w.rhythm);
-  document.body.classList.toggle('orb', !!w.rhythm && w.mode !== 'CATCH');
+  document.body.classList.toggle('orb', !!w.rhythm && w.mode !== 'CATCH' && w.mode !== 'DODGE');
   if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
   startRaceIfReady();
