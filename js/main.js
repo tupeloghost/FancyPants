@@ -8,12 +8,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=98';
-import { WORLDS } from './worlds/registry.js?v=98';
-import { Net, PALETTE } from './net.js?v=98';
-import { Presence } from './lib/presence.js?v=98';
-import { Pulses } from './lib/pulse.js?v=98';
-import { glowTexture } from './lib/glow.js?v=98';
+import { AudioEngine } from './audio-engine.js?v=101';
+import { WORLDS } from './worlds/registry.js?v=101';
+import { Net, PALETTE } from './net.js?v=101';
+import { Presence } from './lib/presence.js?v=101';
+import { Pulses } from './lib/pulse.js?v=101';
+import { glowTexture } from './lib/glow.js?v=101';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');

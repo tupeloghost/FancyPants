@@ -3,14 +3,15 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=98';
-import { themePaint } from '../lib/themes.js?v=98';
-import { PALETTE } from '../net.js?v=98';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=101';
+import { themePaint } from '../lib/themes.js?v=101';
+import { PALETTE } from '../net.js?v=101';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
 const STEP_H = 5, STEP_D = 8;
 const STAIRS = 26;
+const STAIR_W = 60;      // one wide flight — the whole field races on it
 const CROWD = 6;            // other players' slinkies on the staircase
 const CROWD_COILS = 26;     // fewer coils each — they read at a distance
 
@@ -33,7 +34,9 @@ export function createSlinky() {
   let pointer = { x: 0, active: false };
 
   // where each player's slinky walks, fanned out either side of yours
-  const laneX = i => (i % 2 ? 1 : -1) * (13 + Math.floor(i / 2) * 11);
+  // Lanes must fit the flight: the old spread reached +/-35 on a 26-wide
+  // staircase, so the outer two players were walking on empty space beside it.
+  const laneX = i => (i % 2 ? 1 : -1) * (8 + Math.floor(i / 2) * 8);   // +/-8, 16, 24
 
   // slinky end-over-end path: each unit of p is one stair
   function pathAt(p, out) {
@@ -352,7 +355,7 @@ export function createSlinky() {
       for (let k = 0; k < STAIRS; k++) {
         const n = base - 6 + k;
         dummy.position.set(0, -n * STEP_H - STEP_H / 2, -n * STEP_D - STEP_D / 2);
-        dummy.scale.set(26, STEP_H, STEP_D);
+        dummy.scale.set(STAIR_W, STEP_H, STEP_D);
         dummy.rotation.set(0, 0, 0);
         dummy.quaternion.setFromEuler(new THREE.Euler(0, 0, 0));
         dummy.updateMatrix();
@@ -365,7 +368,7 @@ export function createSlinky() {
 
         // the glowing nose strip on each step
         dummy.position.set(0, -n * STEP_H + 0.1, -n * STEP_D + 0.15);
-        dummy.scale.set(26, 1, 1);
+        dummy.scale.set(STAIR_W, 1, 1);
         dummy.updateMatrix();
         edges.setMatrixAt(k, dummy.matrix);
         themePaint(colorMode, hue / 360, ((n % 7) / 7), n * 0.2, time, audio.mid, jitv, tp);
@@ -377,14 +380,23 @@ export function createSlinky() {
       edges.instanceMatrix.needsUpdate = true;
       edges.instanceColor.needsUpdate = true;
 
-      // camera: full orbit around the slinky — every angle, always moving.
-      // In play mode your pointer steers anywhere on the circle.
+      // Camera: stays uphill of the spring, looking down the descent. It used
+      // to orbit the full circle, which meant half of every revolution sat
+      // behind the staircase looking at the backs of the risers with the whole
+      // flight between the lens and the slinkies. Now it swings within a
+      // limited arc on the open side — enough movement to feel alive, never
+      // enough to put the stairs in the way.
       pathAt(walk - RINGS * 0.033, P); // middle of the spring, allowing for stretch
-      const ang = (pointer.active && !attract)
-        ? pointer.x * Math.PI + time * 0.02
-        : time * 0.08;
-      // orbit outside the whole party — the far lane sits at 35
-      const orbitR = 43;
+      // The flight rises 5 units for every 8 it goes back, so any camera placed
+      // uphill of the spring sits *under* the stairs above it — that is the
+      // whole upper half of the old orbit, and it is why the view kept ending
+      // up behind the staircase. Staying downhill is clear at every angle, and
+      // it is the better shot anyway: the field descends towards the lens.
+      const swing = (pointer.active && !attract)
+        ? Math.max(-1, Math.min(1, pointer.x))
+        : Math.sin(time * 0.08) * 0.55;
+      const ang = -Math.PI / 2 + swing * 1.25;   // sweeps side to side, never uphill
+      const orbitR = 62;                         // holds the full width of the field
       camPos.set(
         Math.cos(ang) * orbitR,
         P.y + 13 + Math.sin(time * 0.3) + landPulse * -1.2, // dip on landing
