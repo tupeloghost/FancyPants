@@ -8,11 +8,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=91';
-import { WORLDS } from './worlds/registry.js?v=91';
-import { Net, PALETTE } from './net.js?v=91';
-import { Presence } from './lib/presence.js?v=91';
-import { glowTexture } from './lib/glow.js?v=91';
+import { AudioEngine } from './audio-engine.js?v=92';
+import { WORLDS } from './worlds/registry.js?v=92';
+import { Net, PALETTE } from './net.js?v=92';
+import { Presence } from './lib/presence.js?v=92';
+import { glowTexture } from './lib/glow.js?v=92';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -320,6 +320,19 @@ function playAuto(next) {
   audio.play().catch(() => {});
   updatePlayBtn();
 }
+// "back" means the track before this one — but a few seconds in, it means
+// start this one again, which is what every music player does.
+function playPrev() {
+  if (!trackList.length || document.body.classList.contains('guest')) return;
+  if (audio.currentTime > 3) { audio.el.currentTime = 0; return; }
+  if (!autoOrder.length) { autoOrder = shuffled(trackList); autoAt = 0; }
+  autoAt = (autoAt - 1 + autoOrder.length) % autoOrder.length;
+  const url = autoOrder[autoAt];
+  audio.loadURL(url);
+  $('track-select').value = url;
+  audio.play().catch(() => {});
+  updatePlayBtn();
+}
 // when a track runs out, roll straight into the next one
 audio.el.addEventListener('ended', () => playAuto(true));
 
@@ -410,6 +423,11 @@ $('suno-input').addEventListener('drop', () => setTimeout(loadSuno, 60));
 
 function updatePlayBtn() {
   $('btn-play').textContent = audio.playing ? '⏸' : '▶';
+  const q = $('qb-play');
+  if (q) {
+    q.querySelector('i').textContent = audio.playing ? '⏸' : '▶';
+    q.querySelector('em').textContent = audio.playing ? 'pause' : 'play';
+  }
 }
 $('btn-play').addEventListener('click', () => {
   audio.playing ? audio.pause() : audio.play().catch(() => {});
@@ -502,11 +520,7 @@ setInterval(() => {
   if (el) el.textContent = 'audio: ' + audio.status;
 }, 700);
 
-$('btn-mute').addEventListener('click', () => {
-  audio.setMuted(!audio.muted);
-  $('btn-mute').classList.toggle('on', audio.muted);
-  $('btn-mute').textContent = audio.muted ? 'muted' : 'mute';
-});
+$('btn-mute').addEventListener('click', () => toggleMute());
 
 $('volume').addEventListener('input', e => {
   audio.setVolume(e.target.value / 100);
@@ -708,6 +722,20 @@ const PRESETS = [
   ['Ocean Drift',     { colorMode: 'ocean',   pattern: 'waves',   shape: 'circle',  hue: 190 }],
   ['Rainbow Road',    { colorMode: 'rainbow', pattern: 'checker', shape: 'square',  hue: 210 }],
 ];
+function applyPreset(cfg) {
+  settings.colorMode = cfg.colorMode;
+  settings.pattern = cfg.pattern;
+  settings.shape = cfg.shape;
+  setHue(cfg.hue);
+  setChipActive('color-chips', cfg.colorMode);
+  setChipActive('pattern-chips', cfg.pattern);
+  setChipActive('shape-chips', cfg.shape);
+  $('color-name').textContent = cfg.colorMode;
+  $('pattern-name').textContent = cfg.pattern;
+  $('shape-name').textContent = cfg.shape;
+  refreshHueLock();
+  updateURL();
+}
 {
   const box = $('preset-chips');
   for (const [name, cfg] of PRESETS) {
@@ -715,22 +743,64 @@ const PRESETS = [
     c.className = 'chip chip-preset';
     c.textContent = name;
     c.style.background = `linear-gradient(120deg, hsla(${cfg.hue}, 70%, 30%, 0.9), hsla(${cfg.hue}, 80%, 14%, 0.9))`;
-    c.addEventListener('click', () => {
-      settings.colorMode = cfg.colorMode;
-      settings.pattern = cfg.pattern;
-      settings.shape = cfg.shape;
-      setHue(cfg.hue);
-      setChipActive('color-chips', cfg.colorMode);
-      setChipActive('pattern-chips', cfg.pattern);
-      setChipActive('shape-chips', cfg.shape);
-      $('color-name').textContent = cfg.colorMode;
-      $('pattern-name').textContent = cfg.pattern;
-      $('shape-name').textContent = cfg.shape;
-      refreshHueLock();
-      updateURL();
-    });
+    c.addEventListener('click', () => applyPreset(cfg));
     box.appendChild(c);
   }
+}
+
+// ── Quick bar ── the handful of moves you make mid-song, one press each.
+// Everything here is a shortcut to something the panel can already do; the
+// panel stays for the deep settings nobody touches while a track is playing.
+const WORLD_KEYS = Object.keys(WORLDS);
+
+function stepWorld(dir = 1) {
+  if (document.body.classList.contains('guest')) return; // the host drives the world
+  const i = WORLD_KEYS.indexOf($('world-select').value);
+  const next = WORLD_KEYS[(i + dir + WORLD_KEYS.length) % WORLD_KEYS.length];
+  $('world-select').value = next;
+  switchWorld(next);
+}
+
+let lookIdx = 0;
+function stepLook(dir = 1) {
+  lookIdx = (lookIdx + dir + PRESETS.length) % PRESETS.length;
+  applyPreset(PRESETS[lookIdx][1]);
+}
+
+function toggleMute() {
+  audio.setMuted(!audio.muted);
+  $('btn-mute').classList.toggle('on', audio.muted);
+  $('btn-mute').textContent = audio.muted ? 'muted' : 'mute';
+  $('qb-mute').classList.toggle('on', audio.muted);
+  $('qb-mute').querySelector('em').textContent = audio.muted ? 'muted' : 'mute';
+}
+
+function togglePlay() {
+  if (document.body.classList.contains('guest')) return; // host drives the music
+  audio.playing ? audio.pause() : audio.play().catch(() => {});
+  updatePlayBtn();
+}
+
+$('qb-prev').addEventListener('click', playPrev);
+$('qb-next').addEventListener('click', () => playAuto(true));
+$('qb-play').addEventListener('click', togglePlay);
+$('qb-world').addEventListener('click', () => stepWorld(1));
+$('qb-look').addEventListener('click', () => stepLook(1));
+$('qb-mute').addEventListener('click', toggleMute);
+
+// the bar fades away when you leave it alone, and wakes on any input
+{
+  const bar = $('qbar');
+  let idle = null;
+  const wake = () => {
+    bar.classList.remove('dim');
+    clearTimeout(idle);
+    idle = setTimeout(() => bar.classList.add('dim'), 3200);
+  };
+  ['pointermove', 'pointerdown', 'keydown', 'wheel'].forEach(ev =>
+    window.addEventListener(ev, wake, { passive: true })
+  );
+  wake();
 }
 
 // stardust toggle
@@ -754,11 +824,31 @@ window.addEventListener('keydown', e => {
   if (e.key === 'p' || e.key === 'P') { $('plist').classList.toggle('hidden'); renderPlist(); }
   if (e.key === 'c' || e.key === 'C') panel.classList.toggle('collapsed');
   if (e.key === 's' || e.key === 'S') screenshotQueued = true;
+
+  // clean capture — nothing on screen but the world
+  if (e.key === 'f' || e.key === 'F') document.body.classList.toggle('clean');
+
+  // the mid-song moves, so a host never has to reach for the panel
+  if (e.key === 'w') stepWorld(1);
+  if (e.key === 'W') stepWorld(-1);
+  if (e.key === 'l') stepLook(1);
+  if (e.key === 'L') stepLook(-1);
+  if (e.key === 'm' || e.key === 'M') toggleMute();
+  if (e.key === 'ArrowRight') { e.preventDefault(); if (!document.body.classList.contains('guest')) playAuto(true); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); playPrev(); }
+
+  // 1–9, 0 jump straight to a world — a Stream Deck is just a keyboard
+  if (e.key >= '0' && e.key <= '9') {
+    const i = e.key === '0' ? 9 : +e.key - 1;
+    if (i < WORLD_KEYS.length && !document.body.classList.contains('guest')) {
+      $('world-select').value = WORLD_KEYS[i];
+      switchWorld(WORLD_KEYS[i]);
+    }
+  }
+
   if (e.key === ' ') {
     e.preventDefault();
-    if (document.body.classList.contains('guest')) return; // host drives the music
-    audio.playing ? audio.pause() : audio.play().catch(() => {});
-    updatePlayBtn();
+    togglePlay();
   }
 });
 
