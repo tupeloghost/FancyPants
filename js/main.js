@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=137';
-import { WORLDS } from './worlds/registry.js?v=137';
-import { Net, PALETTE } from './net.js?v=137';
-import { Presence } from './lib/presence.js?v=137';
-import { Pulses } from './lib/pulse.js?v=137';
-import { BeatClock } from './lib/beatclock.js?v=137';
-import { BeatCue } from './lib/beatcue.js?v=137';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=137';
-import { Race, placeOf, standings } from './lib/race.js?v=137';
-import { RouteMap } from './lib/map.js?v=137';
-import { glowTexture } from './lib/glow.js?v=137';
+import { AudioEngine } from './audio-engine.js?v=139';
+import { WORLDS } from './worlds/registry.js?v=139';
+import { Net, PALETTE } from './net.js?v=139';
+import { Presence } from './lib/presence.js?v=139';
+import { Pulses } from './lib/pulse.js?v=139';
+import { BeatClock } from './lib/beatclock.js?v=139';
+import { BeatCue } from './lib/beatcue.js?v=139';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=139';
+import { Race, placeOf, standings } from './lib/race.js?v=139';
+import { RouteMap } from './lib/map.js?v=139';
+import { glowTexture } from './lib/glow.js?v=139';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -388,6 +388,62 @@ audio.el.addEventListener('loadstart', () => {
   beatCue.reset();
   chartTrack(audio.el.currentSrc || audio.el.src);
 });
+// ── The demo on the round card ──
+// A sentence cannot teach timing. This runs the real cue at a steady tempo so
+// the player sees a ring arrive and the orb answer before they ever play a note.
+const demoCv = $('ri-demo');
+const demoCtx = demoCv.getContext('2d');
+let demoT = 0, demoFlash = 0;
+function drawDemo(dt, hue) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = demoCv.clientWidth, H = demoCv.clientHeight;
+  if (!W || !H) return;
+  if (demoCv.width !== Math.round(W * dpr)) {
+    demoCv.width = Math.round(W * dpr); demoCv.height = Math.round(H * dpr);
+  }
+  demoCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  demoCtx.clearRect(0, 0, W, H);
+
+  const BEAT = 1.15;
+  demoT += dt;
+  const phase = (demoT % BEAT) / BEAT;        // 0 just after a press
+  if (demoT % BEAT < dt) demoFlash = 1;
+  demoFlash *= Math.pow(0.02, dt);
+
+  const cx = W / 2, cy = H / 2;
+  const rOrb = Math.min(W, H) * 0.19;
+  const rFar = Math.min(W, H) * 0.46;
+
+  // the ring closing in — the same linear approach the real cue uses
+  const u = 1 - phase;
+  const r = rOrb + u * (rFar - rOrb);
+  demoCtx.strokeStyle = `hsla(${hue}, 85%, ${64 + phase * 24}%, ${(0.3 + phase * 0.6).toFixed(3)})`;
+  demoCtx.lineWidth = 2 + phase * 2;
+  demoCtx.beginPath(); demoCtx.arc(cx, cy, r, 0, Math.PI * 2); demoCtx.stroke();
+
+  // the orb answering
+  const g = demoCtx.createRadialGradient(cx, cy, 0, cx, cy, rOrb * (2 + demoFlash));
+  g.addColorStop(0, `hsla(${hue}, 90%, 84%, ${(0.24 + demoFlash * 0.45).toFixed(3)})`);
+  g.addColorStop(1, `hsla(${hue}, 90%, 80%, 0)`);
+  demoCtx.fillStyle = g;
+  demoCtx.beginPath(); demoCtx.arc(cx, cy, rOrb * (2 + demoFlash), 0, Math.PI * 2); demoCtx.fill();
+  demoCtx.strokeStyle = `hsla(${hue}, 90%, ${82 + demoFlash * 16}%, ${(0.8 + demoFlash * 0.2).toFixed(3)})`;
+  demoCtx.lineWidth = 2.4 + demoFlash * 2.5;
+  demoCtx.beginPath(); demoCtx.arc(cx, cy, rOrb, 0, Math.PI * 2); demoCtx.stroke();
+
+  // and the word, on the beat it lands
+  if (demoFlash > 0.06) {
+    demoCtx.globalAlpha = Math.min(1, demoFlash);
+    demoCtx.font = "600 10px 'SF Mono', ui-monospace, Menlo, monospace";
+    demoCtx.fillStyle = `hsl(${hue}, 60%, 94%)`;
+    demoCtx.textAlign = 'center';
+    demoCtx.fillText('T A P', cx, cy + 4);
+    demoCtx.globalAlpha = 1;
+  }
+}
+
+window.__drawDemo = drawDemo;   // debug handle, same as the others
+
 // ── Results ── the reveal. A round without one is just activity that stops.
 // Shown when you reach the bottom, or when the music ends — the song's last
 // note is the hard bell, and whoever is deepest at that moment takes it.
@@ -1465,6 +1521,8 @@ function nextRound() {
   routeMap.at = setAt;
   $('ri-round').textContent = `round ${setAt + 1} of ${setList.length}`;
   $('ri-world').textContent = WORLDS[r.world].label;
+  $('ri-mode').textContent = WORLDS[r.world].mode || 'PLAY';
+  $('ri-rules').textContent = WORLDS[r.world].rules || '';
   $('ri-track').textContent = prettyTrack(r.track);
   $('ri-state').textContent = 'preparing';
   $('round-intro').classList.add('show');
@@ -1715,6 +1773,7 @@ function frame(now) {
   const gridBeat = beatClock.update(audio.currentTime);
   drawTempo(gridBeat, beatClock.onsetAt != null);
   if (setPhase === 'intro') {
+    drawDemo(dt, settings.hue);
     routeMap.setTokens(participants.map((p, i) => ({
       name: p.name || ('p' + i),
       color: PALETTE[(p.color || 0) % PALETTE.length],
