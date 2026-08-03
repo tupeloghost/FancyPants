@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=154';
-import { WORLDS } from './worlds/registry.js?v=154';
-import { Net, PALETTE } from './net.js?v=154';
-import { Presence } from './lib/presence.js?v=154';
-import { Pulses } from './lib/pulse.js?v=154';
-import { BeatClock } from './lib/beatclock.js?v=154';
-import { BeatCue } from './lib/beatcue.js?v=154';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=154';
-import { Race, placeOf, standings } from './lib/race.js?v=154';
-import { RouteMap } from './lib/map.js?v=154';
-import { glowTexture } from './lib/glow.js?v=154';
+import { AudioEngine } from './audio-engine.js?v=156';
+import { WORLDS } from './worlds/registry.js?v=156';
+import { Net, PALETTE } from './net.js?v=156';
+import { Presence } from './lib/presence.js?v=156';
+import { Pulses } from './lib/pulse.js?v=156';
+import { BeatClock } from './lib/beatclock.js?v=156';
+import { BeatCue } from './lib/beatcue.js?v=156';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=156';
+import { Race, placeOf, standings } from './lib/race.js?v=156';
+import { RouteMap } from './lib/map.js?v=156';
+import { glowTexture } from './lib/glow.js?v=156';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1085,6 +1085,18 @@ function drawTempo(gridBeat, rawOnset) {
   $('tempo-conf').firstElementChild.style.width = Math.round(beatClock.confidence * 100) + '%';
 }
 
+// ── Steering by keyboard ──
+// Worlds that are steered rather than pressed need a keyboard axis on desktop;
+// a mouse is not always the natural hand for a dodge.
+let keySteer = 0, keySteerAt = 0, keyAim = 0;
+function steeredRound() {
+  return race.active && (race.mode === 'DODGE' || race.mode === 'CATCH');
+}
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowRight' && keySteer > 0) keySteer = 0;
+  if (e.key === 'ArrowLeft' && keySteer < 0) keySteer = 0;
+});
+
 // hotkeys
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -1109,8 +1121,16 @@ window.addEventListener('keydown', e => {
   if (e.key === 'l') stepLook(1);
   if (e.key === 'L') stepLook(-1);
   if (e.key === 'm' || e.key === 'M') toggleMute();
-  if (e.key === 'ArrowRight') { e.preventDefault(); if (!document.body.classList.contains('guest')) playAuto(true); }
-  if (e.key === 'ArrowLeft')  { e.preventDefault(); playPrev(); }
+  // In a steered round the arrows are the controls, not the transport — a
+  // player reaching for them to dodge should not skip the track they are
+  // playing. They only move the music when nothing is being steered.
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    if (steeredRound()) { keySteer = dir; keySteerAt = performance.now(); }
+    else if (dir > 0) { if (!document.body.classList.contains('guest')) playAuto(true); }
+    else playPrev();
+  }
 
   // 1–9, 0 jump straight to a world — a Stream Deck is just a keyboard
   if (e.key >= '0' && e.key <= '9') {
@@ -1813,6 +1833,17 @@ function frame(now) {
       ? 'charting ' + Math.round(chartProgress * 100) + '%'
       : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
   }
+  // a held arrow steers; releasing eases back to centre rather than snapping
+  if (steeredRound() && world && world.setInput) {
+    if (keySteer !== 0) {
+      keyAim += (keySteer - keyAim) * Math.min(1, dt * 6);
+      world.setInput(keyAim, 0);
+    } else if (Math.abs(keyAim) > 0.001) {
+      keyAim += (0 - keyAim) * Math.min(1, dt * 4);
+      world.setInput(keyAim, 0);
+    }
+  }
+
   if (document.body.classList.contains('round')) {
     // The one instruction, retired as soon as the player is clearly landing
     // notes — or after twelve seconds, whichever comes first. Three good

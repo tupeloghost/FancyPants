@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=154';
-import { themePaint } from '../lib/themes.js?v=154';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=156';
+import { themePaint } from '../lib/themes.js?v=156';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -168,17 +168,34 @@ export function createRiver() {
       for (let i = 0; i < MAX_DRIFTERS; i++) {
         const g = new THREE.Group();
 
-        // a blossom riding the surface, with its own reflection glow
+        // A SPEED RAMP. A blossom is pretty but says nothing about what to do
+        // with it — a ramp with chevrons pointing the way you are travelling
+        // reads as "go through this" without a word of explanation, which is
+        // the whole job of the thing you are meant to aim at.
         const bloom = new THREE.Group();
         const petalMat = new THREE.MeshBasicMaterial({ toneMapped: false });
-        for (let k = 0; k < 5; k++) {
-          const pt = new THREE.Mesh(petalGeo, petalMat);
-          const a = (k / 5) * Math.PI * 2;
-          pt.position.set(Math.cos(a) * 0.85, 0, Math.sin(a) * 0.85);
-          pt.scale.set(1, 0.34, 0.72);
-          bloom.add(pt);
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.35, 4.4), petalMat);
+        deck.rotation.x = -0.26;                 // tipped up, like a ramp
+        deck.position.y = 0.35;
+        bloom.add(deck);
+        // side rails, so it reads as built rather than floating debris
+        for (const sx of [-2.9, 2.9]) {
+          const rail = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.0, 4.4), petalMat);
+          rail.rotation.x = -0.26;
+          rail.position.set(sx, 0.7, 0);
+          bloom.add(rail);
         }
-        const halo = glowSprite(5);
+        // three chevrons pointing downstream — the instruction, in shape
+        for (let k = 0; k < 3; k++) {
+          for (const sgn of [-1, 1]) {
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.14, 0.5), petalMat);
+            arm.position.set(sgn * 0.75, 0.62 + k * 0.02, -1.3 + k * 1.25);
+            arm.rotation.set(-0.26, sgn * 0.62, 0);
+            bloom.add(arm);
+          }
+        }
+        const halo = glowSprite(4.5);
+        halo.position.y = 0.6;
         bloom.add(halo);
 
         // a rock: matte, heavy, and unmistakably not a flower
@@ -288,16 +305,24 @@ export function createRiver() {
           const ahead = -drift - wz;          // >0 while it is still upstream
           const wx = riverX(wz) + d.x;
           const ride = swellAt ? 0 : 0;
-          d.mesh.position.set(wx, 1.4, wz);
-          d.mesh.rotation.y = d.spin + time * (d.rock ? 0.3 : 0.9);
+          // Ramps ride low so you pass OVER them; rocks sit proud so they are
+          // plainly in the way. Height is the second signal after colour.
+          d.mesh.position.set(wx, d.rock ? 1.7 : 0.7, wz);
+          d.mesh.rotation.y = d.rock ? d.spin + time * 0.3 : 0;   // ramps face downstream
           if (!d.rock) {
-            color.setHSL((hue / 360 + 0.08) % 1, 0.75, 0.55 + audio.volume * 0.15);
+            // a fixed bright cyan-green, NOT the theme colour: "safe to hit"
+            // has to mean the same thing in every palette, or the one piece of
+            // information the player needs changes with the looks tab
+            color.setHSL(0.42, 0.85, 0.56 + audio.volume * 0.16);
             d.petalMat.color.copy(color);
             d.halo.material.color.copy(color);
-            d.halo.material.opacity = 0.4 + audio.volume * 0.25;
+            d.halo.material.opacity = 0.45 + audio.volume * 0.3;
           }
 
-          if (ahead <= 0) {                    // it has reached you
+          // Resolve just BEFORE it reaches the lens. Resolving at zero means
+          // the last frame of every object is drawn from inside it, which
+          // filled the whole screen with a cyan wall on every single ramp.
+          if (ahead <= 4) {
             const touching = Math.abs(wx - playerX) < HIT_W;
             if (touching && d.rock) {
               race.drop(2); rockFlash = 1; rush = 0;
