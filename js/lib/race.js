@@ -100,12 +100,12 @@ export class Race {
 
   // what the player is shown
   get feet() {
-    return this.mode === 'COLLECT'
+    return (this.mode === 'COLLECT' || this.mode === 'CATCH')
       ? Math.round(this.progress)
       : Math.round(this.progress * this.feetPerStep);
   }
   get feetTotal() {
-    return this.mode === 'COLLECT'
+    return (this.mode === 'COLLECT' || this.mode === 'CATCH')
       ? Math.round(this.finish)
       : Math.round(this.finish * this.feetPerStep);
   }
@@ -132,6 +132,24 @@ export class Race {
     this.momentum = Math.min(1, this.momentum + gain);
   }
 
+  // A CATCH round is scored by the world, not by the cue: what matters is what
+  // landed in your basket, and the world is the only thing that knows.
+  collect(n = 1) {
+    if (!this.active) return;
+    this.progress += n;
+    this.hits++;
+    this.streak++;
+    if (this.streak > this.bestStreak) this.bestStreak = this.streak;
+    this.perfect++;
+  }
+
+  drop(n = 1) {
+    if (!this.active) return;
+    this.progress = Math.max(0, this.progress - n);
+    this.streak = 0;
+    this.missed++;
+  }
+
   miss() {
     if (!this.active || this.finished) return;
     this.missed++;
@@ -143,7 +161,7 @@ export class Race {
     if (!this.active) return;
     // Nothing carries you in a COLLECT round — the tally only moves when you
     // catch something, so there is no speed to integrate.
-    if (this.mode === 'COLLECT') return;
+    if (this.mode === 'COLLECT' || this.mode === 'CATCH') return;
     if (this.finished) { this.speed = 0; this.momentum = 0; return; }
     this.momentum = Math.max(0, this.momentum - DECAY * dt);
     this.speed = BASE + this.momentum * TOP;

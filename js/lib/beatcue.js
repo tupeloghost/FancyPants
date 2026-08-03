@@ -50,6 +50,7 @@ export class BeatCue {
     this.chart = null;        // the whole track, analysed up front
     this._at = 0;             // read head into chart.notes
     this.lineFlash = 0;
+    this.tick = 0;        // the beat landing, independent of you
     this.lastRank = null;
     this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
   }
@@ -178,6 +179,14 @@ export class BeatCue {
 
   update(clock, songTime) {
     if (this.verdict) this.verdict.age += 1 / 60;
+
+    // The orb answered only YOUR press, which means there was no ground truth
+    // to learn the timing from — if you were wrong you had nothing to be wrong
+    // against. It now ticks on every note as it lands, played or not, so the
+    // beat is visible on the target itself and you can simply watch it.
+    for (const n of this.notes) {
+      if (!n.ticked && songTime >= n.t) { n.ticked = true; this.tick = 1; }
+    }
     if (this.chart) this._reveal(songTime);
     else this._schedule(clock, songTime);
     for (const n of this.notes) {
@@ -258,6 +267,7 @@ export class BeatCue {
     ctx.clearRect(0, 0, W, H);
 
     this.lineFlash *= 0.90;
+    this.tick *= 0.86;
 
     // Slightly above centre: the vanishing point in these worlds sits a little
     // high, and it keeps the orb clear of the world's own title text.
@@ -305,20 +315,27 @@ export class BeatCue {
       const near = 1 - u;
       const imminent = Math.pow(Math.max(0, 1 - Math.abs(dt) / 0.20), 2);
 
-      ctx.strokeStyle = `hsla(${hue}, ${72 + near * 24}%, ${62 + near * 26}%, ${(0.22 + near * 0.62 + imminent * 0.16).toFixed(3)})`;
-      ctx.lineWidth = (n.accent ? 3.4 : 2.2) + imminent * 2.4;
+      // Distant rings stay quiet so the NEXT one is never in doubt. Reading a
+      // crowd of equally bright circles is what made this hard.
+      const dim = u > 0.55 ? 0.45 : 1;
+      ctx.strokeStyle = `hsla(${hue}, ${72 + near * 24}%, ${62 + near * 26}%, ${((0.16 + near * 0.5 + imminent * 0.3) * dim).toFixed(3)})`;
+      ctx.lineWidth = (n.accent ? 3.2 : 2) + imminent * 3;
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
 
-      // an accent carries four ticks, so the bar structure is readable
-      if (n.accent && near > 0.15) {
-        ctx.lineWidth = 2;
-        for (let k = 0; k < 4; k++) {
-          const a = k * Math.PI / 2 + Math.PI / 4;
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(a) * (r + 5), cy + Math.sin(a) * (r + 5));
-          ctx.lineTo(cx + Math.cos(a) * (r + 13), cy + Math.sin(a) * (r + 13));
-          ctx.stroke();
-        }
+      // Four marks riding the ring, closing on four fixed notches at the orb.
+      // A ring merging with a ring has no moment of arrival — the eye cannot
+      // judge when two concentric circles coincide. Two small marks meeting is
+      // a crossing you can see to the frame, which is what a note highway gets
+      // for free from its hit line.
+      ctx.lineWidth = 2 + imminent * 2.5;
+      ctx.strokeStyle = `hsla(${hue}, 90%, ${74 + imminent * 22}%, ${((0.3 + near * 0.5 + imminent * 0.2) * dim).toFixed(3)})`;
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2 + Math.PI / 4;
+        const ca = Math.cos(a), sa = Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * (r - 7), cy + sa * (r - 7));
+        ctx.lineTo(cx + ca * r, cy + sa * r);
+        ctx.stroke();
       }
     }
 
@@ -339,6 +356,28 @@ export class BeatCue {
     ctx.strokeStyle = `hsla(${hue}, 70%, 88%, ${(0.20 + lf * 0.3).toFixed(3)})`;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(cx, cy, rOrb - 7, 0, Math.PI * 2); ctx.stroke();
+
+    // The four notches the incoming marks are aiming at. They light on the
+    // beat itself — this is the ground truth the player learns from.
+    const tk = this.tick;
+    ctx.lineWidth = 2.4 + tk * 3;
+    ctx.strokeStyle = `hsla(${hue}, 92%, ${78 + tk * 20}%, ${(0.5 + tk * 0.5).toFixed(3)})`;
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + Math.PI / 4;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      ctx.beginPath();
+      ctx.moveTo(cx + ca * rOrb, cy + sa * rOrb);
+      ctx.lineTo(cx + ca * (rOrb + 9 + tk * 6), cy + sa * (rOrb + 9 + tk * 6));
+      ctx.stroke();
+    }
+
+    // and the orb outline pulses on the beat too, so the tick reads even if
+    // you are watching the middle rather than the edge
+    if (tk > 0.02) {
+      ctx.strokeStyle = `hsla(${hue}, 95%, 92%, ${(tk * 0.55).toFixed(3)})`;
+      ctx.lineWidth = 1.5 + tk * 2;
+      ctx.beginPath(); ctx.arc(cx, cy, rOrb + 3 + tk * 4, 0, Math.PI * 2); ctx.stroke();
+    }
 
     // ── the verdict ──
     // Rhythm games all show this because it is the only way to improve: not

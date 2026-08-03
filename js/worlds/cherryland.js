@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=143';
-import { themePaint } from '../lib/themes.js?v=143';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=147';
+import { themePaint } from '../lib/themes.js?v=147';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -21,6 +21,24 @@ export function createCherryLand() {
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   let pointer = { x: 0, active: false };
+
+  // ── CATCH: the orchard becomes a game of hands, not timing alone ──
+  // Cherries drop from the canopy on the chart's own beats and you swipe the
+  // basket under them. A bomb costs you what you have already gathered, so the
+  // skill is choosing what NOT to catch as much as what to catch — which is a
+  // different pleasure from pressing in time, and the whole point of it being
+  // a different game.
+  const FALL_T = 1.5;          // seconds from canopy to basket
+  // NOT `SPAN` — that is the module's orchard length (420) and shadowing it
+  // here silently re-laid the trees, the ground, the hero cherries and the
+  // petals over 15 units instead of 420, emptying the world.
+  const REACH = 15;            // how far the basket can travel either side
+  const CATCH_W = 2.9;         // forgiveness, in world units
+  const MAX_FALLERS = 40;
+  let basket = null, basketX = 0, basketLip = null;
+  let fallers = [];            // {x, t0, bomb, alive, mesh}
+  let chartAt = 0;             // read head into the chart
+  let catchFlash = 0, bombFlash = 0;
   let steer = 0;
 
   const tx = new Float32Array(TREES), tz = new Float32Array(TREES);
@@ -168,6 +186,38 @@ export function createCherryLand() {
 
     setInput(x) { pointer.x = x; pointer.active = true; },
 
+    // ── the catch rig, built lazily the first time a CATCH round runs ──
+    _buildCatch() {
+      if (basket) return;
+      chartAt = 0;
+      basket = new THREE.Group();
+
+      const cup = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.6, 1.7, 1.9, 22, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: 0x2a1206, toneMapped: false, side: THREE.DoubleSide,
+          transparent: true, opacity: 0.92,
+        })
+      );
+      basket.add(cup);
+      basketLip = new THREE.Mesh(
+        new THREE.TorusGeometry(2.6, 0.16, 8, 34),
+        new THREE.MeshBasicMaterial({ toneMapped: false })
+      );
+      basketLip.rotation.x = Math.PI / 2;
+      basketLip.position.y = 0.95;
+      basket.add(basketLip);
+      group.add(basket);
+
+      const fruitGeo = new THREE.SphereGeometry(0.62, 12, 12);
+      for (let i = 0; i < MAX_FALLERS; i++) {
+        const m = new THREE.Mesh(fruitGeo, new THREE.MeshBasicMaterial({ toneMapped: false }));
+        m.visible = false;
+        group.add(m);
+        fallers.push({ mesh: m, alive: false, x: 0, t0: 0, bomb: false });
+      }
+    },
+
     // fellow wanderers float through the orchard as cherry-fireflies
     placeGhost(p, i, out) {
       const z = camera.position.z - 20 - (i % 6) * 10;
@@ -255,14 +305,86 @@ export function createCherryLand() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null, chart = null, songTime = 0 } = opts;
+      const catching = !!(race && race.active && race.mode === 'CATCH');
+      if (catching) {
+        this._buildCatch();
+        // Stand somewhere with trees. Frozen at the path's origin the orchard
+        // is behind you and the round plays against an empty field.
+        if (travel < 40) travel = 90;
+      }
+      if (basket) basket.visible = catching;
 
       if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue, scoreQX, scoreQY); scoreQueue = 0; }
 
-      travel += dt * (4 + audio.volume * 9 + audio.energy * 4);
+      // Catching, the orchard holds still: you cannot judge where a cherry will
+      // land while the ground is sliding past you. Drifting is for VIBE.
+      if (!catching) travel += dt * (4 + audio.volume * 9 + audio.energy * 4);
       const camZ = -travel;
       if (attract || !pointer.active) steer += (Math.sin(time * 0.22) * 0.4 - steer) * Math.min(1, dt);
       else steer += (pointer.x - steer) * Math.min(1, dt * 1.5);
+
+      if (catching) {
+        catchFlash *= Math.pow(0.02, dt);
+        bombFlash *= Math.pow(0.05, dt);
+
+        // the basket follows your thumb, and stays on the orchard floor
+        const want = (pointer.active ? pointer.x : Math.sin(time * 0.5) * 0.4) * REACH;
+        basketX += (want - basketX) * Math.min(1, dt * 9);
+        const bz = camZ - 21;
+        basket.position.set(pathX(bz) + basketX, hillY(pathX(bz) + basketX, bz) + 1.2, bz);
+        color.setHSL((hue / 360 + 0.02) % 1, 0.7, 0.5 + catchFlash * 0.4);
+        basketLip.material.color.copy(color);
+
+        // Drop a cherry for every note, timed so it ARRIVES on the beat — the
+        // music still writes the round, the hands just answer it differently.
+        if (chart) {
+          while (chartAt < chart.length && chart[chartAt].t - FALL_T <= songTime) {
+            const n = chart[chartAt++];
+            if (n.t < songTime) continue;                  // seeked past
+            const f = fallers.find(x => !x.alive);
+            if (!f) continue;
+            f.alive = true;
+            f.t0 = n.t;                                    // when it lands
+            // bombs on the weakest beats, so the fruit rides the music
+            f.bomb = !n.accent && ((chartAt * 7919) % 100) < 18;
+            f.x = (((chartAt * 2654435761) % 2000) / 1000 - 1) * REACH;
+            f.mesh.visible = true;
+          }
+        }
+
+        for (const f of fallers) {
+          if (!f.alive) continue;
+          const left = f.t0 - songTime;                    // seconds until it lands
+          const u = 1 - Math.max(0, Math.min(1, left / FALL_T));
+          const fz = camZ - 21;
+          const fx = pathX(fz) + f.x;
+          const groundY = hillY(fx, fz) + 1.2;
+          f.mesh.position.set(fx, groundY + (1 - u) * 26, fz);
+          // A cherry is red. Deriving its colour from the theme made them turn
+          // blue under a cool palette, which is both wrong and unreadable —
+          // the whole game is telling fruit from bombs at a glance.
+          color.setHSL(f.bomb ? 0.0 : 0.99, f.bomb ? 0.0 : 0.9,
+                       f.bomb ? 0.13 + audio.volume * 0.06 : 0.44 + u * 0.18);
+          f.mesh.material.color.copy(color);
+          f.mesh.scale.setScalar(f.bomb ? 1.45 : 1);
+
+          if (left <= 0) {
+            const caught = Math.abs(f.x - basketX) < CATCH_W;
+            if (caught && f.bomb) {
+              race.drop(4); bombFlash = 1;
+              if (opts.impact) opts.impact(0.8);
+            } else if (caught) {
+              race.collect(1); catchFlash = 1;
+              if (opts.impact) opts.impact(0.28);
+            } else if (!f.bomb) {
+              race.drop(0);            // a fumble breaks the streak, costs nothing
+            }
+            f.alive = false;
+            f.mesh.visible = false;
+          }
+        }
+      }
 
       if (participants && participants[0]) {
         participants[0].x = steer;

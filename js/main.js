@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=143';
-import { WORLDS } from './worlds/registry.js?v=143';
-import { Net, PALETTE } from './net.js?v=143';
-import { Presence } from './lib/presence.js?v=143';
-import { Pulses } from './lib/pulse.js?v=143';
-import { BeatClock } from './lib/beatclock.js?v=143';
-import { BeatCue } from './lib/beatcue.js?v=143';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=143';
-import { Race, placeOf, standings } from './lib/race.js?v=143';
-import { RouteMap } from './lib/map.js?v=143';
-import { glowTexture } from './lib/glow.js?v=143';
+import { AudioEngine } from './audio-engine.js?v=147';
+import { WORLDS } from './worlds/registry.js?v=147';
+import { Net, PALETTE } from './net.js?v=147';
+import { Presence } from './lib/presence.js?v=147';
+import { Pulses } from './lib/pulse.js?v=147';
+import { BeatClock } from './lib/beatclock.js?v=147';
+import { BeatCue } from './lib/beatcue.js?v=147';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=147';
+import { Race, placeOf, standings } from './lib/race.js?v=147';
+import { RouteMap } from './lib/map.js?v=147';
+import { glowTexture } from './lib/glow.js?v=147';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -239,7 +239,10 @@ function switchWorld(key) {
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   race.setScale(WORLDS[key].feetPerStep);
   race.setMode(WORLDS[key].mode, WORLDS[key].unit);
-  document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
+  // A CATCH world is played with the basket, not the orb — showing both would
+  // be two games at once, each contradicting the other about what a press does.
+  const w = WORLDS[key];
+  document.body.classList.toggle('rhythm', !!w.rhythm && w.mode !== 'CATCH');
   if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
   startRaceIfReady();
@@ -1755,6 +1758,8 @@ function frame(now) {
     addScore,
     impact,
     race,          // worlds read progress/momentum; the rules live in lib/race.js
+    chart: beatCue.chart ? beatCue.chart.notes : null,  // a CATCH world writes
+    songTime: audio.currentTime,                        // its own round from these
   });
 
   // The viewer's framing sits ON TOP of whatever the world asked for — and is
