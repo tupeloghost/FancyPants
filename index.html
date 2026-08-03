@@ -153,13 +153,14 @@
     body:has(#panel.hidden) #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4px); }
   }
 
-  /* ── Beat cue ── the approach ring you tap on. Sits low and quiet; the
-     world stays the subject. Only appears in worlds that ask for it. ── */
+  /* ── Note highway ── notes slide in from the right toward the hit line on
+     the left; press when one arrives. Thin and low-contrast so it reads like
+     an instrument rather than a plastic game overlay. ── */
   #beatcue {
     position: fixed; z-index: 94;
     left: 50%; transform: translateX(-50%);
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 74px);
-    width: 132px; height: 132px;
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
+    width: min(620px, 76vw); height: 74px;
     pointer-events: none;
     display: none;
   }
@@ -167,8 +168,8 @@
   body.clean #beatcue { display: block; }   /* the cue is play, not chrome */
   @media (max-width: 620px) {
     #beatcue {
-      width: 116px; height: 116px;
-      bottom: calc(max(14px, env(safe-area-inset-bottom)) + 122px);
+      width: 92vw; height: 66px;
+      bottom: calc(max(14px, env(safe-area-inset-bottom)) + 124px);
     }
   }
 
@@ -908,7 +909,7 @@
   <div id="plist-rows"></div>
 </div>
 
-<canvas id="beatcue" width="264" height="264"></canvas>
+<canvas id="beatcue" width="1240" height="148"></canvas>
 
 <div id="tempo" class="hidden">
   <div id="tempo-head">
@@ -1041,7 +1042,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 109</div>
+      <div id="build-stamp">build 112</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1055,6 +1056,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=109"></script>
+<script type="module" src="js/main.js?v=112"></script>
 </body>
 </html>

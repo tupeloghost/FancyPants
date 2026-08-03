@@ -8,14 +8,14 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=109';
-import { WORLDS } from './worlds/registry.js?v=109';
-import { Net, PALETTE } from './net.js?v=109';
-import { Presence } from './lib/presence.js?v=109';
-import { Pulses } from './lib/pulse.js?v=109';
-import { BeatClock } from './lib/beatclock.js?v=109';
-import { BeatCue } from './lib/beatcue.js?v=109';
-import { glowTexture } from './lib/glow.js?v=109';
+import { AudioEngine } from './audio-engine.js?v=112';
+import { WORLDS } from './worlds/registry.js?v=112';
+import { Net, PALETTE } from './net.js?v=112';
+import { Presence } from './lib/presence.js?v=112';
+import { Pulses } from './lib/pulse.js?v=112';
+import { BeatClock } from './lib/beatclock.js?v=112';
+import { BeatCue } from './lib/beatcue.js?v=112';
+import { glowTexture } from './lib/glow.js?v=112';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -233,6 +233,7 @@ function switchWorld(key) {
   world = WORLDS[key].create();
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
+  beatCue.reset();
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
   const caps = world.options || [];
@@ -345,7 +346,7 @@ function playPrev() {
   updatePlayBtn();
 }
 // a tempo lock is only meaningful for the track it was fitted to
-audio.el.addEventListener('loadstart', () => { beatClock.setAnalyser(audio.analyser); beatClock.reset(); });
+audio.el.addEventListener('loadstart', () => { beatClock.setAnalyser(audio.analyser); beatClock.reset(); beatCue.reset(); });
 
 // when a track runs out, roll straight into the next one
 audio.el.addEventListener('ended', () => playAuto(true));
@@ -1069,7 +1070,7 @@ canvas.addEventListener('pointerdown', e => {
   pointerHeld = true;
   // in a rhythm world, the tap is judged against the predicted grid
   if (document.body.classList.contains('rhythm')) {
-    lastJudge = beatCue.register(beatClock.offset(audio.currentTime));
+    lastJudge = beatCue.press(audio.currentTime);
   }
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   impact(0.42);   // and it lands as light, not as a jolt
@@ -1447,8 +1448,8 @@ function frame(now) {
   if (beatClock.analyser !== audio.analyser) beatClock.setAnalyser(audio.analyser);
   const gridBeat = beatClock.update(audio.currentTime);
   drawTempo(gridBeat, beatClock.onsetAt != null);
-  if (gridBeat) beatCue.onBeat();
   if (document.body.classList.contains('rhythm')) {
+    beatCue.update(beatClock, audio.currentTime);
     beatCue.draw(beatClock, audio.currentTime, settings.hue);
   }
 
