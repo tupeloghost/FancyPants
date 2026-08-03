@@ -64,18 +64,24 @@
     border: 1.5px dashed hsla(var(--accent-h), 90%, 70%, 0.9);
     box-shadow: 0 0 14px hsla(var(--accent-h), 90%, 60%, 0.5), inset 0 0 8px hsla(var(--accent-h), 90%, 60%, 0.35);
   }
+  /* the instant acknowledgement under your own finger — soft-edged, so it
+     reads as light answering the touch rather than a ring drawn on the glass.
+     The world-space pulse is the real event; this just removes the latency. */
   .cursor-ripple {
     position: fixed; left: 0; top: 0; z-index: 299;
-    width: 26px; height: 26px; margin: -13px 0 0 -13px;
+    width: 34px; height: 34px; margin: -17px 0 0 -17px;
     border-radius: 50%;
-    border: 2px solid hsla(var(--accent-h), 95%, 70%, 0.9);
-    box-shadow: 0 0 18px hsla(var(--accent-h), 90%, 60%, 0.7);
+    background: radial-gradient(circle,
+      hsla(var(--accent-h), 95%, 82%, 0.55) 0%,
+      hsla(var(--accent-h), 92%, 68%, 0.30) 38%,
+      hsla(var(--accent-h), 90%, 60%, 0.10) 62%,
+      transparent 74%);
     pointer-events: none; mix-blend-mode: screen;
-    animation: ripple 0.55s ease-out forwards;
+    animation: ripple 0.62s cubic-bezier(0.16, 0.9, 0.3, 1) forwards;
   }
   @keyframes ripple {
-    from { transform: scale(1); opacity: 1; }
-    to   { transform: scale(4.5); opacity: 0; }
+    from { transform: scale(0.55); opacity: 1; }
+    to   { transform: scale(3.6); opacity: 0; }
   }
   @media (pointer: coarse) {
     body { cursor: auto; }
@@ -969,7 +975,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 92</div>
+      <div id="build-stamp">build 96</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -983,6 +989,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=92"></script>
+<script type="module" src="js/main.js?v=96"></script>
 </body>
 </html>

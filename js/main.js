@@ -8,11 +8,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=92';
-import { WORLDS } from './worlds/registry.js?v=92';
-import { Net, PALETTE } from './net.js?v=92';
-import { Presence } from './lib/presence.js?v=92';
-import { glowTexture } from './lib/glow.js?v=92';
+import { AudioEngine } from './audio-engine.js?v=96';
+import { WORLDS } from './worlds/registry.js?v=96';
+import { Net, PALETTE } from './net.js?v=96';
+import { Presence } from './lib/presence.js?v=96';
+import { Pulses } from './lib/pulse.js?v=96';
+import { glowTexture } from './lib/glow.js?v=96';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -80,10 +81,13 @@ const participants = net.participants;
 if (!net.local.name) net.local.name = 'you';
 const presence = new Presence();
 presence.init(scene);
+const pulses = new Pulses();
+pulses.init(scene);
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
 window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
+window.__pulses = pulses; window.__scene = scene;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
 // world-agnostic so the dust toggle works everywhere ──
@@ -984,8 +988,12 @@ canvas.addEventListener('pointerdown', e => {
   }
   pointerHeld = true;
   clickPulse = 1; // global color surge: every click makes the whole frame answer
-  impact(0.42);   // and it lands in the body, not just the eye
+  impact(0.42);   // and it lands as light, not as a jolt
   spawnRipple(e.clientX, e.clientY);
+  pulses.spawn(camera,
+    (e.clientX / window.innerWidth) * 2 - 1,
+    -((e.clientY / window.innerHeight) * 2 - 1),
+    PALETTE[(net.local.color || 0) % PALETTE.length], 1);
   // broadcast the tap — everyone's world feels it, not just ours
   net.local.action = 'tap';
   clearTimeout(tapResetTimer);
@@ -998,9 +1006,12 @@ canvas.addEventListener('pointerdown', e => {
 // A tap should be FELT, not just seen. Strength 0..1+: a light tap is ~0.4,
 // a milestone is ~1. Applied over the world's own camera each frame and
 // handed back, so nothing accumulates into world state.
-let shake = 0, shakeT = 0;
+// A hit answers in light, never in camera movement. Jittering the camera
+// reads as a glitch against worlds this clean — the frame is meant to be
+// still and the *world* is meant to respond.
+let bloomKick = 0;
 function impact(strength = 0.5) {
-  shake = Math.min(1.8, shake + strength);
+  bloomKick = Math.min(1.6, bloomKick + strength);
   clickPulse = Math.min(1.5, clickPulse + strength * 0.7);
   // phones can feel it. (Android honours this; iOS Safari has no web haptics.)
   if (IS_MOBILE && navigator.vibrate) {
@@ -1076,10 +1087,8 @@ function showWorldIntro(key) {
 // someone else tapped: their click lands in OUR world too, in their color
 net.onRemoteTap = p => {
   clickPulse = Math.max(clickPulse, 0.6);
-  impact(0.22);   // you feel a friend's hit, gently
-  const sx = ((p.x || 0) + 1) / 2 * window.innerWidth;
-  const sy = (1 - ((p.y || 0) + 1) / 2) * window.innerHeight;
-  spawnRipple(sx, sy, PALETTE[p.color % PALETTE.length]);
+  impact(0.22);   // a friend's hit lands softly in your frame too
+  pulses.spawn(camera, p.x || 0, p.y || 0, PALETTE[p.color % PALETTE.length], 0.8);
   if (world && world.onTap) world.onTap(p.x || 0, p.y || 0);
 };
 
@@ -1291,10 +1300,13 @@ function frame(now) {
 
   // click color-pulse: hue kicks sideways, saturation and bloom surge, then settle
   clickPulse *= Math.pow(0.03, dt);
+  // the hit lands as light — a bloom swell that blooms slower than the colour
+  // surge, so a tap opens the frame up rather than jolting it
+  bloomKick *= Math.pow(0.06, dt);
   const hueEff = (settings.hue + clickPulse * 40) % 360;
   gradePass.uniforms.saturation.value = 1.45 + clickPulse * 0.55;
   gradePass.uniforms.contrast.value = 1.12 + clickPulse * 0.08;
-  if (bloomPass.enabled) bloomPass.strength = bloomBase * (1 + clickPulse * 0.5);
+  if (bloomPass.enabled) bloomPass.strength = bloomBase * (1 + clickPulse * 0.5 + bloomKick * 0.42);
 
   // give the world back the camera it set last frame, before it moves it again
   if (worldShot) {
@@ -1340,22 +1352,13 @@ function frame(now) {
       camera.translateY(pan.y);
     }
 
-    // the punch: a jolt through the body of the shot, then a fast settle
-    if (shake > 0.002) {
-      shakeT += dt * 46;
-      const k = shake * shake;                 // sharp at the top, quick to fade
-      camera.translateX(Math.sin(shakeT * 1.7) * k * 0.85);
-      camera.translateY(Math.cos(shakeT * 2.4) * k * 0.85);
-      camera.rotation.z += Math.sin(shakeT * 1.15) * k * 0.02;
-      camera.fov = Math.max(18, Math.min(125, camera.fov + k * 3.6));
-      camera.updateProjectionMatrix();
-      shake *= Math.pow(0.015, dt);
-    }
   }
 
   updateDust(dt, a, time);
 
   // ghosts render through the same path in every world
+  pulses.update(dt, a.beatIntensity);
+
   presence.update(dt, participants,
     world.placeGhost ? world.placeGhost.bind(world) : (p, i, out) => out.set(p.x, p.y, p.z),
     { beatIntensity: a.beatIntensity, time, camera });

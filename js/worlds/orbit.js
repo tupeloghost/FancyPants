@@ -2,8 +2,8 @@
 // expand outward; you steer through the gaps with a single axis (radius).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=92';
-import { themePaint } from '../lib/themes.js?v=92';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=96';
+import { themePaint } from '../lib/themes.js?v=96';
 
 
 const SHAPE_POOL = 24;
