@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=141';
-import { WORLDS } from './worlds/registry.js?v=141';
-import { Net, PALETTE } from './net.js?v=141';
-import { Presence } from './lib/presence.js?v=141';
-import { Pulses } from './lib/pulse.js?v=141';
-import { BeatClock } from './lib/beatclock.js?v=141';
-import { BeatCue } from './lib/beatcue.js?v=141';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=141';
-import { Race, placeOf, standings } from './lib/race.js?v=141';
-import { RouteMap } from './lib/map.js?v=141';
-import { glowTexture } from './lib/glow.js?v=141';
+import { AudioEngine } from './audio-engine.js?v=143';
+import { WORLDS } from './worlds/registry.js?v=143';
+import { Net, PALETTE } from './net.js?v=143';
+import { Presence } from './lib/presence.js?v=143';
+import { Pulses } from './lib/pulse.js?v=143';
+import { BeatClock } from './lib/beatclock.js?v=143';
+import { BeatCue } from './lib/beatcue.js?v=143';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=143';
+import { Race, placeOf, standings } from './lib/race.js?v=143';
+import { RouteMap } from './lib/map.js?v=143';
+import { glowTexture } from './lib/glow.js?v=143';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -238,6 +238,7 @@ function switchWorld(key) {
   world = WORLDS[key].create();
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   race.setScale(WORLDS[key].feetPerStep);
+  race.setMode(WORLDS[key].mode, WORLDS[key].unit);
   document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
   if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
@@ -465,21 +466,29 @@ function showResults(reason) {
   const board = standings(participants);
   const place = board.findIndex(e => e.i === 0) + 1;
 
+  const collecting = race.mode === 'COLLECT';
   $('results-place').textContent = solo
-    ? (race.finished ? 'THE BOTTOM' : 'TIME')
+    ? (collecting ? race.feet.toLocaleString() : (race.finished ? 'THE BOTTOM' : 'TIME'))
     : (ORDINAL[place] || place + 'TH');
   $('results-sub').textContent = solo
-    ? (race.finished ? 'you reached the foot of the stairs' : Math.round(race.fraction * 100) + '% of the way down')
-    : (race.finished ? 'reached the bottom' : 'when the music stopped');
+    ? (collecting ? 'cherries shaken loose'
+                  : (race.finished ? 'you reached the foot of the stairs'
+                                   : Math.round(race.fraction * 100) + '% of the way down'))
+    : (collecting ? 'biggest haul takes it'
+                  : (race.finished ? 'reached the bottom' : 'when the music stopped'));
 
   const rows = board.slice(0, 8).map(e => {
     const p = e.p;
     const css = '#' + PALETTE[(p.color || 0) % PALETTE.length].toString(16).padStart(6, '0');
-    const pct = race.finish ? Math.min(100, Math.round(e.depth / race.finish * 100)) : 0;
+    // a race reads as a percentage of the way down; a haul is just a number,
+    // and turning it into a percentage would hide what anybody actually caught
+    const val = collecting
+      ? Math.round(e.depth).toLocaleString()
+      : (race.finish ? Math.min(100, Math.round(e.depth / race.finish * 100)) : 0) + '%';
     return `<div class="rrow${e.i === 0 ? ' me' : ''}">`
       + `<i style="background:${css};box-shadow:0 0 8px ${css}"></i>`
       + `<span>${(p.name || 'guest').replace(/[<>&]/g, '')}</span>`
-      + `<b>${pct}%</b></div>`;
+      + `<b>${val}</b></div>`;
   }).join('');
   $('results-board').innerHTML = rows;
 
@@ -504,7 +513,7 @@ audio.el.addEventListener('ended', () => {
 // A race belongs to one track in one rhythm world — one song, one round.
 function startRaceIfReady() {
   if (!document.body.classList.contains('rhythm') || !beatCue.chart) { race.reset(); return; }
-  race.start(beatCue.chart.duration);
+  race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   seenMissed = beatCue.stats.missed;
   hideResults();
 }
@@ -1246,7 +1255,15 @@ canvas.addEventListener('pointerdown', e => {
   if (document.body.classList.contains('rhythm')) {
     lastJudge = beatCue.press(audio.currentTime);
     if (lastJudge) {
-      if (lastJudge.rank === 'miss') race.miss(); else race.hit(lastJudge.rank);
+      if (lastJudge.rank === 'miss') {
+        race.miss();
+      } else {
+        race.hit(lastJudge.rank);
+        // In a COLLECT round the strike happens at the orb, not under your
+        // finger — so tell the world to answer at the centre and it pops a
+        // cherry with all its existing juice, no new world code needed.
+        if (race.mode === 'COLLECT' && world && world.onTap) world.onTap(0, 0.1);
+      }
       seenMissed = beatCue.stats.missed;   // a wild press is its own miss
     }
   }
@@ -1801,9 +1818,11 @@ function frame(now) {
     // interpolated — the field on screen is everyone's real position
     net.local.z = race.progress;
     beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
-      fraction: race.fraction,
+      fraction: race.fractionShown,
       feet: race.feet,
       feetLeft: race.feetLeft,
+      unit: race.unit,
+      collect: race.mode === 'COLLECT',
       mult: race.multiplier,
       place: placeOf(participants),
       rivals: participants.slice(1, 12).map(p => ({

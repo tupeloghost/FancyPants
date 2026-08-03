@@ -39,10 +39,19 @@ const TIERS = [
 const DEFAULT_FEET_PER_STEP = 3;
 
 export class Race {
-  constructor() { this.feetPerStep = DEFAULT_FEET_PER_STEP; this.reset(); }
+  constructor() {
+    this.feetPerStep = DEFAULT_FEET_PER_STEP;
+    this.mode = 'RACE';
+    this.unit = 'FT';
+    this.reset();
+  }
 
   // set from the world's registry entry when it loads
   setScale(feetPerStep) { this.feetPerStep = feetPerStep || DEFAULT_FEET_PER_STEP; }
+  setMode(mode, unit) {
+    this.mode = mode || 'RACE';
+    this.unit = unit || (this.mode === 'COLLECT' ? 'CAUGHT' : 'FT');
+  }
 
   reset() {
     this.active = false;
@@ -57,15 +66,27 @@ export class Race {
     this.good = 0;
     this.missed = 0;
     this.finishedAt = null; // song-time you reached the bottom
+    this.hits = 0;
   }
 
   // The finish is set from the track, so every song is a well-paced race with
   // no hand-tuning — which matters when the library keeps growing. Calibrated
   // so a strong run arrives near the last chorus and a weak one is still going
   // when the music stops (whoever is deepest then takes it).
-  start(durationSeconds) {
+  // A RACE is a distance: momentum carries you and the finish is a place. A
+  // COLLECT is a tally: nothing carries you, only what you catch counts, and
+  // the "finish" is simply a very good haul — so the same rail can show both
+  // without either pretending to be the other.
+  start(durationSeconds, noteCount) {
     this.reset();
-    this.finish = Math.max(40, Math.round(durationSeconds * 2.0));
+    if (this.mode === 'COLLECT') {
+      // an excellent haul, not a reachable finish line: perfect play with
+      // streaks runs to about 3x the note count, so this is the scale the rail
+      // is drawn against rather than somewhere to arrive
+      this.finish = Math.max(20, Math.round((noteCount || durationSeconds * 2.2) * 2.4));
+    } else {
+      this.finish = Math.max(40, Math.round(durationSeconds * 2.0));
+    }
     this.active = true;
   }
 
@@ -78,9 +99,18 @@ export class Race {
   get fraction() { return this.finish ? Math.min(1, this.progress / this.finish) : 0; }
 
   // what the player is shown
-  get feet() { return Math.round(this.progress * this.feetPerStep); }
-  get feetTotal() { return Math.round(this.finish * this.feetPerStep); }
+  get feet() {
+    return this.mode === 'COLLECT'
+      ? Math.round(this.progress)
+      : Math.round(this.progress * this.feetPerStep);
+  }
+  get feetTotal() {
+    return this.mode === 'COLLECT'
+      ? Math.round(this.finish)
+      : Math.round(this.finish * this.feetPerStep);
+  }
   get feetLeft() { return Math.max(0, this.feetTotal - this.feet); }
+  get fractionShown() { return this.finish ? Math.min(1, this.progress / this.finish) : 0; }
   get mph() { return +(this.speed * this.feetPerStep * 3600 / 5280).toFixed(1); }
 
   hit(rank) {
@@ -88,6 +118,16 @@ export class Race {
     this.streak++;
     if (this.streak > this.bestStreak) this.bestStreak = this.streak;
     if (rank === 'perfect') this.perfect++; else this.good++;
+    this.hits++;              // worlds watch this to answer a catch
+
+    if (this.mode === 'COLLECT') {
+      // a clean strike is worth more than a scrape, and a streak multiplies it
+      const base = rank === 'perfect' ? 2 : 1;
+      // No finish line to cross — the song's last note is the bell and the
+      // biggest haul takes it, so the tally is never capped.
+      this.progress += base * this.multiplier;
+      return;
+    }
     const gain = (rank === 'perfect' ? GAIN_PERFECT : GAIN_GOOD) * this.multiplier;
     this.momentum = Math.min(1, this.momentum + gain);
   }
@@ -101,6 +141,9 @@ export class Race {
 
   update(dt, songTime) {
     if (!this.active) return;
+    // Nothing carries you in a COLLECT round — the tally only moves when you
+    // catch something, so there is no speed to integrate.
+    if (this.mode === 'COLLECT') return;
     if (this.finished) { this.speed = 0; this.momentum = 0; return; }
     this.momentum = Math.max(0, this.momentum - DECAY * dt);
     this.speed = BASE + this.momentum * TOP;

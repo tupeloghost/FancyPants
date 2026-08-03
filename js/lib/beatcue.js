@@ -217,10 +217,13 @@ export class BeatCue {
     ctx.textAlign = 'left';
     ctx.font = "600 21px 'Didot', 'Bodoni 72', Georgia, serif";
     ctx.fillStyle = `hsla(${hue}, 55%, 92%, 0.85)`;
-    ctx.fillText(field.feet.toLocaleString() + ' FT', x0, y);
+    ctx.fillText(field.feet.toLocaleString() + ' ' + (field.unit || 'FT'), x0, y);
     ctx.font = "11px 'SF Mono', ui-monospace, Menlo, monospace";
     ctx.fillStyle = `hsla(${hue}, 30%, 76%, 0.45)`;
-    ctx.fillText(field.feetLeft.toLocaleString() + ' to go', x0, y + 16);
+    // a race has a distance left to run; a tally has no destination, so say
+    // what it is instead of inventing one
+    ctx.fillText(field.collect ? 'cherries shaken loose'
+                               : field.feetLeft.toLocaleString() + ' to go', x0, y + 16);
 
     // the field, as a hairline with everyone on it
     const ry = y + 30;
