@@ -8,15 +8,16 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=114';
-import { WORLDS } from './worlds/registry.js?v=114';
-import { Net, PALETTE } from './net.js?v=114';
-import { Presence } from './lib/presence.js?v=114';
-import { Pulses } from './lib/pulse.js?v=114';
-import { BeatClock } from './lib/beatclock.js?v=114';
-import { BeatCue } from './lib/beatcue.js?v=114';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=114';
-import { glowTexture } from './lib/glow.js?v=114';
+import { AudioEngine } from './audio-engine.js?v=117';
+import { WORLDS } from './worlds/registry.js?v=117';
+import { Net, PALETTE } from './net.js?v=117';
+import { Presence } from './lib/presence.js?v=117';
+import { Pulses } from './lib/pulse.js?v=117';
+import { BeatClock } from './lib/beatclock.js?v=117';
+import { BeatCue } from './lib/beatcue.js?v=117';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=117';
+import { Race, placeOf } from './lib/race.js?v=117';
+import { glowTexture } from './lib/glow.js?v=117';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -88,12 +89,14 @@ const pulses = new Pulses();
 pulses.init(scene);
 const beatClock = new BeatClock(audio.analyser);
 const beatCue = new BeatCue(document.getElementById('beatcue'));
+const race = new Race();
+let seenMissed = 0;   // cue miss counter we have already fed to the race
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
 window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
 window.__pulses = pulses; window.__scene = scene;
-window.__beat = beatClock; window.__cue = beatCue;
+window.__beat = beatClock; window.__cue = beatCue; window.__race = race;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
 // world-agnostic so the dust toggle works everywhere ──
@@ -235,6 +238,7 @@ function switchWorld(key) {
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
   beatCue.reset();
+  startRaceIfReady();
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
   const caps = world.options || [];
@@ -359,13 +363,14 @@ async function chartTrack(url) {
   chartProgress = -1;
   if (!url) return;
   const hit = cachedChart(url);
-  if (hit) { beatCue.setChart(hit); beatCue.seek(audio.currentTime); return; }
+  if (hit) { beatCue.setChart(hit); beatCue.seek(audio.currentTime); startRaceIfReady(); return; }
   chartProgress = 0;
   try {
     const c = await analyseTrack(url, p => { if (mine === chartToken) chartProgress = p; });
     if (mine !== chartToken) return;            // a newer track won the race
     beatCue.setChart(c);
     beatCue.seek(audio.currentTime);
+    startRaceIfReady();
   } catch (err) {
     // a source we cannot read (cross-origin stream, blob quirk) — the world
     // still plays, the lane just falls back to the realtime grid
@@ -380,6 +385,14 @@ audio.el.addEventListener('loadstart', () => {
   beatCue.reset();
   chartTrack(audio.el.currentSrc || audio.el.src);
 });
+// A race belongs to one track in one rhythm world — one song, one round.
+function startRaceIfReady() {
+  if (!document.body.classList.contains('rhythm') || !beatCue.chart) { race.reset(); return; }
+  race.start(beatCue.chart.duration);
+  seenMissed = beatCue.stats.missed;
+}
+window.__startRace = startRaceIfReady;
+
 // scrubbing must move the chart's read head too, or the lane and the audio
 // quietly disagree for the rest of the track
 audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
@@ -1115,6 +1128,10 @@ canvas.addEventListener('pointerdown', e => {
   // in a rhythm world, the tap is judged against the predicted grid
   if (document.body.classList.contains('rhythm')) {
     lastJudge = beatCue.press(audio.currentTime);
+    if (lastJudge) {
+      if (lastJudge.rank === 'miss') race.miss(); else race.hit(lastJudge.rank);
+      seenMissed = beatCue.stats.missed;   // a wild press is its own miss
+    }
   }
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   impact(0.42);   // and it lands as light, not as a jolt
@@ -1458,6 +1475,7 @@ function frame(now) {
     time,
     addScore,
     impact,
+    race,          // worlds read progress/momentum; the rules live in lib/race.js
   });
 
   // The viewer's framing sits ON TOP of whatever the world asked for — and is
@@ -1494,7 +1512,20 @@ function frame(now) {
   drawTempo(gridBeat, beatClock.onsetAt != null);
   if (document.body.classList.contains('rhythm')) {
     beatCue.update(beatClock, audio.currentTime);
-    beatCue.draw(beatClock, audio.currentTime, settings.hue);
+    while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
+    race.update(dt, audio.currentTime);
+    // progress rides on z, which is already on the wire and already
+    // interpolated — the field on screen is everyone's real position
+    net.local.z = race.progress;
+    beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
+      fraction: race.fraction,
+      mult: race.multiplier,
+      place: placeOf(participants),
+      rivals: participants.slice(1, 12).map(p => ({
+        f: race.finish ? (p.z || 0) / race.finish : 0,
+        color: PALETTE[(p.color || 0) % PALETTE.length],
+      })),
+    } : null);
   }
 
   pulses.update(dt, a.beatIntensity);

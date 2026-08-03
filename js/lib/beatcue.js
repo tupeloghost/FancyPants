@@ -170,7 +170,47 @@ export class BeatCue {
     this.lineFlash *= 0.88;
   }
 
-  draw(clock, songTime, hue) {
+  // `field` is the race: {fraction, rivals:[{f, color}], place, streak, mult}.
+  // A race with no visible finish line is just tapping, so the rail above the
+  // lane is where you are, where everyone else is, and how far is left.
+  drawField(field, hue) {
+    const { ctx, cv } = this;
+    if (!field) return;
+    const W = cv.width, y = 9, x0 = 6, x1 = W - 6;
+    const at = f => x0 + Math.max(0, Math.min(1, f)) * (x1 - x0);
+
+    ctx.strokeStyle = `hsla(${hue}, 40%, 60%, 0.20)`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+
+    // the bottom of the stairs
+    ctx.strokeStyle = `hsla(${hue}, 80%, 78%, 0.45)`;
+    ctx.beginPath(); ctx.moveTo(x1, y - 6); ctx.lineTo(x1, y + 6); ctx.stroke();
+
+    for (const r of field.rivals || []) {
+      const c = '#' + (r.color >>> 0).toString(16).padStart(6, '0');
+      ctx.fillStyle = c;
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.arc(at(r.f), y, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    // you, always on top and always brighter
+    ctx.fillStyle = `hsl(${hue}, 90%, 88%)`;
+    ctx.beginPath(); ctx.arc(at(field.fraction), y, 4.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `hsla(${hue}, 90%, 95%, 0.9)`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(at(field.fraction), y, 6.6, 0, Math.PI * 2); ctx.stroke();
+
+    // a streak worth having announces itself, quietly
+    if (field.mult > 1) {
+      ctx.fillStyle = `hsla(${hue}, 85%, 80%, 0.85)`;
+      ctx.font = "600 15px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.textAlign = 'right';
+      ctx.fillText('\u00d7' + field.mult.toFixed(2).replace(/0$/, ''), x1, y + 30);
+    }
+  }
+
+  draw(clock, songTime, hue, field) {
     const { ctx, cv } = this;
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
@@ -192,6 +232,7 @@ export class BeatCue {
       ctx.font = "9px 'SF Mono', ui-monospace, Menlo, monospace";
       ctx.textAlign = 'center';
       ctx.fillText('L I S T E N I N G', W / 2, midY + 3);
+      this.drawField(field, hue);
       return;
     }
 
@@ -251,5 +292,7 @@ export class BeatCue {
     ctx.fillStyle = `hsla(${hue}, 30%, 60%, 0.10)`;
     ctx.fillRect(hitX + (W - hitX) * 0.5, midY - 1, 1, 2);
     ctx.fillRect(W - 1, midY - 1, 1, 2);
+
+    this.drawField(field, hue);
   }
 }

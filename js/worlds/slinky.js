@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=114';
-import { themePaint } from '../lib/themes.js?v=114';
-import { PALETTE } from '../net.js?v=114';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=117';
+import { themePaint } from '../lib/themes.js?v=117';
+import { PALETTE } from '../net.js?v=117';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -207,7 +207,8 @@ export function createSlinky() {
     },
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null } = opts;
+      const racing = !!(race && race.active);
 
       if (participants && participants[0]) {
         participants[0].x = pointer.active ? pointer.x : Math.sin(time * 0.3) * 0.3;
@@ -216,9 +217,19 @@ export function createSlinky() {
 
       // the walk: a slinky doesn't glide — it hangs at the lip, tips, falls
       // fast under gravity, then slaps flat. The gait below is that rhythm.
-      const targetVel = 0.35 + audio.volume * 0.9 * reactivity;
-      walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
-      if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
+      //
+      // Racing, the descent is no longer the music's — it is yours. The race
+      // owns the speed and this only spends it, so the gait still reads as a
+      // slinky rather than a slider: it hangs, tips and slaps at whatever pace
+      // your playing has earned.
+      if (racing) {
+        walkVel += (race.speed - walkVel) * Math.min(1, dt * 6);
+      } else {
+        const targetVel = 0.35 + audio.volume * 0.9 * reactivity;
+        walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
+        if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
+      }
+      if (audio.beat) beatWave = 0;
       beatWave += dt * 90; // the pulse races down the spring
       stepPhase = walk - Math.floor(walk);
       // slow over the edge, quick through the drop, slow into the landing
@@ -263,7 +274,10 @@ export function createSlinky() {
               continue;
             }
             // each slinky walks its own step, staggered so the stairs stay busy
-            const off = 0.42 + g * 0.37;
+            // Racing, a rival's position is their real progress off the wire
+            // (it rides on z), so the field on screen is the actual race.
+            // Otherwise they amble on a decorative stagger as before.
+            const off = racing ? (walk - (pt.z || 0)) : (0.42 + g * 0.37);
             const gp = walk - off - i * 0.052 * (1 + Math.sin(Math.PI * stepPhase) * 0.4);
             pathAt(gp, P);
             pathAt(gp + 0.02, P2);
