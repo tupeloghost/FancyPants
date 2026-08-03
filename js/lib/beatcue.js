@@ -20,24 +20,87 @@ const PERFECT = 0.05;
 const GOOD = 0.11;
 const MISS_AFTER = 0.17;   // past this, the note is gone and counts as missed
 
+// Keep the strongest notes until the density target is met, never letting two
+// survivors sit closer than the spacing that target implies.
+function thin(notes, duration, target) {
+  if (!notes.length || !duration) return notes;
+  const want = Math.round(duration * target);
+  if (notes.length <= want) return notes;
+
+  const gap = 1 / (target * 1.9);            // allows doubles, forbids runs
+  const byStrength = [...notes].sort((a, b) => b.v - a.v);
+  const kept = [];
+  for (const n of byStrength) {
+    if (kept.length >= want) break;
+    let ok = true;
+    for (const k of kept) {
+      if (Math.abs(k.t - n.t) < gap) { ok = false; break; }
+    }
+    if (ok) kept.push(n);
+  }
+  kept.sort((a, b) => a.t - b.t);
+  return kept;
+}
+
 export class BeatCue {
   constructor(canvas) {
     this.cv = canvas;
     this.ctx = canvas.getContext('2d');
-    this.notes = [];          // {t, accent, state:'live'|'hit'|'miss', flash, rank}
-    this._scheduledTo = -1;   // last beat index turned into a note
+    this.notes = [];          // working set: {t, v, accent, state, flash, rank}
+    this.chart = null;        // the whole track, analysed up front
+    this._at = 0;             // read head into chart.notes
     this.lineFlash = 0;
     this.lastRank = null;
+    this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
   }
 
   reset() {
     this.notes = [];
-    this._scheduledTo = -1;
+    this._at = 0;
+    this.stats = { perfect: 0, good: 0, missed: 0, streak: 0, bestStreak: 0 };
+  }
+
+  // A chart is the analysed track: every note, where the music actually put
+  // it. Charting up front is the only way notes can be on screen before they
+  // are played, and it guarantees every player in the room plays the same
+  // chart rather than one derived from their own machine's listening.
+  // `target` is notes per second. A raw onset chart follows the music exactly,
+  // which on a busy track means three and a half presses a second — a genuinely
+  // hard chart, and this has to be playable by anyone who joins a stream. So
+  // the chart is thinned to a target density by keeping the strongest hits and
+  // spacing them out. It self-tunes: a sparse ballad keeps everything, a dense
+  // track loses its weakest filler, and both land somewhere playable.
+  setChart(chart, target = 2.2) {
+    if (!chart) { this.chart = null; this.reset(); return; }
+    this.chart = { ...chart, notes: thin(chart.notes, chart.duration, target) };
+    this.reset();
   }
 
   // Put notes on the grid ahead of the playhead. Only beats, and every beat —
   // a chart with holes would need musical structure we do not have yet, and an
   // even pulse is honest about what the clock actually knows.
+  // Reveal the notes the player should be able to see, from the chart.
+  _reveal(songTime) {
+    const c = this.chart;
+    if (!c) return;
+    const horizon = songTime + LEAD + 0.2;
+    while (this._at < c.notes.length && c.notes[this._at].t <= horizon) {
+      const n = c.notes[this._at++];
+      if (n.t < songTime - 0.5) continue;      // seeked past it
+      this.notes.push({ t: n.t, v: n.v, accent: n.accent, state: 'live', flash: 0, rank: null });
+    }
+  }
+
+  // Seeking or replaying has to re-find the read head, or the chart and the
+  // audio silently disagree for the rest of the track.
+  seek(songTime) {
+    this.notes = [];
+    const c = this.chart;
+    this._at = 0;
+    if (!c) return;
+    while (this._at < c.notes.length && c.notes[this._at].t < songTime) this._at++;
+  }
+
   _schedule(clock, songTime) {
     // Guard the arithmetic before trusting it. A zero or missing period makes
     // every beat index Infinity, and `for (i = Infinity; i <= Infinity; i++)`
@@ -77,6 +140,7 @@ export class BeatCue {
     }
     if (!best || bestD > GOOD) {
       this.lastRank = 'miss';
+      this.stats.streak = 0;
       return { rank: 'miss', q: 0, late: best ? songTime > best.t : false };
     }
     const late = songTime > best.t;
@@ -84,13 +148,21 @@ export class BeatCue {
     best.state = 'hit'; best.flash = 1; best.rank = rank;
     this.lineFlash = 1;
     this.lastRank = rank;
+    this.stats[rank === 'perfect' ? 'perfect' : 'good']++;
+    this.stats.streak++;
+    if (this.stats.streak > this.stats.bestStreak) this.stats.bestStreak = this.stats.streak;
     return { rank, q: rank === 'perfect' ? 1 - bestD / PERFECT * 0.3 : 0.55, late };
   }
 
   update(clock, songTime) {
-    this._schedule(clock, songTime);
+    if (this.chart) this._reveal(songTime);
+    else this._schedule(clock, songTime);
     for (const n of this.notes) {
-      if (n.state === 'live' && songTime - n.t > MISS_AFTER) { n.state = 'miss'; n.flash = 1; }
+      if (n.state === 'live' && songTime - n.t > MISS_AFTER) {
+        n.state = 'miss'; n.flash = 1;
+        this.stats.missed++;
+        this.stats.streak = 0;
+      }
       if (n.flash) n.flash *= 0.9;
     }
     // drop notes once they are well behind the line
@@ -113,7 +185,9 @@ export class BeatCue {
     ctx.beginPath(); ctx.moveTo(0, midY - laneH / 2); ctx.lineTo(W, midY - laneH / 2);
     ctx.moveTo(0, midY + laneH / 2); ctx.lineTo(W, midY + laneH / 2); ctx.stroke();
 
-    if (!clock.locked) {
+    if (this.chart) {
+      // charted: the lane is live even if the realtime clock has no opinion
+    } else if (!clock.locked) {
       ctx.fillStyle = `hsla(${hue}, 20%, 65%, 0.30)`;
       ctx.font = "9px 'SF Mono', ui-monospace, Menlo, monospace";
       ctx.textAlign = 'center';

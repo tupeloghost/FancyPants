@@ -55,6 +55,114 @@ const MIN_ONSETS = 12;
 const REFIT_EVERY = 0.3;
 const LOCK_R = 0.55;       // pulse-phase concentration needed to claim a lock
 
+// The grid fit, as a pure function so the realtime clock and the offline
+// track analyser cannot drift apart — they must agree, or a player's chart
+// would not match the beat they hear.
+export function fitGrid(os, now) {
+  const n = os.length;
+  if (n < MIN_ONSETS) return null;
+    
+    // ── stage 2: the pulse, from interval spacing ─────────────────────────
+    const BIN = 0.005, MAXLAG = 1.2;
+    const bins = new Float32Array(Math.ceil(MAXLAG / BIN) + 2);
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const d = os[j].t - os[i].t;
+        if (d < PULSE_MIN * 0.6 || d > MAXLAG) continue;
+        const wt = Math.exp(-(now - os[j].t) / (WINDOW * 0.8));
+        const b = d / BIN, lo = Math.floor(b), fr = b - lo;
+        bins[lo] += wt * (1 - fr);
+        bins[lo + 1] += wt * fr;
+      }
+    }
+    const sm = new Float32Array(bins.length);
+    for (let i = 1; i < bins.length - 1; i++) {
+      sm[i] = 0.25 * bins[i - 1] + 0.5 * bins[i] + 0.25 * bins[i + 1];
+    }
+
+    let pulse = 0, bestS = -1;
+    for (let p = PULSE_MIN; p <= PULSE_MAX; p += 0.001) {
+      let sc = 0;
+      // score against multiples too, so a pulse still wins when hits are sparse
+      for (let k = 1; k <= 4; k++) {
+        const idx = Math.round(k * p / BIN);
+        if (idx < sm.length) sc += sm[idx] / k;
+      }
+      if (sc > bestS) { bestS = sc; pulse = p; }
+    }
+    if (!pulse || bestS <= 0) { return null; }
+
+    // How much onset energy lands on a grid of this period at this phase —
+    // measured against what pure chance would score. A fine grid catches a lot
+    // of random onsets by accident (a 180ms grid with a 45ms window captures
+    // half of anything), so the raw share is not evidence of a pulse. Only the
+    // excess over chance is, and correcting for it is what stops the clock
+    // inventing a tempo for music that has none.
+    const align = (per, phase) => {
+      const tol = Math.min(0.045, per * 0.25);
+      let hit = 0, all = 0;
+      for (const o of os) {
+        const k = Math.round((o.t - phase) / per);
+        if (Math.abs(o.t - (phase + k * per)) <= tol) hit += o.v;
+        all += o.v;
+      }
+      const raw = all > 0 ? hit / all : 0;
+      const chance = Math.min(0.95, 2 * tol / per);
+      return (raw - chance) / (1 - chance);
+    };
+
+    // The histogram finds *a* regular spacing, but the true tatum may be a
+    // division of it — and if we grid at the coarser one, every hit in between
+    // reads as a miss. Try the divisions too and keep whichever explains the
+    // onsets best. Phase comes from a search rather than a circular mean,
+    // which cancels to nothing whenever onsets are denser than the grid.
+    let pulsePhase = 0, R = -Infinity;
+    for (const cand of [pulse, pulse / 2, pulse / 3, pulse / 4]) {
+      if (cand < PULSE_MIN) continue;
+      for (let i = 0; i < 24; i++) {
+        const ph = os[0].t + (i / 24) * cand;
+        const sc = align(cand, ph);
+        if (sc > R) { R = sc; pulsePhase = ph; pulse = cand; }
+      }
+    }
+    R = Math.max(0, Math.min(1, R));
+
+    // ── stage 3: which multiple of the pulse is the beat ──────────────────
+    // Nearest-to-120bpm alone is not enough: a 150ms tatum reads as 133bpm at
+    // three tatums and 100bpm at four, and three wins on distance while four
+    // is the musical answer. Western music divides in twos and fours, so
+    // binary multiples are strongly preferred and triplet feels only win when
+    // they are clearly better.
+    const MULT_BIAS = { 1: 1, 2: 1, 4: 1, 8: 1, 3: 0.72, 6: 0.72, 5: 0.5, 7: 0.5 };
+    let mult = 1, bestScore = -1;
+    for (let m = 1; m <= 8; m++) {
+      const bpm = 60 / (pulse * m);
+      if (bpm < MIN_BPM || bpm > MAX_BPM) continue;
+      const closeness = 1 - Math.min(1, Math.abs(bpm - 120) / 90);
+      const sc = (MULT_BIAS[m] || 0.5) * closeness;
+      if (sc > bestScore) { bestScore = sc; mult = m; }
+    }
+    const period = pulse * mult;
+
+    // and which of the `mult` pulse positions carries the most weight —
+    // downbeats hit harder than the subdivisions between them
+    let bestClass = 0, bestEnergy = -1;
+    for (let c = 0; c < mult; c++) {
+      let e = 0;
+      for (const o of os) {
+        const k = Math.round((o.t - pulsePhase) / pulse);
+        if (((k % mult) + mult) % mult === c) e += o.v;
+      }
+      if (e > bestEnergy) { bestEnergy = e; bestClass = c; }
+    }
+
+    let anchor = pulsePhase + bestClass * pulse;
+    anchor += Math.ceil((now - anchor) / period) * period;
+    while (anchor > now) anchor -= period;
+
+  return { pulse, period, bpm: 60 / period, anchor, confidence: R, locked: R >= LOCK_R };
+}
+
 export class BeatClock {
   constructor(analyser) {
     this.analyser = analyser || null;
@@ -167,119 +275,16 @@ export class BeatClock {
   }
 
   _fit(now) {
-    const os = this._onsets;
-    const n = os.length;
-    if (n < MIN_ONSETS) { this.locked = false; this.confidence = 0; return; }
-
     // Flux needs to be sampled densely; below about 30fps the spectrum is
     // aliased and any grid fitted to it would be fiction. Report unlocked
     // rather than pretending.
     if (this._flux.length / FLUX_WINDOW < 30) { this.locked = false; this.confidence = 0; return; }
 
-    // ── stage 2: the pulse, from interval spacing ─────────────────────────
-    const BIN = 0.005, MAXLAG = 1.2;
-    const bins = new Float32Array(Math.ceil(MAXLAG / BIN) + 2);
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const d = os[j].t - os[i].t;
-        if (d < PULSE_MIN * 0.6 || d > MAXLAG) continue;
-        const wt = Math.exp(-(now - os[j].t) / (WINDOW * 0.8));
-        const b = d / BIN, lo = Math.floor(b), fr = b - lo;
-        bins[lo] += wt * (1 - fr);
-        bins[lo + 1] += wt * fr;
-      }
-    }
-    const sm = new Float32Array(bins.length);
-    for (let i = 1; i < bins.length - 1; i++) {
-      sm[i] = 0.25 * bins[i - 1] + 0.5 * bins[i] + 0.25 * bins[i + 1];
-    }
-
-    let pulse = 0, bestS = -1;
-    for (let p = PULSE_MIN; p <= PULSE_MAX; p += 0.001) {
-      let sc = 0;
-      // score against multiples too, so a pulse still wins when hits are sparse
-      for (let k = 1; k <= 4; k++) {
-        const idx = Math.round(k * p / BIN);
-        if (idx < sm.length) sc += sm[idx] / k;
-      }
-      if (sc > bestS) { bestS = sc; pulse = p; }
-    }
-    if (!pulse || bestS <= 0) { this.locked = false; this.confidence = 0; return; }
-
-    // How much onset energy lands on a grid of this period at this phase —
-    // measured against what pure chance would score. A fine grid catches a lot
-    // of random onsets by accident (a 180ms grid with a 45ms window captures
-    // half of anything), so the raw share is not evidence of a pulse. Only the
-    // excess over chance is, and correcting for it is what stops the clock
-    // inventing a tempo for music that has none.
-    const align = (per, phase) => {
-      const tol = Math.min(0.045, per * 0.25);
-      let hit = 0, all = 0;
-      for (const o of os) {
-        const k = Math.round((o.t - phase) / per);
-        if (Math.abs(o.t - (phase + k * per)) <= tol) hit += o.v;
-        all += o.v;
-      }
-      const raw = all > 0 ? hit / all : 0;
-      const chance = Math.min(0.95, 2 * tol / per);
-      return (raw - chance) / (1 - chance);
-    };
-
-    // The histogram finds *a* regular spacing, but the true tatum may be a
-    // division of it — and if we grid at the coarser one, every hit in between
-    // reads as a miss. Try the divisions too and keep whichever explains the
-    // onsets best. Phase comes from a search rather than a circular mean,
-    // which cancels to nothing whenever onsets are denser than the grid.
-    let pulsePhase = 0, R = -Infinity;
-    for (const cand of [pulse, pulse / 2, pulse / 3, pulse / 4]) {
-      if (cand < PULSE_MIN) continue;
-      for (let i = 0; i < 24; i++) {
-        const ph = os[0].t + (i / 24) * cand;
-        const sc = align(cand, ph);
-        if (sc > R) { R = sc; pulsePhase = ph; pulse = cand; }
-      }
-    }
-    R = Math.max(0, Math.min(1, R));
-
-    // ── stage 3: which multiple of the pulse is the beat ──────────────────
-    // Nearest-to-120bpm alone is not enough: a 150ms tatum reads as 133bpm at
-    // three tatums and 100bpm at four, and three wins on distance while four
-    // is the musical answer. Western music divides in twos and fours, so
-    // binary multiples are strongly preferred and triplet feels only win when
-    // they are clearly better.
-    const MULT_BIAS = { 1: 1, 2: 1, 4: 1, 8: 1, 3: 0.72, 6: 0.72, 5: 0.5, 7: 0.5 };
-    let mult = 1, bestScore = -1;
-    for (let m = 1; m <= 8; m++) {
-      const bpm = 60 / (pulse * m);
-      if (bpm < MIN_BPM || bpm > MAX_BPM) continue;
-      const closeness = 1 - Math.min(1, Math.abs(bpm - 120) / 90);
-      const sc = (MULT_BIAS[m] || 0.5) * closeness;
-      if (sc > bestScore) { bestScore = sc; mult = m; }
-    }
-    const period = pulse * mult;
-
-    // and which of the `mult` pulse positions carries the most weight —
-    // downbeats hit harder than the subdivisions between them
-    let bestClass = 0, bestEnergy = -1;
-    for (let c = 0; c < mult; c++) {
-      let e = 0;
-      for (const o of os) {
-        const k = Math.round((o.t - pulsePhase) / pulse);
-        if (((k % mult) + mult) % mult === c) e += o.v;
-      }
-      if (e > bestEnergy) { bestEnergy = e; bestClass = c; }
-    }
-
-    let anchor = pulsePhase + bestClass * pulse;
-    anchor += Math.ceil((now - anchor) / period) * period;
-    while (anchor > now) anchor -= period;
-
-    this.pulse = pulse;
-    this.period = period;
-    this.bpm = 60 / period;
-    this.anchor = anchor;
-    this.confidence = R;
-    this.locked = R >= LOCK_R;
+    const g = fitGrid(this._onsets, now);
+    if (!g) { this.locked = false; this.confidence = 0; return; }
+    this.pulse = g.pulse; this.period = g.period; this.bpm = g.bpm;
+    this.anchor = g.anchor; this.confidence = g.confidence;
+    this.locked = g.locked;
     if (!this.locked) this._lastEmitted = -1;
   }
 

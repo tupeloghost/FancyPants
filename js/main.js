@@ -8,14 +8,15 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=112';
-import { WORLDS } from './worlds/registry.js?v=112';
-import { Net, PALETTE } from './net.js?v=112';
-import { Presence } from './lib/presence.js?v=112';
-import { Pulses } from './lib/pulse.js?v=112';
-import { BeatClock } from './lib/beatclock.js?v=112';
-import { BeatCue } from './lib/beatcue.js?v=112';
-import { glowTexture } from './lib/glow.js?v=112';
+import { AudioEngine } from './audio-engine.js?v=114';
+import { WORLDS } from './worlds/registry.js?v=114';
+import { Net, PALETTE } from './net.js?v=114';
+import { Presence } from './lib/presence.js?v=114';
+import { Pulses } from './lib/pulse.js?v=114';
+import { BeatClock } from './lib/beatclock.js?v=114';
+import { BeatCue } from './lib/beatcue.js?v=114';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=114';
+import { glowTexture } from './lib/glow.js?v=114';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -346,7 +347,42 @@ function playPrev() {
   updatePlayBtn();
 }
 // a tempo lock is only meaningful for the track it was fitted to
-audio.el.addEventListener('loadstart', () => { beatClock.setAnalyser(audio.analyser); beatClock.reset(); beatCue.reset(); });
+// ── Charting ── every track is analysed once, up front, before it can be
+// played as a rhythm world. Notes must be on screen ~2s before they are hit,
+// which a realtime detector can never provide, and charting up front also
+// means every player in a room plays a byte-identical chart.
+let chartToken = 0;
+let chartProgress = -1;      // -1 idle, 0..1 working
+async function chartTrack(url) {
+  const mine = ++chartToken;
+  beatCue.setChart(null);
+  chartProgress = -1;
+  if (!url) return;
+  const hit = cachedChart(url);
+  if (hit) { beatCue.setChart(hit); beatCue.seek(audio.currentTime); return; }
+  chartProgress = 0;
+  try {
+    const c = await analyseTrack(url, p => { if (mine === chartToken) chartProgress = p; });
+    if (mine !== chartToken) return;            // a newer track won the race
+    beatCue.setChart(c);
+    beatCue.seek(audio.currentTime);
+  } catch (err) {
+    // a source we cannot read (cross-origin stream, blob quirk) — the world
+    // still plays, the lane just falls back to the realtime grid
+    console.warn('chart failed for', url, err);
+  } finally {
+    if (mine === chartToken) chartProgress = -1;
+  }
+}
+audio.el.addEventListener('loadstart', () => {
+  beatClock.setAnalyser(audio.analyser);
+  beatClock.reset();
+  beatCue.reset();
+  chartTrack(audio.el.currentSrc || audio.el.src);
+});
+// scrubbing must move the chart's read head too, or the lane and the audio
+// quietly disagree for the rest of the track
+audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 
 // when a track runs out, roll straight into the next one
 audio.el.addEventListener('ended', () => playAuto(true));
@@ -888,8 +924,16 @@ function drawTempo(gridBeat, rawOnset) {
 
   $('tempo-bpm').innerHTML = (beatClock.bpm ? beatClock.bpm.toFixed(1) : '--') + '<small>BPM</small>';
   const st = $('tempo-state');
-  st.textContent = beatClock.locked ? 'locked' : 'searching';
-  st.classList.toggle('lock', beatClock.locked);
+  if (chartProgress >= 0) {
+    st.textContent = 'charting ' + Math.round(chartProgress * 100) + '%';
+    st.classList.remove('lock');
+  } else if (beatCue.chart) {
+    st.textContent = 'charted \u00b7 ' + beatCue.chart.notes.length + ' notes';
+    st.classList.add('lock');
+  } else {
+    st.textContent = beatClock.locked ? 'locked' : 'searching';
+    st.classList.toggle('lock', beatClock.locked);
+  }
   $('tempo-conf').firstElementChild.style.width = Math.round(beatClock.confidence * 100) + '%';
 }
 
