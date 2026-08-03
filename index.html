@@ -283,47 +283,17 @@
     text-transform: uppercase; color: var(--ink-faint);
   }
 
-  /* ── Note highway ── notes slide in from the right toward the hit line on
-     the left; press when one arrives. Thin and low-contrast so it reads like
-     an instrument rather than a plastic game overlay. ── */
+  /* ── The cue ── an orb at the vanishing point with rings closing onto it.
+     Full-frame and transparent: the world is what you are watching, and the
+     cue sits in it rather than under it. ── */
   #beatcue {
-    position: fixed; z-index: 94;
-    left: 50%; transform: translateX(-50%);
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 76px);
-    width: min(620px, 76vw); height: 98px;
+    position: fixed; inset: 0; z-index: 94;
+    width: 100%; height: 100%;
     pointer-events: none;
     display: none;
   }
   body.rhythm #beatcue { display: block; }
   body.clean #beatcue { display: block; }   /* the cue is play, not chrome */
-  @media (max-width: 620px) {
-    #beatcue {
-      width: 92vw; height: 88px;
-      bottom: calc(max(14px, env(safe-area-inset-bottom)) + 124px);
-    }
-  }
-
-  /* ── The one instruction ── shown at the top of a round and retired as soon
-     as the player is clearly landing notes. DOM rather than canvas text: it
-     has to be crisp at stream size and it must not fight the lane's geometry. */
-  #press-hint {
-    position: fixed; z-index: 96;
-    left: 50%; transform: translateX(-50%);
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 182px);
-    padding: 7px 15px; border-radius: 999px;
-    font: 9px/1 'SF Mono', ui-monospace, Menlo, monospace;
-    letter-spacing: 2.6px; text-transform: uppercase; white-space: nowrap;
-    color: hsl(var(--accent-h), 55%, 93%);
-    background: hsla(var(--accent-h), 30%, 6%, 0.72);
-    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.22);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    opacity: 0; pointer-events: none;
-    transition: opacity 500ms ease;
-  }
-  #press-hint.show { opacity: 1; }
-  @media (max-width: 620px) {
-    #press-hint { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 222px); font-size: 8px; letter-spacing: 1.8px; }
-  }
 
   /* ── Tempo strip (T) ── proof the beat grid is real: predicted beats as
      rules, the detector's raw onsets as marks. Locked = the marks sit on the
@@ -1096,8 +1066,8 @@
   </div>
 </div>
 
-<div id="press-hint">press when a note reaches the line</div>
-<canvas id="beatcue" width="1240" height="196"></canvas>
+<div id="press-hint">press when a ring reaches the orb</div>
+<canvas id="beatcue"></canvas>
 
 <div id="tempo" class="hidden">
   <div id="tempo-head">
@@ -1230,7 +1200,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 135</div>
+      <div id="build-stamp">build 137</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1244,6 +1214,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=135"></script>
+<script type="module" src="js/main.js?v=137"></script>
 </body>
 </html>

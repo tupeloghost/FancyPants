@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=135';
-import { themePaint } from '../lib/themes.js?v=135';
-import { PALETTE } from '../net.js?v=135';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=137';
+import { themePaint } from '../lib/themes.js?v=137';
+import { PALETTE } from '../net.js?v=137';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -22,6 +22,7 @@ export function createSlinky() {
   let echo = null;           // motion-blur ghost of the spring
   let beatWave = 99;         // index of the brightness wave from the last beat
   let walk = 0, walkVel = 0;
+  const RACE_START = 2;   // start on the stairs, not in mid-air
   let boing = 0, landPulse = 0, lastStep = 0;
   let stepPhase = 0;        // 0 at the lip, 1 at the slap — drives the gait
   const camPos = new THREE.Vector3(30, 0, 0);
@@ -223,7 +224,13 @@ export function createSlinky() {
       // slinky rather than a slider: it hangs, tips and slaps at whatever pace
       // your playing has earned.
       if (racing) {
-        walkVel += (race.speed - walkVel) * Math.min(1, dt * 6);
+        // Position comes STRAIGHT from the race, not integrated from its speed.
+        // Integrating gives a second, slightly different answer to "where am I",
+        // and since the wire carries race.progress the staircase and the
+        // standings would slowly disagree — you would be shown in a place the
+        // scoreboard does not think you are.
+        walk = RACE_START + race.progress;
+        walkVel = race.speed;
       } else {
         const targetVel = 0.35 + audio.volume * 0.9 * reactivity;
         walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
@@ -234,7 +241,7 @@ export function createSlinky() {
       stepPhase = walk - Math.floor(walk);
       // slow over the edge, quick through the drop, slow into the landing
       const gait = 0.28 + 1.72 * Math.sin(Math.PI * stepPhase) ** 1.4;
-      walk += walkVel * gait * dt;
+      if (!racing) walk += walkVel * gait * dt;
       boing *= Math.pow(0.04, dt);
       landPulse *= Math.pow(0.03, dt);
       if (Math.floor(walk) !== lastStep) {

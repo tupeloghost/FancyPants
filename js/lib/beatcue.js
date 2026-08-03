@@ -172,162 +172,149 @@ export class BeatCue {
     this.lineFlash *= 0.88;
   }
 
-  // `field` is the race: {fraction, rivals:[{f, color}], place, streak, mult}.
-  // A race with no visible finish line is just tapping, so the rail above the
-  // lane is where you are, where everyone else is, and how far is left.
-  drawField(field, hue) {
-    const { ctx, cv } = this;
+  // ── The cue lives in the world, not under it ──
+  //
+  // A lane along the bottom of the frame works, but it costs you the world:
+  // your eyes lock to the bar and the thing you came to look at goes unwatched.
+  // In every one of these worlds the eye is already at the vanishing point, so
+  // the cue belongs there — an orb at the centre with rings closing onto it.
+  //
+  // Crucially this keeps the anticipation that made the highway work. Every
+  // note within the lead time has its own ring, so several are on screen at
+  // once and you read the pattern approaching exactly as you read notes
+  // sliding down a lane. Rings are thin and the orb is translucent, so the
+  // world stays visible through the whole thing.
+
+  // the race, kept small and out of the way in a corner — it is information
+  // you glance at, not something you play
+  drawField(field, hue, W, H) {
     if (!field) return;
-    const W = cv.width, y = 9, x0 = 6, x1 = W - 6;
-    const at = f => x0 + Math.max(0, Math.min(1, f)) * (x1 - x0);
+    const { ctx } = this;
+    const x0 = 34, y = H - 46, wide = Math.min(360, W * 0.28);
 
-    ctx.strokeStyle = `hsla(${hue}, 40%, 60%, 0.20)`;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.font = "600 21px 'Didot', 'Bodoni 72', Georgia, serif";
+    ctx.fillStyle = `hsla(${hue}, 55%, 92%, 0.85)`;
+    ctx.fillText(field.feet.toLocaleString() + ' FT', x0, y);
+    ctx.font = "11px 'SF Mono', ui-monospace, Menlo, monospace";
+    ctx.fillStyle = `hsla(${hue}, 30%, 76%, 0.45)`;
+    ctx.fillText(field.feetLeft.toLocaleString() + ' to go', x0, y + 16);
 
-    // the bottom of the stairs
-    ctx.strokeStyle = `hsla(${hue}, 80%, 78%, 0.45)`;
-    ctx.beginPath(); ctx.moveTo(x1, y - 6); ctx.lineTo(x1, y + 6); ctx.stroke();
-
+    // the field, as a hairline with everyone on it
+    const ry = y + 30;
+    ctx.strokeStyle = `hsla(${hue}, 40%, 62%, 0.22)`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, ry); ctx.lineTo(x0 + wide, ry); ctx.stroke();
+    const at = f => x0 + Math.max(0, Math.min(1, f)) * wide;
     for (const r of field.rivals || []) {
       const c = '#' + (r.color >>> 0).toString(16).padStart(6, '0');
-      ctx.fillStyle = c;
-      ctx.globalAlpha = 0.75;
-      ctx.beginPath(); ctx.arc(at(r.f), y, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = c; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.arc(at(r.f), ry, 3, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
     }
-    // you, always on top and always brighter
-    ctx.fillStyle = `hsl(${hue}, 90%, 88%)`;
-    ctx.beginPath(); ctx.arc(at(field.fraction), y, 4.6, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `hsla(${hue}, 90%, 95%, 0.9)`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(at(field.fraction), y, 6.6, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `hsl(${hue}, 90%, 90%)`;
+    ctx.beginPath(); ctx.arc(at(field.fraction), ry, 4.2, 0, Math.PI * 2); ctx.fill();
 
-    // Distance, in feet. "412 steps" means nothing; a distance you can picture
-    // is what makes the rail read as a race rather than a progress bar.
-    if (field.feet != null) {
-      ctx.font = "600 23px 'SF Mono', ui-monospace, Menlo, monospace";
-      ctx.textAlign = 'left';
-      ctx.fillStyle = `hsla(${hue}, 55%, 90%, 0.9)`;
-      ctx.fillText(field.feet.toLocaleString() + ' FT', x0, y + 34);
-      ctx.font = "18px 'SF Mono', ui-monospace, Menlo, monospace";
-      ctx.fillStyle = `hsla(${hue}, 30%, 74%, 0.5)`;
-      ctx.fillText(field.feetLeft.toLocaleString() + ' to go', x0, y + 58);
-    }
-
-    // a streak worth having announces itself, quietly
     if (field.mult > 1) {
-      ctx.fillStyle = `hsla(${hue}, 85%, 80%, 0.85)`;
-      ctx.font = "600 28px 'SF Mono', ui-monospace, Menlo, monospace";
-      ctx.textAlign = 'right';
-      ctx.fillText('\u00d7' + field.mult.toFixed(2).replace(/0$/, ''), x1, y + 38);
+      ctx.font = "600 17px 'SF Mono', ui-monospace, Menlo, monospace";
+      ctx.fillStyle = `hsla(${hue}, 85%, 82%, 0.9)`;
+      ctx.fillText('\u00d7' + field.mult.toFixed(2).replace(/0$/, ''), x0, y - 26);
     }
   }
 
   draw(clock, songTime, hue, field) {
     const { ctx, cv } = this;
-    const W = cv.width, H = cv.height;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
 
-    const hitX = W * 0.18;
-    const midY = H * 0.44;      // lane above centre; the hint lives below it
-    const laneH = H * 0.34;
+    this.lineFlash *= 0.90;
 
-    // ── the lane ──
-    ctx.strokeStyle = `hsla(${hue}, 40%, 60%, 0.22)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, midY - laneH / 2); ctx.lineTo(W, midY - laneH / 2);
-    ctx.moveTo(0, midY + laneH / 2); ctx.lineTo(W, midY + laneH / 2); ctx.stroke();
+    // Slightly above centre: the vanishing point in these worlds sits a little
+    // high, and it keeps the orb clear of the world's own title text.
+    const cx = W / 2, cy = H * 0.46;
+    const rOrb = Math.max(30, Math.min(64, Math.min(W, H) * 0.062));
+    const rFar = Math.min(W, H) * 0.42;
 
-    if (this.chart) {
-      // charted: the lane is live even if the realtime clock has no opinion
-    } else if (!clock.locked) {
-      ctx.fillStyle = `hsla(${hue}, 20%, 65%, 0.30)`;
-      ctx.font = "17px 'SF Mono', ui-monospace, Menlo, monospace";
-      ctx.textAlign = 'center';
-      ctx.fillText('L I S T E N I N G', W / 2, midY + 3);
-      this.drawField(field, hue);
+    if (!this.chart && !clock.locked) {
+      ctx.strokeStyle = `hsla(${hue}, 25%, 65%, 0.16)`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 7]);
+      ctx.beginPath(); ctx.arc(cx, cy, rOrb, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      this.drawField(field, hue, W, H);
       return;
     }
 
-    // ── the strike zone ──
-    // "It is not clear when to press" was the flaw, and a single line is a
-    // thin thing to aim at. A banded zone the width of the timing window says
-    // where the press lives, not just where the line is.
-    const zoneW = 26;
-    const zg = ctx.createLinearGradient(hitX - zoneW, 0, hitX + zoneW, 0);
-    zg.addColorStop(0, `hsla(${hue}, 85%, 70%, 0)`);
-    zg.addColorStop(0.5, `hsla(${hue}, 85%, 70%, ${(0.13 + this.lineFlash * 0.2).toFixed(3)})`);
-    zg.addColorStop(1, `hsla(${hue}, 85%, 70%, 0)`);
-    ctx.fillStyle = zg;
-    ctx.fillRect(hitX - zoneW, midY - laneH * 0.72, zoneW * 2, laneH * 1.44);
-
-    // ── the hit line: where a note must be when you press ──
-    const lf = this.lineFlash;
-    ctx.strokeStyle = `hsla(${hue}, 90%, ${78 + lf * 18}%, ${(0.78 + lf * 0.22).toFixed(3)})`;
-    ctx.lineWidth = 3 + lf * 3;
-    ctx.beginPath();
-    ctx.moveTo(hitX, midY - laneH * 0.72); ctx.lineTo(hitX, midY + laneH * 0.72);
-    ctx.stroke();
-    // a soft pool behind it so the eye rests there
-    const g = ctx.createRadialGradient(hitX, midY, 0, hitX, midY, laneH * 1.5);
-    g.addColorStop(0, `hsla(${hue}, 90%, 78%, ${(0.10 + lf * 0.26).toFixed(3)})`);
-    g.addColorStop(1, `hsla(${hue}, 90%, 78%, 0)`);
-    ctx.fillStyle = g;
-    ctx.fillRect(hitX - laneH * 1.5, 0, laneH * 3, H);
-
-    // ── the notes, sliding in from the right ──
+    // ── the rings, one per upcoming note ──
+    // Radius falls linearly with time, so a constant approach speed reads as
+    // constant — the same reason a note highway scrolls at a fixed rate.
     for (const n of this.notes) {
-      const dt = n.t - songTime;                 // seconds until it must be hit
-      if (dt > LEAD + 0.05) continue;
-      const x = hitX + (dt / LEAD) * (W - hitX);
-      if (x < -20) continue;
-      const h = n.accent ? laneH * 0.92 : laneH * 0.58;
+      const dt = n.t - songTime;
 
       if (n.state === 'hit') {
-        // consumed — a bright bloom that lifts away
+        // consumed: a shockwave leaving the orb
         const f = n.flash;
+        const r = rOrb * (1 + (1 - f) * 1.5);
         ctx.strokeStyle = n.rank === 'perfect'
-          ? `hsla(${hue}, 95%, 92%, ${(f * 0.95).toFixed(3)})`
-          : `hsla(${hue}, 70%, 78%, ${(f * 0.6).toFixed(3)})`;
-        ctx.lineWidth = n.rank === 'perfect' ? 3.4 : 2.4;
-        const lift = (1 - f) * 12;
-        ctx.beginPath();
-        ctx.moveTo(hitX, midY - h / 2 - lift); ctx.lineTo(hitX, midY + h / 2 - lift);
-        ctx.stroke();
+          ? `hsla(${hue}, 95%, 92%, ${(f * 0.9).toFixed(3)})`
+          : `hsla(${hue}, 70%, 80%, ${(f * 0.5).toFixed(3)})`;
+        ctx.lineWidth = n.rank === 'perfect' ? 3 : 2;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
         continue;
       }
       if (n.state === 'miss') {
-        ctx.strokeStyle = `hsla(${hue}, 15%, 55%, ${(n.flash * 0.35).toFixed(3)})`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.moveTo(x, midY - h / 2); ctx.lineTo(x, midY + h / 2); ctx.stroke();
+        ctx.strokeStyle = `hsla(${hue}, 12%, 58%, ${(n.flash * 0.28).toFixed(3)})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(cx, cy, rOrb * 0.82, 0, Math.PI * 2); ctx.stroke();
         continue;
       }
+      if (dt > LEAD + 0.05 || dt < -MISS_AFTER) continue;
 
-      // live: brightens as it nears the line, so the moment is unmistakable
-      const near = Math.max(0, 1 - dt / LEAD);
-      const imminent = Math.pow(Math.max(0, 1 - Math.abs(dt) / 0.22), 2);
-      // a halo on the note that is arriving NOW — the single clearest signal
-      // that this is the one to press
-      if (imminent > 0.05) {
-        const hg = ctx.createRadialGradient(x, midY, 0, x, midY, h * 0.9);
-        hg.addColorStop(0, `hsla(${hue}, 95%, 86%, ${(imminent * 0.42).toFixed(3)})`);
-        hg.addColorStop(1, `hsla(${hue}, 95%, 86%, 0)`);
-        ctx.fillStyle = hg;
-        ctx.beginPath(); ctx.arc(x, midY, h * 0.9, 0, Math.PI * 2); ctx.fill();
+      const u = Math.max(0, dt / LEAD);              // 1 far out, 0 at the orb
+      const r = rOrb + u * (rFar - rOrb);
+      const near = 1 - u;
+      const imminent = Math.pow(Math.max(0, 1 - Math.abs(dt) / 0.20), 2);
+
+      ctx.strokeStyle = `hsla(${hue}, ${72 + near * 24}%, ${62 + near * 26}%, ${(0.22 + near * 0.62 + imminent * 0.16).toFixed(3)})`;
+      ctx.lineWidth = (n.accent ? 3.4 : 2.2) + imminent * 2.4;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+
+      // an accent carries four ticks, so the bar structure is readable
+      if (n.accent && near > 0.15) {
+        ctx.lineWidth = 2;
+        for (let k = 0; k < 4; k++) {
+          const a = k * Math.PI / 2 + Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * (r + 5), cy + Math.sin(a) * (r + 5));
+          ctx.lineTo(cx + Math.cos(a) * (r + 13), cy + Math.sin(a) * (r + 13));
+          ctx.stroke();
+        }
       }
-      ctx.strokeStyle = `hsla(${hue}, ${72 + near * 24}%, ${64 + near * 24 + imminent * 12}%, ${(0.38 + near * 0.55 + imminent * 0.25).toFixed(3)})`;
-      ctx.lineWidth = (n.accent ? 4.5 : 3) + imminent * 2;
-      ctx.beginPath();
-      ctx.moveTo(x, midY - h / 2); ctx.lineTo(x, midY + h / 2);
-      ctx.stroke();
     }
 
-    // faint tick marks at half-lead and full-lead, so distance reads as time
-    ctx.fillStyle = `hsla(${hue}, 30%, 60%, 0.10)`;
-    ctx.fillRect(hitX + (W - hitX) * 0.5, midY - 1, 1, 2);
-    ctx.fillRect(W - 1, midY - 1, 1, 2);
+    // ── the orb: what the rings are closing onto, and what you press ──
+    const lf = this.lineFlash;
+    const g = ctx.createRadialGradient(cx, cy, rOrb * 0.1, cx, cy, rOrb * (2.1 + lf));
+    g.addColorStop(0, `hsla(${hue}, 90%, 82%, ${(0.24 + lf * 0.4).toFixed(3)})`);
+    g.addColorStop(0.5, `hsla(${hue}, 90%, 75%, ${(0.08 + lf * 0.16).toFixed(3)})`);
+    g.addColorStop(1, `hsla(${hue}, 90%, 75%, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, rOrb * (2.1 + lf), 0, Math.PI * 2); ctx.fill();
 
-    this.drawField(field, hue);
+    ctx.strokeStyle = `hsla(${hue}, 90%, ${80 + lf * 18}%, ${(0.72 + lf * 0.28).toFixed(3)})`;
+    ctx.lineWidth = 2.6 + lf * 3;
+    ctx.beginPath(); ctx.arc(cx, cy, rOrb, 0, Math.PI * 2); ctx.stroke();
+
+    // an inner rule, so it reads as an instrument rather than a blob
+    ctx.strokeStyle = `hsla(${hue}, 70%, 88%, ${(0.20 + lf * 0.3).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, rOrb - 7, 0, Math.PI * 2); ctx.stroke();
+
+    this.drawField(field, hue, W, H);
   }
 }
