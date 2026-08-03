@@ -8,12 +8,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=96';
-import { WORLDS } from './worlds/registry.js?v=96';
-import { Net, PALETTE } from './net.js?v=96';
-import { Presence } from './lib/presence.js?v=96';
-import { Pulses } from './lib/pulse.js?v=96';
-import { glowTexture } from './lib/glow.js?v=96';
+import { AudioEngine } from './audio-engine.js?v=97';
+import { WORLDS } from './worlds/registry.js?v=97';
+import { Net, PALETTE } from './net.js?v=97';
+import { Presence } from './lib/presence.js?v=97';
+import { Pulses } from './lib/pulse.js?v=97';
+import { glowTexture } from './lib/glow.js?v=97';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -226,6 +226,7 @@ function switchWorld(key) {
   pan.x = pan.y = 0;
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
+  pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
   const caps = world.options || [];

@@ -20,10 +20,13 @@ function ringTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  const grad = g.createRadialGradient(S / 2, S / 2, S * 0.30, S / 2, S / 2, S * 0.5);
+  // a narrow band, not a fat donut — a thin line of light reads as fine
+  // rather than heavy, which matters against delicate worlds like Plasma
+  const grad = g.createRadialGradient(S / 2, S / 2, S * 0.38, S / 2, S / 2, S * 0.5);
   grad.addColorStop(0.00, 'rgba(255,255,255,0)');
-  grad.addColorStop(0.55, 'rgba(255,255,255,0.85)');
-  grad.addColorStop(0.78, 'rgba(255,255,255,0.30)');
+  grad.addColorStop(0.42, 'rgba(255,255,255,0.28)');
+  grad.addColorStop(0.62, 'rgba(255,255,255,0.90)');
+  grad.addColorStop(0.80, 'rgba(255,255,255,0.20)');
   grad.addColorStop(1.00, 'rgba(255,255,255,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, S, S);
@@ -55,11 +58,18 @@ const easeOut = t => 1 - Math.pow(1 - t, 3);
 
 export class Pulses {
   constructor() {
+    // How much pulse a world can take. Dark, sparse worlds carry a full ring
+    // happily; worlds built from fine lines or already dense with colour get
+    // swamped by one, so they ask for less. Set per world via setGain().
+    this.gain = 1;
     this.group = null;
     this._items = [];
     this._at = 0;
     this._v = new THREE.Vector3();
   }
+
+  // 0 turns the ring off entirely for worlds that answer taps in their own way
+  setGain(g) { this.gain = g == null ? 1 : g; }
 
   init(scene) {
     this.group = new THREE.Group();
@@ -101,7 +111,7 @@ export class Pulses {
   // x, y are clip space (-1..1); colorHex is the tapper's palette colour.
   // strength scales the whole thing — a big moment opens wider and brighter.
   spawn(camera, x, y, colorHex = 0xffffff, strength = 1) {
-    if (!this.group) return;
+    if (!this.group || this.gain <= 0) return;
     const p = this._items[this._at];
     this._at = (this._at + 1) % POOL;
 
@@ -114,7 +124,7 @@ export class Pulses {
     }
     p.t = 0;
     // sized off the framing so it looks the same at any field of view
-    p.size = DEPTH * Math.tan((camera.fov * Math.PI / 180) / 2) * 0.30 * (0.75 + strength * 0.45);
+    p.size = DEPTH * Math.tan((camera.fov * Math.PI / 180) / 2) * 0.135 * (0.75 + strength * 0.45) * this.gain;
     p.color.setHex(colorHex);
   }
 
