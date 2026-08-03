@@ -8,13 +8,14 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=108';
-import { WORLDS } from './worlds/registry.js?v=108';
-import { Net, PALETTE } from './net.js?v=108';
-import { Presence } from './lib/presence.js?v=108';
-import { Pulses } from './lib/pulse.js?v=108';
-import { BeatClock } from './lib/beatclock.js?v=108';
-import { glowTexture } from './lib/glow.js?v=108';
+import { AudioEngine } from './audio-engine.js?v=109';
+import { WORLDS } from './worlds/registry.js?v=109';
+import { Net, PALETTE } from './net.js?v=109';
+import { Presence } from './lib/presence.js?v=109';
+import { Pulses } from './lib/pulse.js?v=109';
+import { BeatClock } from './lib/beatclock.js?v=109';
+import { BeatCue } from './lib/beatcue.js?v=109';
+import { glowTexture } from './lib/glow.js?v=109';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -85,12 +86,13 @@ presence.init(scene);
 const pulses = new Pulses();
 pulses.init(scene);
 const beatClock = new BeatClock(audio.analyser);
+const beatCue = new BeatCue(document.getElementById('beatcue'));
 net.onJoin = () => audio.joinChime();
 window.__net = net; window.__presence = presence; // debug handles
 window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
 window.__pulses = pulses; window.__scene = scene;
-window.__beat = beatClock;
+window.__beat = beatClock; window.__cue = beatCue;
 
 // ── Global stardust: twinkling dust + shooting stars around the camera,
 // world-agnostic so the dust toggle works everywhere ──
@@ -230,6 +232,7 @@ function switchWorld(key) {
   if (window.__setFigure) window.__setFigure(null); // cleared first; worlds opt back in during init
   world = WORLDS[key].create();
   pulses.setGain(WORLDS[key].pulse);   // how much ring this world can carry
+  document.body.classList.toggle('rhythm', !!WORLDS[key].rhythm);
   world.init(scene, camera);
   // only show controls this world actually implements — no dead buttons
   const caps = world.options || [];
@@ -1036,6 +1039,8 @@ window.addEventListener('touchend', () => { touchSteer.active = false; });
 // click/tap interaction — part of the world contract, works in both modes
 let clickPulse = 0;
 let pointerHeld = false;
+let lastJudge = null;   // {rank, q, late} from the most recent judged tap
+window.__judge = () => lastJudge;
 // long-press is hold-to-nitro etc., never a context menu / magnifier
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('pointerup', () => pointerHeld = false);
@@ -1062,6 +1067,10 @@ canvas.addEventListener('pointerdown', e => {
     return;
   }
   pointerHeld = true;
+  // in a rhythm world, the tap is judged against the predicted grid
+  if (document.body.classList.contains('rhythm')) {
+    lastJudge = beatCue.register(beatClock.offset(audio.currentTime));
+  }
   clickPulse = 1; // global color surge: every click makes the whole frame answer
   impact(0.42);   // and it lands as light, not as a jolt
   spawnRipple(e.clientX, e.clientY);
@@ -1438,6 +1447,10 @@ function frame(now) {
   if (beatClock.analyser !== audio.analyser) beatClock.setAnalyser(audio.analyser);
   const gridBeat = beatClock.update(audio.currentTime);
   drawTempo(gridBeat, beatClock.onsetAt != null);
+  if (gridBeat) beatCue.onBeat();
+  if (document.body.classList.contains('rhythm')) {
+    beatCue.draw(beatClock, audio.currentTime, settings.hue);
+  }
 
   pulses.update(dt, a.beatIntensity);
 
