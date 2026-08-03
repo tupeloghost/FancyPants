@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=159';
-import { WORLDS } from './worlds/registry.js?v=159';
-import { Net, PALETTE } from './net.js?v=159';
-import { Presence } from './lib/presence.js?v=159';
-import { Pulses } from './lib/pulse.js?v=159';
-import { BeatClock } from './lib/beatclock.js?v=159';
-import { BeatCue } from './lib/beatcue.js?v=159';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=159';
-import { Race, placeOf, standings } from './lib/race.js?v=159';
-import { RouteMap } from './lib/map.js?v=159';
-import { glowTexture } from './lib/glow.js?v=159';
+import { AudioEngine } from './audio-engine.js?v=160';
+import { WORLDS } from './worlds/registry.js?v=160';
+import { Net, PALETTE } from './net.js?v=160';
+import { Presence } from './lib/presence.js?v=160';
+import { Pulses } from './lib/pulse.js?v=160';
+import { BeatClock } from './lib/beatclock.js?v=160';
+import { BeatCue } from './lib/beatcue.js?v=160';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=160';
+import { Race, placeOf, standings } from './lib/race.js?v=160';
+import { RouteMap } from './lib/map.js?v=160';
+import { glowTexture } from './lib/glow.js?v=160';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1097,6 +1097,36 @@ window.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft' && keySteer < 0) keySteer = 0;
 });
 
+// Step to the next playable world, or the next round of a set if one is running.
+function jumpGame(dir) {
+  if (setList && setList.length) {
+    // inside a set: settle this round and move the set on
+    clearTimeout(roundTimer);
+    hideResults();
+    if (dir > 0) { scoreRound(); nextRound(); }
+    else { setAt = Math.max(-1, setAt - 2); nextRound(); }
+    return;
+  }
+  if (!RHYTHM_WORLDS.length) return;
+  const cur = $('world-select').value;
+  const at = RHYTHM_WORLDS.indexOf(cur);
+  const next = RHYTHM_WORLDS[((at < 0 ? 0 : at + dir) + RHYTHM_WORLDS.length) % RHYTHM_WORLDS.length];
+  $('world-select').value = next;
+  switchWorld(next);
+  flashWorldName(WORLDS[next].label + '  \u00b7  ' + (WORLDS[next].mode || 'PLAY'));
+}
+window.__jumpGame = jumpGame;
+
+// a brief name card, so you know which game you just landed in
+let jumpFlashT = 0;
+function flashWorldName(text) {
+  const el = $('jump-flash');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(jumpFlashT);
+  jumpFlashT = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
 // hotkeys
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -1113,6 +1143,16 @@ window.addEventListener('keydown', e => {
 
   // clean capture — nothing on screen but the world
   if (e.key === 'f' || e.key === 'F') document.body.classList.toggle('clean');
+
+  // ── ] and [ : jump between GAMES ──
+  // Testing meant playing a whole round to reach the next one, which is minutes
+  // per look. These step straight to the next playable world and start its
+  // round there — inside a set they advance the set, outside one they cycle the
+  // rhythm worlds. Charts are cached per track, so a revisit is instant.
+  if (e.key === ']' || e.key === '[') {
+    e.preventDefault();
+    jumpGame(e.key === ']' ? 1 : -1);
+  }
   if (e.key === 't' || e.key === 'T') tempoEl.classList.toggle('hidden');
 
   // the mid-song moves, so a host never has to reach for the panel
