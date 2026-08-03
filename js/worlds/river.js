@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=160';
-import { themePaint } from '../lib/themes.js?v=160';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=161';
+import { themePaint } from '../lib/themes.js?v=161';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -32,7 +32,7 @@ export function createRiver() {
   const DRIFT_RATE = 26;        // the river's own pace
   const BOOST_ADD = 30;         // what an arrow is worth, on top of it
   const AHEAD = 115;            // where things appear, in front of you
-  const EVERY = 7;              // one object every N notes — occasional, not a wall
+  const EVERY = 13;             // one object every N notes — occasional, not a wall
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
@@ -172,28 +172,30 @@ export function createRiver() {
       for (let i = 0; i < MAX_DRIFTERS; i++) {
         const g = new THREE.Group();
 
-        // A BOOST ARROW. Not a ramp-shaped object you have to interpret — an
-        // actual arrow, pointing up, glowing yellow. Whatever else is on
-        // screen, an arrow means go.
+        // A BOOST PAD, lying FLAT on the water. Stacked upright chevrons read
+        // as a jump — something to launch off — which is the wrong instruction
+        // entirely. Painted flat on the surface, pointing the way you travel,
+        // it reads as a pad you drive over.
         const bloom = new THREE.Group();
         const petalMat = new THREE.MeshBasicMaterial({ toneMapped: false });
-        // three stacked chevrons, the middle one largest
+
+        const pad = new THREE.Group();
+        // the deck it is painted on
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.12, 9.0), petalMat);
+        deck.position.y = -0.06;
+        pad.add(deck);
+        // three chevrons pointing downstream, flat on the deck
         for (let k = 0; k < 3; k++) {
-          const scale = 1 - Math.abs(k - 1) * 0.22;
           for (const sgn of [-1, 1]) {
-            const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 0.55), petalMat);
-            arm.position.set(sgn * 0.85 * scale, 1.0 + k * 1.6, 0);
-            arm.scale.setScalar(scale);
-            // -sgn, not sgn: positive z-rotation lifts a bar's +X end, so the
-            // LEFT arm needs a positive tilt to raise its inner end. With the
-            // sign the other way every arrow pointed down, which is the exact
-            // opposite of the instruction it exists to give.
-            arm.rotation.z = -sgn * 0.72;        // the two halves of a ^
-            bloom.add(arm);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 0.85), petalMat);
+            arm.position.set(sgn * 0.95, 0.08, -2.6 + k * 2.6);
+            arm.rotation.y = sgn * 0.62;      // the two halves of a > seen from above
+            pad.add(arm);
           }
         }
-        const halo = glowSprite(6);
-        halo.position.y = 3.0;
+        bloom.add(pad);
+        const halo = glowSprite(7);
+        halo.position.y = 0.4;
         bloom.add(halo);
 
         // a rock: matte, heavy, and unmistakably not a flower
@@ -308,7 +310,7 @@ export function createRiver() {
           const ride = swellAt ? 0 : 0;
           // Ramps ride low so you pass OVER them; rocks sit proud so they are
           // plainly in the way. Height is the second signal after colour.
-          d.mesh.position.set(wx, d.rock ? 1.7 : 0.7, wz);
+          d.mesh.position.set(wx, d.rock ? 1.7 : 0.25, wz);   // pads lie on the surface
           d.mesh.rotation.y = d.rock ? d.spin + time * 0.3 : 0;   // ramps face downstream
           if (!d.rock) {
             // Fixed yellow, NOT the theme colour: "go" has to mean the same
@@ -326,7 +328,7 @@ export function createRiver() {
           // Resolve well clear of the lens. An arrow is several units tall
           // with a wide halo, so anything under about ten units still fills
           // the frame on its last drawn frame.
-          if (ahead <= 11) {
+          if (ahead <= 6) {
             const touching = Math.abs(wx - playerX) < HIT_W;
             if (touching && d.rock) {
               race.drop(2); rockFlash = 1; boost = 0;   // a rock kills your speed

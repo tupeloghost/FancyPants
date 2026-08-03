@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=160';
-import { themePaint } from '../lib/themes.js?v=160';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=161';
+import { themePaint } from '../lib/themes.js?v=161';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -442,13 +442,25 @@ export function createCherryLand() {
           const fx = pathX(fz) + f.x;
           const groundY = hillY(fx, fz) + 1.2;
           f.mesh.position.set(fx, groundY + (1 - u) * 13.5, fz);   // out of the canopy
-          // A cherry is red. Deriving its colour from the theme made them turn
-          // blue under a cool palette, which is both wrong and unreadable —
-          // the whole game is telling fruit from bombs at a glance.
-          color.setHSL(f.bomb ? 0.0 : 0.99, f.bomb ? 0.0 : 0.9,
-                       f.bomb ? 0.13 + audio.volume * 0.06 : 0.44 + u * 0.18);
-          f.mesh.material.color.copy(color);
-          f.mesh.scale.setScalar(f.bomb ? 1.45 : 1);
+          // Stale from the sphere version: `f.mesh` is a Group now and Groups
+          // have no material, and `f.bomb` is the bomb Group (always truthy)
+          // rather than the flag. It threw every frame, which killed the whole
+          // render loop — the app did not slow down, it stopped.
+          if (!f.isBomb) {
+            // a cherry is red whatever the palette says; the entire game is
+            // telling fruit from bomb at a glance
+            color.setHSL(0.99, 0.88, 0.40 + u * 0.14);
+            f.mat.color.copy(color);
+          } else {
+            // the fuse burns brighter the closer it gets, so a bomb reads as a
+            // decision rather than a colour
+            f.spark.material.color.setHSL(0.09, 1, 0.55 + u * 0.25);
+            f.spark.material.opacity = 0.7 + u * 0.3;
+            f.spark.scale.setScalar(0.5 + u * 0.9 + audio.volume * 0.3);
+          }
+          f.mesh.rotation.z = Math.sin(songTime * 2.2 + f.spin) * 0.3;
+          f.mesh.rotation.y = f.spin + songTime * (f.isBomb ? 1.1 : 2.0);
+          f.mesh.scale.setScalar(f.isBomb ? 1.15 : 1);
 
           if (left <= 0) {
             const caught = Math.abs(f.x - basketX) < CATCH_W;
