@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=169';
-import { themePaint } from '../lib/themes.js?v=169';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=170';
+import { themePaint } from '../lib/themes.js?v=170';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -35,14 +35,14 @@ export function createRiver() {
   // Spacing is in SECONDS of river, not notes. The note-count gate was lost in
   // a rewrite and never actually ran, so every note in the chart spawned — the
   // density complaint was real and the constant was decorative.
-  const SPACING = 3.4;          // min seconds between arrivals
+  const SPACING = 2.4;          // close enough that chains are possible
   const PAD_EVERY = 2;          // every Nth arrival is a boost; the rest are rocks
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
   let drifters = [];
   let riverChartAt = 0;
-  let lastSpawnT = -99, arrivals = 0;
+  let lastSpawnT = -99, arrivals = 0, gArrivalPhase = 0;
   let gatherFlash = 0, rockFlash = 0;
   let boost = 0;                // 0..1, decays; an arrow tops it back up
 
@@ -312,9 +312,12 @@ export function createRiver() {
           // arriving as a batch stacked in the same spot. One per frame.
           while (riverChartAt < chart.length && chart[riverChartAt].t <= songTime + 0.05) {
             const n = chart[riverChartAt++];
-            // one arrival every few seconds, on whichever note lands next —
-            // the music still decides the exact moment, the spacing decides
-            // how often that happens
+            // A note already behind the playhead must NOT spawn. Entering a
+            // track mid-way sweeps the read head over everything played so
+            // far, and each stale note spawned an object — a stacked batch
+            // that resolved as instant misses. You could hit every ramp on
+            // screen and be told 5% accuracy for objects that never existed.
+            if (n.t < songTime - 0.4) { lastSpawnT = Math.max(lastSpawnT, n.t); continue; }
             if (n.t - lastSpawnT < SPACING) continue;
             const d = drifters.find(x => !x.alive);
             if (!d) continue;
@@ -323,7 +326,13 @@ export function createRiver() {
             d.alive = true;
             d.z = -(drift + AHEAD);
             d.rock = (arrivals % PAD_EVERY) !== 0;   // alternate: rock, pad, rock, pad
-            d.x = (((riverChartAt * 48271) % 200) / 100 - 1) * LANE;
+            // pads sweep across the channel in a slow sine, so consecutive
+            // pads draw a LINE you can carve along; rocks sit off-line as
+            // punctuation. Pure hash placement read as noise — nothing to
+            // plan, nothing to carve, nothing to feel clever about.
+            d.x = d.rock
+              ? Math.sin(gArrivalPhase * 1.9 + 2.2) * LANE * 0.8
+              : Math.sin((gArrivalPhase += 0.7)) * LANE * 0.85;
             d.spin = ((riverChartAt * 53) % 100) / 100 * 6.28;
             d.mesh.visible = true;
             d.bloom.visible = !d.rock;
@@ -369,9 +378,13 @@ export function createRiver() {
               race.drop(2); rockFlash = 1; boost = 0;   // a rock kills your speed
               if (opts.impact) opts.impact(0.9);
             } else if (touching) {
-              race.collect(1); gatherFlash = 1;
-              boost = Math.min(1, boost + 0.85);      // the surge you can feel
-              if (opts.impact) opts.impact(0.5);
+              // the chain: take a pad while STILL surging from the last one
+              // and it pays double — the round becomes about holding a run
+              // together, not collecting isolated pickups
+              race.collect(boost > 0.35 ? 2 : 1);
+              gatherFlash = 1;
+              boost = Math.min(1, boost + 0.85);
+              if (opts.impact) opts.impact(boost > 0.9 ? 0.75 : 0.5);
             } else if (!d.rock) {
               race.drop(0);                    // a blossom missed breaks the run
             }

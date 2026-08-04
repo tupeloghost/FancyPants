@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=169';
-import { themePaint } from '../lib/themes.js?v=169';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=170';
+import { themePaint } from '../lib/themes.js?v=170';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -39,7 +39,7 @@ export function createBlacktop() {
   // are worth missing, and a gate IS your nitro — so the thing that felt good
   // in this world all along (flooring it) is now the reward loop itself.
   const G_AHEAD = 260;         // where gates appear down the road
-  const G_SPACING = 3.0;       // min seconds between arrivals
+  const G_SPACING = 2.2;       // close enough that chains are possible
   const G_REACH = 8;           // how far steer moves you; gates sit within it
   const G_HIT = 4.2;           // how close counts as through it
   const MAX_GATES = 20;
@@ -316,17 +316,31 @@ export function createBlacktop() {
         if (chart) {
           while (gChartAt < chart.length && chart[gChartAt].t <= songTime + 0.05) {
             const n = chart[gChartAt++];
+            // stale notes must not spawn — same batch-of-instant-misses bug
+            // the river had, same fix
+            if (n.t < songTime - 0.4) { gLastT = Math.max(gLastT, n.t); continue; }
             if (n.t - gLastT < G_SPACING) continue;
-            const g = gates.find(x => !x.alive);
-            if (!g) continue;
             gLastT = n.t; gArrivals++;
-            g.alive = true;
-            g.z = camZ - G_AHEAD;
-            g.isBar = (gArrivals % 2) !== 0;      // alternate gate / barrier
-            g.x = (((gChartAt * 48271) % 200) / 100 - 1) * (G_REACH * 0.8);
-            g.mesh.visible = true;
-            g.gate.visible = !g.isBar;
-            g.barrier.visible = g.isBar;
+
+            // Every fourth arrival is a SLALOM: three gates in quick
+            // succession swinging left-centre-right. A metronome of single
+            // gates is a driving test; a slalom is the moment the round has
+            // a shape — you either commit to the swing or you do not.
+            const slalom = (gArrivals % 4) === 0;
+            const count = slalom ? 3 : 1;
+            for (let k = 0; k < count; k++) {
+              const g = gates.find(x => !x.alive);
+              if (!g) break;
+              g.alive = true;
+              g.z = camZ - G_AHEAD - k * 42;
+              g.isBar = slalom ? false : (gArrivals % 2) !== 0;
+              g.x = slalom
+                ? [-1, 0, 1][k] * (G_REACH * 0.72) * ((gArrivals % 8) < 4 ? 1 : -1)
+                : (((gChartAt * 48271) % 200) / 100 - 1) * (G_REACH * 0.8);
+              g.mesh.visible = true;
+              g.gate.visible = !g.isBar;
+              g.barrier.visible = g.isBar;
+            }
           }
         }
         for (const g of gates) {
@@ -349,9 +363,11 @@ export function createBlacktop() {
           if (ahead < -4) continue;               // still up the road
           const through = Math.abs(gx - playerX) < G_HIT;
           if (through && !g.isBar) {
-            race.collect(1);
-            gBoost = Math.min(1, gBoost + 0.9);   // floor it
-            if (opts.impact) opts.impact(0.55);
+            // threading a gate while still surging pays double — keeping the
+            // car fast IS the game, and a slalom held together is six points
+            race.collect(gBoost > 0.35 ? 2 : 1);
+            gBoost = Math.min(1, gBoost + 0.9);
+            if (opts.impact) opts.impact(gBoost > 0.9 ? 0.8 : 0.55);
           } else if (through && g.isBar) {
             race.drop(2);
             gBoost = 0;

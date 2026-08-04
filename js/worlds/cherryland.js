@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=169';
-import { themePaint } from '../lib/themes.js?v=169';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=170';
+import { themePaint } from '../lib/themes.js?v=170';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -456,14 +456,26 @@ export function createCherryLand() {
         if (chart) {
           while (chartAt < chart.length && chart[chartAt].t - FALL_T <= songTime) {
             const n = chart[chartAt++];
-            if (n.t < songTime) continue;                  // seeked past
+            if (n.t < songTime) continue;      // stale — never spawn behind the playhead                  // seeked past
             const f = fallers.find(x => !x.alive);
             if (!f) continue;
             f.alive = true;
             f.t0 = n.t;                                    // when it lands
             // bombs on the weakest beats, so the fruit rides the music
             f.isBomb = !n.accent && ((chartAt * 7919) % 100) < 18;
-            f.x = (((chartAt * 2654435761) % 2000) / 1000 - 1) * REACH;
+            // The drop follows PHRASES, not dice. Eight-note stretches take a
+            // shape — a sweep across the lane, a zigzag, a tight cluster —
+            // so you read where the next few will land and move early. Pure
+            // hash placement never varies in character, which is why it
+            // played as too easy: every catch was the same catch.
+            const phrase = Math.floor(chartAt / 8) % 3;
+            const step = chartAt % 8;
+            if (phrase === 0)      f.x = (step / 7 * 2 - 1) * REACH * ((Math.floor(chartAt / 8) % 2) ? -1 : 1);
+            else if (phrase === 1) f.x = (step % 2 ? 0.75 : -0.75) * REACH * (1 - step * 0.07);
+            else                   f.x = (Math.sin(chartAt * 1.7) * 0.3 + ((chartAt % 16) < 8 ? 0.55 : -0.55)) * REACH;
+            // accented notes fall FAST — a third quicker, the ones that catch
+            // you flat-footed and make a clean phrase feel earned
+            f.fast = n.accent && !f.isBomb;
             f.spin = ((chartAt * 37) % 100) / 100 * 6.28;
             f.mesh.visible = true;
             f.fruit.visible = !f.isBomb;
@@ -474,7 +486,8 @@ export function createCherryLand() {
         for (const f of fallers) {
           if (!f.alive) continue;
           const left = f.t0 - songTime;                    // seconds until it lands
-          const u = 1 - Math.max(0, Math.min(1, left / FALL_T));
+          const fallT = f.fast ? FALL_T * 0.62 : FALL_T;
+          const u = 1 - Math.max(0, Math.min(1, left / fallT));
           const fz = camZ - 21;
           const fx = pathX(fz) + f.x;
           const groundY = hillY(fx, fz) + 1.2;
@@ -486,10 +499,13 @@ export function createCherryLand() {
           if (!f.isBomb) {
             // a cherry is red whatever the palette says; the entire game is
             // telling fruit from bomb at a glance
-            color.setHSL(0.99, 0.88, 0.40 + u * 0.14);
+            // PURPLE, deliberately — the orchard is full of red cherries on
+            // trees and hills, and red falling fruit vanished into them. The
+            // one thing you can catch is the one thing in this colour.
+            color.setHSL(0.78, 0.85, 0.48 + u * 0.14);
             f.mat.color.copy(color);
-            f.fruitGlow.material.color.setHSL(0.99, 0.9, 0.5);
-            f.fruitGlow.material.opacity = 0.3 + u * 0.35;
+            f.fruitGlow.material.color.setHSL(0.78, 0.9, 0.58);
+            f.fruitGlow.material.opacity = 0.35 + u * 0.4;
           } else {
             // the fuse burns brighter the closer it gets, so a bomb reads as a
             // decision rather than a colour

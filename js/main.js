@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=169';
-import { WORLDS } from './worlds/registry.js?v=169';
-import { Net, PALETTE } from './net.js?v=169';
-import { Presence } from './lib/presence.js?v=169';
-import { Pulses } from './lib/pulse.js?v=169';
-import { BeatClock } from './lib/beatclock.js?v=169';
-import { BeatCue } from './lib/beatcue.js?v=169';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=169';
-import { Race, placeOf, standings } from './lib/race.js?v=169';
-import { RouteMap } from './lib/map.js?v=169';
-import { glowTexture } from './lib/glow.js?v=169';
+import { AudioEngine } from './audio-engine.js?v=170';
+import { WORLDS } from './worlds/registry.js?v=170';
+import { Net, PALETTE } from './net.js?v=170';
+import { Presence } from './lib/presence.js?v=170';
+import { Pulses } from './lib/pulse.js?v=170';
+import { BeatClock } from './lib/beatclock.js?v=170';
+import { BeatCue } from './lib/beatcue.js?v=170';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=170';
+import { Race, placeOf, standings } from './lib/race.js?v=170';
+import { RouteMap } from './lib/map.js?v=170';
+import { glowTexture } from './lib/glow.js?v=170';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -249,7 +249,12 @@ function switchWorld(key) {
   // reset on entry and never updated, so nothing reached the wire.
   const w = WORLDS[key];
   document.body.classList.toggle('round', !!w.rhythm);
-  document.body.classList.toggle('orb', !!w.rhythm && w.mode !== 'CATCH' && w.mode !== 'DODGE');
+  // `press`: taps are judged against the chart. `orb`: the shared ring canvas
+  // is the cue. A world can be pressed without the orb — Slinky draws its cue
+  // as light bars on its own staircase, where your eyes already are.
+  const pressable = !!w.rhythm && w.mode !== 'CATCH' && w.mode !== 'DODGE';
+  document.body.classList.toggle('press', pressable);
+  document.body.classList.toggle('orb', pressable && w.cue !== 'world');
   if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
   beatCue.reset();
   startRaceIfReady();
@@ -1326,6 +1331,7 @@ window.addEventListener('touchend', () => { touchSteer.active = false; });
 let clickPulse = 0;
 let pointerHeld = false;
 let lastJudge = null;   // {rank, q, late} from the most recent judged tap
+let lastJudgeAt = 0;
 window.__judge = () => lastJudge;
 // long-press is hold-to-nitro etc., never a context menu / magnifier
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -1354,8 +1360,9 @@ canvas.addEventListener('pointerdown', e => {
   }
   pointerHeld = true;
   // in a rhythm world, the tap is judged against the predicted grid
-  if (document.body.classList.contains('orb')) {
+  if (document.body.classList.contains('press')) {
     lastJudge = beatCue.press(audio.currentTime);
+    lastJudgeAt = performance.now();
     if (lastJudge) {
       if (lastJudge.rank === 'miss') {
         race.miss();
@@ -1859,6 +1866,8 @@ function frame(now) {
     race,          // worlds read progress/momentum; the rules live in lib/race.js
     chart: beatCue.chart ? beatCue.chart.notes : null,  // a CATCH world writes
     songTime: audio.currentTime,                        // its own round from these
+    judge: lastJudge,                                   // in-world cues answer
+    judgeAge: (performance.now() - lastJudgeAt) / 1000, // the last press
   });
 
   // The viewer's framing sits ON TOP of whatever the world asked for — and is

@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=169';
-import { themePaint } from '../lib/themes.js?v=169';
-import { PALETTE } from '../net.js?v=169';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=170';
+import { themePaint } from '../lib/themes.js?v=170';
+import { PALETTE } from '../net.js?v=170';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -33,6 +33,8 @@ export function createSlinky() {
   const Z_AXIS = new THREE.Vector3(0, 0, 1);
   const quat = new THREE.Quaternion();
   let pointer = { x: 0, active: false };
+  let beatBars = [], barChartAt = 0;
+  const BAR_LOOK = 2.0;    // seconds a bar is visible before its beat
 
   // where each player's slinky walks, fanned out either side of yours
   // Lanes must fit the flight: the old spread reached +/-35 on a 26-wide
@@ -177,10 +179,29 @@ export function createSlinky() {
       dustF.frustumCulled = false;
       group.add(dustF);
 
+      // ── beat bars: the cue lives ON the staircase ──
+      // A bar of light slides up the steps and into the spring; you tap the
+      // moment they meet. The staircase is the note highway, the spring is
+      // the hit line, and there is nothing to watch except the world.
+      beatBars = [];
+      for (let i = 0; i < 8; i++) {
+        const bar = new THREE.Mesh(
+          new THREE.BoxGeometry(STAIR_W * 0.62, 0.5, 1.6),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        bar.visible = false;
+        group.add(bar);
+        beatBars.push({ mesh: bar, t: 0, live: false });
+      }
+      barChartAt = 0;
+
       sky = skyDome(280);
       group.add(sky);
 
-      walk = 2; walkVel = 0; boing = 0;
+      walk = 2; walkVel = 0; boing = 0; barChartAt = 0;
       camera.fov = 66;
       camera.updateProjectionMatrix();
     },
@@ -242,6 +263,39 @@ export function createSlinky() {
         walkVel += (targetVel - walkVel) * Math.min(1, dt * 2);
         if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
       }
+      // ── the bars slide home, and the spring answers your press ──
+      if (racing && opts.chart) {
+        const chart = opts.chart, songTime = opts.songTime || 0;
+        while (barChartAt < chart.length && chart[barChartAt].t - BAR_LOOK <= songTime) {
+          const n = chart[barChartAt++];
+          if (n.t < songTime) continue;                  // stale — never behind the playhead
+          const b = beatBars.find(x => !x.live);
+          if (b) { b.live = true; b.t = n.t; b.accent = n.accent; b.mesh.visible = true; }
+        }
+        for (const b of beatBars) {
+          if (!b.live) continue;
+          const dtb = b.t - songTime;                    // seconds until it must be hit
+          if (dtb < -0.18) { b.live = false; b.mesh.visible = false; continue; }
+          const u = Math.max(0, dtb / BAR_LOOK);         // 1 far, 0 at the spring
+          pathAt(walk + u * 4.4, P);                     // 4.4 stairs out, closing in
+          b.mesh.position.set(0, P.y + 0.75, P.z);
+          const near = 1 - u;
+          const imm = Math.pow(Math.max(0, 1 - Math.abs(dtb) / 0.2), 2);
+          themePaint(colorMode, hue / 360, 0.5, walk * 0.1, time, audio.bass, 0.5, tp);
+          color.setHSL(tp[0], 0.85, 0.42 + near * 0.34 + imm * 0.2);
+          b.mesh.material.color.copy(color);
+          b.mesh.material.opacity = 0.14 + near * 0.6 + imm * 0.26;
+          b.mesh.scale.set(1, 1 + imm * 1.6, 1 + (b.accent ? 0.8 : 0));
+        }
+        // the spring is the hit line — it answers the verdict, loudly
+        if (opts.judge && opts.judgeAge < 0.12) {
+          if (opts.judge.rank === 'perfect') { boing = Math.max(boing, 0.9); landPulse = 1; beatWave = 0; }
+          else if (opts.judge.rank === 'good') { landPulse = Math.max(landPulse, 0.7); beatWave = 0; }
+        }
+      } else {
+        for (const b of beatBars) { b.live = false; b.mesh.visible = false; }
+      }
+
       if (audio.beat) beatWave = 0;
       beatWave += dt * 90; // the pulse races down the spring
       stepPhase = walk - Math.floor(walk);
