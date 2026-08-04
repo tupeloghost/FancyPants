@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=173';
-import { WORLDS } from './worlds/registry.js?v=173';
-import { Net, PALETTE } from './net.js?v=173';
-import { Presence } from './lib/presence.js?v=173';
-import { Pulses } from './lib/pulse.js?v=173';
-import { BeatClock } from './lib/beatclock.js?v=173';
-import { BeatCue } from './lib/beatcue.js?v=173';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=173';
-import { Race, placeOf, standings } from './lib/race.js?v=173';
-import { RouteMap } from './lib/map.js?v=173';
-import { glowTexture } from './lib/glow.js?v=173';
+import { AudioEngine } from './audio-engine.js?v=174';
+import { WORLDS } from './worlds/registry.js?v=174';
+import { Net, PALETTE } from './net.js?v=174';
+import { Presence } from './lib/presence.js?v=174';
+import { Pulses } from './lib/pulse.js?v=174';
+import { BeatClock } from './lib/beatclock.js?v=174';
+import { BeatCue } from './lib/beatcue.js?v=174';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=174';
+import { Race, placeOf, standings } from './lib/race.js?v=174';
+import { RouteMap } from './lib/map.js?v=174';
+import { glowTexture } from './lib/glow.js?v=174';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -93,7 +93,7 @@ const beatCue = new BeatCue(document.getElementById('beatcue'));
 const anchorV = new THREE.Vector3();
 const race = new Race();
 let seenMissed = 0;   // cue miss counter we have already fed to the race
-net.onJoin = () => audio.joinChime();
+net.onJoin = () => { if (settings.chime) audio.joinChime(); };
 window.__net = net; window.__presence = presence; // debug handles
 window.__cam = camera; window.__audio = audio;
 window.__world = () => world;
@@ -202,6 +202,7 @@ const settings = {
   shape: 'slat',
   hdr: 1.0,
   stardust: true,
+  chime: true,        // do arrivals announce themselves?
   balls: 1500,
 };
 
@@ -213,6 +214,7 @@ const settings = {
   if (qp.get('shape')) settings.shape = qp.get('shape');
   if (qp.get('hue')) settings.hue = +qp.get('hue') || 210;
   if (qp.get('dust') === 'off') settings.stardust = false;
+  if (qp.get('chime') === 'off') settings.chime = false;
   if (qp.get('names') === 'off') window.__namesOff = true;
 }
 
@@ -223,6 +225,7 @@ function updateURL() {
   qp.set('shape', settings.shape);
   qp.set('hue', settings.hue);
   settings.stardust ? qp.delete('dust') : qp.set('dust', 'off');
+  settings.chime ? qp.delete('chime') : qp.set('chime', 'off');
   history.replaceState(null, '', '?' + qp.toString());
 }
 
@@ -1036,6 +1039,14 @@ $('qb-mute').addEventListener('click', toggleMute);
   wake();
 }
 
+// arrival chime toggle — the host's call for the whole room
+$('btn-chime').classList.toggle('on', settings.chime);
+$('btn-chime').addEventListener('click', () => {
+  settings.chime = !settings.chime;
+  $('btn-chime').classList.toggle('on', settings.chime);
+  updateURL();
+});
+
 // stardust toggle
 $('btn-stardust').classList.toggle('on', settings.stardust);
 $('btn-stardust').addEventListener('click', () => {
@@ -1117,6 +1128,22 @@ function drawTempo(gridBeat, rawOnset) {
     st.classList.toggle('lock', beatClock.locked);
   }
   $('tempo-conf').firstElementChild.style.width = Math.round(beatClock.confidence * 100) + '%';
+}
+
+// ── Overtakes ── the one moment in a race worth announcing by name. A silent
+// position swap is just scenery moving; "PASSED BEX" is why you were pushing.
+let passT = 0;
+function flashPass(p, youWent) {
+  const el = $('pass-flash');
+  const who = (p.name || 'them').toUpperCase();
+  el.textContent = youWent ? 'PASSED ' + who : who + ' WENT BY';
+  el.classList.toggle('bad', !youWent);
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(passT);
+  passT = setTimeout(() => el.classList.remove('show'), 1500);
+  if (youWent) impact(0.5);
 }
 
 // ── The HUD ── one big number, whatever the mode. Gains pulse it bright,
@@ -1903,6 +1930,7 @@ function frame(now) {
     songTime: audio.currentTime,                        // its own round from these
     judge: lastJudge,                                   // in-world cues answer
     judgeAge: (performance.now() - lastJudgeAt) / 1000, // the last press
+    onPass: flashPass,                                  // you went by, or they did
   });
 
   // The viewer's framing sits ON TOP of whatever the world asked for — and is

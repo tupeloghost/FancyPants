@@ -313,6 +313,20 @@
   }
   #hurt-vignette.on { opacity: 1; }
 
+  /* ── Overtake call ── sits opposite the HUD so the two never collide ── */
+  #pass-flash {
+    position: fixed; z-index: 97; right: 30px; bottom: 34px;
+    font: 400 clamp(20px, 3vw, 28px)/1 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 4px; white-space: nowrap; pointer-events: none;
+    color: hsl(140, 70%, 82%);
+    text-shadow: 0 0 26px hsla(140, 90%, 60%, 0.55);
+    opacity: 0; transform: translateX(18px);
+    transition: opacity 240ms ease, transform 240ms ease;
+  }
+  #pass-flash.bad { color: hsl(6, 80%, 74%); text-shadow: 0 0 26px hsla(6, 90%, 55%, 0.5); }
+  #pass-flash.show { opacity: 1; transform: translateX(0); }
+  @media (max-width: 620px) { #pass-flash { right: 16px; bottom: 200px; font-size: 17px; } }
+
   /* ── Game jump card ── which game you just landed in, briefly ── */
   #jump-flash {
     position: fixed; z-index: 160; left: 50%; top: 15%;
@@ -1171,6 +1185,7 @@
   <div id="hud-sub"></div>
 </div>
 
+<div id="pass-flash"></div>
 <div id="jump-flash"></div>
 
 <div id="results">
@@ -1269,6 +1284,12 @@
         <button id="btn-interactive" class="on">&#9654; play</button>
         <button id="btn-stardust" class="on">&#10022; dust</button>
       </div>
+      <!-- Whether arrivals announce themselves. A chime per person is lovely
+           for a few friends and unbearable once a stream is filling up, so the
+           host decides. Host-only: a guest cannot mute the room for everyone. -->
+      <div class="row seg host-only">
+        <button id="btn-chime" class="on">&#9834; arrival chime</button>
+      </div>
       <div class="row slider" id="opt-balls" style="display:none">
         <label>balls <span class="val" id="balls-val">240</span></label>
         <input type="range" id="balls" min="60" max="8000" value="1500">
@@ -1319,7 +1340,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 173</div>
+      <div id="build-stamp">build 174</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1333,6 +1354,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=173"></script>
+<script type="module" src="js/main.js?v=174"></script>
 </body>
 </html>

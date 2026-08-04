@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=173';
-import { themePaint } from '../lib/themes.js?v=173';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=174';
+import { themePaint } from '../lib/themes.js?v=174';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -45,10 +45,17 @@ export function createBlacktop() {
   const MAX_GATES = 20;
   let gates = [];
   let gChartAt = 0, gLastT = -99, gArrivals = 0;
+  const SCORE_GAP = 26;        // road units per point of score difference
+  let myScore = 0;             // kept from the race so placeGhost can read it
+  let passSeen = new Map();    // id -> were they ahead last frame?
   let bLastChartRef = null;
   let gBoost = 0;
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
   let cow = null, beam = null, abduct = { z: 0, x: 0, on: false, target: -2, p2: 0 };
+  // ── the wider alien programme ──
+  let escort = null, escortT = -1, escortNext = 22 + Math.random() * 20;
+  let cropRings = [], cropNext = 16 + Math.random() * 18;
+  let tug = 0;                 // sideways pull while the beam has you
   // abduct.target: -2 = the cow, -1 = YOU, >=0 = that ghost gets taken
   let nitroClock = 0, survived = false;
 
@@ -177,6 +184,47 @@ export function createBlacktop() {
       group.add(ufo);
       ufoT = -1; ufoNext = 10 + Math.random() * 15;
 
+      // ── the escort: three scout saucers that fall in alongside you ──
+      // The big UFO is an event you watch. The escort is an event you DRIVE
+      // WITH — it flies your speed, banks when you bank, and leaves when it
+      // feels like it, which makes the road feel inhabited rather than staged.
+      escort = new THREE.Group();
+      for (let i = 0; i < 3; i++) {
+        const sc = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.SphereGeometry(1.5, 14, 8),
+          new THREE.MeshBasicMaterial({ toneMapped: false })
+        );
+        body.scale.set(1, 0.34, 1);
+        const dome = new THREE.Mesh(
+          new THREE.SphereGeometry(0.72, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.75 })
+        );
+        dome.position.y = 0.28;
+        const gl = glowSprite(6);
+        sc.add(body, dome, gl);
+        sc.userData = { body, dome, gl, phase: i * 2.1 };
+        escort.add(sc);
+      }
+      escort.visible = false;
+      group.add(escort);
+
+      // ── crop circles: rings scorched into the asphalt, rushing past ──
+      cropRings = [];
+      for (let i = 0; i < 5; i++) {
+        const r = new THREE.Mesh(
+          new THREE.RingGeometry(3.2, 4.4, 40),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0,
+            side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        r.rotation.x = -Math.PI / 2;
+        r.visible = false;
+        group.add(r);
+        cropRings.push(r);
+      }
+
       // the cow. every great highway needs one.
       cow = new THREE.Group();
       const cowMat = new THREE.MeshBasicMaterial({ color: 0xd8d8e0, toneMapped: false });
@@ -267,8 +315,18 @@ export function createBlacktop() {
         out.set(abduct.x + Math.sin(abduct.p2 * 25) * 0.7, 1.6 + abduct.p2 * 20, abduct.z);
         return;
       }
-      const z = camera.position.z - 22 - (i % 7) * 14;
-      out.set(roadX(z) + (((i % 3) - 1) * 7) + p.x * 3, 1.6, z);
+      // Rivals sit on the road by their SCORE, not at a fixed offset. That is
+      // the whole difference between traffic and a race: thread gates and you
+      // reel them in and go past; drop a run and they come back through you.
+      // Position on the asphalt is the standings, exactly as the staircase is
+      // in Slinky.
+      const mine = myScore;
+      const theirs = p.z || 0;
+      const gapZ = Math.max(-170, Math.min(170, (theirs - mine) * SCORE_GAP));
+      const z = camera.position.z - 26 - gapZ;
+      // lanes either side of the centre line so a pass has somewhere to happen
+      const lane = ((i % 3) - 1) * 6.5;
+      out.set(roadX(z) + lane + p.x * 2, 1.6, z);
     },
 
     onTap() { nitro = 1; }, // NITRO (hold the mouse to keep it floored)
@@ -305,7 +363,14 @@ export function createBlacktop() {
       const camZ = -travel;
 
       if (attract) steerTarget = Math.sin(time * 0.3) * 0.5;
-      steer += (steerTarget - steer) * Math.min(1, dt * 3);
+      // The beam does not just look at you — it PULLS. While it has you the
+      // car drags toward the light and you have to steer against it, which
+      // turns a cutscene into thirty seconds of actual driving.
+      tug = abduct.on && abduct.target === -1
+        ? Math.min(1, tug + dt * 2.2)
+        : Math.max(0, tug - dt * 1.6);
+      const pulled = steerTarget + tug * Math.sin(time * 0.9) * 0.85;
+      steer += (pulled - steer) * Math.min(1, dt * 3);
       if (participants && participants[0]) {
         participants[0].x = steer;
         participants[0].y = 0;
@@ -313,6 +378,20 @@ export function createBlacktop() {
 
       // ── the gates ──
       if (gating) {
+        myScore = race.progress;
+        // An overtake is the moment worth naming. Nothing else in a race feels
+        // like going past somebody, and without calling it the position swap
+        // just happens quietly in the scenery.
+        if (participants && opts.onPass) {
+          for (let i = 1; i < participants.length; i++) {
+            const p = participants[i];
+            const wasAhead = passSeen.get(p.id);
+            const isAhead = (p.z || 0) > myScore + 0.5;
+            if (wasAhead === true && isAhead === false) opts.onPass(p, true);
+            else if (wasAhead === false && isAhead === true) opts.onPass(p, false);
+            passSeen.set(p.id, isAhead);
+          }
+        }
         const playerX = roadX(camZ) + steer * G_REACH;
         if (chart !== bLastChartRef) {
           bLastChartRef = chart; gChartAt = 0; gLastT = -99; gArrivals = 0;
@@ -504,6 +583,57 @@ export function createBlacktop() {
         color.setHSL(((hue / 360) + 0.5) % 1, 0.6, 0.7);
         color.multiplyScalar(1.4 + nitro);
         m.material.color.copy(color);
+      }
+
+      // ── the escort flies your speed and banks with you ──
+      if (escortT < 0) {
+        escortNext -= dt;
+        if (escortNext <= 0) { escortT = 0; escort.visible = true; escort.userData.side = Math.random() < 0.5 ? -1 : 1; }
+      } else {
+        escortT += dt / 11;
+        if (escortT >= 1) { escortT = -1; escort.visible = false; escortNext = 26 + Math.random() * 26; }
+        else {
+          const side = escort.userData.side;
+          // slide in from off-road, hold formation, peel away
+          const inOut = Math.sin(Math.min(1, escortT) * Math.PI);
+          escort.children.forEach((sc, i) => {
+            const d = sc.userData;
+            const lead = -14 - i * 9;                        // a trailing V
+            const z = camZ + lead;
+            const off = side * (16 - inOut * 8 + i * 1.6);
+            sc.position.set(roadX(z) + off + steer * 3, 5.5 + Math.sin(time * 2 + d.phase) * 0.7, z);
+            sc.rotation.z = -steer * 0.5 + Math.sin(time * 1.6 + d.phase) * 0.1;
+            sc.rotation.y = time * 0.6 + d.phase;
+            color.setHSL(((hue / 360) + 0.42) % 1, 0.85, 0.5 + audio.volume * 0.2);
+            d.body.material.color.copy(color);
+            d.dome.material.color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.75);
+            d.gl.material.color.copy(color);
+            d.gl.material.opacity = (0.25 + audio.volume * 0.3) * inOut;
+          });
+        }
+      }
+
+      // ── crop circles burned into the road, rushing under you ──
+      cropNext -= dt;
+      if (cropNext <= 0) {
+        cropNext = 14 + Math.random() * 20;
+        const free = cropRings.filter(r => !r.visible).slice(0, 3);
+        free.forEach((r, k) => {
+          r.visible = true;
+          r.userData = { z: camZ - 220 - k * 16, x: roadX(camZ - 220) + (k - 1) * 9, life: 1 };
+          r.scale.setScalar(0.7 + k * 0.35);
+        });
+      }
+      for (const r of cropRings) {
+        if (!r.visible) continue;
+        r.userData.z += speed * dt;
+        if (r.userData.z > camZ + 10) { r.visible = false; continue; }
+        r.position.set(r.userData.x, 0.12, r.userData.z);
+        r.rotation.z += dt * 0.5;
+        const near = 1 - Math.min(1, Math.abs(r.userData.z - camZ) / 220);
+        color.setHSL(((hue / 360) + 0.45) % 1, 0.9, 0.55);
+        r.material.color.copy(color);
+        r.material.opacity = 0.10 + near * 0.4 + audio.volume * 0.15;
       }
 
       // UFO visits: swoops across the skyline, wobbles, slips away
