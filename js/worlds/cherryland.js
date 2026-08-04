@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=161';
-import { themePaint } from '../lib/themes.js?v=161';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=165';
+import { themePaint } from '../lib/themes.js?v=165';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -36,7 +36,7 @@ export function createCherryLand() {
   const CATCH_W = 2.9;         // forgiveness, in world units
   const MAX_FALLERS = 40;
   let basket = null, basketX = 0, basketLip = null;
-  let catchTree = null, catchCanopy = null;
+  let catchTree = null, catchCanopy = null, basketPool = null;
   let fallers = [];            // {x, t0, bomb, alive, mesh}
   let chartAt = 0;             // read head into the chart
   let catchFlash = 0, bombFlash = 0;
@@ -193,14 +193,35 @@ export function createCherryLand() {
       chartAt = 0;
       basket = new THREE.Group();
 
+      // A near-black cup on near-black ground is a ring floating in a void.
+      // Woven willow, lit warm, so it reads as an object sitting somewhere.
       const cup = new THREE.Mesh(
         new THREE.CylinderGeometry(3.0, 2.0, 2.2, 22, 1, true),
         new THREE.MeshBasicMaterial({
-          color: 0x2a1206, toneMapped: false, side: THREE.DoubleSide,
-          transparent: true, opacity: 0.92,
+          color: 0x8a5a2c, toneMapped: false, side: THREE.DoubleSide,
         })
       );
       basket.add(cup);
+      // weave: three hoops around the cup, so it is basketwork and not a tube
+      for (let i = 0; i < 3; i++) {
+        const band = new THREE.Mesh(
+          new THREE.TorusGeometry(2.98 - i * 0.33, 0.09, 6, 26),
+          new THREE.MeshBasicMaterial({ color: 0xb07a3e, toneMapped: false })
+        );
+        band.rotation.x = Math.PI / 2;
+        band.position.y = 0.75 - i * 0.72;
+        basket.add(band);
+      }
+      // the pool of light it stands in — this is what makes it a place
+      // Additive, or the sprite's quad shows as a hard rectangle against the
+      // dark orchard floor — which read as a blue box under the basket rather
+      // than light pooling on the ground.
+      basketPool = glowSprite(20);
+      basketPool.material.blending = THREE.AdditiveBlending;
+      basketPool.material.depthWrite = false;
+      basketPool.material.opacity = 0.2;
+      basket.add(basketPool);
+      basketPool.position.y = -0.8;
       basketLip = new THREE.Mesh(
         new THREE.TorusGeometry(3.0, 0.2, 8, 34),
         new THREE.MeshBasicMaterial({ toneMapped: false })
@@ -218,16 +239,16 @@ export function createCherryLand() {
       // canopy sits 51 degrees above the horizon — entirely out of frame. This
       // one fills the top of the picture, so you are plainly standing under it.
       const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.1, 1.9, 13, 12),
+        new THREE.CylinderGeometry(1.1, 1.9, 16, 12),
         new THREE.MeshBasicMaterial({ color: 0x2a1409, toneMapped: false })
       );
-      trunk.position.y = 6.5;
+      trunk.position.y = 8;
       const canopy = new THREE.Mesh(
         new THREE.SphereGeometry(13, 20, 14),
         new THREE.MeshBasicMaterial({ toneMapped: false })
       );
-      canopy.position.y = 16;
-      canopy.scale.set(1.5, 0.62, 1.15);
+      canopy.position.y = 19;
+      canopy.scale.set(1.25, 0.55, 1.0);
       catchCanopy = canopy;
       catchTree.add(trunk, canopy);
       group.add(catchTree);
@@ -263,7 +284,8 @@ export function createCherryLand() {
         s1.position.set(-0.3, 0.95, 0); s1.rotation.z = 0.28;
         const s2 = new THREE.Mesh(stemGeo, stemMat);
         s2.position.set(0.3, 0.9, 0.05); s2.rotation.z = -0.24;
-        fruit.add(b1, b2, s1, s2);
+        const fruitGlow = glowSprite(4.2);
+        fruit.add(b1, b2, s1, s2, fruitGlow);
 
         // bomb: a matte black ball with a fuse and a live spark
         const bomb = new THREE.Group();
@@ -284,7 +306,7 @@ export function createCherryLand() {
         g.add(fruit, bomb);
         g.visible = false;
         group.add(g);
-        fallers.push({ mesh: g, fruit, bomb, spark, mat, alive: false, x: 0, t0: 0, isBomb: false });
+        fallers.push({ mesh: g, fruit, bomb, spark, mat, fruitGlow, alive: false, x: 0, t0: 0, isBomb: false });
       }
     },
 
@@ -406,13 +428,15 @@ export function createCherryLand() {
         basket.position.set(pathX(bz) + basketX, hillY(pathX(bz) + basketX, bz) + 1.2, bz);
         color.setHSL((hue / 360 + 0.02) % 1, 0.7, 0.5 + catchFlash * 0.4);
         basketLip.material.color.copy(color);
+        basketPool.material.color.copy(color);
+        basketPool.material.opacity = 0.18 + catchFlash * 0.3 + audio.volume * 0.06;
 
         // the tree the fruit falls out of, standing right over the basket
         catchTree.position.set(pathX(bz) + basketX * 0.12, hillY(pathX(bz), bz), bz - 3);
         themePaint(colorMode, hue / 360, 0.6, time * 0.05, time, audio.mid, 0.4, tp);
         color.setHSL(tp[0], Math.min(0.85, tp[1] + 0.15), 0.24 + audio.volume * 0.1);
         catchCanopy.material.color.copy(color);
-        catchCanopy.scale.set(1.5 + audio.bass * 0.06, 0.62 + audio.bass * 0.04, 1.15);
+        catchCanopy.scale.set(1.25 + audio.bass * 0.05, 0.55 + audio.bass * 0.03, 1.0);
 
         // Drop a cherry for every note, timed so it ARRIVES on the beat — the
         // music still writes the round, the hands just answer it differently.
@@ -441,7 +465,7 @@ export function createCherryLand() {
           const fz = camZ - 21;
           const fx = pathX(fz) + f.x;
           const groundY = hillY(fx, fz) + 1.2;
-          f.mesh.position.set(fx, groundY + (1 - u) * 13.5, fz);   // out of the canopy
+          f.mesh.position.set(fx, groundY + (1 - u) * 16.5, fz);   // out of the canopy
           // Stale from the sphere version: `f.mesh` is a Group now and Groups
           // have no material, and `f.bomb` is the bomb Group (always truthy)
           // rather than the flag. It threw every frame, which killed the whole
@@ -451,6 +475,8 @@ export function createCherryLand() {
             // telling fruit from bomb at a glance
             color.setHSL(0.99, 0.88, 0.40 + u * 0.14);
             f.mat.color.copy(color);
+            f.fruitGlow.material.color.setHSL(0.99, 0.9, 0.5);
+            f.fruitGlow.material.opacity = 0.3 + u * 0.35;
           } else {
             // the fuse burns brighter the closer it gets, so a bomb reads as a
             // decision rather than a colour
@@ -489,9 +515,13 @@ export function createCherryLand() {
         // clear air above it for the fruit to fall through, and the canopy
         // overhead. The wandering orchard camera looks UP and puts the basket
         // on the horizon, which is unplayable.
+        // Pull back and sit lower: from close and high the canopy swallowed the
+        // top third of the frame and everything under it went black. From here
+        // you see the trunk, the fall, the basket and the orchard behind — a
+        // place rather than a green ceiling over a dark field.
         const bx = pathX(camZ - 21);
-        camera.position.set(bx + basketX * 0.25, 11.5, camZ);
-        camera.lookAt(bx + basketX * 0.5, 3.4, camZ - 21);
+        camera.position.set(bx + basketX * 0.3, 8.0, camZ + 9);
+        camera.lookAt(bx + basketX * 0.55, 5.2, camZ - 21);
       } else {
         camera.position.set(pathX(camZ) + steer * 9, 4.8 + Math.sin(time * 0.4) * 0.5, camZ);
         camera.lookAt(pathX(camZ - 50), 7.5, camZ - 50);

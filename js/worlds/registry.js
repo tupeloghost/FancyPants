@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=161';
-import { createSurfer } from './surfer.js?v=161';
-import { createOrbit } from './orbit.js?v=161';
-import { createBloom } from './bloom.js?v=161';
-import { createTrail } from './trail.js?v=161';
-import { createSignal } from './signal.js?v=161';
-import { createRiver } from './river.js?v=161';
-import { createFunhouse } from './funhouse.js?v=161';
-import { createLavaLamp } from './lavalamp.js?v=161';
-import { createPlasma } from './plasma.js?v=161';
-import { createCherryLand } from './cherryland.js?v=161';
-import { createSlinky } from './slinky.js?v=161';
-import { createBlacktop } from './blacktop.js?v=161';
-import { createWaterslide } from './waterslide.js?v=161';
-import { createGarden } from './garden.js?v=161';
-import { createPaint } from './paint.js?v=161';
+import { createTunnel } from './tunnel.js?v=165';
+import { createSurfer } from './surfer.js?v=165';
+import { createOrbit } from './orbit.js?v=165';
+import { createBloom } from './bloom.js?v=165';
+import { createTrail } from './trail.js?v=165';
+import { createSignal } from './signal.js?v=165';
+import { createRiver } from './river.js?v=165';
+import { createFunhouse } from './funhouse.js?v=165';
+import { createLavaLamp } from './lavalamp.js?v=165';
+import { createPlasma } from './plasma.js?v=165';
+import { createCherryLand } from './cherryland.js?v=165';
+import { createSlinky } from './slinky.js?v=165';
+import { createBlacktop } from './blacktop.js?v=165';
+import { createWaterslide } from './waterslide.js?v=165';
+import { createGarden } from './garden.js?v=165';
+import { createPaint } from './paint.js?v=165';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },

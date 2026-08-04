@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=161';
-import { themePaint } from '../lib/themes.js?v=161';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=165';
+import { themePaint } from '../lib/themes.js?v=165';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -32,7 +32,7 @@ export function createRiver() {
   const DRIFT_RATE = 26;        // the river's own pace
   const BOOST_ADD = 30;         // what an arrow is worth, on top of it
   const AHEAD = 115;            // where things appear, in front of you
-  const EVERY = 13;             // one object every N notes — occasional, not a wall
+  const EVERY = 22;             // one object every N notes — occasional, not a wall
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
@@ -193,9 +193,28 @@ export function createRiver() {
             pad.add(arm);
           }
         }
+        // tilt the deck slightly toward the viewer: flat-on to a low camera a
+        // pad is edge-on and reads as a smudge, and this keeps the chevrons
+        // legible without standing them up into a jump
+        pad.rotation.x = -0.22;
         bloom.add(pad);
-        const halo = glowSprite(7);
-        halo.position.y = 0.4;
+
+        // A column of light over the pad. Flat things are invisible at
+        // distance on a dark river; a beam is readable from the moment it
+        // appears and still says "drive through", not "launch off".
+        const beam = new THREE.Mesh(
+          new THREE.CylinderGeometry(2.4, 3.4, 22, 14, 1, true),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.16,
+            side: THREE.DoubleSide, depthWrite: false,
+            blending: THREE.AdditiveBlending,
+          })
+        );
+        beam.position.y = 11;
+        bloom.add(beam);
+
+        const halo = glowSprite(9);
+        halo.position.y = 0.6;
         bloom.add(halo);
 
         // a rock: matte, heavy, and unmistakably not a flower
@@ -213,7 +232,7 @@ export function createRiver() {
         g.add(bloom, rockGrp);
         g.visible = false;
         group.add(g);
-        drifters.push({ mesh: g, bloom, rockGrp, petalMat, halo,
+        drifters.push({ mesh: g, bloom, rockGrp, petalMat, halo, beam,
                         alive: false, z: 0, x: 0, rock: false, spin: 0 });
       }
     },
@@ -319,7 +338,18 @@ export function createRiver() {
             color.setHSL(0.135, 1, 0.55 + Math.sin(time * 6 + d.spin) * 0.08 + audio.volume * 0.12);
             d.petalMat.color.copy(color);
             d.halo.material.color.copy(color);
-            d.halo.material.opacity = 0.45 + audio.volume * 0.3;
+            d.halo.material.opacity = (0.4 + audio.volume * 0.25) * Math.max(0.25, Math.min(1, ahead / 30));
+            if (d.beam) {
+              d.beam.material.color.copy(color);
+              // A beam is for spotting a pad from far upstream. Up close you
+              // are INSIDE a 22-unit additive column, which is a yellow wall
+              // across the whole frame — so it fades out as you arrive, having
+              // already done its job.
+              const near = Math.max(0, 1 - ahead / AHEAD);
+              const close = Math.max(0, Math.min(1, (ahead - 14) / 26));
+              d.beam.material.opacity = (0.10 + near * 0.16) * close;
+              d.beam.visible = close > 0.02;
+            }
           }
 
           // Resolve just BEFORE it reaches the lens. Resolving at zero means
