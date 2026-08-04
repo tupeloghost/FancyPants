@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=174';
-import { themePaint } from '../lib/themes.js?v=174';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=176';
+import { themePaint } from '../lib/themes.js?v=176';
 
 const DASHES = 46;
 const RAILSEGS = 120;

@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=174';
-import { WORLDS } from './worlds/registry.js?v=174';
-import { Net, PALETTE } from './net.js?v=174';
-import { Presence } from './lib/presence.js?v=174';
-import { Pulses } from './lib/pulse.js?v=174';
-import { BeatClock } from './lib/beatclock.js?v=174';
-import { BeatCue } from './lib/beatcue.js?v=174';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=174';
-import { Race, placeOf, standings } from './lib/race.js?v=174';
-import { RouteMap } from './lib/map.js?v=174';
-import { glowTexture } from './lib/glow.js?v=174';
+import { AudioEngine } from './audio-engine.js?v=176';
+import { WORLDS } from './worlds/registry.js?v=176';
+import { Net, PALETTE } from './net.js?v=176';
+import { Presence } from './lib/presence.js?v=176';
+import { Pulses } from './lib/pulse.js?v=176';
+import { BeatClock } from './lib/beatclock.js?v=176';
+import { BeatCue } from './lib/beatcue.js?v=176';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=176';
+import { Race, placeOf, standings } from './lib/race.js?v=176';
+import { RouteMap } from './lib/map.js?v=176';
+import { glowTexture } from './lib/glow.js?v=176';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -492,12 +492,24 @@ function showResults(reason) {
   $('results-place').textContent = solo
     ? (collecting ? race.feet.toLocaleString() : (race.finished ? 'THE BOTTOM' : 'TIME'))
     : (ORDINAL[place] || place + 'TH');
-  $('results-sub').textContent = solo
-    ? (collecting ? 'cherries shaken loose'
-                  : (race.finished ? 'you reached the foot of the stairs'
-                                   : Math.round(race.fraction * 100) + '% of the way down'))
-    : (collecting ? 'biggest haul wins'
-                  : (race.finished ? 'reached the bottom' : 'when the music stopped'));
+  // The sub-line reads every single round, so it gets a pool too — and it is
+  // the one place worth a joke at the player's expense, because by then the
+  // result is already in and nobody can be misled by it.
+  const pct = Math.round(race.fraction * 100);
+  const subs = solo
+    ? (collecting
+        ? ['cherries shaken loose', 'not a bad haul', 'the tree is fine, thanks for asking']
+        : race.finished
+          ? ['you made it to the bottom', 'the stairs are over. you won.', 'gravity: assisted']
+          : pct > 80 ? ['so close you could smell it', pct + '% down, and then the music stopped']
+          : pct > 40 ? [pct + '% of the way down', 'a respectable amount of stairs']
+                     : [pct + '% of the way down', 'the stairs won this one', 'we all start somewhere'])
+    : (collecting
+        ? ['biggest haul wins', 'counted, weighed, and judged']
+        : race.finished
+          ? ['first to the bottom', 'you got there first']
+          : ['when the music stopped', 'the song ran out before the stairs did']);
+  $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
 
   const rows = board.slice(0, 8).map(e => {
     const p = e.p;
@@ -1132,11 +1144,36 @@ function drawTempo(gridBeat, rawOnset) {
 
 // ── Overtakes ── the one moment in a race worth announcing by name. A silent
 // position swap is just scenery moving; "PASSED BEX" is why you were pushing.
+// Deadpan, and a POOL of them — the joke is not the line, it is that the road
+// keeps commenting on your driving and never quite repeats itself. One fixed
+// phrase stops being funny on its second appearance, which in a race is about
+// nine seconds in.
+const PASS_THEM = [
+  'BYE, %', 'SEE YOU, %', '% WHO?', 'SORRY, %', 'NOT TODAY, %',
+  'LATER, %', '% IN THE MIRROR', 'NOTHING PERSONAL, %', 'KEEP UP, %',
+  'WAVE GOODBYE, %', 'NICE TRY, %', 'SIT DOWN, %', 'IN A HURRY, %?',
+];
+const PASS_YOU = [
+  '% SAYS HI', 'RUDE, %', '% HAS SOMEWHERE TO BE', 'THAT WAS %',
+  "% DIDN'T EVEN WAVE", 'OUCH. %.', '% IS SHOWING OFF', 'WOW, %',
+  'REALLY, %?', '% IS DOING NUMBERS', 'COOL CAR, %',
+];
+// avoid saying the same thing twice in a row, which is when a pool stops
+// feeling like a pool
+let lastPass = '';
+function pickPass(pool, who) {
+  for (let i = 0; i < 6; i++) {
+    const line = pool[Math.floor(Math.random() * pool.length)];
+    if (line !== lastPass) { lastPass = line; return line.replace('%', who); }
+  }
+  return pool[0].replace('%', who);
+}
+
 let passT = 0;
 function flashPass(p, youWent) {
   const el = $('pass-flash');
   const who = (p.name || 'them').toUpperCase();
-  el.textContent = youWent ? 'PASSED ' + who : who + ' WENT BY';
+  el.textContent = pickPass(youWent ? PASS_THEM : PASS_YOU, who);
   el.classList.toggle('bad', !youWent);
   el.classList.remove('show');
   void el.offsetWidth;
@@ -1775,7 +1812,8 @@ function showSetResults() {
   const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (!rows.length) { endSet(); return; }
   $('results-place').textContent = rows[0][0] === (net.local.name || 'you') ? 'YOU WIN' : 'FULL TIME';
-  $('results-sub').textContent = 'the set is over';
+  const overs = ['the set is over', "that's the lot", 'no more songs, no more stairs'];
+  $('results-sub').textContent = overs[Math.floor(Math.random() * overs.length)];
   $('results-board').innerHTML = rows.map(([name, pts]) =>
     `<div class="rrow${name === net.local.name ? ' me' : ''}">`
     + `<i style="background:hsl(var(--accent-h),80%,70%)"></i>`
