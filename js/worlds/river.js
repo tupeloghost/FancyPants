@@ -32,7 +32,7 @@ export function createRiver() {
   const DRIFT_RATE = 26;        // the river's own pace
   const BOOST_ADD = 30;         // what an arrow is worth, on top of it
   const AHEAD = 115;            // where things appear, in front of you
-  const EVERY = 22;             // one object every N notes — occasional, not a wall
+  const EVERY = 34;             // one object every N notes — occasional, not a wall
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
@@ -300,9 +300,14 @@ export function createRiver() {
         // place each arrival exactly where the current will carry it to the
         // player on its own beat — constant speed makes that simple arithmetic
         if (chart) {
+          // Entering part-way through a track fast-forwards the read head over
+          // every note already played, and each eligible one still spawned —
+          // arriving as a batch stacked in the same spot. One per frame.
+          let spawnedThisFrame = 0;
           while (riverChartAt < chart.length && chart[riverChartAt].t - 3.2 <= songTime) {
             const n = chart[riverChartAt++];
             if (n.t < songTime) continue;
+            if (spawnedThisFrame >= 1) continue;
             const d = drifters.find(x => !x.alive);
             if (!d) continue;
             d.alive = true;
@@ -318,6 +323,7 @@ export function createRiver() {
             d.mesh.visible = true;
             d.bloom.visible = !d.rock;
             d.rockGrp.visible = d.rock;
+            spawnedThisFrame++;
           }
         }
 
