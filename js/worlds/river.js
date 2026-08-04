@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=165';
-import { themePaint } from '../lib/themes.js?v=165';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=167';
+import { themePaint } from '../lib/themes.js?v=167';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -32,12 +32,17 @@ export function createRiver() {
   const DRIFT_RATE = 26;        // the river's own pace
   const BOOST_ADD = 30;         // what an arrow is worth, on top of it
   const AHEAD = 115;            // where things appear, in front of you
-  const EVERY = 34;             // one object every N notes — occasional, not a wall
+  // Spacing is in SECONDS of river, not notes. The note-count gate was lost in
+  // a rewrite and never actually ran, so every note in the chart spawned — the
+  // density complaint was real and the constant was decorative.
+  const SPACING = 3.4;          // min seconds between arrivals
+  const PAD_EVERY = 2;          // every Nth arrival is a boost; the rest are rocks
   const LANE = 9;               // how far either side of the channel things sit
   const HIT_W = 3.4;            // how close counts as touching it
   const MAX_DRIFTERS = 34;
   let drifters = [];
   let riverChartAt = 0;
+  let lastSpawnT = -99, arrivals = 0;
   let gatherFlash = 0, rockFlash = 0;
   let boost = 0;                // 0..1, decays; an arrow tops it back up
 
@@ -199,19 +204,21 @@ export function createRiver() {
         pad.rotation.x = -0.22;
         bloom.add(pad);
 
-        // A column of light over the pad. Flat things are invisible at
-        // distance on a dark river; a beam is readable from the moment it
-        // appears and still says "drive through", not "launch off".
-        const beam = new THREE.Mesh(
-          new THREE.CylinderGeometry(2.4, 3.4, 22, 14, 1, true),
-          new THREE.MeshBasicMaterial({
-            toneMapped: false, transparent: true, opacity: 0.16,
-            side: THREE.DoubleSide, depthWrite: false,
-            blending: THREE.AdditiveBlending,
-          })
-        );
-        beam.position.y = 11;
-        bloom.add(beam);
+        // A small chevron floating over the pad, bobbing. The light columns
+        // read as odd architecture — smokestacks on a river — and at three at
+        // once they WERE the picture. A marker is a waypoint: it says "here",
+        // stays small, and lets the river stay the subject.
+        const marker = new THREE.Group();
+        for (const sgn of [-1, 1]) {
+          const arm = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.32, 0.32), petalMat);
+          arm.position.x = sgn * 0.55;
+          arm.rotation.z = -sgn * 0.7;          // a ^ pointing up
+          marker.add(arm);
+        }
+        const markGlow = glowSprite(3.2);
+        marker.add(markGlow);
+        marker.position.y = 3.2;
+        bloom.add(marker);
 
         const halo = glowSprite(9);
         halo.position.y = 0.6;
@@ -232,7 +239,7 @@ export function createRiver() {
         g.add(bloom, rockGrp);
         g.visible = false;
         group.add(g);
-        drifters.push({ mesh: g, bloom, rockGrp, petalMat, halo, beam,
+        drifters.push({ mesh: g, bloom, rockGrp, petalMat, halo, marker,
                         alive: false, z: 0, x: 0, rock: false, spin: 0 });
       }
     },
@@ -303,27 +310,24 @@ export function createRiver() {
           // Entering part-way through a track fast-forwards the read head over
           // every note already played, and each eligible one still spawned —
           // arriving as a batch stacked in the same spot. One per frame.
-          let spawnedThisFrame = 0;
-          while (riverChartAt < chart.length && chart[riverChartAt].t - 3.2 <= songTime) {
+          while (riverChartAt < chart.length && chart[riverChartAt].t <= songTime + 0.05) {
             const n = chart[riverChartAt++];
-            if (n.t < songTime) continue;
-            if (spawnedThisFrame >= 1) continue;
+            // one arrival every few seconds, on whichever note lands next —
+            // the music still decides the exact moment, the spacing decides
+            // how often that happens
+            if (n.t - lastSpawnT < SPACING) continue;
             const d = drifters.find(x => !x.alive);
             if (!d) continue;
+            lastSpawnT = n.t;
+            arrivals++;
             d.alive = true;
-            d.z = -(drift + DRIFT_RATE * (n.t - songTime));
-            // rocks on the off-beats, blossom on the accents: the music decides
-            // which side of the channel is safe
-            // 42% rocks at three apiece meant twelve gathered blossoms and a
-            // handful of rocks netted nothing — deliberate play has to pay
-            // clearly better than careless play or there is no reason to steer.
-            d.rock = !n.accent && ((riverChartAt * 7717) % 100) < 26;
+            d.z = -(drift + AHEAD);
+            d.rock = (arrivals % PAD_EVERY) !== 0;   // alternate: rock, pad, rock, pad
             d.x = (((riverChartAt * 48271) % 200) / 100 - 1) * LANE;
             d.spin = ((riverChartAt * 53) % 100) / 100 * 6.28;
             d.mesh.visible = true;
             d.bloom.visible = !d.rock;
             d.rockGrp.visible = d.rock;
-            spawnedThisFrame++;
           }
         }
 
@@ -345,16 +349,11 @@ export function createRiver() {
             d.petalMat.color.copy(color);
             d.halo.material.color.copy(color);
             d.halo.material.opacity = (0.4 + audio.volume * 0.25) * Math.max(0.25, Math.min(1, ahead / 30));
-            if (d.beam) {
-              d.beam.material.color.copy(color);
-              // A beam is for spotting a pad from far upstream. Up close you
-              // are INSIDE a 22-unit additive column, which is a yellow wall
-              // across the whole frame — so it fades out as you arrive, having
-              // already done its job.
-              const near = Math.max(0, 1 - ahead / AHEAD);
-              const close = Math.max(0, Math.min(1, (ahead - 14) / 26));
-              d.beam.material.opacity = (0.10 + near * 0.16) * close;
-              d.beam.visible = close > 0.02;
+            if (d.marker) {
+              // bob gently, sink onto the pad as it arrives
+              const settle = Math.max(0, Math.min(1, ahead / 40));
+              d.marker.position.y = 1.2 + settle * (2.0 + Math.sin(time * 2.4 + d.spin) * 0.5);
+              d.marker.visible = ahead > 8;      // gone by the time you take it
             }
           }
 

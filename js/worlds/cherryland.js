@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=165';
-import { themePaint } from '../lib/themes.js?v=165';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=167';
+import { themePaint } from '../lib/themes.js?v=167';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -432,9 +432,15 @@ export function createCherryLand() {
         basketPool.material.opacity = 0.18 + catchFlash * 0.3 + audio.volume * 0.06;
 
         // the tree the fruit falls out of, standing right over the basket
-        catchTree.position.set(pathX(bz) + basketX * 0.12, hillY(pathX(bz), bz), bz - 3);
-        themePaint(colorMode, hue / 360, 0.6, time * 0.05, time, audio.mid, 0.4, tp);
-        color.setHSL(tp[0], Math.min(0.85, tp[1] + 0.15), 0.24 + audio.volume * 0.1);
+        // The trunk stands well BEHIND the basket's travel line, and does not
+        // slide with the basket. Three units back, it sat in the sweep and the
+        // basket passed straight through it — the canopy still reads as
+        // overhead from the camera's angle, but the wood is out of the lane.
+        catchTree.position.set(pathX(bz), hillY(pathX(bz), bz), bz - 11);
+        // A leaf canopy is green, like every other tree in this orchard.
+        // Theme-painting it turned it blue under a cool palette, which made
+        // the one tree you play under the one tree that looks wrong.
+        color.setHSL(0.29, 0.55, 0.20 + audio.volume * 0.08);
         catchCanopy.material.color.copy(color);
         catchCanopy.scale.set(1.25 + audio.bass * 0.05, 0.55 + audio.bass * 0.03, 1.0);
 
