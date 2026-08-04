@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=176';
-import { themePaint } from '../lib/themes.js?v=176';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=177';
+import { themePaint } from '../lib/themes.js?v=177';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -202,8 +202,62 @@ export function createBlacktop() {
         );
         dome.position.y = 0.28;
         const gl = glowSprite(6);
+
+        // ── a beam, and somebody dancing in it ──
+        // The big UFO's beam takes things away. These ones are just... out.
+        // A saucer that pulls alongside with a lit dancefloor slung underneath
+        // is the difference between set dressing and a joke you can see.
+        const beam = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.55, 2.3, 6.2, 16, 1, true),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.16,
+            side: THREE.DoubleSide, depthWrite: false,
+            blending: THREE.AdditiveBlending,
+          })
+        );
+        beam.position.y = -3.2;
+        sc.add(beam);
+
+        // a floor of light where the beam lands, so it reads as a stage
+        const disc = new THREE.Mesh(
+          new THREE.CircleGeometry(2.2, 20),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.2,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        disc.rotation.x = -Math.PI / 2;
+        disc.position.y = -6.3;
+        sc.add(disc);
+
+        // the dancer: big head, little body, long arms — the silhouette does
+        // all the work at this distance
+        const al = new THREE.Group();
+        const alMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10), alMat);
+        head.scale.set(1, 1.15, 0.9);
+        head.position.y = 0.62;
+        const torso = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), alMat);
+        torso.scale.set(1, 1.5, 0.8);
+        torso.position.y = 0.18;
+        const armL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.09, 0.09), alMat);
+        const armR = armL.clone();
+        armL.position.set(-0.26, 0.3, 0); armR.position.set(0.26, 0.3, 0);
+        const legL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.42, 0.09), alMat);
+        const legR = legL.clone();
+        legL.position.set(-0.1, -0.24, 0); legR.position.set(0.1, -0.24, 0);
+        const alGlow = glowSprite(2.6);
+        alGlow.position.y = 0.3;
+        al.add(head, torso, armL, armR, legL, legR, alGlow);
+        al.position.y = -5.4;
+        sc.add(al);
+
         sc.add(body, dome, gl);
-        sc.userData = { body, dome, gl, phase: i * 2.1 };
+        sc.userData = {
+          body, dome, gl, beam, disc, phase: i * 2.1,
+          al, alMat, alGlow, armL, armR, legL, legR,
+          move: i % 3,          // each one dances differently
+        };
         escort.add(sc);
       }
       escort.visible = false;
@@ -609,6 +663,41 @@ export function createBlacktop() {
             d.dome.material.color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.75);
             d.gl.material.color.copy(color);
             d.gl.material.opacity = (0.25 + audio.volume * 0.3) * inOut;
+
+            // ── the beam, and the dancing ──
+            // They dance to the same track everyone is playing to, so the
+            // saucers land on the beat with the room rather than idling
+            // through their own animation.
+            d.beam.material.color.copy(color);
+            d.beam.material.opacity = (0.10 + audio.volume * 0.16) * inOut;
+            d.disc.material.color.copy(color);
+            d.disc.material.opacity = (0.14 + audio.bass * 0.3) * inOut;
+
+            // classic little green man, regardless of palette — the joke does
+            // not survive a purple alien
+            d.alMat.color.setHSL(0.28, 0.85, 0.5 + audio.bass * 0.22);
+            d.alGlow.material.color.setHSL(0.28, 0.9, 0.6);
+            d.alGlow.material.opacity = (0.3 + audio.bass * 0.35) * inOut;
+
+            const beat = time * 5.2 + d.phase;
+            const bounce = Math.abs(Math.sin(beat)) * (0.35 + audio.bass * 0.5);
+            d.al.position.y = -5.4 + bounce;
+            d.al.rotation.y = beat * 0.5;
+            d.al.rotation.z = Math.sin(beat * 0.5) * 0.16;   // a little sway
+
+            // three routines so a formation is not one animation in triplicate
+            if (d.move === 0) {                       // raise the roof
+              d.armL.rotation.z = 1.1 + Math.sin(beat) * 0.7;
+              d.armR.rotation.z = -1.1 - Math.sin(beat) * 0.7;
+            } else if (d.move === 1) {                // the sprinkler
+              d.armL.rotation.z = 0.3 + Math.sin(beat * 0.5) * 1.3;
+              d.armR.rotation.z = 0.2;
+            } else {                                  // disco point
+              d.armL.rotation.z = -0.4 + Math.sin(beat) * 0.25;
+              d.armR.rotation.z = -1.4 + Math.sin(beat + 1.6) * 0.9;
+            }
+            d.legL.rotation.x = Math.sin(beat) * 0.5;
+            d.legR.rotation.x = -Math.sin(beat) * 0.5;
           });
         }
       }

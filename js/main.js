@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=176';
-import { WORLDS } from './worlds/registry.js?v=176';
-import { Net, PALETTE } from './net.js?v=176';
-import { Presence } from './lib/presence.js?v=176';
-import { Pulses } from './lib/pulse.js?v=176';
-import { BeatClock } from './lib/beatclock.js?v=176';
-import { BeatCue } from './lib/beatcue.js?v=176';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=176';
-import { Race, placeOf, standings } from './lib/race.js?v=176';
-import { RouteMap } from './lib/map.js?v=176';
-import { glowTexture } from './lib/glow.js?v=176';
+import { AudioEngine } from './audio-engine.js?v=177';
+import { WORLDS } from './worlds/registry.js?v=177';
+import { Net, PALETTE } from './net.js?v=177';
+import { Presence } from './lib/presence.js?v=177';
+import { Pulses } from './lib/pulse.js?v=177';
+import { BeatClock } from './lib/beatclock.js?v=177';
+import { BeatCue } from './lib/beatcue.js?v=177';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=177';
+import { Race, placeOf, standings } from './lib/race.js?v=177';
+import { RouteMap } from './lib/map.js?v=177';
+import { glowTexture } from './lib/glow.js?v=177';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
