@@ -248,6 +248,53 @@
   body.play #qb-world, body.play #qsep-1 { display: none; }
   body.play #page-music, body.play #page-worlds { opacity: 0.32; pointer-events: none; }
 
+  /* ── Game HUD ── the score you can read from the sofa. A game with no
+     visible tally is a screensaver you happen to be touching. ── */
+  #game-hud {
+    position: fixed; z-index: 96; left: 26px; bottom: 24px;
+    display: none; pointer-events: none;
+    color: hsl(var(--accent-h), 55%, 94%);
+  }
+  body.playing-round #game-hud { display: block; }
+  body.clean #game-hud { display: block; }   /* the score is play, not chrome */
+  #hud-value {
+    font: 400 clamp(38px, 6vw, 56px)/1 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 2px; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35);
+    transition: transform 140ms ease, color 140ms ease, text-shadow 140ms ease;
+  }
+  #hud-unit {
+    margin-top: 2px;
+    font: 9px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim);
+  }
+  #hud-sub {
+    margin-top: 7px;
+    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 1px; color: var(--ink-faint);
+    transition: color 200ms ease;
+  }
+  #game-hud.gain #hud-value {
+    transform: scale(1.09);
+    color: hsl(var(--accent-h), 90%, 88%);
+    text-shadow: 0 0 30px hsla(var(--accent-h), 95%, 75%, 0.7);
+  }
+  #game-hud.loss #hud-value {
+    transform: scale(0.94);
+    color: hsl(4, 85%, 68%);
+    text-shadow: 0 0 26px hsla(4, 90%, 60%, 0.55);
+  }
+  #game-hud.loss #hud-sub { color: hsl(4, 70%, 62%); }
+  @media (max-width: 620px) { #game-hud { left: 16px; bottom: 130px; } }
+
+  /* a red breath at the edges when something costs you */
+  #hurt-vignette {
+    position: fixed; inset: 0; z-index: 93; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 58%, hsla(4, 90%, 45%, 0.34) 100%);
+    opacity: 0; transition: opacity 160ms ease;
+  }
+  #hurt-vignette.on { opacity: 1; }
+
   /* ── Game jump card ── which game you just landed in, briefly ── */
   #jump-flash {
     position: fixed; z-index: 160; left: 50%; top: 15%;
@@ -1098,6 +1145,13 @@
   </div>
 </div>
 
+<div id="hurt-vignette"></div>
+<div id="game-hud">
+  <div id="hud-value">0</div>
+  <div id="hud-unit">FT</div>
+  <div id="hud-sub"></div>
+</div>
+
 <div id="jump-flash"></div>
 
 <div id="results">
@@ -1246,7 +1300,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 167</div>
+      <div id="build-stamp">build 169</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1260,6 +1314,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=167"></script>
+<script type="module" src="js/main.js?v=169"></script>
 </body>
 </html>

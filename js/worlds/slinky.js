@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=167';
-import { themePaint } from '../lib/themes.js?v=167';
-import { PALETTE } from '../net.js?v=167';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=169';
+import { themePaint } from '../lib/themes.js?v=169';
+import { PALETTE } from '../net.js?v=169';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -186,6 +186,12 @@ export function createSlinky() {
     },
 
     setInput(x) { pointer.x = x; pointer.active = true; },
+
+    // where the timing rings should close: on the spring itself
+    cueAnchor(out) {
+      pathAt(walk - RINGS * 0.02, out);
+      out.y += RING_R + 1.5;
+    },
 
     // fellow slinkies-in-spirit: motes hopping down neighboring stair lines
     placeGhost(p, i, out) {

@@ -3,8 +3,8 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js?v=167';
-import { themePaint } from '../lib/themes.js?v=167';
+import { glowPoints, skyDome } from '../lib/glow.js?v=169';
+import { themePaint } from '../lib/themes.js?v=169';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -100,6 +100,12 @@ export function createWaterslide() {
     },
 
     setInput(x) { steerTarget = x; },
+
+    // rings close on the flume ahead — where a rider is already looking
+    cueAnchor(out) {
+      const t = travel + 30;
+      out.set(curveX(t), dropY(t) + 2.2, -t);
+    },
 
     // ghost riders ahead in the same flume
     placeGhost(p, i, out) {

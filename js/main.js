@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=167';
-import { WORLDS } from './worlds/registry.js?v=167';
-import { Net, PALETTE } from './net.js?v=167';
-import { Presence } from './lib/presence.js?v=167';
-import { Pulses } from './lib/pulse.js?v=167';
-import { BeatClock } from './lib/beatclock.js?v=167';
-import { BeatCue } from './lib/beatcue.js?v=167';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=167';
-import { Race, placeOf, standings } from './lib/race.js?v=167';
-import { RouteMap } from './lib/map.js?v=167';
-import { glowTexture } from './lib/glow.js?v=167';
+import { AudioEngine } from './audio-engine.js?v=169';
+import { WORLDS } from './worlds/registry.js?v=169';
+import { Net, PALETTE } from './net.js?v=169';
+import { Presence } from './lib/presence.js?v=169';
+import { Pulses } from './lib/pulse.js?v=169';
+import { BeatClock } from './lib/beatclock.js?v=169';
+import { BeatCue } from './lib/beatcue.js?v=169';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=169';
+import { Race, placeOf, standings } from './lib/race.js?v=169';
+import { RouteMap } from './lib/map.js?v=169';
+import { glowTexture } from './lib/glow.js?v=169';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -90,6 +90,7 @@ const pulses = new Pulses();
 pulses.init(scene);
 const beatClock = new BeatClock(audio.analyser);
 const beatCue = new BeatCue(document.getElementById('beatcue'));
+const anchorV = new THREE.Vector3();
 const race = new Race();
 let seenMissed = 0;   // cue miss counter we have already fed to the race
 net.onJoin = () => audio.joinChime();
@@ -1085,6 +1086,38 @@ function drawTempo(gridBeat, rawOnset) {
   $('tempo-conf').firstElementChild.style.width = Math.round(beatClock.confidence * 100) + '%';
 }
 
+// ── The HUD ── one big number, whatever the mode. Gains pulse it bright,
+// losses pulse it red and breathe the vignette — the game answers every event
+// where your eyes already are, instead of in a corner readout.
+let hudLast = null, hudTimer = 0, hurtTimer = 0;
+function updateHUD() {
+  const on = race.active;
+  document.body.classList.toggle('playing-round', on);
+  if (!on) { hudLast = null; return; }
+  const v = race.feet;
+  if (hudLast !== null && v !== hudLast) {
+    const el = $('game-hud');
+    el.classList.remove('gain', 'loss');
+    void el.offsetWidth;                       // restart the transition
+    el.classList.add(v > hudLast ? 'gain' : 'loss');
+    clearTimeout(hudTimer);
+    hudTimer = setTimeout(() => el.classList.remove('gain', 'loss'), 320);
+    if (v < hudLast) {
+      $('hurt-vignette').classList.add('on');
+      clearTimeout(hurtTimer);
+      hurtTimer = setTimeout(() => $('hurt-vignette').classList.remove('on'), 300);
+    }
+  }
+  hudLast = v;
+  $('hud-value').textContent = v.toLocaleString();
+  $('hud-unit').textContent = race.unit || 'FT';
+  const bits = [];
+  if (race.streak >= 3) bits.push(race.streak + ' streak');
+  if (race.multiplier > 1) bits.push('\u00d7' + race.multiplier.toFixed(2).replace(/0$/, ''));
+  if (race.mode === 'RACE') bits.push(race.feetLeft.toLocaleString() + ' to go');
+  $('hud-sub').textContent = bits.join('  \u00b7  ');
+}
+
 // ── Steering by keyboard ──
 // Worlds that are steered rather than pressed need a keyboard axis on desktop;
 // a mouse is not always the natural hand for a dodge.
@@ -1884,6 +1917,8 @@ function frame(now) {
     }
   }
 
+  updateHUD();
+
   if (document.body.classList.contains('round')) {
     // The one instruction, retired as soon as the player is clearly landing
     // notes — or after twelve seconds, whichever comes first. Three good
@@ -1900,7 +1935,20 @@ function frame(now) {
     // progress rides on z, which is already on the wire and already
     // interpolated — the field on screen is everyone's real position
     net.local.z = race.progress;
-    if (onOrb) beatCue.draw(beatClock, audio.currentTime, settings.hue, race.active ? {
+    // If the world names its subject, the rings close on IT — so keeping time
+    // and watching the world are the same act, not competing ones.
+    let anchor = null;
+    if (world && world.cueAnchor) {
+      world.cueAnchor(anchorV);
+      anchorV.project(camera);
+      if (anchorV.z < 1) {
+        anchor = {
+          x: Math.max(0.22, Math.min(0.78, anchorV.x * 0.5 + 0.5)) * window.innerWidth,
+          y: Math.max(0.2, Math.min(0.72, -anchorV.y * 0.5 + 0.5)) * window.innerHeight,
+        };
+      }
+    }
+    if (onOrb) beatCue.draw(beatClock, audio.currentTime, settings.hue, anchor, race.active ? {
       fraction: race.fractionShown,
       feet: race.feet,
       feetLeft: race.feetLeft,

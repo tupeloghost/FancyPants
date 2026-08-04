@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=167';
-import { themePaint } from '../lib/themes.js?v=167';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=169';
+import { themePaint } from '../lib/themes.js?v=169';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -33,6 +33,19 @@ export function createBlacktop() {
   const bz = new Float32Array(BUILDINGS), bx = new Float32Array(BUILDINGS);
   const bh = new Float32Array(BUILDINGS), bband = new Uint8Array(BUILDINGS);
   let speedLines = [];
+
+  // ── GATES: blacktop stops being a press-in-time game ──
+  // You drive. Green gates across the road are worth threading, dark barriers
+  // are worth missing, and a gate IS your nitro — so the thing that felt good
+  // in this world all along (flooring it) is now the reward loop itself.
+  const G_AHEAD = 260;         // where gates appear down the road
+  const G_SPACING = 3.0;       // min seconds between arrivals
+  const G_REACH = 8;           // how far steer moves you; gates sit within it
+  const G_HIT = 4.2;           // how close counts as through it
+  const MAX_GATES = 20;
+  let gates = [];
+  let gChartAt = 0, gLastT = -99, gArrivals = 0;
+  let gBoost = 0;
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
   let cow = null, beam = null, abduct = { z: 0, x: 0, on: false, target: -2, p2: 0 };
   // abduct.target: -2 = the cow, -1 = YOU, >=0 = that ghost gets taken
@@ -204,6 +217,48 @@ export function createBlacktop() {
 
     setInput(x) { steerTarget = x; },
 
+    _buildGates() {
+      if (gates.length) return;
+      gChartAt = 0; gLastT = -99; gArrivals = 0;
+      for (let i = 0; i < MAX_GATES; i++) {
+        const g = new THREE.Group();
+
+        // a gate: two posts and a lintel, glowing green, chevrons on the deck
+        const gate = new THREE.Group();
+        const gMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+        for (const sx of [-3.4, 3.4]) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.45, 7, 0.45), gMat);
+          post.position.set(sx, 3.5, 0);
+          gate.add(post);
+        }
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.45, 0.45), gMat);
+        lintel.position.y = 7;
+        gate.add(lintel);
+        const glow = glowSprite(9);
+        glow.position.y = 3.4;
+        gate.add(glow);
+
+        // a barrier: a wide dark block with a dim warning stripe
+        const barrier = new THREE.Group();
+        const block = new THREE.Mesh(
+          new THREE.BoxGeometry(7.5, 2.6, 1.6),
+          new THREE.MeshBasicMaterial({ color: 0x121216, toneMapped: false })
+        );
+        block.position.y = 1.3;
+        const stripe = new THREE.Mesh(
+          new THREE.BoxGeometry(7.5, 0.3, 0.2),
+          new THREE.MeshBasicMaterial({ color: 0x5a1616, toneMapped: false })
+        );
+        stripe.position.set(0, 2.1, 0.85);
+        barrier.add(block, stripe);
+
+        g.add(gate, barrier);
+        g.visible = false;
+        group.add(g);
+        gates.push({ mesh: g, gate, barrier, gMat, glow, alive: false, z: 0, x: 0, isBar: false });
+      }
+    },
+
     // rivals: glowing cars in the lanes ahead, taillights to you
     placeGhost(p, i, out) {
       // the beam takes whoever it takes — everyone watches them rise and spin
@@ -218,14 +273,24 @@ export function createBlacktop() {
     onTap() { nitro = 1; }, // NITRO (hold the mouse to keep it floored)
 
     update(dt, audio, participants, opts) {
-      const { reactivity, hue, attract, time, colorMode = 'rainbow', race = null } = opts;
-      const racing = !!(race && race.active);
+      const { reactivity, hue, attract, time, colorMode = 'rainbow',
+              race = null, chart = null, songTime = 0 } = opts;
+      const racing = !!(race && race.active && race.mode === 'RACE');
+      const gating = !!(race && race.active && race.mode === 'DODGE');
+      if (gating) this._buildGates();
 
       // Racing, the road is driven by your playing rather than by the mix, and
       // momentum IS the nitro — a streak literally floors it. Everything below
       // still reads as driving because only the speed source changed.
       let speed;
-      if (racing) {
+      if (gating) {
+        // a gate is the nitro: thread one and the car surges, clip a barrier
+        // and the surge dies. The mix no longer drives the car — you do.
+        gBoost = Math.max(0, gBoost - dt * 0.4);
+        nitro = gBoost;
+        speed = 34 + gBoost * 80;
+        travel += speed * dt;
+      } else if (racing) {
         nitro = race.momentum;
         speed = race.speed * ROAD_PER_STEP;
         travel = race.progress * ROAD_PER_STEP;
@@ -243,6 +308,60 @@ export function createBlacktop() {
       if (participants && participants[0]) {
         participants[0].x = steer;
         participants[0].y = 0;
+      }
+
+      // ── the gates ──
+      if (gating) {
+        const playerX = roadX(camZ) + steer * G_REACH;
+        if (chart) {
+          while (gChartAt < chart.length && chart[gChartAt].t <= songTime + 0.05) {
+            const n = chart[gChartAt++];
+            if (n.t - gLastT < G_SPACING) continue;
+            const g = gates.find(x => !x.alive);
+            if (!g) continue;
+            gLastT = n.t; gArrivals++;
+            g.alive = true;
+            g.z = camZ - G_AHEAD;
+            g.isBar = (gArrivals % 2) !== 0;      // alternate gate / barrier
+            g.x = (((gChartAt * 48271) % 200) / 100 - 1) * (G_REACH * 0.8);
+            g.mesh.visible = true;
+            g.gate.visible = !g.isBar;
+            g.barrier.visible = g.isBar;
+          }
+        }
+        for (const g of gates) {
+          if (!g.alive) continue;
+          const gx = roadX(g.z) + g.x;
+          g.mesh.position.set(gx, 0, g.z);
+          g.mesh.rotation.y = roadYaw(g.z);
+          if (!g.isBar) {
+            // fixed signal green, not the theme hue — "drive through this"
+            // has to survive every palette
+            color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + g.z) * 0.08 + audio.volume * 0.1);
+            g.gMat.color.copy(color);
+            g.glow.material.color.copy(color);
+            g.glow.material.opacity = 0.35 + audio.volume * 0.2;
+          }
+          // ahead starts at -G_AHEAD and RISES toward zero as the car closes.
+          // The first version of this test was inverted, which resolved every
+          // gate on the frame it spawned — an empty road and a score of zero.
+          const ahead = g.z - camZ;
+          if (ahead < -4) continue;               // still up the road
+          const through = Math.abs(gx - playerX) < G_HIT;
+          if (through && !g.isBar) {
+            race.collect(1);
+            gBoost = Math.min(1, gBoost + 0.9);   // floor it
+            if (opts.impact) opts.impact(0.55);
+          } else if (through && g.isBar) {
+            race.drop(2);
+            gBoost = 0;
+            if (opts.impact) opts.impact(1.0);
+          } else if (!g.isBar) {
+            race.drop(0);                         // a missed gate breaks the streak
+          }
+          g.alive = false;
+          g.mesh.visible = false;
+        }
       }
 
       // low racing camera hugging the asphalt

@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=167';
-import { themePaint } from '../lib/themes.js?v=167';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=169';
+import { themePaint } from '../lib/themes.js?v=169';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -426,10 +426,17 @@ export function createCherryLand() {
         // camZ is authoritative now that the catch shot is derived from it too
         const bz = camZ - 21;
         basket.position.set(pathX(bz) + basketX, hillY(pathX(bz) + basketX, bz) + 1.2, bz);
-        color.setHSL((hue / 360 + 0.02) % 1, 0.7, 0.5 + catchFlash * 0.4);
+        // The basket answers what just happened to it: bright on a catch, an
+        // angry red on a bomb. Before this, catching a bomb changed a number
+        // somewhere and nothing else — an event you could entirely miss.
+        if (bombFlash > 0.03) {
+          color.setHSL(0.01, 0.95, 0.35 + bombFlash * 0.35);
+        } else {
+          color.setHSL((hue / 360 + 0.02) % 1, 0.7, 0.5 + catchFlash * 0.4);
+        }
         basketLip.material.color.copy(color);
         basketPool.material.color.copy(color);
-        basketPool.material.opacity = 0.18 + catchFlash * 0.3 + audio.volume * 0.06;
+        basketPool.material.opacity = 0.18 + catchFlash * 0.3 + bombFlash * 0.4 + audio.volume * 0.06;
 
         // the tree the fruit falls out of, standing right over the basket
         // The trunk stands well BEHIND the basket's travel line, and does not
@@ -498,7 +505,7 @@ export function createCherryLand() {
             const caught = Math.abs(f.x - basketX) < CATCH_W;
             if (caught && f.isBomb) {
               race.drop(4); bombFlash = 1;
-              if (opts.impact) opts.impact(0.8);
+              if (opts.impact) opts.impact(1.0);
             } else if (caught) {
               race.collect(1); catchFlash = 1;
               if (opts.impact) opts.impact(0.28);

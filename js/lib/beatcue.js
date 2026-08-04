@@ -223,16 +223,7 @@ export class BeatCue {
     const { ctx } = this;
     const x0 = 34, y = H - 46, wide = Math.min(360, W * 0.28);
 
-    ctx.textAlign = 'left';
-    ctx.font = "600 21px 'Didot', 'Bodoni 72', Georgia, serif";
-    ctx.fillStyle = `hsla(${hue}, 55%, 92%, 0.85)`;
-    ctx.fillText(field.feet.toLocaleString() + ' ' + (field.unit || 'FT'), x0, y);
-    ctx.font = "11px 'SF Mono', ui-monospace, Menlo, monospace";
-    ctx.fillStyle = `hsla(${hue}, 30%, 76%, 0.45)`;
-    // a race has a distance left to run; a tally has no destination, so say
-    // what it is instead of inventing one
-    ctx.fillText(field.collect ? 'cherries shaken loose'
-                               : field.feetLeft.toLocaleString() + ' to go', x0, y + 16);
+    // numbers live in the DOM HUD now — this rail is only the field
 
     // the field, as a hairline with everyone on it
     const ry = y + 30;
@@ -256,7 +247,7 @@ export class BeatCue {
     }
   }
 
-  draw(clock, songTime, hue, field) {
+  draw(clock, songTime, hue, anchor, field) {
     const { ctx, cv } = this;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = cv.clientWidth, H = cv.clientHeight;
@@ -271,9 +262,13 @@ export class BeatCue {
 
     // Slightly above centre: the vanishing point in these worlds sits a little
     // high, and it keeps the orb clear of the world's own title text.
-    const cx = W / 2, cy = H * 0.46;
-    const rOrb = Math.max(30, Math.min(64, Math.min(W, H) * 0.062));
-    const rFar = Math.min(W, H) * 0.42;
+    // The rings close on the world's subject when it names one — the slinky,
+    // the flume ahead — so keeping time IS watching the world. The fixed
+    // centre forced a choice between the two, and the game lost either way.
+    const cx = anchor ? anchor.x : W / 2;
+    const cy = anchor ? anchor.y : H * 0.46;
+    const rOrb = Math.max(26, Math.min(54, Math.min(W, H) * 0.052));
+    const rFar = Math.min(W, H) * (anchor ? 0.26 : 0.4);
 
     if (!this.chart && !clock.locked) {
       ctx.strokeStyle = `hsla(${hue}, 25%, 65%, 0.16)`;
