@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=170';
-import { WORLDS } from './worlds/registry.js?v=170';
-import { Net, PALETTE } from './net.js?v=170';
-import { Presence } from './lib/presence.js?v=170';
-import { Pulses } from './lib/pulse.js?v=170';
-import { BeatClock } from './lib/beatclock.js?v=170';
-import { BeatCue } from './lib/beatcue.js?v=170';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=170';
-import { Race, placeOf, standings } from './lib/race.js?v=170';
-import { RouteMap } from './lib/map.js?v=170';
-import { glowTexture } from './lib/glow.js?v=170';
+import { AudioEngine } from './audio-engine.js?v=172';
+import { WORLDS } from './worlds/registry.js?v=172';
+import { Net, PALETTE } from './net.js?v=172';
+import { Presence } from './lib/presence.js?v=172';
+import { Pulses } from './lib/pulse.js?v=172';
+import { BeatClock } from './lib/beatclock.js?v=172';
+import { BeatCue } from './lib/beatcue.js?v=172';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=172';
+import { Race, placeOf, standings } from './lib/race.js?v=172';
+import { RouteMap } from './lib/map.js?v=172';
+import { glowTexture } from './lib/glow.js?v=172';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -255,7 +255,11 @@ function switchWorld(key) {
   const pressable = !!w.rhythm && w.mode !== 'CATCH' && w.mode !== 'DODGE';
   document.body.classList.toggle('press', pressable);
   document.body.classList.toggle('orb', pressable && w.cue !== 'world');
-  if (!WORLDS[key].rhythm) $('press-hint').classList.remove('show');
+  if (!WORLDS[key].rhythm) {
+    $('press-hint').classList.remove('show');
+    document.body.classList.remove('vibe-card');
+    if (!setList) { $('round-intro').classList.remove('show'); setPhase = 'idle'; }
+  }
   beatCue.reset();
   startRaceIfReady();
   world.init(scene, camera);
@@ -528,6 +532,30 @@ audio.el.addEventListener('ended', () => {
 // A race belongs to one track in one rhythm world — one song, one round.
 function startRaceIfReady() {
   if (!document.body.classList.contains('round') || !beatCue.chart) { race.reset(); return; }
+  // Outside a set, the round does not just begin at you: the card comes up
+  // with the rules and the demo, the music keeps playing underneath, and the
+  // game starts when YOU press PLAY — however long the reading takes.
+  if (!setList) {
+    const key = $('world-select').value;
+    race.reset();
+    document.body.classList.add('vibe-card');
+    $('ri-world').textContent = WORLDS[key].label;
+    $('ri-track').textContent = prettyTrack($('track-select').value || audio.el.currentSrc || '');
+    $('ri-mode').textContent = WORLDS[key].mode || 'PLAY';
+    $('ri-rules').textContent = WORLDS[key].rules || '';
+    $('ri-state').textContent = 'preparing';
+    setPhase = 'intro';
+    $('round-intro').classList.add('show');
+    armPlayButton(() => {
+      document.body.classList.remove('vibe-card');
+      $('round-intro').classList.remove('show');
+      setPhase = 'idle';
+      race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+      seenMissed = beatCue.stats.missed;
+      hideResults();
+    });
+    return;
+  }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   seenMissed = beatCue.stats.missed;
   hideResults();
@@ -1659,28 +1687,35 @@ function nextRound() {
   audio.loadURL(r.track);
   $('track-select').value = r.track;
 
-  // Hold the intro until the track is charted. Analysis takes a few seconds
-  // and it belongs here, behind a title card, rather than as dead air with the
-  // music already running and no notes on the lane.
-  const minUntil = performance.now() + 4200;
-  (function waitThenStart() {
+  // The card holds until the player presses PLAY. A timer decided how long
+  // people were allowed to read; the button lets them take as long as they
+  // need — and the round starting is then THEIR act, which matters.
+  armPlayButton(() => {
     if (!setList || setPhase !== 'intro') return;
-    const ready = chartProgress < 0 && !!beatCue.chart;
-    if (!ready || performance.now() < minUntil) {
-      roundTimer = setTimeout(waitThenStart, 200);
-      return;
-    }
-    startRound();
-  })();
+    setPhase = 'racing';
+    $('round-intro').classList.remove('show');
+    audio.play().catch(() => {});
+    updatePlayBtn();
+    startRaceIfReady();
+  });
 }
 
-function startRound() {
-  if (!setList) return;
-  setPhase = 'racing';
-  $('round-intro').classList.remove('show');
-  audio.play().catch(() => {});
-  updatePlayBtn();
-  startRaceIfReady();
+// show PLAY once the chart is ready; fire `go` on the click
+let playArm = 0;
+function armPlayButton(go) {
+  const mine = ++playArm;
+  $('ri-play').classList.remove('ready');
+  (function waitReady() {
+    if (mine !== playArm) return;
+    if (!(chartProgress < 0 && beatCue.chart)) { setTimeout(waitReady, 200); return; }
+    $('ri-state').textContent = beatCue.chart.notes.length + ' notes \u00b7 ready';
+    $('ri-play').classList.add('ready');
+    $('ri-play').onclick = () => {
+      if (mine !== playArm) return;
+      $('ri-play').classList.remove('ready');
+      go();
+    };
+  })();
 }
 
 // Where a player stands on the route. Everyone advances together after each

@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=170';
-import { themePaint } from '../lib/themes.js?v=170';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=172';
+import { themePaint } from '../lib/themes.js?v=172';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -43,6 +43,7 @@ export function createRiver() {
   let drifters = [];
   let riverChartAt = 0;
   let lastSpawnT = -99, arrivals = 0, gArrivalPhase = 0;
+  let rLastChartRef = null;
   let gatherFlash = 0, rockFlash = 0;
   let boost = 0;                // 0..1, decays; an arrow tops it back up
 
@@ -306,6 +307,9 @@ export function createRiver() {
 
         // place each arrival exactly where the current will carry it to the
         // player on its own beat — constant speed makes that simple arithmetic
+        if (chart !== rLastChartRef) {
+          rLastChartRef = chart; riverChartAt = 0; lastSpawnT = -99; gArrivalPhase = 0;
+        }
         if (chart) {
           // Entering part-way through a track fast-forwards the read head over
           // every note already played, and each eligible one still spawned —

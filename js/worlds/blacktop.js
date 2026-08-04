@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=170';
-import { themePaint } from '../lib/themes.js?v=170';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=172';
+import { themePaint } from '../lib/themes.js?v=172';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -45,6 +45,7 @@ export function createBlacktop() {
   const MAX_GATES = 20;
   let gates = [];
   let gChartAt = 0, gLastT = -99, gArrivals = 0;
+  let bLastChartRef = null;
   let gBoost = 0;
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
   let cow = null, beam = null, abduct = { z: 0, x: 0, on: false, target: -2, p2: 0 };
@@ -313,6 +314,9 @@ export function createBlacktop() {
       // ── the gates ──
       if (gating) {
         const playerX = roadX(camZ) + steer * G_REACH;
+        if (chart !== bLastChartRef) {
+          bLastChartRef = chart; gChartAt = 0; gLastT = -99; gArrivals = 0;
+        }
         if (chart) {
           while (gChartAt < chart.length && chart[gChartAt].t <= songTime + 0.05) {
             const n = chart[gChartAt++];

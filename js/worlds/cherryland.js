@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=170';
-import { themePaint } from '../lib/themes.js?v=170';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=172';
+import { themePaint } from '../lib/themes.js?v=172';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -39,6 +39,7 @@ export function createCherryLand() {
   let catchTree = null, catchCanopy = null, basketPool = null;
   let fallers = [];            // {x, t0, bomb, alive, mesh}
   let chartAt = 0;             // read head into the chart
+  let lastChartRef = null;
   let catchFlash = 0, bombFlash = 0;
   let steer = 0;
 
@@ -453,6 +454,7 @@ export function createCherryLand() {
 
         // Drop a cherry for every note, timed so it ARRIVES on the beat — the
         // music still writes the round, the hands just answer it differently.
+        if (chart !== lastChartRef) { lastChartRef = chart; chartAt = 0; }
         if (chart) {
           while (chartAt < chart.length && chart[chartAt].t - FALL_T <= songTime) {
             const n = chart[chartAt++];

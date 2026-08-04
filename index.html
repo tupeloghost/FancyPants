@@ -242,6 +242,24 @@
     margin-top: 20px; font: 8px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2.4px; text-transform: uppercase; color: var(--ink-faint);
   }
+  /* the round starts when YOU say so — instructions wait as long as you need */
+  #ri-play {
+    display: none; margin: 22px auto 0; padding: 13px 46px;
+    font: 400 17px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 6px; color: hsl(var(--accent-h), 55%, 95%);
+    background: linear-gradient(175deg, hsla(var(--accent-h),70%,60%,0.16), hsla(var(--accent-h),50%,30%,0.10));
+    border: 1px solid hsla(var(--accent-h), 80%, 70%, 0.55);
+    border-radius: 999px; cursor: pointer;
+    box-shadow: 0 0 26px hsla(var(--accent-h), 90%, 65%, 0.22);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  #ri-play.ready { display: block; width: fit-content; animation: playBreathe 2.2s ease-in-out infinite; }
+  #ri-play:hover { transform: scale(1.05); box-shadow: 0 0 40px hsla(var(--accent-h), 90%, 70%, 0.45); }
+  @keyframes playBreathe {
+    0%, 100% { box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 65%, 0.2); }
+    50% { box-shadow: 0 0 38px hsla(var(--accent-h), 90%, 70%, 0.42); }
+  }
+  body.vibe-card #map-canvas, body.vibe-card #ri-head, body.vibe-card #ri-round { display: none; }
 
   /* a round owns the music — no skipping mid-race */
   body.play #qb-prev, body.play #qb-play, body.play #qb-next,
@@ -1142,6 +1160,7 @@
     </div>
     <div id="ri-rule"></div>
     <div id="ri-state">preparing</div>
+    <button id="ri-play">P L A Y</button>
   </div>
 </div>
 
@@ -1300,7 +1319,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 170</div>
+      <div id="build-stamp">build 172</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1314,6 +1333,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=170"></script>
+<script type="module" src="js/main.js?v=172"></script>
 </body>
 </html>

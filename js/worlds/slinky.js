@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=170';
-import { themePaint } from '../lib/themes.js?v=170';
-import { PALETTE } from '../net.js?v=170';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=172';
+import { themePaint } from '../lib/themes.js?v=172';
+import { PALETTE } from '../net.js?v=172';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -34,6 +34,7 @@ export function createSlinky() {
   const quat = new THREE.Quaternion();
   let pointer = { x: 0, active: false };
   let beatBars = [], barChartAt = 0;
+  let sLastChartRef = null;
   const BAR_LOOK = 2.0;    // seconds a bar is visible before its beat
 
   // where each player's slinky walks, fanned out either side of yours
@@ -264,6 +265,7 @@ export function createSlinky() {
         if (audio.beat) { walkVel += audio.beatIntensity * 0.9 * reactivity; beatWave = 0; }
       }
       // ── the bars slide home, and the spring answers your press ──
+      if (racing && opts.chart !== sLastChartRef) { sLastChartRef = opts.chart; barChartAt = 0; }
       if (racing && opts.chart) {
         const chart = opts.chart, songTime = opts.songTime || 0;
         while (barChartAt < chart.length && chart[barChartAt].t - BAR_LOOK <= songTime) {
