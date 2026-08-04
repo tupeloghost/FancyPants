@@ -72,7 +72,7 @@ export class Race {
   // The finish is set from the track, so every song is a well-paced race with
   // no hand-tuning — which matters when the library keeps growing. Calibrated
   // so a strong run arrives near the last chorus and a weak one is still going
-  // when the music stops (whoever is deepest then takes it).
+  // when the music stops (whoever is deepest at that point wins).
   // A RACE is a distance: momentum carries you and the finish is a place. A
   // COLLECT is a tally: nothing carries you, only what you catch counts, and
   // the "finish" is simply a very good haul — so the same rail can show both
@@ -124,7 +124,7 @@ export class Race {
       // a clean strike is worth more than a scrape, and a streak multiplies it
       const base = rank === 'perfect' ? 2 : 1;
       // No finish line to cross — the song's last note is the bell and the
-      // biggest haul takes it, so the tally is never capped.
+      // the biggest haul wins, so the tally is never capped.
       this.progress += base * this.multiplier;
       return;
     }

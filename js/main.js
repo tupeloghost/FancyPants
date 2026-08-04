@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=172';
-import { WORLDS } from './worlds/registry.js?v=172';
-import { Net, PALETTE } from './net.js?v=172';
-import { Presence } from './lib/presence.js?v=172';
-import { Pulses } from './lib/pulse.js?v=172';
-import { BeatClock } from './lib/beatclock.js?v=172';
-import { BeatCue } from './lib/beatcue.js?v=172';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=172';
-import { Race, placeOf, standings } from './lib/race.js?v=172';
-import { RouteMap } from './lib/map.js?v=172';
-import { glowTexture } from './lib/glow.js?v=172';
+import { AudioEngine } from './audio-engine.js?v=173';
+import { WORLDS } from './worlds/registry.js?v=173';
+import { Net, PALETTE } from './net.js?v=173';
+import { Presence } from './lib/presence.js?v=173';
+import { Pulses } from './lib/pulse.js?v=173';
+import { BeatClock } from './lib/beatclock.js?v=173';
+import { BeatCue } from './lib/beatcue.js?v=173';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=173';
+import { Race, placeOf, standings } from './lib/race.js?v=173';
+import { RouteMap } from './lib/map.js?v=173';
+import { glowTexture } from './lib/glow.js?v=173';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -466,7 +466,7 @@ window.__drawDemo = drawDemo;   // debug handle, same as the others
 
 // ── Results ── the reveal. A round without one is just activity that stops.
 // Shown when you reach the bottom, or when the music ends — the song's last
-// note is the hard bell, and whoever is deepest at that moment takes it.
+// note is the hard bell, and whoever is deepest at that moment wins.
 const ORDINAL = ['', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH', 'SEVENTH', 'EIGHTH'];
 let resultsShown = false;
 let resultsTimer = 0;
@@ -493,7 +493,7 @@ function showResults(reason) {
     ? (collecting ? 'cherries shaken loose'
                   : (race.finished ? 'you reached the foot of the stairs'
                                    : Math.round(race.fraction * 100) + '% of the way down'))
-    : (collecting ? 'biggest haul takes it'
+    : (collecting ? 'biggest haul wins'
                   : (race.finished ? 'reached the bottom' : 'when the music stopped'));
 
   const rows = board.slice(0, 8).map(e => {
