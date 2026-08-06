@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=177';
-import { WORLDS } from './worlds/registry.js?v=177';
-import { Net, PALETTE } from './net.js?v=177';
-import { Presence } from './lib/presence.js?v=177';
-import { Pulses } from './lib/pulse.js?v=177';
-import { BeatClock } from './lib/beatclock.js?v=177';
-import { BeatCue } from './lib/beatcue.js?v=177';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=177';
-import { Race, placeOf, standings } from './lib/race.js?v=177';
-import { RouteMap } from './lib/map.js?v=177';
-import { glowTexture } from './lib/glow.js?v=177';
+import { AudioEngine } from './audio-engine.js?v=179';
+import { WORLDS } from './worlds/registry.js?v=179';
+import { Net, PALETTE } from './net.js?v=179';
+import { Presence } from './lib/presence.js?v=179';
+import { Pulses } from './lib/pulse.js?v=179';
+import { BeatClock } from './lib/beatclock.js?v=179';
+import { BeatCue } from './lib/beatcue.js?v=179';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=179';
+import { Race, placeOf, standings } from './lib/race.js?v=179';
+import { RouteMap } from './lib/map.js?v=179';
+import { glowTexture } from './lib/glow.js?v=179';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1156,7 +1156,7 @@ const PASS_THEM = [
 const PASS_YOU = [
   '% SAYS HI', 'RUDE, %', '% HAS SOMEWHERE TO BE', 'THAT WAS %',
   "% DIDN'T EVEN WAVE", 'OUCH. %.', '% IS SHOWING OFF', 'WOW, %',
-  'REALLY, %?', '% IS DOING NUMBERS', 'COOL CAR, %',
+  'REALLY, %?', '% IS DOING NUMBERS', 'NICE MOVES, %',
 ];
 // avoid saying the same thing twice in a row, which is when a pool stops
 // feeling like a pool

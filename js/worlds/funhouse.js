@@ -3,8 +3,8 @@
 // through the crowd. Pure play, no fail state.
 
 import * as THREE from 'three';
-import { glowTexture, skyDome } from '../lib/glow.js?v=177';
-import { themePaint } from '../lib/themes.js?v=177';
+import { glowTexture, skyDome } from '../lib/glow.js?v=179';
+import { themePaint } from '../lib/themes.js?v=179';
 
 const BALLS = 8000;
 const PER_LAYER = 880;      // balls per stacking layer — full pit crests near the rim

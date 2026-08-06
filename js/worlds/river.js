@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=177';
-import { themePaint } from '../lib/themes.js?v=177';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=179';
+import { themePaint } from '../lib/themes.js?v=179';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -44,6 +44,9 @@ export function createRiver() {
   let riverChartAt = 0;
   let lastSpawnT = -99, arrivals = 0, gArrivalPhase = 0;
   let rLastChartRef = null;
+  const R_SCORE_GAP = 9;       // river units per point of score difference
+  let riverMyScore = 0;        // kept from the race so placeGhost can read it
+  let riverPassSeen = new Map();
   let gatherFlash = 0, rockFlash = 0;
   let boost = 0;                // 0..1, decays; an arrow tops it back up
 
@@ -247,8 +250,14 @@ export function createRiver() {
 
     // fellow floaters drifting the same river
     placeGhost(p, i, out) {
-      const z = camera.position.z - 16 - (i % 6) * 9;
-      out.set(riverX(z) + p.x * 9 + Math.sin(i * 2.6) * 4, 1.2, z);
+      // Rivals ride the river by their SCORE, not at a fixed offset — the same
+      // fix Blacktop got. Gather ramps and you reel them in and slip past;
+      // fumble a stretch and they drift back through you. Their place on the
+      // water IS the standings.
+      const theirs = p.z || 0;
+      const gapZ = Math.max(-95, Math.min(95, (theirs - riverMyScore) * R_SCORE_GAP));
+      const z = camera.position.z - 18 - gapZ;
+      out.set(riverX(z) + p.x * 7 + Math.sin(i * 2.6) * 3.5, 1.2, z);
     },
 
     onTap(x, y) {
@@ -303,6 +312,18 @@ export function createRiver() {
 
       // ── the line to thread ──
       if (dodging) {
+        riverMyScore = race.progress;
+        // call the overtake by name — a silent position swap is just scenery
+        if (participants && opts.onPass) {
+          for (let i = 1; i < participants.length; i++) {
+            const p = participants[i];
+            const wasAhead = riverPassSeen.get(p.id);
+            const isAhead = (p.z || 0) > riverMyScore + 0.5;
+            if (wasAhead === true && isAhead === false) opts.onPass(p, true);
+            else if (wasAhead === false && isAhead === true) opts.onPass(p, false);
+            riverPassSeen.set(p.id, isAhead);
+          }
+        }
         const playerX = riverX(-drift) + steer * 8;
 
         // place each arrival exactly where the current will carry it to the
