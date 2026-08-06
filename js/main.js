@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=179';
-import { WORLDS } from './worlds/registry.js?v=179';
-import { Net, PALETTE } from './net.js?v=179';
-import { Presence } from './lib/presence.js?v=179';
-import { Pulses } from './lib/pulse.js?v=179';
-import { BeatClock } from './lib/beatclock.js?v=179';
-import { BeatCue } from './lib/beatcue.js?v=179';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=179';
-import { Race, placeOf, standings } from './lib/race.js?v=179';
-import { RouteMap } from './lib/map.js?v=179';
-import { glowTexture } from './lib/glow.js?v=179';
+import { AudioEngine } from './audio-engine.js?v=181';
+import { WORLDS } from './worlds/registry.js?v=181';
+import { Net, PALETTE } from './net.js?v=181';
+import { Presence } from './lib/presence.js?v=181';
+import { Pulses } from './lib/pulse.js?v=181';
+import { BeatClock } from './lib/beatclock.js?v=181';
+import { BeatCue } from './lib/beatcue.js?v=181';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=181';
+import { Race, placeOf, standings } from './lib/race.js?v=181';
+import { RouteMap } from './lib/map.js?v=181';
+import { glowTexture } from './lib/glow.js?v=181';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -480,6 +480,35 @@ function hideResults() {
   $('results').classList.remove('show');
 }
 
+// ── The finish deserves a moment ── a scoreboard fading in is a receipt, not
+// an ending. Three beats: the score counts up under your eyes, the top three
+// get their medals, and the room fills with light in the winner's colour.
+let countTimer = 0, burstTimers = [];
+function celebrate(winnerColorHex, big) {
+  burstTimers.forEach(clearTimeout); burstTimers = [];
+  const bursts = big ? 14 : 8;
+  for (let i = 0; i < bursts; i++) {
+    burstTimers.push(setTimeout(() => {
+      pulses.spawn(camera,
+        (Math.random() * 2 - 1) * 0.85,
+        (Math.random() * 2 - 1) * 0.7,
+        winnerColorHex, 0.8 + Math.random() * 0.7);
+    }, 120 + i * (big ? 130 : 170) + Math.random() * 60));
+  }
+  impact(big ? 1.0 : 0.7);
+}
+
+function countUp(el, target, ms = 900) {
+  clearInterval(countTimer);
+  const t0 = performance.now();
+  countTimer = setInterval(() => {
+    const u = Math.min(1, (performance.now() - t0) / ms);
+    const e = 1 - Math.pow(1 - u, 3);
+    el.textContent = Math.round(target * e).toLocaleString();
+    if (u >= 1) clearInterval(countTimer);
+  }, 33);
+}
+
 function showResults(reason) {
   if (resultsShown || !race.active) return;
   resultsShown = true;
@@ -525,6 +554,18 @@ function showResults(reason) {
       + `<b>${val}</b></div>`;
   }).join('');
   $('results-board').innerHTML = rows;
+  // medals: the top three rows carry their metal
+  [...$('results-board').children].slice(0, 3).forEach((row, k) =>
+    row.classList.add('m' + (k + 1)));
+
+  // the big number counts up rather than appearing — watching your own score
+  // arrive is the fun part, and it costs nothing
+  if (collecting && solo) countUp($('results-place'), race.feet);
+
+  // and the room lights up in the winner's colour
+  const winner = board[0];
+  const winHex = PALETTE[((winner && winner.p.color) || 0) % PALETTE.length];
+  celebrate(winHex, solo ? race.finished : place === 1);
 
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
@@ -1821,6 +1862,9 @@ function showSetResults() {
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;
+  [...$('results-board').children].slice(0, 3).forEach((row, k) =>
+    row.classList.add('m' + (k + 1)));
+  celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], rows[0][0] === (net.local.name || 'you'));
   resultsShown = true;
   $('results').classList.add('show');
   clearTimeout(resultsTimer);

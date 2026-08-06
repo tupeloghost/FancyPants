@@ -11,7 +11,7 @@
 // sends a wave across the finished work.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=179';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=181';
 
 const N = 44;                 // plate is N x N cells
 const CELL = 1.12;
@@ -248,6 +248,9 @@ const PLATES = [
 
 export function createPaint() {
   let scene, camera, group, sky, motes, plate, fillGlow, sparkPts, keyLight, shafts;
+  // flow: how long the current stroke has stayed clean. It widens the brush,
+  // which is what makes a good stroke FEEL like a good stroke.
+  let flow = 0, strokeAcc = 0;
   const numPts = [];
   const rackPots = [];
   let rackNums = [];
@@ -602,6 +605,41 @@ export function createPaint() {
     },
 
     // tap a pot to load the brush; tap the plate to flood a whole region
+    // ── the brush stamp ──
+    // One place that fills cells so the tap and the stroke cannot drift apart.
+    // Fills every un-done cell of the held colour within `rad` of (c, r) and
+    // does all the bookkeeping the old region-flood did inline.
+    _stamp(c, r, rad) {
+      let filled = 0;
+      const r0 = Math.max(0, Math.floor(r - rad)), r1 = Math.min(N - 1, Math.ceil(r + rad));
+      const c0 = Math.max(0, Math.floor(c - rad)), c1 = Math.min(N - 1, Math.ceil(c + rad));
+      for (let rr = r0; rr <= r1; rr++) for (let cc = c0; cc <= c1; cc++) {
+        if (Math.hypot(rr - r, cc - c) > rad) continue;
+        const k = rr * N + cc;
+        if (cellDone[k] || cellNum[k] !== held) continue;
+        cellDone[k] = 1;
+        cellPop[k] = 1.5;
+        remaining[held]--;
+        doneCount++;
+        filled++;
+      }
+      if (!filled) return 0;
+      numDirty = true;
+      scoreQueue += filled;
+      for (const sj of Object.keys(subjCells)) {
+        const left = subjCells[sj].filter(k => !cellDone[k]).length;
+        subjLeft[sj] = left;
+        if (left === 0 && !lifts.some(l => l.sj === +sj)) {
+          lifts.push({ sj: +sj, t: 0, spin: (lifts.length % 2 ? 1 : -1) * 0.4,
+                       lane: lifts.length, mid: subjMid[sj] });
+          scoreQueue += 150;
+        }
+      }
+      if (window.__setFigure) window.__setFigure(PLATES[plateIndex % PLATES.length].name, doneCount, needCount);
+      if (doneCount >= needCount) { finale = 1; scoreQueue += 400; }
+      return filled;
+    },
+
     onTap(x, y) {
       _v.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
       const t = -camera.position.z / _v.z;
@@ -671,63 +709,60 @@ export function createPaint() {
         spark(cellX(c), cellY(r), paint(held).h, 8, 0.5);
       }
 
-      // flood the whole region this cell belongs to
-      const id = cellRegion[i];
+      // A tap is a dab now, not a region. The overhaul in one line: regions
+      // stopped filling themselves, so painting became a STROKE — you hold
+      // and sweep, paint pours under the brush, and a long clean stroke
+      // widens it. The one-tap flood survives as the charged move, which is
+      // what makes charging worth wanting.
       const hue = paint(held).h;
-      let filled = 0;
-      for (let k = 0; k < N * N; k++) {
-        if (cellRegion[k] === id && !cellDone[k]) {
-          cellDone[k] = 1;
-          // paint spreads outward from where you touched
-          const kr = (k / N) | 0, kc = k % N;
-          cellPop[k] = 1.7 + Math.hypot(kr - r, kc - c) * 0.06;
-          filled++;
-        }
-      }
+      const filled = this._stamp(c, r, 1.15 + flow * 1.3);
+      if (filled) { flow = Math.min(1, flow + 0.1); spark(cellX(c), cellY(r), hue, 6, 0.5); }
       if (!filled) return;
-      numDirty = true;
 
-      // a finished subject peels off the page and takes to the air
-      const touched = new Set();
-      for (let k = 0; k < N * N; k++) {
-        if (cellRegion[k] === id && cellSubj[k]) touched.add(cellSubj[k]);
-      }
-      for (const sj of touched) {
-        subjLeft[sj] -= subjCells[sj].filter(k => cellRegion[k] === id).length;
-        if (subjLeft[sj] <= 0 && !lifts.some(l => l.sj === sj)) {
-          lifts.push({ sj, t: 0, spin: (lifts.length % 2 ? 1 : -1) * (0.35 + Math.random() * 0.3),
-                       lane: lifts.length, mid: subjMid[sj] });
-          scoreQueue += 150;
-          const [cx2, cy2] = subjMid[sj];
-          for (let q = 0; q < 4; q++) spark(cx2, cy2, paint(held).h, 30, 1.5);
-        }
-      }
-
-      // painting quickly charges the brush; a full brush floods a whole colour
+      // Painting steadily charges the brush; a full brush floods a whole
+      // colour in one gesture — the flood the ordinary tap used to give away
+      // for free is now the thing you earn.
       const nowT = performance.now();
-      charge = Math.min(1, charge + (nowT - lastFillT < 3500 ? 0.22 : 0.1));
+      charge = Math.min(1, charge + (nowT - lastFillT < 3500 ? 0.16 : 0.07));
       lastFillT = nowT;
       if (charge >= 1) { charge = 0; chargeReady = 1; }
-      remaining[held] = Math.max(0, (remaining[held] || 0) - filled);
-      // that colour is done — step to the next one still owing
-      if (remaining[held] === 0) advanceBrush();
-      doneCount += filled;
-      scoreQueue += 2 * filled;
-      spark(cellX(c), cellY(r), hue, Math.min(26, 8 + filled), 0.7);
-      if (window.__setFigure) window.__setFigure(PLATES[plateIndex % PLATES.length].name, doneCount, needCount);
-
-      if (doneCount >= needCount) {
-        finale = 1;
-        scoreQueue += 400;
-        for (let k = 0; k < 8; k++) {
-          spark((Math.random() - 0.5) * N * CELL, (Math.random() - 0.5) * N * CELL,
-            paint(used[k % used.length]).h, 30, 1.4);
-        }
-      }
+      if (remaining[held] === 0) advanceBrush();   // that colour is done — step on
     },
 
     update(dt, audio, participants, opts) {
       const { reactivity, attract, time, hue } = opts;
+
+      // ── the stroke ── hold and sweep, and paint pours under the brush.
+      // Throttled to ~30 stamps a second so a fast frame rate does not paint
+      // faster than a slow one.
+      flow = Math.max(0, flow - dt * 0.35);
+      if (opts.holding && pointer.active && held != null && !attract) {
+        strokeAcc += dt;
+        if (strokeAcc >= 1 / 30) {
+          strokeAcc = 0;
+          _v.set(pointer.x, pointer.y, 0.5).unproject(camera).sub(camera.position).normalize();
+          const t = -camera.position.z / _v.z;
+          const wx = camera.position.x + _v.x * t;
+          const wy = camera.position.y + _v.y * t;
+          const rackY = cellY(N - 1) - CELL * 2.6;
+          if (wy >= rackY + CELL * 1.4) {                  // never paint the rack
+            const c = Math.round(wx / CELL + (N - 1) / 2);
+            const r = Math.round((N - 1) / 2 - wy / CELL);
+            if (c >= 0 && c < N && r >= 0 && r < N) {
+              const filled = this._stamp(c, r, 0.9 + flow * 1.5);
+              if (filled) {
+                flow = Math.min(1, flow + filled * 0.05 + 0.04);
+                if (Math.random() < 0.4) spark(cellX(c), cellY(r), paint(held).h, 4 + flow * 8, 0.4 + flow * 0.5);
+                const nowT = performance.now();
+                charge = Math.min(1, charge + filled * 0.008);
+                lastFillT = nowT;
+                if (charge >= 1) { charge = 0; chargeReady = 1; }
+                if (remaining[held] === 0) advanceBrush();
+              }
+            }
+          }
+        }
+      }
       this._t = time;
 
       if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue); scoreQueue = 0; }

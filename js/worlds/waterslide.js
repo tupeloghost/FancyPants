@@ -3,8 +3,8 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js?v=179';
-import { themePaint } from '../lib/themes.js?v=179';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=181';
+import { themePaint } from '../lib/themes.js?v=181';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -18,6 +18,15 @@ export function createWaterslide() {
   // flume bought by one abstract race step
   const SLIDE_PER_STEP = 38;
   let steer = 0, steerTarget = 0;
+  // ── HOOPS: the slide is steered now, not tapped ──
+  // Tapping in a flume never worked — your eyes are on the tube, not a cue.
+  // Rings of light hang in the pipe offset left or right; you lean through
+  // them. Same chain logic as the river and the road: a hoop is a shot of
+  // speed, a hoop taken while still surging pays double.
+  const H_SPACING = 2.6;       // min seconds between hoops
+  const MAX_HOOPS = 14;
+  let hoops = [], hoopChartAt = 0, hoopLastT = -99, hoopBoost = 0;
+  let wLastChartRef = null;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -101,6 +110,25 @@ export function createWaterslide() {
 
     setInput(x) { steerTarget = x; },
 
+    _buildHoops() {
+      if (hoops.length) return;
+      for (let i = 0; i < MAX_HOOPS; i++) {
+        const grp = new THREE.Group();
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(2.6, 0.22, 10, 30),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.9,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        const gl = glowSprite(7);
+        grp.add(ring, gl);
+        grp.visible = false;
+        group.add(grp);
+        hoops.push({ mesh: grp, ring, gl, alive: false, t: 0, side: 0 });
+      }
+    },
+
     // rings close on the flume ahead — where a rider is already looking
     cueAnchor(out) {
       const t = travel + 30;
@@ -131,13 +159,63 @@ export function createWaterslide() {
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' , race = null } = opts;
-      const racing = !!(race && race.active);
+      const racing = !!(race && race.active && race.mode === 'RACE');
 
       boost *= Math.pow(0.2, dt);
       // Racing, the flume runs at the pace you have earned and momentum is the
       // boost — the shot of speed a tap used to give is now a streak.
       let speed;
-      if (racing) {
+      const sliding = !!(race && race.active && race.mode === 'DODGE');
+      if (sliding) {
+        this._buildHoops();
+        if (opts.chart !== wLastChartRef) { wLastChartRef = opts.chart; hoopChartAt = 0; hoopLastT = -99; }
+        hoopBoost = Math.max(0, hoopBoost - dt * 0.42);
+        boost = hoopBoost;
+        speed = 20 + hoopBoost * 46;
+        travel += speed * dt;
+
+        const songTime = opts.songTime || 0, chart = opts.chart;
+        if (chart) {
+          while (hoopChartAt < chart.length && chart[hoopChartAt].t <= songTime + 0.05) {
+            const n = chart[hoopChartAt++];
+            if (n.t < songTime - 0.4) { hoopLastT = Math.max(hoopLastT, n.t); continue; }
+            if (n.t - hoopLastT < H_SPACING) continue;
+            const h = hoops.find(x => !x.alive);
+            if (!h) continue;
+            hoopLastT = n.t;
+            h.alive = true;
+            h.t = travel + 130;                        // fixed distance down the pipe
+            h.side = (((hoopChartAt * 48271) % 200) / 100 - 1) * 0.75;  // -0.75..0.75
+            h.mesh.visible = true;
+          }
+        }
+        for (const h of hoops) {
+          if (!h.alive) continue;
+          const t = h.t;
+          const hx = curveX(t) + h.side * (R * 0.55);
+          h.mesh.position.set(hx, dropY(t) + 2.6, -t);
+          h.mesh.rotation.y = Math.atan2(curveX(t - 6) - curveX(t + 6), 12);
+          // fixed signal green, same promise as everywhere else: green = go
+          color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + t) * 0.08 + audio.volume * 0.12);
+          h.ring.material.color.copy(color);
+          h.gl.material.color.copy(color);
+          h.gl.material.opacity = 0.3 + audio.volume * 0.25;
+
+          const ahead = t - travel;
+          if (ahead < 4) {
+            const through = Math.abs(h.side - steer) < 0.42;
+            if (through) {
+              race.collect(hoopBoost > 0.35 ? 2 : 1);
+              hoopBoost = Math.min(1, hoopBoost + 0.85);
+              if (opts.impact) opts.impact(hoopBoost > 0.9 ? 0.75 : 0.5);
+            } else {
+              race.drop(0);                            // a missed hoop breaks the run
+            }
+            h.alive = false;
+            h.mesh.visible = false;
+          }
+        }
+      } else if (racing) {
         boost = race.momentum;
         speed = race.speed * SLIDE_PER_STEP;
         travel = race.progress * SLIDE_PER_STEP;

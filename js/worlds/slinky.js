@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=179';
-import { themePaint } from '../lib/themes.js?v=179';
-import { PALETTE } from '../net.js?v=179';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=181';
+import { themePaint } from '../lib/themes.js?v=181';
+import { PALETTE } from '../net.js?v=181';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -346,7 +346,14 @@ export function createSlinky() {
             // Racing, a rival's position is their real progress off the wire
             // (it rides on z), so the field on screen is the actual race.
             // Otherwise they amble on a decorative stagger as before.
-            const off = racing ? (walk - (pt.z || 0)) : (0.42 + g * 0.37);
+            // A rival with no progress on the wire yet (sim peers, a guest
+            // still on the PLAY card) pinned to stair 0 — behind you, uphill,
+            // invisible. That is why the field vanished. No-progress rivals
+            // amble on the old stagger instead, and real gaps are clamped so
+            // a runaway leader stays on screen rather than teleporting off.
+            const off = (racing && (pt.z || 0) > 0.01)
+              ? Math.max(-6, Math.min(24, walk - pt.z))
+              : (0.42 + g * 0.37);
             const gp = walk - off - i * 0.052 * (1 + Math.sin(Math.PI * stepPhase) * 0.4);
             pathAt(gp, P);
             pathAt(gp + 0.02, P2);

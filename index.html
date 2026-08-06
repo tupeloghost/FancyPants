@@ -384,6 +384,13 @@
   .rrow b { font-weight: 400; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
   .rrow.me span { color: hsl(var(--accent-h), 60%, 92%); }
   .rrow.me b { color: var(--ink); }
+  /* medals for the top three — metal, not emoji */
+  .rrow.m1 i { box-shadow: 0 0 10px 2px hsla(46, 95%, 60%, 0.9) !important; outline: 1.5px solid hsl(46, 90%, 62%); }
+  .rrow.m2 i { outline: 1.5px solid hsl(0, 0%, 78%); }
+  .rrow.m3 i { outline: 1.5px solid hsl(28, 70%, 55%); }
+  .rrow.m1 span { color: hsl(46, 80%, 88%); }
+  .rrow.m1 b { color: hsl(46, 85%, 80%); }
+
   #results-stats {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
     margin-top: 16px; padding-top: 14px;
@@ -1340,7 +1347,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 179</div>
+      <div id="build-stamp">build 181</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1354,6 +1361,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=179"></script>
+<script type="module" src="js/main.js?v=181"></script>
 </body>
 </html>

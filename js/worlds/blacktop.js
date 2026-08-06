@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=179';
-import { themePaint } from '../lib/themes.js?v=179';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=181';
+import { themePaint } from '../lib/themes.js?v=181';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -341,19 +341,39 @@ export function createBlacktop() {
         glow.position.y = 3.4;
         gate.add(glow);
 
-        // a barrier: a wide dark block with a dim warning stripe
+        // A barrier you can actually see. The near-black block read as road
+        // until you were inside it — a hazard has to announce itself from as
+        // far away as the gates do, so: hot hazard stripes, a red edge light,
+        // and its own glow.
         const barrier = new THREE.Group();
         const block = new THREE.Mesh(
           new THREE.BoxGeometry(7.5, 2.6, 1.6),
-          new THREE.MeshBasicMaterial({ color: 0x121216, toneMapped: false })
+          new THREE.MeshBasicMaterial({ color: 0x201014, toneMapped: false })
         );
         block.position.y = 1.3;
-        const stripe = new THREE.Mesh(
-          new THREE.BoxGeometry(7.5, 0.3, 0.2),
-          new THREE.MeshBasicMaterial({ color: 0x5a1616, toneMapped: false })
+        // alternating warning chevrons across the face
+        const stripeMats = [];
+        for (let k = 0; k < 4; k++) {
+          const st = new THREE.Mesh(
+            new THREE.BoxGeometry(1.55, 2.2, 0.12),
+            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff4a2a : 0xffc02a, toneMapped: false })
+          );
+          st.position.set(-2.8 + k * 1.86, 1.3, 0.86);
+          st.rotation.z = 0.5;
+          stripeMats.push(st.material);
+          barrier.add(st);
+        }
+        const topLight = new THREE.Mesh(
+          new THREE.BoxGeometry(7.7, 0.22, 0.22),
+          new THREE.MeshBasicMaterial({ color: 0xff3020, toneMapped: false })
         );
-        stripe.position.set(0, 2.1, 0.85);
-        barrier.add(block, stripe);
+        topLight.position.y = 2.72;
+        const bGlow = glowSprite(7);
+        bGlow.material.color.setHex(0xff3524);
+        bGlow.material.opacity = 0.3;
+        bGlow.position.y = 1.6;
+        barrier.add(block, topLight, bGlow);
+        barrier.userData = { stripeMats, topLight, bGlow };
 
         g.add(gate, barrier);
         g.visible = false;
@@ -485,6 +505,16 @@ export function createBlacktop() {
           const gx = roadX(g.z) + g.x;
           g.mesh.position.set(gx, 0, g.z);
           g.mesh.rotation.y = roadYaw(g.z);
+          if (g.isBar) {
+            // the warning breathes faster the closer it gets
+            const near = Math.max(0, 1 - Math.abs(g.z - camZ) / G_AHEAD);
+            const blink = 0.75 + Math.sin(time * (4 + near * 8)) * 0.25;
+            const bd = g.barrier.userData;
+            if (bd) {
+              bd.topLight.material.color.setHSL(0.01, 1, 0.35 + blink * 0.3);
+              bd.bGlow.material.opacity = (0.16 + near * 0.35) * blink;
+            }
+          }
           if (!g.isBar) {
             // fixed signal green, not the theme hue — "drive through this"
             // has to survive every palette
