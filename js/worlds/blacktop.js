@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=181';
-import { themePaint } from '../lib/themes.js?v=181';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=185';
+import { themePaint } from '../lib/themes.js?v=185';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -363,17 +363,37 @@ export function createBlacktop() {
           stripeMats.push(st.material);
           barrier.add(st);
         }
+        // Height is what reads at distance. The gates stand 7 units tall and
+        // announce themselves half a road away; a 2.6-unit slab was a sliver
+        // until you were on top of it. So the barrier gets the same treatment
+        // in the opposite colour: tall end-posts with red lamps, a thick red
+        // rail across the top, and a glow you can see from the spawn line.
         const topLight = new THREE.Mesh(
-          new THREE.BoxGeometry(7.7, 0.22, 0.22),
+          new THREE.BoxGeometry(8.2, 0.5, 0.5),
           new THREE.MeshBasicMaterial({ color: 0xff3020, toneMapped: false })
         );
-        topLight.position.y = 2.72;
-        const bGlow = glowSprite(7);
+        topLight.position.y = 5.6;
+        const lampMats = [];
+        for (const sx of [-3.9, 3.9]) {
+          const post = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 5.6, 0.5),
+            new THREE.MeshBasicMaterial({ color: 0x2a1216, toneMapped: false })
+          );
+          post.position.set(sx, 2.8, 0);
+          const lamp = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 10, 8),
+            new THREE.MeshBasicMaterial({ color: 0xff2418, toneMapped: false })
+          );
+          lamp.position.set(sx, 5.9, 0);
+          lampMats.push(lamp.material);
+          barrier.add(post, lamp);
+        }
+        const bGlow = glowSprite(13);
         bGlow.material.color.setHex(0xff3524);
-        bGlow.material.opacity = 0.3;
-        bGlow.position.y = 1.6;
+        bGlow.material.opacity = 0.4;
+        bGlow.position.y = 3.4;
         barrier.add(block, topLight, bGlow);
-        barrier.userData = { stripeMats, topLight, bGlow };
+        barrier.userData = { stripeMats, topLight, bGlow, lampMats };
 
         g.add(gate, barrier);
         g.visible = false;
@@ -511,8 +531,9 @@ export function createBlacktop() {
             const blink = 0.75 + Math.sin(time * (4 + near * 8)) * 0.25;
             const bd = g.barrier.userData;
             if (bd) {
-              bd.topLight.material.color.setHSL(0.01, 1, 0.35 + blink * 0.3);
-              bd.bGlow.material.opacity = (0.16 + near * 0.35) * blink;
+              bd.topLight.material.color.setHSL(0.01, 1, 0.35 + blink * 0.35);
+              bd.bGlow.material.opacity = 0.22 + near * 0.4 * blink;
+              for (const lm of bd.lampMats) lm.color.setHSL(0.0, 1, 0.3 + blink * 0.45);
             }
           }
           if (!g.isBar) {

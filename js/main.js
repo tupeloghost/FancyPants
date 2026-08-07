@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=181';
-import { WORLDS } from './worlds/registry.js?v=181';
-import { Net, PALETTE } from './net.js?v=181';
-import { Presence } from './lib/presence.js?v=181';
-import { Pulses } from './lib/pulse.js?v=181';
-import { BeatClock } from './lib/beatclock.js?v=181';
-import { BeatCue } from './lib/beatcue.js?v=181';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=181';
-import { Race, placeOf, standings } from './lib/race.js?v=181';
-import { RouteMap } from './lib/map.js?v=181';
-import { glowTexture } from './lib/glow.js?v=181';
+import { AudioEngine } from './audio-engine.js?v=185';
+import { WORLDS } from './worlds/registry.js?v=185';
+import { Net, PALETTE } from './net.js?v=185';
+import { Presence } from './lib/presence.js?v=185';
+import { Pulses } from './lib/pulse.js?v=185';
+import { BeatClock } from './lib/beatclock.js?v=185';
+import { BeatCue } from './lib/beatcue.js?v=185';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=185';
+import { Race, placeOf, standings } from './lib/race.js?v=185';
+import { RouteMap } from './lib/map.js?v=185';
+import { glowTexture } from './lib/glow.js?v=185';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2082,7 +2082,16 @@ function frame(now) {
     $('press-hint').classList.toggle('show',
       onOrb && race.active && landed < 3 && audio.currentTime < 14);
     beatCue.update(beatClock, audio.currentTime);
-    while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
+    // Cue misses only exist in PRESS rounds. In a steered round (river,
+    // blacktop, slide, cherry) nobody is tapping, so every chart note times
+    // out unplayed — and feeding those into the race buried a clean run under
+    // ~450 phantom misses. Hit every ramp, get told 7%. The world scores its
+    // own misses there via drop(); the cue's opinion is irrelevant.
+    if (document.body.classList.contains('press')) {
+      while (seenMissed < beatCue.stats.missed) { race.miss(); seenMissed++; }
+    } else {
+      seenMissed = beatCue.stats.missed;   // keep the counter aligned, feed nothing
+    }
     const wasFinished = race.finished;
     race.update(dt, audio.currentTime);
     if (race.finished && !wasFinished) showResults('finished');
