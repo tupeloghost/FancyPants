@@ -9,9 +9,10 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=194';
-import { themePaint } from '../lib/themes.js?v=194';
-import { PALETTE } from '../net.js?v=194';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=195';
+import { themePaint } from '../lib/themes.js?v=195';
+import { PALETTE } from '../net.js?v=195';
+import { clear as sfxClear, fanfare as sfxFanfare } from '../lib/sfx.js?v=195';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
@@ -150,6 +151,7 @@ export function createPaint() {
             ringChain = (performance.now() / 1000 - lastRingT < 7) ? ringChain + 1 : 1;
             lastRingT = performance.now() / 1000;
             scoreQueue += 20 * ringChain;
+            sfxClear(ringChain);
             flashRing = r; flashT = 1;
             for (let s2 = 0; s2 < SEGS; s2++) popAt[r * SEGS + s2] = 2.0;
           }
@@ -171,6 +173,7 @@ export function createPaint() {
           nextMilestone += 100;
           waveZ = 0;   // 0 = start at the camera, animates forward in update
           scoreQueue += 30;
+          sfxFanfare();
         }
       }
       return hit;

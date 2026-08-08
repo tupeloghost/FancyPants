@@ -8,17 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=194';
-import { WORLDS } from './worlds/registry.js?v=194';
-import { Net, PALETTE } from './net.js?v=194';
-import { Presence } from './lib/presence.js?v=194';
-import { Pulses } from './lib/pulse.js?v=194';
-import { BeatClock } from './lib/beatclock.js?v=194';
-import { BeatCue } from './lib/beatcue.js?v=194';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=194';
-import { Race, placeOf, standings } from './lib/race.js?v=194';
-import { RouteMap } from './lib/map.js?v=194';
-import { glowTexture } from './lib/glow.js?v=194';
+import { AudioEngine } from './audio-engine.js?v=195';
+import { WORLDS } from './worlds/registry.js?v=195';
+import { Net, PALETTE } from './net.js?v=195';
+import { Presence } from './lib/presence.js?v=195';
+import { Pulses } from './lib/pulse.js?v=195';
+import { BeatClock } from './lib/beatclock.js?v=195';
+import { BeatCue } from './lib/beatcue.js?v=195';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=195';
+import { Race, placeOf, standings } from './lib/race.js?v=195';
+import { RouteMap } from './lib/map.js?v=195';
+import * as sfx from './lib/sfx.js?v=195';
+import { glowTexture } from './lib/glow.js?v=195';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -92,6 +93,12 @@ const beatClock = new BeatClock(audio.analyser);
 const beatCue = new BeatCue(document.getElementById('beatcue'));
 const anchorV = new THREE.Vector3();
 const race = new Race();
+// every hit in every world plays a note that climbs with your streak; every
+// cost is a soft thud. One wiring point, the whole game finds its voice.
+race.onEvent = (type, d) => {
+  if (type === 'hit') sfx.hit(d.streak, d.strong);
+  else sfx.thud();
+};
 let seenMissed = 0;   // cue miss counter we have already fed to the race
 net.onJoin = () => { if (settings.chime) audio.joinChime(); };
 window.__net = net; window.__presence = presence; // debug handles
@@ -525,6 +532,7 @@ function celebrate(winnerColorHex, big) {
     }, 120 + i * (big ? 130 : 170) + Math.random() * 60));
   }
   impact(big ? 1.0 : 0.7);
+  sfx.fanfare();
 }
 
 function countUp(el, target, ms = 900) {
@@ -1103,6 +1111,7 @@ function stepLook(dir = 1) {
 
 function toggleMute() {
   audio.setMuted(!audio.muted);
+  sfx.setSfxMuted(audio.muted);
   $('btn-mute').classList.toggle('on', audio.muted);
   $('btn-mute').textContent = audio.muted ? 'muted' : 'mute';
   $('qb-mute').classList.toggle('on', audio.muted);
@@ -1266,6 +1275,7 @@ function flashPass(p, youWent) {
   el.classList.add('show');
   clearTimeout(passT);
   passT = setTimeout(() => el.classList.remove('show'), 1500);
+  sfx.pass(youWent);
   if (youWent) impact(0.5);
 }
 

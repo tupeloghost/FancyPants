@@ -43,6 +43,9 @@ export class Race {
     this.feetPerStep = DEFAULT_FEET_PER_STEP;
     this.mode = 'RACE';
     this.unit = 'FT';
+    // one callback covers every world at once: whoever owns the race decides
+    // what a hit SOUNDS like, and no world has to know sound exists
+    this.onEvent = null;
     this.reset();
   }
 
@@ -119,6 +122,7 @@ export class Race {
     if (this.streak > this.bestStreak) this.bestStreak = this.streak;
     if (rank === 'perfect') this.perfect++; else this.good++;
     this.hits++;              // worlds watch this to answer a catch
+    if (this.onEvent) this.onEvent('hit', { streak: this.streak, strong: rank === 'perfect' });
 
     if (this.mode === 'COLLECT') {
       // a clean strike is worth more than a scrape, and a streak multiplies it
@@ -139,6 +143,7 @@ export class Race {
     this.progress += n;
     this.hits++;
     this.streak++;
+    if (this.onEvent) this.onEvent('hit', { streak: this.streak, strong: n > 1 });
     if (this.streak > this.bestStreak) this.bestStreak = this.streak;
     this.perfect++;
   }
@@ -148,6 +153,7 @@ export class Race {
     this.progress = Math.max(0, this.progress - n);
     this.streak = 0;
     this.missed++;
+    if (this.onEvent) this.onEvent(n > 0 ? 'cost' : 'break');
   }
 
   miss() {
@@ -155,6 +161,7 @@ export class Race {
     this.missed++;
     this.streak = 0;
     this.momentum *= MISS_KEEP;
+    if (this.onEvent) this.onEvent('cost');
   }
 
   update(dt, songTime) {
