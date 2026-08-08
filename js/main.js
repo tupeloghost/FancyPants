@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=195';
-import { WORLDS } from './worlds/registry.js?v=195';
-import { Net, PALETTE } from './net.js?v=195';
-import { Presence } from './lib/presence.js?v=195';
-import { Pulses } from './lib/pulse.js?v=195';
-import { BeatClock } from './lib/beatclock.js?v=195';
-import { BeatCue } from './lib/beatcue.js?v=195';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=195';
-import { Race, placeOf, standings } from './lib/race.js?v=195';
-import { RouteMap } from './lib/map.js?v=195';
-import * as sfx from './lib/sfx.js?v=195';
-import { glowTexture } from './lib/glow.js?v=195';
+import { AudioEngine } from './audio-engine.js?v=196';
+import { WORLDS } from './worlds/registry.js?v=196';
+import { Net, PALETTE } from './net.js?v=196';
+import { Presence } from './lib/presence.js?v=196';
+import { Pulses } from './lib/pulse.js?v=196';
+import { BeatClock } from './lib/beatclock.js?v=196';
+import { BeatCue } from './lib/beatcue.js?v=196';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=196';
+import { Race, placeOf, standings } from './lib/race.js?v=196';
+import { RouteMap } from './lib/map.js?v=196';
+import * as sfx from './lib/sfx.js?v=196';
+import { glowTexture } from './lib/glow.js?v=196';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2082,6 +2082,7 @@ function frame(now) {
     race,          // worlds read progress/momentum; the rules live in lib/race.js
     chart: beatCue.chart ? beatCue.chart.notes : null,  // a CATCH world writes
     songTime: audio.currentTime,                        // its own round from these
+    songDur: beatCue.chart ? beatCue.chart.duration : 0, // for late-song heat
     judge: lastJudge,                                   // in-world cues answer
     judgeAge: (performance.now() - lastJudgeAt) / 1000, // the last press
     onPass: flashPass,                                  // you went by, or they did

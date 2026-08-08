@@ -9,10 +9,10 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=195';
-import { themePaint } from '../lib/themes.js?v=195';
-import { PALETTE } from '../net.js?v=195';
-import { clear as sfxClear, fanfare as sfxFanfare } from '../lib/sfx.js?v=195';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=196';
+import { themePaint } from '../lib/themes.js?v=196';
+import { PALETTE } from '../net.js?v=196';
+import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=196';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
@@ -34,6 +34,7 @@ export function createPaint() {
   let waveZ = 1;                      // milestone wave rolling down the tunnel
   let nextMilestone = 100;
   let flashRing = -1, flashT = 0;     // the ring that just cleared, white-hot
+  let decayAcc = 0, decayWarned = false;   // the gray eating back while you idle
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const _v = new THREE.Vector3();
@@ -199,6 +200,29 @@ export function createPaint() {
       // combo breathes out when you stop — three seconds of grace, then gone
       comboT += dt;
       if (comboT > 3) combo = Math.max(0, combo - dt * 30);
+
+      // ── the gray eats back ──
+      // The missing half of the loop was JEOPARDY: nothing could go wrong, so
+      // holding still was free. Now idling lets the gray creep back into what
+      // you painted — slowly at first, then hungrily — and one low thud
+      // announces the moment it starts. Painting is the only defence, which
+      // is exactly the loop: keep your world alive.
+      if (comboT > 2.5 && paintedCount > 0 && !attract) {
+        if (!decayWarned) { decayWarned = true; sfxThud(); }
+        decayAcc += dt * Math.min(6, (comboT - 2.5) * 2.5);   // hunger grows
+        while (decayAcc >= 1) {
+          decayAcc -= 1;
+          for (let tries = 0; tries < 12; tries++) {
+            const i = (Math.random() * COUNT) | 0;
+            if (painted[i] >= 1) {
+              painted[i] = 0;
+              popAt[i] = 1.0;          // a gray flicker marks the bite
+              paintedCount--;
+              break;
+            }
+          }
+        }
+      } else { decayAcc = 0; decayWarned = false; }
       const brushR = 0.11 + Math.min(0.06, combo * 0.0012);   // combo widens the brush
 
       // the brush: hold and sweep

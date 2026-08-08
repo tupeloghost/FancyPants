@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=195';
-import { themePaint } from '../lib/themes.js?v=195';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=196';
+import { themePaint } from '../lib/themes.js?v=196';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -44,7 +44,7 @@ export function createBlacktop() {
   const G_HIT = 4.2;           // how close counts as through it
   const MAX_GATES = 20;
   let gates = [];
-  let gChartAt = 0, gLastT = -99, gArrivals = 0;
+  let gChartAt = 0, gLastT = -99, gArrivals = 0, gHeat = 0;
   const SCORE_GAP = 26;        // road units per point of score difference
   let myScore = 0;             // kept from the race so placeGhost can read it
   let passSeen = new Map();    // id -> were they ahead last frame?
@@ -422,9 +422,12 @@ export function createBlacktop() {
       if (gating) {
         // a gate is the nitro: thread one and the car surges, clip a barrier
         // and the surge dies. The mix no longer drives the car — you do.
+        // HEAT: the road runs a quarter faster and gates arrive 40% tighter by
+        // the last chorus.
+        gHeat = opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
         gBoost = Math.max(0, gBoost - dt * 0.4);
         nitro = gBoost;
-        speed = 34 + gBoost * 80;
+        speed = (34 + gBoost * 80) * (1 + 0.25 * gHeat);
         travel += speed * dt;
       } else if (racing) {
         nitro = race.momentum;
@@ -479,7 +482,7 @@ export function createBlacktop() {
             // stale notes must not spawn — same batch-of-instant-misses bug
             // the river had, same fix
             if (n.t < songTime - 0.4) { gLastT = Math.max(gLastT, n.t); continue; }
-            if (n.t - gLastT < G_SPACING) continue;
+            if (n.t - gLastT < G_SPACING * (1 - 0.4 * gHeat)) continue;
             gLastT = n.t; gArrivals++;
 
             // Every fourth arrival is a SLALOM: three gates in quick

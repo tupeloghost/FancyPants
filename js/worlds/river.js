@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=195';
-import { themePaint } from '../lib/themes.js?v=195';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=196';
+import { themePaint } from '../lib/themes.js?v=196';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -289,7 +289,7 @@ export function createRiver() {
         // and how fast you are going decides how soon you meet it. That is what
         // makes a boost feel like a boost instead of a number going up.
         boost = Math.max(0, boost - dt * 0.42);
-        drift += dt * (DRIFT_RATE + boost * BOOST_ADD);
+        drift += dt * (DRIFT_RATE * (1 + 0.25 * heat) + boost * BOOST_ADD);
         rush = Math.max(rush * Math.pow(0.3, dt), boost);
         gatherFlash *= Math.pow(0.02, dt);
         rockFlash *= Math.pow(0.05, dt);
@@ -313,6 +313,11 @@ export function createRiver() {
       // ── the line to thread ──
       if (dodging) {
         riverMyScore = race.progress;
+        // HEAT: the song's build is the difficulty curve. Arrivals tighten by
+        // 40% and the current runs a quarter faster by the last chorus, so
+        // the end of every song feels like an ending instead of more middle.
+        const heat = opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
+        const spacingNow = SPACING * (1 - 0.4 * heat);
         // call the overtake by name — a silent position swap is just scenery
         if (participants && opts.onPass) {
           for (let i = 1; i < participants.length; i++) {
@@ -343,7 +348,7 @@ export function createRiver() {
             // that resolved as instant misses. You could hit every ramp on
             // screen and be told 5% accuracy for objects that never existed.
             if (n.t < songTime - 0.4) { lastSpawnT = Math.max(lastSpawnT, n.t); continue; }
-            if (n.t - lastSpawnT < SPACING) continue;
+            if (n.t - lastSpawnT < spacingNow) continue;
             const d = drifters.find(x => !x.alive);
             if (!d) continue;
             lastSpawnT = n.t;
