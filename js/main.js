@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=196';
-import { WORLDS } from './worlds/registry.js?v=196';
-import { Net, PALETTE } from './net.js?v=196';
-import { Presence } from './lib/presence.js?v=196';
-import { Pulses } from './lib/pulse.js?v=196';
-import { BeatClock } from './lib/beatclock.js?v=196';
-import { BeatCue } from './lib/beatcue.js?v=196';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=196';
-import { Race, placeOf, standings } from './lib/race.js?v=196';
-import { RouteMap } from './lib/map.js?v=196';
-import * as sfx from './lib/sfx.js?v=196';
-import { glowTexture } from './lib/glow.js?v=196';
+import { AudioEngine } from './audio-engine.js?v=199';
+import { WORLDS } from './worlds/registry.js?v=199';
+import { Net, PALETTE } from './net.js?v=199';
+import { Presence } from './lib/presence.js?v=199';
+import { Pulses } from './lib/pulse.js?v=199';
+import { BeatClock } from './lib/beatclock.js?v=199';
+import { BeatCue } from './lib/beatcue.js?v=199';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=199';
+import { Race, placeOf, standings } from './lib/race.js?v=199';
+import { RouteMap } from './lib/map.js?v=199';
+import * as sfx from './lib/sfx.js?v=199';
+import { glowTexture } from './lib/glow.js?v=199';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -487,6 +487,35 @@ function hideResults() {
   $('results').classList.remove('show');
 }
 
+// ── Personal bests ── the cheapest replay engine there is. "Again?" is weak;
+// "I was 40 feet short" is irresistible. One number per world+track, and a
+// golden moment the instant you beat it mid-run.
+function bestKey() {
+  return 'fp_best_' + $('world-select').value + '_' +
+    ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
+}
+function getBest() { return +(localStorage.getItem(bestKey()) || 0); }
+let bestBeaten = false;   // reset each round; the golden flash fires once
+function checkBest() {
+  if (!race.active || bestBeaten) return;
+  const b = getBest();
+  if (b > 0 && race.feet > b) {
+    bestBeaten = true;
+    // the golden moment: the HUD flares gold and the room hears it
+    const el = $('game-hud');
+    el.classList.add('best');
+    setTimeout(() => el.classList.remove('best'), 2600);
+    sfx.fanfare();
+    impact(0.8);
+  }
+}
+function saveBest() {
+  if (!race.active) return false;
+  const b = getBest();
+  if (race.feet > b) { localStorage.setItem(bestKey(), race.feet); return b > 0; }
+  return false;
+}
+
 // ── The question at the end ── a round that just fades out tells you the
 // session is over; a round that asks "again?" tells you it has barely begun.
 // Free rounds ask PLAY AGAIN / NEXT WORLD; the set-final board asks RUN IT
@@ -602,7 +631,9 @@ function showResults(reason) {
   // and the room lights up in the winner's colour
   const winner = board[0];
   const winHex = PALETTE[((winner && winner.p.color) || 0) % PALETTE.length];
-  celebrate(winHex, solo ? race.finished : place === 1);
+  const newBest = saveBest();
+  if (newBest) $('results-sub').textContent = 'NEW PERSONAL BEST';
+  celebrate(winHex, (solo ? race.finished : place === 1) || newBest);
 
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
@@ -647,9 +678,11 @@ function startRaceIfReady() {
     $('ri-track').textContent = prettyTrack($('track-select').value || audio.el.currentSrc || '');
     $('ri-mode').textContent = WORLDS[key].mode || 'PLAY';
     $('ri-rules').textContent = WORLDS[key].rules || '';
-    $('ri-state').textContent = 'preparing';
+    const pb = getBest();
+    $('ri-state').textContent = pb > 0 ? 'your best here: ' + pb.toLocaleString() : 'preparing';
     setPhase = 'intro';
     $('round-intro').classList.add('show');
+    bestBeaten = false;
     if (document.body.classList.contains('guest')) {
       // A shared race needs ONE start line. Every client pressing its own
       // PLAY meant races starting seconds apart — or never, for a guest who
@@ -1843,8 +1876,12 @@ function nextRound() {
 
   switchWorld(r.world);
   $('world-select').value = r.world;
-  // load now so the track charts during the intro rather than in silence
+  // The track starts NOW, under the intro card — charting happens beneath the
+  // song, never beneath silence. Ten silent seconds before a round was the
+  // most attention-hostile moment in the product, and it was the FIRST thing
+  // every round served.
   audio.loadURL(r.track);
+  audio.play().catch(() => {});
   $('track-select').value = r.track;
 
   // The card holds until the player presses PLAY. A timer decided how long
@@ -1880,7 +1917,9 @@ function armPlayButton(go) {
   (function waitReady() {
     if (mine !== playArm) return;
     if (!(chartProgress < 0 && beatCue.chart)) { setTimeout(waitReady, 200); return; }
-    $('ri-state').textContent = beatCue.chart.notes.length + ' notes \u00b7 ready';
+    const pbNow = getBest();
+    $('ri-state').textContent = beatCue.chart.notes.length + ' notes \u00b7 ready'
+      + (pbNow > 0 ? '  \u00b7  your best: ' + pbNow.toLocaleString() : '');
     $('ri-play').classList.add('ready');
     $('ri-play').onclick = () => {
       if (mine !== playArm) return;
@@ -2131,7 +2170,10 @@ function frame(now) {
     routeMap.draw(dt, settings.hue);
     $('ri-state').textContent = chartProgress >= 0
       ? 'charting ' + Math.round(chartProgress * 100) + '%'
-      : (beatCue.chart ? beatCue.chart.notes.length + ' notes \u00b7 ready' : 'preparing');
+      : (beatCue.chart
+          ? beatCue.chart.notes.length + ' notes \u00b7 ready'
+            + (getBest() > 0 ? '  \u00b7  your best: ' + getBest().toLocaleString() : '')
+          : 'preparing');
   }
   // a held arrow steers; releasing eases back to centre rather than snapping
   if (steeredRound() && world && world.setInput) {
@@ -2145,6 +2187,7 @@ function frame(now) {
   }
 
   updateHUD();
+  checkBest();
 
   // a guest's round starts when the host's does — their progress arriving on
   // the wire IS the starting gun

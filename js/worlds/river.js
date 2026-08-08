@@ -3,8 +3,8 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=196';
-import { themePaint } from '../lib/themes.js?v=196';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=199';
+import { themePaint } from '../lib/themes.js?v=199';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -283,6 +283,9 @@ export function createRiver() {
       const racing = !!(race && race.active && race.mode === 'RACE');
       if (dodging) this._buildDodge();
 
+      // HEAT is computed once, up here — it is used by BOTH dodge blocks below,
+      // and declaring it in the second while the first used it threw every frame.
+      const heat = (dodging && opts.songDur) ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
       if (dodging) {
         // Objects are placed a fixed DISTANCE ahead rather than at a fixed
         // time, so speed is free to change: the music decides when one appears,
@@ -313,10 +316,7 @@ export function createRiver() {
       // ── the line to thread ──
       if (dodging) {
         riverMyScore = race.progress;
-        // HEAT: the song's build is the difficulty curve. Arrivals tighten by
-        // 40% and the current runs a quarter faster by the last chorus, so
-        // the end of every song feels like an ending instead of more middle.
-        const heat = opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
+        // arrivals tighten by 40% as the song builds
         const spacingNow = SPACING * (1 - 0.4 * heat);
         // call the overtake by name — a silent position swap is just scenery
         if (participants && opts.onPass) {

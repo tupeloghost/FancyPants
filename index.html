@@ -158,8 +158,10 @@
   #mode-card, #round-intro {
     position: fixed; z-index: 150; inset: 0;
     display: none; align-items: center; justify-content: center;
-    background: radial-gradient(circle at 50% 45%, hsla(var(--accent-h),40%,8%,0.72), rgba(0,0,0,0.88));
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    /* light veil, not a wall: the world visibly plays behind the card, so the
+       wait is a preview instead of a void */
+    background: radial-gradient(circle at 50% 45%, hsla(var(--accent-h),40%,8%,0.42), rgba(0,0,0,0.62));
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
   }
   #mode-card.show, #round-intro.show { display: flex; }
   #mode-inner { width: min(440px, 88vw); text-align: center; }
@@ -303,6 +305,16 @@
     text-shadow: 0 0 26px hsla(4, 90%, 60%, 0.55);
   }
   #game-hud.loss #hud-sub { color: hsl(4, 70%, 62%); }
+  /* the golden moment: you just beat your own best */
+  #game-hud.best #hud-value {
+    color: hsl(46, 95%, 78%);
+    text-shadow: 0 0 34px hsla(46, 100%, 65%, 0.85);
+    animation: bestPulse 0.65s ease-in-out 4;
+  }
+  @keyframes bestPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.14); }
+  }
   @media (max-width: 620px) { #game-hud { left: 16px; bottom: 130px; } }
 
   /* a red breath at the edges when something costs you */
@@ -1369,7 +1381,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 196</div>
+      <div id="build-stamp">build 199</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1383,6 +1395,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=196"></script>
+<script type="module" src="js/main.js?v=199"></script>
 </body>
 </html>
