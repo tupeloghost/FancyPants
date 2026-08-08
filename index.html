@@ -361,7 +361,7 @@
     opacity: 0; pointer-events: none;
     transition: opacity 420ms ease, transform 420ms cubic-bezier(0.16,0.9,0.3,1);
   }
-  #results.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #results.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
   #results-place {
     font: 400 clamp(30px, 7vw, 42px)/1.05 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 4px; color: hsl(var(--accent-h), 55%, 94%);
@@ -390,6 +390,24 @@
   .rrow.m3 i { outline: 1.5px solid hsl(28, 70%, 55%); }
   .rrow.m1 span { color: hsl(46, 80%, 88%); }
   .rrow.m1 b { color: hsl(46, 85%, 80%); }
+
+  /* the question at the end — two pills, same family as PLAY */
+  #results-actions {
+    display: none; gap: 10px; justify-content: center;
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid hsla(var(--accent-h), 60%, 65%, 0.16);
+  }
+  #results-actions.show { display: flex; }
+  .rbtn {
+    padding: 10px 22px; cursor: pointer;
+    font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 3px; color: hsl(var(--accent-h), 55%, 94%);
+    background: linear-gradient(175deg, hsla(var(--accent-h),70%,60%,0.14), hsla(var(--accent-h),50%,30%,0.08));
+    border: 1px solid hsla(var(--accent-h), 80%, 70%, 0.45);
+    border-radius: 999px;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+  .rbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35); }
 
   #results-stats {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
@@ -1200,6 +1218,10 @@
   <div id="results-sub"></div>
   <hr>
   <div id="results-board"></div>
+  <div id="results-actions">
+    <button class="rbtn" id="rb-again">PLAY AGAIN</button>
+    <button class="rbtn" id="rb-next">NEXT WORLD</button>
+  </div>
   <div id="results-stats">
     <div><b id="rs-acc">0%</b><em>accuracy</em></div>
     <div><b id="rs-streak">0</b><em>best streak</em></div>
@@ -1347,7 +1369,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 185</div>
+      <div id="build-stamp">build 189</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1361,6 +1383,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=185"></script>
+<script type="module" src="js/main.js?v=189"></script>
 </body>
 </html>

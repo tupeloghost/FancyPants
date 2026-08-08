@@ -8,17 +8,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=185';
-import { WORLDS } from './worlds/registry.js?v=185';
-import { Net, PALETTE } from './net.js?v=185';
-import { Presence } from './lib/presence.js?v=185';
-import { Pulses } from './lib/pulse.js?v=185';
-import { BeatClock } from './lib/beatclock.js?v=185';
-import { BeatCue } from './lib/beatcue.js?v=185';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=185';
-import { Race, placeOf, standings } from './lib/race.js?v=185';
-import { RouteMap } from './lib/map.js?v=185';
-import { glowTexture } from './lib/glow.js?v=185';
+import { AudioEngine } from './audio-engine.js?v=189';
+import { WORLDS } from './worlds/registry.js?v=189';
+import { Net, PALETTE } from './net.js?v=189';
+import { Presence } from './lib/presence.js?v=189';
+import { Pulses } from './lib/pulse.js?v=189';
+import { BeatClock } from './lib/beatclock.js?v=189';
+import { BeatCue } from './lib/beatcue.js?v=189';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=189';
+import { Race, placeOf, standings } from './lib/race.js?v=189';
+import { RouteMap } from './lib/map.js?v=189';
+import { glowTexture } from './lib/glow.js?v=189';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -480,6 +480,35 @@ function hideResults() {
   $('results').classList.remove('show');
 }
 
+// ── The question at the end ── a round that just fades out tells you the
+// session is over; a round that asks "again?" tells you it has barely begun.
+// Free rounds ask PLAY AGAIN / NEXT WORLD; the set-final board asks RUN IT
+// BACK / BACK TO VIBE. In the middle of a set nothing asks — the set runner
+// owns the pacing there.
+function replayRound() {
+  hideResults();
+  // A fresh thinned-notes array is the lever that resets every world's chart
+  // read head (they key off the array's identity), so cherries fall and gates
+  // spawn from the top instead of the heads sitting at end-of-song.
+  const c = cachedChart(audio.el.currentSrc || audio.el.src);
+  if (!c) return;
+  beatCue.setChart(c);
+  audio.el.currentTime = 0;
+  beatCue.seek(0);
+  race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  seenMissed = beatCue.stats.missed;
+  audio.play().catch(() => {});
+}
+$('rb-again').addEventListener('click', () => {
+  if ($('rb-again').dataset.mode === 'set') { hideResults(); startSet(4); }
+  else replayRound();
+});
+$('rb-next').addEventListener('click', () => {
+  hideResults();
+  if ($('rb-next').dataset.mode === 'set') { endSet(); }
+  else jumpGame(1);
+});
+
 // ── The finish deserves a moment ── a scoreboard fading in is a receipt, not
 // an ending. Three beats: the score counts up under your eyes, the top three
 // get their medals, and the room fills with light in the winner's colour.
@@ -573,8 +602,19 @@ function showResults(reason) {
 
   $('results').classList.add('show');
   impact(0.9);
-  // it clears itself — nobody should have to dismiss a scoreboard mid-stream
-  resultsTimer = setTimeout(hideResults, 11000);
+  if (!setList) {
+    // a free round ends on a question, and questions wait for answers
+    $('rb-again').textContent = 'PLAY AGAIN';
+    $('rb-next').textContent = 'NEXT WORLD';
+    delete $('rb-again').dataset.mode;
+    delete $('rb-next').dataset.mode;
+    $('results-actions').classList.add('show');
+    clearTimeout(resultsTimer);
+  } else {
+    $('results-actions').classList.remove('show');
+    // mid-set it clears itself — the set runner owns the pacing
+    resultsTimer = setTimeout(hideResults, 11000);
+  }
 }
 audio.el.addEventListener('ended', () => {
   if (race.active) showResults('ended');
@@ -602,14 +642,19 @@ function startRaceIfReady() {
     $('ri-state').textContent = 'preparing';
     setPhase = 'intro';
     $('round-intro').classList.add('show');
-    armPlayButton(() => {
-      document.body.classList.remove('vibe-card');
-      $('round-intro').classList.remove('show');
-      setPhase = 'idle';
-      race.start(beatCue.chart.duration, beatCue.chart.notes.length);
-      seenMissed = beatCue.stats.missed;
-      hideResults();
-    });
+    if (document.body.classList.contains('guest')) {
+      // A shared race needs ONE start line. Every client pressing its own
+      // PLAY meant races starting seconds apart — or never, for a guest who
+      // ignored the card — which is "multiplayer doesn't work right" in one
+      // sentence. Guests read the rules while they wait; the round begins the
+      // moment the host's progress appears on the wire (see the frame loop).
+      $('ri-state').textContent = 'the host starts the round';
+      $('ri-play').classList.remove('ready');
+      playArm++;          // cancel any stale PLAY armer from a previous world
+      guestArmed = true;
+    } else {
+      armPlayButton(() => beginFreeRound());
+    }
     return;
   }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
@@ -1805,6 +1850,18 @@ function nextRound() {
   });
 }
 
+// one place that actually starts a free round, for host click AND guest sync
+let guestArmed = false;
+function beginFreeRound() {
+  guestArmed = false;
+  document.body.classList.remove('vibe-card');
+  $('round-intro').classList.remove('show');
+  setPhase = 'idle';
+  race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  seenMissed = beatCue.stats.missed;
+  hideResults();
+}
+
 // show PLAY once the chart is ready; fire `go` on the click
 let playArm = 0;
 function armPlayButton(go) {
@@ -1865,10 +1922,15 @@ function showSetResults() {
   [...$('results-board').children].slice(0, 3).forEach((row, k) =>
     row.classList.add('m' + (k + 1)));
   celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], rows[0][0] === (net.local.name || 'you'));
+  $('rb-again').textContent = 'RUN IT BACK';
+  $('rb-next').textContent = 'BACK TO VIBE';
+  $('rb-again').dataset.mode = 'set';
+  $('rb-next').dataset.mode = 'set';
+  $('results-actions').classList.add('show');
   resultsShown = true;
   $('results').classList.add('show');
   clearTimeout(resultsTimer);
-  resultsTimer = setTimeout(() => { hideResults(); setList = null; }, 15000);
+  setList = null;   // the set is settled; the buttons decide what happens next
 }
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
@@ -2072,6 +2134,13 @@ function frame(now) {
   }
 
   updateHUD();
+
+  // a guest's round starts when the host's does — their progress arriving on
+  // the wire IS the starting gun
+  if (guestArmed && beatCue.chart && chartProgress < 0 && !race.active &&
+      participants.some(p => !p.local && (p.z || 0) > 0.5)) {
+    beginFreeRound();
+  }
 
   if (document.body.classList.contains('round')) {
     // The one instruction, retired as soon as the player is clearly landing

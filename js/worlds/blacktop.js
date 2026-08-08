@@ -3,8 +3,8 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=185';
-import { themePaint } from '../lib/themes.js?v=185';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=189';
+import { themePaint } from '../lib/themes.js?v=189';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -341,61 +341,44 @@ export function createBlacktop() {
         glow.position.y = 3.4;
         gate.add(glow);
 
-        // A barrier you can actually see. The near-black block read as road
-        // until you were inside it — a hazard has to announce itself from as
-        // far away as the gates do, so: hot hazard stripes, a red edge light,
-        // and its own glow.
+        // A barrier is a WALL, not a frame. The tall end-posts and rail made
+        // it read as another gate — the same silhouette as the thing it must
+        // never be confused with. The distinction is solid versus hollow: a
+        // gate is an opening you drive through, a barrier is a face you would
+        // hit. So: one solid slab, waist-high but wide, the whole face striped
+        // like a road-works board, lit red, blinking faster as it comes.
         const barrier = new THREE.Group();
         const block = new THREE.Mesh(
-          new THREE.BoxGeometry(7.5, 2.6, 1.6),
-          new THREE.MeshBasicMaterial({ color: 0x201014, toneMapped: false })
+          new THREE.BoxGeometry(7.6, 3.4, 1.2),
+          new THREE.MeshBasicMaterial({ color: 0x1a0c10, toneMapped: false })
         );
-        block.position.y = 1.3;
-        // alternating warning chevrons across the face
+        block.position.y = 1.7;
+        barrier.add(block);
+        // full-face diagonal hazard stripes — nothing hollow about it
         const stripeMats = [];
-        for (let k = 0; k < 4; k++) {
+        for (let k = 0; k < 5; k++) {
           const st = new THREE.Mesh(
-            new THREE.BoxGeometry(1.55, 2.2, 0.12),
-            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff4a2a : 0xffc02a, toneMapped: false })
+            new THREE.BoxGeometry(1.15, 3.9, 0.1),
+            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff3a1a : 0xffb81e, toneMapped: false })
           );
-          st.position.set(-2.8 + k * 1.86, 1.3, 0.86);
-          st.rotation.z = 0.5;
+          st.position.set(-2.6 + k * 1.3, 1.7, 0.66);
+          st.rotation.z = 0.44;
           stripeMats.push(st.material);
           barrier.add(st);
         }
-        // Height is what reads at distance. The gates stand 7 units tall and
-        // announce themselves half a road away; a 2.6-unit slab was a sliver
-        // until you were on top of it. So the barrier gets the same treatment
-        // in the opposite colour: tall end-posts with red lamps, a thick red
-        // rail across the top, and a glow you can see from the spawn line.
         const topLight = new THREE.Mesh(
-          new THREE.BoxGeometry(8.2, 0.5, 0.5),
+          new THREE.BoxGeometry(7.8, 0.3, 0.3),
           new THREE.MeshBasicMaterial({ color: 0xff3020, toneMapped: false })
         );
-        topLight.position.y = 5.6;
-        const lampMats = [];
-        for (const sx of [-3.9, 3.9]) {
-          const post = new THREE.Mesh(
-            new THREE.BoxGeometry(0.5, 5.6, 0.5),
-            new THREE.MeshBasicMaterial({ color: 0x2a1216, toneMapped: false })
-          );
-          post.position.set(sx, 2.8, 0);
-          const lamp = new THREE.Mesh(
-            new THREE.SphereGeometry(0.5, 10, 8),
-            new THREE.MeshBasicMaterial({ color: 0xff2418, toneMapped: false })
-          );
-          lamp.position.set(sx, 5.9, 0);
-          lampMats.push(lamp.material);
-          barrier.add(post, lamp);
-        }
-        const bGlow = glowSprite(13);
+        topLight.position.y = 3.55;
+        const bGlow = glowSprite(10);
         bGlow.material.color.setHex(0xff3524);
-        bGlow.material.opacity = 0.4;
-        bGlow.position.y = 3.4;
-        barrier.add(block, topLight, bGlow);
-        barrier.userData = { stripeMats, topLight, bGlow, lampMats };
+        bGlow.material.opacity = 0.35;
+        bGlow.position.y = 2.0;
+        barrier.add(topLight, bGlow);
+        barrier.userData = { stripeMats, topLight, bGlow, lampMats: [] };
 
-        g.add(gate, barrier);
+                g.add(gate, barrier);
         g.visible = false;
         group.add(g);
         gates.push({ mesh: g, gate, barrier, gMat, glow, alive: false, z: 0, x: 0, isBar: false });
