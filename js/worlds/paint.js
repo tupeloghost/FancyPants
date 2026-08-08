@@ -11,7 +11,7 @@
 // sends a wave across the finished work.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=189';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=191';
 
 const N = 44;                 // plate is N x N cells
 const CELL = 1.12;
@@ -251,6 +251,10 @@ export function createPaint() {
   // flow: how long the current stroke has stayed clean. It widens the brush,
   // which is what makes a good stroke FEEL like a good stroke.
   let flow = 0, strokeAcc = 0;
+  // ── the call ── the plate names a region and you chase it. Painting with no
+  // clock is colouring-in; painting against a fading glow is a game.
+  let hot = { region: -1, until: 0, cells: null, mid: [0, 0] };
+  let hotCelebrate = 0;
   const numPts = [];
   const rackPots = [];
   let rackNums = [];
@@ -732,6 +736,54 @@ export function createPaint() {
     update(dt, audio, participants, opts) {
       const { reactivity, attract, time, hue } = opts;
 
+      // ── the call ── every so often the plate lights one region and loads
+      // your brush with its colour. Clear it before the glow fades: sparks,
+      // a chunk of score, and half a charge. Miss it: the light just moves
+      // on — urgency without punishment, which is the party-game register.
+      hotCelebrate = Math.max(0, hotCelebrate - dt);
+      if (cellRegion && doneCount < needCount) {
+        const hotDone = hot.region >= 0 && hot.cells && hot.cells.every(k => cellDone[k]);
+        if (hotDone && hot.until > 0) {
+          scoreQueue += 60;
+          charge = Math.min(1, charge + 0.5);
+          if (charge >= 1) { charge = 0; chargeReady = 1; }
+          flow = 1;
+          hotCelebrate = 1;
+          for (let q = 0; q < 5; q++) spark(hot.mid[0], hot.mid[1], paint(held).h, 22, 1.3);
+          hot.region = -1; hot.until = time + 1.2;   // a breath before the next call
+        }
+        if (hot.region < 0 && time > hot.until) {
+          // pick a region with real work left, weighted toward bigger ones
+          let bestR = -1, bestN = 3;
+          for (let tries = 0; tries < 40; tries++) {
+            const k = (Math.random() * N * N) | 0;
+            const rId = cellRegion[k];
+            if (rId < 0 || cellDone[k]) continue;
+            const cells = [];
+            for (let j = 0; j < N * N; j++) if (cellRegion[j] === rId && !cellDone[j]) cells.push(j);
+            if (cells.length > bestN) {
+              bestR = rId; bestN = cells.length;
+              hot.cells = cells;
+              if (cells.length > 14) break;        // big enough — take it
+            }
+          }
+          if (bestR >= 0) {
+            hot.region = bestR;
+            hot.until = time + 9;                   // nine seconds of glow
+            let sx = 0, sy = 0;
+            for (const k of hot.cells) { sx += cellX(k % N); sy += cellY((k / N) | 0); }
+            hot.mid = [sx / hot.cells.length, sy / hot.cells.length];
+            // the brush loads itself — the call IS the colour choice
+            held = cellNum[hot.cells[0]];
+            numDirty = true;
+            spark(hot.mid[0], hot.mid[1], paint(held).h, 16, 0.9);
+          } else {
+            hot.until = time + 2;                   // nothing worth calling yet
+          }
+        }
+        if (hot.region >= 0 && time > hot.until) { hot.region = -1; hot.until = time + 0.8; }
+      }
+
       // ── the stroke ── hold and sweep, and paint pours under the brush.
       // Throttled to ~30 stamps a second so a fast frame rate does not paint
       // faster than a slow one.
@@ -865,9 +917,14 @@ export function createPaint() {
             const ready = held === n;
             const grain = ((i * 2654435761) % 1000) / 1000 * 0.022;   // laid paper
             // every beat lights up what the loaded colour still owes
+            const called = hot.region >= 0 && cellRegion[i] === hot.region;
+            // the called region burns brighter as its window closes
+            const urgency = called ? Math.max(0, Math.min(1, 1 - (hot.until - time) / 9)) : 0;
             const paper = 0.80 - grain
-              + (ready ? 0.07 + 0.03 * Math.sin(time * 4 + i * 0.2) + hint * 0.14 : 0);
-            color.setHSL(ready ? P.h : 0.10, ready ? 0.35 : 0.09, paper - denyFlash * 0.06);
+              + (ready ? 0.07 + 0.03 * Math.sin(time * 4 + i * 0.2) + hint * 0.14 : 0)
+              + (called ? 0.10 + 0.08 * Math.sin(time * (5 + urgency * 6)) : 0);
+            color.setHSL(ready ? P.h : 0.10,
+              called ? 0.55 : (ready ? 0.35 : 0.09), paper - denyFlash * 0.06);
             plate.setColorAt(i, color);
 
             if (numDirty) {

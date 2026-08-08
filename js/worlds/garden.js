@@ -10,8 +10,8 @@
 // room draws a larger figure.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=189';
-import { themePaint } from '../lib/themes.js?v=189';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=191';
+import { themePaint } from '../lib/themes.js?v=191';
 
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [
@@ -524,6 +524,24 @@ export function createGarden() {
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+
+      // ── move-and-catch ── hold and sweep the pointer through the runes and
+      // they gather themselves. Clicking each one made harvesting feel like
+      // clerical work; sweeping a hand through fireflies is the actual fantasy.
+      if (opts.holding && pointer.active && tray.length < TRAY_MAX) {
+        for (let i = 0; i < RUNES; i++) {
+          if (!rAlive[i]) continue;
+          _v.set(rx[i], ry[i], rz[i]).project(camera);
+          if (Math.hypot(_v.x - pointer.x, _v.y - pointer.y) < 0.075) {
+            tray.push(rTier[i]);
+            spark(rx[i], ry[i], rz[i], tierHue(rTier[i]), 12, 0.7);
+            scoreQueue += 2;
+            rAlive[i] = 0;
+            tryFuse();
+            if (tray.length >= TRAY_MAX) break;
+          }
+        }
+      }
       this._t = time;
 
       if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue); scoreQueue = 0; }

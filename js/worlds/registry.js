@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=189';
-import { createSurfer } from './surfer.js?v=189';
-import { createOrbit } from './orbit.js?v=189';
-import { createBloom } from './bloom.js?v=189';
-import { createTrail } from './trail.js?v=189';
-import { createSignal } from './signal.js?v=189';
-import { createRiver } from './river.js?v=189';
-import { createFunhouse } from './funhouse.js?v=189';
-import { createLavaLamp } from './lavalamp.js?v=189';
-import { createPlasma } from './plasma.js?v=189';
-import { createCherryLand } from './cherryland.js?v=189';
-import { createSlinky } from './slinky.js?v=189';
-import { createBlacktop } from './blacktop.js?v=189';
-import { createWaterslide } from './waterslide.js?v=189';
-import { createGarden } from './garden.js?v=189';
-import { createPaint } from './paint.js?v=189';
+import { createTunnel } from './tunnel.js?v=191';
+import { createSurfer } from './surfer.js?v=191';
+import { createOrbit } from './orbit.js?v=191';
+import { createBloom } from './bloom.js?v=191';
+import { createTrail } from './trail.js?v=191';
+import { createSignal } from './signal.js?v=191';
+import { createRiver } from './river.js?v=191';
+import { createFunhouse } from './funhouse.js?v=191';
+import { createLavaLamp } from './lavalamp.js?v=191';
+import { createPlasma } from './plasma.js?v=191';
+import { createCherryLand } from './cherryland.js?v=191';
+import { createSlinky } from './slinky.js?v=191';
+import { createBlacktop } from './blacktop.js?v=191';
+import { createWaterslide } from './waterslide.js?v=191';
+import { createGarden } from './garden.js?v=191';
+import { createPaint } from './paint.js?v=191';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -48,6 +48,6 @@ export const WORLDS = {
             rules: 'Steer with the mouse or the arrow keys. Thread the green gates \u2014 every one is a shot of nitro. A dark barrier costs you two and kills your speed. Whoever threads the most gates wins.', goal: 'hold for NITRO — survive the UFO for +40', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
             rules: 'Lean left and right with the mouse or arrow keys. Ride through the green hoops — each one is a burst of speed, and hoops back-to-back pay double. Whoever rides through the most wins.', goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
-  paint:  { pulse: 0.3, goal: 'hold and sweep — paint pours under your brush. Long clean strokes widen it; a full charge floods a whole colour', label: 'PAINT BY NUMBERS', create: createPaint },
-  garden: { pulse: 0.45, goal: 'drag matching runes into each other — three of a kind become one brighter rune. Fill the whole board to light it up', label: 'LUMEN', create: createGarden },
+  paint:  { pulse: 0.3, goal: 'follow the light — the plate calls a region and loads your brush. Clear it before the glow fades for a bonus', label: 'PAINT BY NUMBERS', create: createPaint },
+  garden: { pulse: 0.45, goal: 'hold and sweep to gather the floating runes — three alike fuse into a brighter one. Set them in the board to light it up', label: 'LUMEN', create: createGarden },
 };

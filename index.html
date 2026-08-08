@@ -274,7 +274,7 @@
     color: hsl(var(--accent-h), 55%, 94%);
   }
   body.playing-round #game-hud { display: block; }
-  body.clean #game-hud { display: block; }   /* the score is play, not chrome */
+  body.clean.playing-round #game-hud { display: block; }   /* score is play, not chrome — but only when a round is on */
   #hud-value {
     font: 400 clamp(38px, 6vw, 56px)/1 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 2px; font-variant-numeric: tabular-nums;
@@ -1369,7 +1369,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 189</div>
+      <div id="build-stamp">build 191</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1383,6 +1383,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=189"></script>
+<script type="module" src="js/main.js?v=191"></script>
 </body>
 </html>
