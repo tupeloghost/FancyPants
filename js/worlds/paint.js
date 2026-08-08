@@ -9,8 +9,9 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=192';
-import { themePaint } from '../lib/themes.js?v=192';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=194';
+import { themePaint } from '../lib/themes.js?v=194';
+import { PALETTE } from '../net.js?v=194';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
@@ -26,6 +27,12 @@ export function createPaint() {
   let paintedCount = 0, scoreQueue = 0;
   let brushHue = Math.random();
   let sprays = [];
+  // ── dopamine state ──
+  let combo = 0, comboT = 0;          // unbroken painting: wider brush, more score
+  let ringChain = 0, lastRingT = -9;  // consecutive full rings pay escalating bonuses
+  let waveZ = 1;                      // milestone wave rolling down the tunnel
+  let nextMilestone = 100;
+  let flashRing = -1, flashT = 0;     // the ring that just cleared, white-hot
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const _v = new THREE.Vector3();
@@ -108,36 +115,63 @@ export function createPaint() {
     },
 
     // paint every unpainted panel whose screen position sits near the pointer
-    _spray(px, py, radius, strengthBonus = 1) {
+    _spray(px, py, radius, strengthBonus = 1, ghostHue = -1) {
       let hit = 0, hx = 0, hy = 0, hz = 0;
+      const mine = ghostHue < 0;
+      const useHue = mine ? brushHue : ghostHue;
       for (let r = 0; r < RINGS; r++) {
         // only rings ahead of the camera can be sprayed
         if (ringZ[r] > camera.position.z - 2 || ringZ[r] < camera.position.z - 130) continue;
+        let ringFilled = true;
         for (let s2 = 0; s2 < SEGS; s2++) {
           const i = r * SEGS + s2;
           if (painted[i] >= 1) continue;
           panelPos(r, s2, _v);
           const wx = _v.x, wy = _v.y, wz = _v.z;
           _v.project(camera);
-          if (_v.z > 1) continue;
+          if (_v.z > 1) { ringFilled = false; continue; }
           if (Math.hypot(_v.x - px, _v.y - py) < radius) {
             painted[i] = 1;
             popAt[i] = 1.4;
-            hueAt[i] = brushHue;
+            hueAt[i] = useHue;
             paintedCount++;
-            scoreQueue += strengthBonus;
+            // the combo pays: unbroken painting is worth up to double
+            if (mine) scoreQueue += strengthBonus * (combo > 40 ? 2 : combo > 15 ? 1.5 : 1);
             hit++; hx = wx; hy = wy; hz = wz;
+          } else ringFilled = false;
+        }
+        // ── RING! ── the whole hoop done: it detonates, and chains escalate.
+        // The clear unit players can SEE coming ("two more panels...") is
+        // where the anticipation-payoff loop actually lives.
+        if (mine && hit && ringFilled) {
+          let all = true;
+          for (let s2 = 0; s2 < SEGS; s2++) if (painted[r * SEGS + s2] < 1) { all = false; break; }
+          if (all && flashRing !== r) {
+            ringChain = (performance.now() / 1000 - lastRingT < 7) ? ringChain + 1 : 1;
+            lastRingT = performance.now() / 1000;
+            scoreQueue += 20 * ringChain;
+            flashRing = r; flashT = 1;
+            for (let s2 = 0; s2 < SEGS; s2++) popAt[r * SEGS + s2] = 2.0;
           }
         }
       }
       if (hit) {
-        brushHue = (brushHue + 0.004 * hit) % 1;   // the brush drifts through the rainbow
+        if (mine) {
+          combo += hit; comboT = 0;
+          brushHue = (brushHue + 0.004 * hit) % 1;   // the brush drifts through the rainbow
+        }
         const sp = sprays.find(q => !q.visible) || sprays[0];
         sp.visible = true;
         sp.userData.life = 1;
         sp.position.set(hx, hy, hz);
-        color.setHSL(brushHue, 0.9, 0.65);
+        color.setHSL(useHue, 0.9, 0.65);
         sp.material.color.copy(color);
+        // milestones roll a wave of light down everything you have painted
+        if (mine && paintedCount >= nextMilestone) {
+          nextMilestone += 100;
+          waveZ = 0;   // 0 = start at the camera, animates forward in update
+          scoreQueue += 30;
+        }
       }
       return hit;
     },
@@ -159,9 +193,29 @@ export function createPaint() {
         participants[0].y = pointer.y || 0;
       }
 
+      // combo breathes out when you stop — three seconds of grace, then gone
+      comboT += dt;
+      if (comboT > 3) combo = Math.max(0, combo - dt * 30);
+      const brushR = 0.11 + Math.min(0.06, combo * 0.0012);   // combo widens the brush
+
       // the brush: hold and sweep
       if (opts.holding && pointer.active && !attract) {
-        this._spray(pointer.x, pointer.y, 0.11);
+        this._spray(pointer.x, pointer.y, brushR);
+      }
+
+      // ── rivals paint the same canvas, live, in their own colour ──
+      // Their pointer already rides the wire (x, y). A shared canvas is the
+      // multiplayer dopamine: the tunnel fills with everyone's colours at
+      // once, and every unpainted panel is a little race.
+      if (participants) {
+        for (let gi = 1; gi < participants.length; gi++) {
+          const p = participants[gi];
+          if (p.x === undefined || p.y === undefined) continue;
+          color.setHex(PALETTE[(p.color || 0) % PALETTE.length]);
+          const hsl = { h: 0, s: 0, l: 0 };
+          color.getHSL(hsl);
+          this._spray(p.x, p.y, p.action === 'tap' ? 0.18 : 0.06, 0, hsl.h);
+        }
       }
       if (attract) {
         // watch mode paints itself lazily, so the world demos its own point
@@ -198,11 +252,17 @@ export function createPaint() {
           dummy.updateMatrix();
           panels.setMatrixAt(i, dummy.matrix);
 
+          // the milestone wave: a band of white light rolling away from you
+          const waveBoost = waveZ < 1
+            ? Math.max(0, 1 - Math.abs((camZ - ringZ[r]) - waveZ * 130) / 10) : 0;
+          const ringFlash = (flashRing === r) ? flashT : 0;
+
           if (painted[i]) {
             // painted panels live: they carry their stroke's hue, breathe with
             // their band, and flash white at the instant of the stroke
             themePaint(colorMode, hueAt[i], 0.5 + (s2 % 5) * 0.1, ringZ[r] * 0.01, time, band, s2 / SEGS, tp);
-            color.setHSL(tp[0], Math.min(1, tp[1] + 0.2), Math.min(0.72, tp[2] + band * 0.22 + pop * 0.4));
+            color.setHSL(tp[0], Math.min(1, tp[1] + 0.2),
+              Math.min(0.85, tp[2] + band * 0.22 + pop * 0.4 + waveBoost * 0.35 + ringFlash * 0.3));
           } else {
             // the unpainted world: near-monochrome, faintly alive, waiting
             const g = 0.07 + ((i * 2654435761) % 100) / 100 * 0.05 + audio.volume * 0.02;
@@ -213,6 +273,9 @@ export function createPaint() {
       }
       panels.instanceMatrix.needsUpdate = true;
       panels.instanceColor.needsUpdate = true;
+
+      if (waveZ < 1) waveZ = Math.min(1, waveZ + dt * 0.7);
+      if (flashT > 0) { flashT = Math.max(0, flashT - dt * 1.4); if (flashT === 0) flashRing = -1; }
 
       for (const sp of sprays) {
         if (!sp.visible) continue;
@@ -231,7 +294,10 @@ export function createPaint() {
       motes.material.opacity = 0.35 + audio.high * 0.3;
 
       sky.position.copy(camera.position);
-      if (window.__setFigure) window.__setFigure('PAINT', paintedCount, COUNT);
+      if (window.__setFigure) {
+        const label = combo > 15 ? 'PAINT  \u00b7  ' + Math.floor(combo) + ' COMBO' + (ringChain > 1 ? '  \u00b7  RING \u00d7' + ringChain : '') : 'PAINT';
+        window.__setFigure(label, paintedCount, COUNT);
+      }
     },
 
     dispose() {
