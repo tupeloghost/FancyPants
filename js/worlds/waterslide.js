@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=215';
-import { themePaint } from '../lib/themes.js?v=215';
-import { TUNE } from '../lib/tune.js?v=215';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=217';
+import { themePaint } from '../lib/themes.js?v=217';
+import { TUNE } from '../lib/tune.js?v=217';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -27,6 +27,11 @@ export function createWaterslide() {
   const H_SPACING = 2.6;       // min seconds between hoops
   const MAX_HOOPS = 14;
   let hoops = [], hoopChartAt = 0, hoopLastT = -99, hoopBoost = 0;
+  // THE THROTTLE — hold to drop steeper and faster. Hoops pay double flat
+  // out and shaving a red one pays a close call; leaning into a red at
+  // speed costs three and floods the run for a beat.
+  let wThrottle = 0;
+  let wStun = 0;
   let hoopCount = 0;           // arrivals, for the red cadence
   let bursts = [];             // golden rings left behind by a catch
   let wLastChartRef = null;
@@ -189,8 +194,11 @@ export function createWaterslide() {
         if (opts.chart !== wLastChartRef) { wLastChartRef = opts.chart; hoopChartAt = 0; hoopLastT = -99; }
         const wHeat = (opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0) * TUNE.heat;
         hoopBoost = Math.max(0, hoopBoost - dt * 0.42);
-        boost = hoopBoost;
-        speed = (20 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * TUNE.speed;
+        wStun = Math.max(0, wStun - dt);
+        const gasWanted = (opts.holding && wStun <= 0) ? 1 : 0;
+        wThrottle += (gasWanted - wThrottle) * Math.min(1, dt * (gasWanted ? 5 : 2.6));
+        boost = Math.max(hoopBoost, wThrottle * 0.85);
+        speed = (14 + wThrottle * 24 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * TUNE.speed;
         travel += speed * dt;
 
         const songTime = opts.songTime || 0, chart = opts.chart;
@@ -228,13 +236,21 @@ export function createWaterslide() {
 
           const ahead = t - travel;
           if (ahead < 4) {
-            const through = Math.abs(h.side - steer) < 0.42;
+            const gap = Math.abs(h.side - steer);
+            const through = gap < 0.42;
+            const flooring = wThrottle > 0.6;
             if (through && h.red) {
-              race.drop(2);                            // leaned into the wrong ring
+              // a red ring at speed hits harder and floods the run
+              race.drop(flooring ? 3 : 2);
               hoopBoost = 0;
+              wStun = flooring ? 1.2 : 0.5; wThrottle *= 0.2;
               if (opts.impact) opts.impact(1.0);
+            } else if (h.red && flooring && gap < 0.8) {
+              // the close call: shave past a red flat out and the near-miss pays
+              race.collect(1);
+              if (opts.impact) opts.impact(0.35);
             } else if (through) {
-              race.collect(hoopBoost > 0.35 ? 2 : 1);
+              race.collect((hoopBoost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
               hoopBoost = Math.min(1, hoopBoost + 0.85);
               if (opts.impact) opts.impact(hoopBoost > 0.9 ? 0.75 : 0.5);
               // leave a golden bloom where the catch happened
@@ -269,6 +285,8 @@ export function createWaterslide() {
       // bank into the curve like a rider would
       const ahead = curveX(travel + 30) - curveX(travel);
       const bank = ahead * 0.03 + steer * 0.35;
+      // the lens widens as the throttle opens — speed you can SEE
+      camera.fov += ((76 + wThrottle * 14 + boost * 4) - camera.fov) * Math.min(1, dt * 4);
 
       // camera rides low in the flume
       camera.position.set(

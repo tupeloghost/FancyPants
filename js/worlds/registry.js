@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=215';
-import { createSurfer } from './surfer.js?v=215';
-import { createOrbit } from './orbit.js?v=215';
-import { createBloom } from './bloom.js?v=215';
-import { createTrail } from './trail.js?v=215';
-import { createSignal } from './signal.js?v=215';
-import { createRiver } from './river.js?v=215';
-import { createFunhouse } from './funhouse.js?v=215';
-import { createLavaLamp } from './lavalamp.js?v=215';
-import { createPlasma } from './plasma.js?v=215';
-import { createCherryLand } from './cherryland.js?v=215';
-import { createSlinky } from './slinky.js?v=215';
-import { createBlacktop } from './blacktop.js?v=215';
-import { createWaterslide } from './waterslide.js?v=215';
-import { createGarden } from './garden.js?v=215';
-import { createPaint } from './paint.js?v=215';
+import { createTunnel } from './tunnel.js?v=217';
+import { createSurfer } from './surfer.js?v=217';
+import { createOrbit } from './orbit.js?v=217';
+import { createBloom } from './bloom.js?v=217';
+import { createTrail } from './trail.js?v=217';
+import { createSignal } from './signal.js?v=217';
+import { createRiver } from './river.js?v=217';
+import { createFunhouse } from './funhouse.js?v=217';
+import { createLavaLamp } from './lavalamp.js?v=217';
+import { createPlasma } from './plasma.js?v=217';
+import { createCherryLand } from './cherryland.js?v=217';
+import { createSlinky } from './slinky.js?v=217';
+import { createBlacktop } from './blacktop.js?v=217';
+import { createWaterslide } from './waterslide.js?v=217';
+import { createGarden } from './garden.js?v=217';
+import { createPaint } from './paint.js?v=217';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -45,9 +45,9 @@ export const WORLDS = {
   slinky: { pulse: 0.6, rhythm: true, feetPerStep: 3, mode: 'RACE', cue: 'world',
             rules: 'Bars of light slide up the stairs \u2014 tap the moment one reaches your slinky. Hits build momentum and the spring walks faster. First one to the bottom wins.', goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { pulse: 0.85, rhythm: true, feetPerStep: 42, mode: 'DODGE', unit: 'GATES',
-            rules: 'Steer with the mouse or the arrow keys. Thread the green gates \u2014 every one is a shot of nitro. A dark barrier costs you two and kills your speed. Whoever threads the most gates wins.', goal: 'hold for NITRO — survive the UFO for +40', label: 'BLACKTOP', create: createBlacktop },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, gates pay double and shaving past a wall pays a close-call bonus, but hitting one costs three and floods your engine. Ease off to play it safe. Most gates wins.', goal: 'run the midnight road — hold to open the throttle', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
-            rules: 'Lean left and right to ride through the green hoops \u2014 each one is a burst of speed, and hoops back-to-back pay double. Red hoops are trouble: lean away. Whoever rides through the most wins.', goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, green hoops pay double and shaving past a red one pays a close-call bonus, but leaning into a red at speed costs three and floods your run. Ease off to play it safe. Most hoops wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'the world arrives gray — hold and sweep, and everything you touch turns to colour', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'hold and sweep to gather the floating runes — three alike fuse into a brighter one. Set them in the board to light it up', label: 'LUMEN', create: createGarden },
 };

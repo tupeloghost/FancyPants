@@ -3,9 +3,9 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=215';
-import { themePaint } from '../lib/themes.js?v=215';
-import { TUNE } from '../lib/tune.js?v=215';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=217';
+import { themePaint } from '../lib/themes.js?v=217';
+import { TUNE } from '../lib/tune.js?v=217';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -51,6 +51,11 @@ export function createBlacktop() {
   let passSeen = new Map();    // id -> were they ahead last frame?
   let bLastChartRef = null;
   let gBoost = 0;
+  // THE THROTTLE — same bargain as the river: hold to floor it, and speed is
+  // where the points are. Gates pay double flat out, shaving a barrier pays a
+  // close call, but clipping one at speed costs three and floods the engine.
+  let bThrottle = 0;
+  let bStun = 0;
   let ufo = null, ufoT = -1, ufoNext = 12, ufoLights = null;
   let cow = null, beam = null, abduct = { z: 0, x: 0, on: false, target: -2, p2: 0 };
   // ── the wider alien programme ──
@@ -427,8 +432,11 @@ export function createBlacktop() {
         // the last chorus.
         gHeat = (opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0) * TUNE.heat;
         gBoost = Math.max(0, gBoost - dt * 0.4);
-        nitro = gBoost;
-        speed = (34 + gBoost * 80) * (1 + 0.25 * Math.min(1, gHeat)) * TUNE.speed;
+        bStun = Math.max(0, bStun - dt);
+        const gasWanted = (opts.holding && bStun <= 0 && !attract) ? 1 : 0;
+        bThrottle += (gasWanted - bThrottle) * Math.min(1, dt * (gasWanted ? 5 : 2.6));
+        nitro = Math.max(gBoost, bThrottle * 0.85);
+        speed = (24 + bThrottle * 38 + gBoost * 80) * (1 + 0.25 * Math.min(1, gHeat)) * TUNE.speed;
         travel += speed * dt;
       } else if (racing) {
         nitro = race.momentum;
@@ -536,17 +544,27 @@ export function createBlacktop() {
           // gate on the frame it spawned — an empty road and a score of zero.
           const ahead = g.z - camZ;
           if (ahead < -4) continue;               // still up the road
-          const through = Math.abs(gx - playerX) < G_HIT;
+          const gap = Math.abs(gx - playerX);
+          const through = gap < G_HIT;
+          const flooring = bThrottle > 0.6;
           if (through && !g.isBar) {
-            // threading a gate while still surging pays double — keeping the
-            // car fast IS the game, and a slalom held together is six points
-            race.collect(gBoost > 0.35 ? 2 : 1);
+            // threading a gate while surging pays double, and threading it
+            // with the throttle open doubles it AGAIN — a slalom held
+            // together flat out is the biggest play on the road
+            race.collect((gBoost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
             gBoost = Math.min(1, gBoost + 0.9);
             if (opts.impact) opts.impact(gBoost > 0.9 ? 0.8 : 0.55);
           } else if (through && g.isBar) {
-            race.drop(2);
+            // a wall at speed hits harder and floods the engine
+            race.drop(flooring ? 3 : 2);
             gBoost = 0;
+            bStun = flooring ? 1.2 : 0.5; bThrottle *= 0.2;
             if (opts.impact) opts.impact(1.0);
+          } else if (g.isBar && flooring && gap < G_HIT * 2.0) {
+            // the close call: shave past a wall with the throttle open and
+            // the near-miss itself pays
+            race.collect(1);
+            if (opts.impact) opts.impact(0.35);
           } else if (!g.isBar) {
             race.drop(0);                         // a missed gate breaks the streak
           }
@@ -557,7 +575,9 @@ export function createBlacktop() {
 
       // low racing camera hugging the asphalt
       const cx = roadX(camZ) + steer * 8;
-      camera.position.set(cx, 2.6 + audio.bass * 0.4, camZ);
+      camera.position.set(cx, 2.6 + audio.bass * 0.4 - bThrottle * 0.5, camZ);
+      // the lens widens as the throttle opens — speed you can SEE
+      camera.fov += ((78 + bThrottle * 14 + gBoost * 5) - camera.fov) * Math.min(1, dt * 4);
       camera.lookAt(roadX(camZ - 60), 2.2, camZ - 60);
       camera.rotation.z += steer * -0.09 + nitro * Math.sin(time * 40) * 0.006; // nitro judder
 
