@@ -277,6 +277,8 @@
   }
   body.playing-round #game-hud { display: block; }
   body.clean.playing-round #game-hud { display: block; }   /* score is play, not chrome — but only when a round is on */
+  /* one currency at a time: the pts badge yields to the round tally */
+  body.playing-round #score-badge { display: none !important; }
   #hud-value {
     font: 400 clamp(38px, 6vw, 56px)/1 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 2px; font-variant-numeric: tabular-nums;
@@ -422,7 +424,7 @@
   .rbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35); }
 
   #results-stats {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
     margin-top: 16px; padding-top: 14px;
     border-top: 1px solid hsla(var(--accent-h), 60%, 65%, 0.16);
   }
@@ -1238,6 +1240,7 @@
     <div><b id="rs-acc">0%</b><em>accuracy</em></div>
     <div><b id="rs-streak">0</b><em>best streak</em></div>
     <div><b id="rs-notes">0</b><em>notes hit</em></div>
+    <div><b id="rs-pts">+0</b><em>points</em></div>
   </div>
 </div>
 
@@ -1381,7 +1384,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 206</div>
+      <div id="build-stamp">build 207</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1395,6 +1398,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=206"></script>
+<script type="module" src="js/main.js?v=207"></script>
 </body>
 </html>

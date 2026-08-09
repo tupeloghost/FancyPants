@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=206';
-import { WORLDS } from './worlds/registry.js?v=206';
-import { Net, PALETTE } from './net.js?v=206';
-import { Presence } from './lib/presence.js?v=206';
-import { Pulses } from './lib/pulse.js?v=206';
-import { BeatClock } from './lib/beatclock.js?v=206';
-import { BeatCue } from './lib/beatcue.js?v=206';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=206';
-import { Race, placeOf, standings } from './lib/race.js?v=206';
-import { RouteMap } from './lib/map.js?v=206';
-import * as sfx from './lib/sfx.js?v=206';
-import { glowTexture } from './lib/glow.js?v=206';
+import { AudioEngine } from './audio-engine.js?v=207';
+import { WORLDS } from './worlds/registry.js?v=207';
+import { Net, PALETTE } from './net.js?v=207';
+import { Presence } from './lib/presence.js?v=207';
+import { Pulses } from './lib/pulse.js?v=207';
+import { BeatClock } from './lib/beatclock.js?v=207';
+import { BeatCue } from './lib/beatcue.js?v=207';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=207';
+import { Race, placeOf, standings } from './lib/race.js?v=207';
+import { RouteMap } from './lib/map.js?v=207';
+import * as sfx from './lib/sfx.js?v=207';
+import { glowTexture } from './lib/glow.js?v=207';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -637,6 +637,14 @@ function showResults(reason) {
   const winHex = PALETTE[((winner && winner.p.color) || 0) % PALETTE.length];
   const newBest = saveBest();
   if (newBest) $('results-sub').textContent = 'NEW PERSONAL BEST';
+
+  // the round pays: your result becomes session points, once, at the bell
+  const payout = Math.max(5, Math.min(150,
+      Math.round(race.feet * (race.mode === 'RACE' ? 0.1 : 0.5))))
+    + (newBest ? 25 : 0)
+    + (solo ? (race.finished ? 40 : 0) : ([40, 25, 15][place - 1] || 5));
+  addScore(payout, undefined, undefined, true);
+  $('rs-pts').textContent = '+' + payout;
   celebrate(winHex, (solo ? race.finished : place === 1) || newBest);
 
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
@@ -1647,8 +1655,14 @@ window.__impact = impact;
 
 // ── Scoring: worlds award points; your score rides the state blob ──
 let score = 0;
-function addScore(n, x, y) {
+function addScore(n, x, y, force = false) {
   if (settings.attract) return; // watching earns nothing
+  // ONE currency per world. During a round the tally on the HUD is the score,
+  // and the old pts ticking beside it decided nothing — worthless, as charged.
+  // Worlds' incidental scoring is ignored while a race runs; the round itself
+  // pays points at the finish (see showResults), so pts become the session
+  // currency that rounds FEED rather than noise beside them.
+  if (race.active && !force) return;
   score += n;
   net.local.score = score;
   impact(Math.min(1.3, 0.2 + n / 260));   // the bigger the moment, the harder it lands
