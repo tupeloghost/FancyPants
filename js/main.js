@@ -8,18 +8,19 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=212';
-import { WORLDS } from './worlds/registry.js?v=212';
-import { Net, PALETTE } from './net.js?v=212';
-import { Presence } from './lib/presence.js?v=212';
-import { Pulses } from './lib/pulse.js?v=212';
-import { BeatClock } from './lib/beatclock.js?v=212';
-import { BeatCue } from './lib/beatcue.js?v=212';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=212';
-import { Race, placeOf, standings } from './lib/race.js?v=212';
-import { RouteMap } from './lib/map.js?v=212';
-import * as sfx from './lib/sfx.js?v=212';
-import { glowTexture } from './lib/glow.js?v=212';
+import { AudioEngine } from './audio-engine.js?v=213';
+import { WORLDS } from './worlds/registry.js?v=213';
+import { Net, PALETTE } from './net.js?v=213';
+import { Presence } from './lib/presence.js?v=213';
+import { Pulses } from './lib/pulse.js?v=213';
+import { BeatClock } from './lib/beatclock.js?v=213';
+import { BeatCue } from './lib/beatcue.js?v=213';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=213';
+import { Race, placeOf, standings } from './lib/race.js?v=213';
+import { RouteMap } from './lib/map.js?v=213';
+import * as sfx from './lib/sfx.js?v=213';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=213';
+import { glowTexture } from './lib/glow.js?v=213';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -105,11 +106,11 @@ race.onEvent = (type, d) => {
   if (type === 'hit') {
     sfx.hit(d.streak, d.strong);
     // strong hits stop the world; ordinary ones nick it
-    hitStop = Math.max(hitStop, d.strong ? 0.055 : 0.03);
-    fovKick = Math.max(fovKick, d.strong ? 1 : 0.5);
+    hitStop = Math.max(hitStop, (d.strong ? 0.055 : 0.03) * TUNE.hitstop);
+    fovKick = Math.max(fovKick, (d.strong ? 1 : 0.5) * TUNE.punch);
   } else {
     sfx.thud();
-    hitStop = Math.max(hitStop, 0.04);   // costs land too
+    hitStop = Math.max(hitStop, 0.04 * TUNE.hitstop);   // costs land too
   }
 };
 let seenMissed = 0;   // cue miss counter we have already fed to the race
@@ -1435,6 +1436,56 @@ function flashWorldName(text) {
   jumpFlashT = setTimeout(() => el.classList.remove('show'), 1600);
 }
 
+// ── The tuning panel ── press ` and the game's feel becomes eight sliders
+// you drag WHILE PLAYING. This replaces the loop where feel was guessed at by
+// proxy: find the numbers at the controls, press COPY, send them over.
+const TUNE_SPEC = [
+  { k: 'speed',   label: 'game speed' },
+  { k: 'density', label: 'how often things come' },
+  { k: 'hitstop', label: 'freeze on hit' },
+  { k: 'punch',   label: 'screen punch' },
+  { k: 'sfx',     label: 'action sounds' },
+  { k: 'rubber',  label: 'comeback help' },
+  { k: 'hunger',  label: 'gray hunger (paint)' },
+  { k: 'heat',    label: 'song escalation' },
+];
+let tuneBuilt = false;
+function buildTunePanel() {
+  if (tuneBuilt) return;
+  tuneBuilt = true;
+  const box = $('tune-rows');
+  for (const spec of TUNE_SPEC) {
+    const row = document.createElement('label');
+    row.className = 'tune-row';
+    const val = document.createElement('b');
+    val.textContent = TUNE[spec.k].toFixed(2);
+    const input = document.createElement('input');
+    input.type = 'range'; input.min = 0; input.max = 2; input.step = 0.05;
+    input.value = TUNE[spec.k];
+    input.addEventListener('input', () => {
+      TUNE[spec.k] = +input.value;
+      val.textContent = TUNE[spec.k].toFixed(2);
+      if (spec.k === 'sfx') sfx.setSfxLevel(TUNE.sfx);
+      saveTune();
+    });
+    const name = document.createElement('span');
+    name.textContent = spec.label;
+    row.append(name, input, val);
+    box.appendChild(row);
+  }
+  $('tune-copy').addEventListener('click', () => {
+    const out = JSON.stringify(TUNE);
+    navigator.clipboard && navigator.clipboard.writeText(out).catch(() => {});
+    $('tune-copy').textContent = 'copied';
+    setTimeout(() => $('tune-copy').textContent = 'copy values', 1200);
+  });
+  $('tune-reset').addEventListener('click', () => {
+    resetTune();
+    box.innerHTML = ''; tuneBuilt = false; buildTunePanel();
+  });
+}
+sfx.setSfxLevel(TUNE.sfx);   // saved level applies from boot
+
 // hotkeys
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -1462,6 +1513,7 @@ window.addEventListener('keydown', e => {
     jumpGame(e.key === ']' ? 1 : -1);
   }
   if (e.key === 't' || e.key === 'T') tempoEl.classList.toggle('hidden');
+  if (e.key === '`') { buildTunePanel(); $('tune-panel').classList.toggle('show'); }
 
   // the mid-song moves, so a host never has to reach for the panel
   if (e.key === 'w') stepWorld(1);
@@ -2391,7 +2443,7 @@ function frame(now) {
     let lead = 0;
     for (let i = 1; i < participants.length; i++) lead = Math.max(lead, participants[i].z || 0);
     const gap = lead - race.progress;
-    race.rubber = gap > 0 ? Math.min(0.5, gap / 60) : 0;
+    race.rubber = (gap > 0 ? Math.min(0.5, gap / 60) : 0) * TUNE.rubber;
   }
 
   // a guest's round starts when the host's does — their progress arriving on

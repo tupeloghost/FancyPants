@@ -9,10 +9,11 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=212';
-import { themePaint } from '../lib/themes.js?v=212';
-import { PALETTE } from '../net.js?v=212';
-import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=212';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=213';
+import { themePaint } from '../lib/themes.js?v=213';
+import { PALETTE } from '../net.js?v=213';
+import { TUNE } from '../lib/tune.js?v=213';
+import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=213';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
@@ -186,7 +187,7 @@ export function createPaint() {
       if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue); scoreQueue = 0; }
 
       // steady glide — painting is the act, flying is the canvas coming to you
-      travel += dt * (9 + audio.energy * 7 + audio.volume * 4);
+      travel += dt * (9 + audio.energy * 7 + audio.volume * 4) * TUNE.speed;
       const camZ = -travel;
       camera.position.set(pathX(camZ), pathY(camZ), camZ);
       camera.lookAt(pathX(camZ - 40), pathY(camZ - 40), camZ - 40);
@@ -209,7 +210,7 @@ export function createPaint() {
       // is exactly the loop: keep your world alive.
       if (comboT > 2.5 && paintedCount > 0 && !attract) {
         if (!decayWarned) { decayWarned = true; sfxThud(); }
-        decayAcc += dt * Math.min(6, (comboT - 2.5) * 2.5);   // hunger grows
+        decayAcc += dt * Math.min(6, (comboT - 2.5) * 2.5) * TUNE.hunger;
         while (decayAcc >= 1) {
           decayAcc -= 1;
           for (let tries = 0; tries < 12; tries++) {

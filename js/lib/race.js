@@ -1,3 +1,4 @@
+import { TUNE } from './tune.js?v=213';
 // Race — the shared rhythm-race model. Worlds supply the picture; this owns
 // the rules, so a new world inherits a working race by declaring `rhythm` and
 // reading `progress` rather than reimplementing any of it.
@@ -177,7 +178,7 @@ export class Race {
     if (this.mode === 'COLLECT' || this.mode === 'CATCH' || this.mode === 'DODGE') return;
     if (this.finished) { this.speed = 0; this.momentum = 0; return; }
     this.momentum = Math.max(0, this.momentum - DECAY * dt);
-    this.speed = BASE + this.momentum * TOP;
+    this.speed = (BASE + this.momentum * TOP) * TUNE.speed;
     this.progress += this.speed * dt;
     if (this.progress >= this.finish) {
       this.progress = this.finish;

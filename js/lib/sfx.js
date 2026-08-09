@@ -27,6 +27,10 @@ function ensure() {
 
 export function setSfxMuted(m) { muted = m; }
 
+export function setSfxLevel(v) {
+  if (ensure()) master.gain.value = 0.16 * Math.max(0, Math.min(2, v));
+}
+
 // pentatonic, so any climb is musical against any track
 const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
 const stepFreq = s => 330 * Math.pow(2, SCALE[Math.max(0, Math.min(SCALE.length - 1, s))] / 12);

@@ -3,8 +3,9 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=212';
-import { themePaint } from '../lib/themes.js?v=212';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=213';
+import { themePaint } from '../lib/themes.js?v=213';
+import { TUNE } from '../lib/tune.js?v=213';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -285,14 +286,14 @@ export function createRiver() {
 
       // HEAT is computed once, up here — it is used by BOTH dodge blocks below,
       // and declaring it in the second while the first used it threw every frame.
-      const heat = (dodging && opts.songDur) ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
+      const heat = ((dodging && opts.songDur) ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0) * TUNE.heat;
       if (dodging) {
         // Objects are placed a fixed DISTANCE ahead rather than at a fixed
         // time, so speed is free to change: the music decides when one appears,
         // and how fast you are going decides how soon you meet it. That is what
         // makes a boost feel like a boost instead of a number going up.
         boost = Math.max(0, boost - dt * 0.42);
-        drift += dt * (DRIFT_RATE * (1 + 0.25 * heat) + boost * BOOST_ADD);
+        drift += dt * (DRIFT_RATE * (1 + 0.25 * Math.min(1, heat)) + boost * BOOST_ADD) * TUNE.speed;
         rush = Math.max(rush * Math.pow(0.3, dt), boost);
         gatherFlash *= Math.pow(0.02, dt);
         rockFlash *= Math.pow(0.05, dt);
@@ -317,7 +318,7 @@ export function createRiver() {
       if (dodging) {
         riverMyScore = race.progress;
         // arrivals tighten by 40% as the song builds
-        const spacingNow = SPACING * (1 - 0.4 * heat);
+        const spacingNow = SPACING * (1 - 0.4 * Math.min(1, heat)) / TUNE.density;
         // call the overtake by name — a silent position swap is just scenery
         if (participants && opts.onPass) {
           for (let i = 1; i < participants.length; i++) {

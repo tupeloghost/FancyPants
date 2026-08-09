@@ -3,8 +3,9 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=212';
-import { themePaint } from '../lib/themes.js?v=212';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=213';
+import { themePaint } from '../lib/themes.js?v=213';
+import { TUNE } from '../lib/tune.js?v=213';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -424,10 +425,10 @@ export function createBlacktop() {
         // and the surge dies. The mix no longer drives the car — you do.
         // HEAT: the road runs a quarter faster and gates arrive 40% tighter by
         // the last chorus.
-        gHeat = opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0;
+        gHeat = (opts.songDur ? Math.min(1, (opts.songTime || 0) / opts.songDur) : 0) * TUNE.heat;
         gBoost = Math.max(0, gBoost - dt * 0.4);
         nitro = gBoost;
-        speed = (34 + gBoost * 80) * (1 + 0.25 * gHeat);
+        speed = (34 + gBoost * 80) * (1 + 0.25 * Math.min(1, gHeat)) * TUNE.speed;
         travel += speed * dt;
       } else if (racing) {
         nitro = race.momentum;
@@ -482,7 +483,7 @@ export function createBlacktop() {
             // stale notes must not spawn — same batch-of-instant-misses bug
             // the river had, same fix
             if (n.t < songTime - 0.4) { gLastT = Math.max(gLastT, n.t); continue; }
-            if (n.t - gLastT < G_SPACING * (1 - 0.4 * gHeat)) continue;
+            if (n.t - gLastT < G_SPACING * (1 - 0.4 * Math.min(1, gHeat)) / TUNE.density) continue;
             gLastT = n.t; gArrivals++;
 
             // Every fourth arrival is a SLALOM: three gates in quick
