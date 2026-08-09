@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=221';
-import { createSurfer } from './surfer.js?v=221';
-import { createOrbit } from './orbit.js?v=221';
-import { createBloom } from './bloom.js?v=221';
-import { createTrail } from './trail.js?v=221';
-import { createSignal } from './signal.js?v=221';
-import { createRiver } from './river.js?v=221';
-import { createFunhouse } from './funhouse.js?v=221';
-import { createLavaLamp } from './lavalamp.js?v=221';
-import { createPlasma } from './plasma.js?v=221';
-import { createCherryLand } from './cherryland.js?v=221';
-import { createSlinky } from './slinky.js?v=221';
-import { createBlacktop } from './blacktop.js?v=221';
-import { createWaterslide } from './waterslide.js?v=221';
-import { createGarden } from './garden.js?v=221';
-import { createPaint } from './paint.js?v=221';
+import { createTunnel } from './tunnel.js?v=222';
+import { createSurfer } from './surfer.js?v=222';
+import { createOrbit } from './orbit.js?v=222';
+import { createBloom } from './bloom.js?v=222';
+import { createTrail } from './trail.js?v=222';
+import { createSignal } from './signal.js?v=222';
+import { createRiver } from './river.js?v=222';
+import { createFunhouse } from './funhouse.js?v=222';
+import { createLavaLamp } from './lavalamp.js?v=222';
+import { createPlasma } from './plasma.js?v=222';
+import { createCherryLand } from './cherryland.js?v=222';
+import { createSlinky } from './slinky.js?v=222';
+import { createBlacktop } from './blacktop.js?v=222';
+import { createWaterslide } from './waterslide.js?v=222';
+import { createGarden } from './garden.js?v=222';
+import { createPaint } from './paint.js?v=222';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -36,7 +36,7 @@ export const WORLDS = {
   trail:  { pulse: 0.45, goal: 'paint the sky — every click is a new color', label: 'TRAIL',  create: createTrail },
   signal: { pulse: 0.5, goal: 'BOWL the towers — one throw, five columns, big points', label: 'SIGNAL', create: createSignal },
   river:  { pulse: 0.8, rhythm: true, mode: 'DODGE', unit: 'RAMPS',
-            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flooring it doubles every ramp and shaving past a rock pays a bonus, but a rock at speed costs three and floods your engine. Ease off to play it safe. Most ramps wins.', goal: 'ride the rapids — hold to open the throttle', label: 'RIVER',  create: createRiver },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flooring it doubles every ramp and shaving past a rock pays a bonus, but a rock at speed costs three and floods your engine. Ease off to play it safe. Most ramps wins, sugar.', goal: 'ride the rapids — hold to open the throttle', label: 'RIVER',  create: createRiver },
   funhouse: { pulse: 0.85, goal: 'swim the pit — click to lunge, slider adds balls', label: 'BALL PIT', create: createFunhouse },
   lava:   { pulse: 0.7, goal: 'stir the wax — pop blobs at the top for +10', label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { pulse: 0.35, goal: 'tame the lightning — it leaps to your finger', label: 'PLASMA', create: createPlasma },
@@ -45,9 +45,9 @@ export const WORLDS = {
   slinky: { pulse: 0.6, rhythm: true, feetPerStep: 3, mode: 'RACE', cue: 'world',
             rules: 'Bars of light slide up the stairs \u2014 tap the moment one reaches your slinky. Hits build momentum and the spring walks faster. First one to the bottom wins.', goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { pulse: 0.85, rhythm: true, feetPerStep: 42, mode: 'DODGE', unit: 'GATES',
-            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, gates pay double and shaving past a wall pays a close-call bonus, but hitting one costs three and floods your engine. Ease off to play it safe. Most gates wins.', goal: 'run the midnight road — hold to open the throttle', label: 'BLACKTOP', create: createBlacktop },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, gates pay double and shaving past a wall pays a close-call bonus, but hitting one costs three and floods your engine. Ease off to play it safe. Most gates takes the road.', goal: 'run the midnight road — hold to open the throttle', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
-            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, green hoops pay double and shaving past a red one pays a close-call bonus, but leaning into a red at speed costs three and floods your run. Ease off to play it safe. Most hoops wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flat out, green hoops pay double and shaving past a red one pays a close-call bonus, but leaning into a red at speed costs three and floods your run. Ease off to play it safe. Most hoops wins, easy as that.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'the world arrives gray — hold and sweep, and everything you touch turns to colour', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'hold and sweep to gather the floating runes — three alike fuse into a brighter one. Set them in the board to light it up', label: 'LUMEN', create: createGarden },
 };

@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=221';
-import { drawQR } from './lib/qr.js?v=221';
-import { WORLDS } from './worlds/registry.js?v=221';
-import { Net, PALETTE } from './net.js?v=221';
-import { Presence } from './lib/presence.js?v=221';
-import { Pulses } from './lib/pulse.js?v=221';
-import { BeatClock } from './lib/beatclock.js?v=221';
-import { BeatCue } from './lib/beatcue.js?v=221';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=221';
-import { Race, placeOf, standings } from './lib/race.js?v=221';
-import { RouteMap } from './lib/map.js?v=221';
-import * as sfx from './lib/sfx.js?v=221';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=221';
-import { glowTexture } from './lib/glow.js?v=221';
+import { AudioEngine } from './audio-engine.js?v=222';
+import { drawQR } from './lib/qr.js?v=222';
+import { WORLDS } from './worlds/registry.js?v=222';
+import { Net, PALETTE } from './net.js?v=222';
+import { Presence } from './lib/presence.js?v=222';
+import { Pulses } from './lib/pulse.js?v=222';
+import { BeatClock } from './lib/beatclock.js?v=222';
+import { BeatCue } from './lib/beatcue.js?v=222';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=222';
+import { Race, placeOf, standings } from './lib/race.js?v=222';
+import { RouteMap } from './lib/map.js?v=222';
+import * as sfx from './lib/sfx.js?v=222';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=222';
+import { glowTexture } from './lib/glow.js?v=222';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -625,16 +625,16 @@ function showResults(reason) {
   const pct = Math.round(race.fraction * 100);
   const subs = solo
     ? (collecting
-        ? ['cherries shaken loose', 'not a bad haul', 'the tree is fine, thanks for asking']
+        ? ['cherries shaken loose', "that's good pickin'", 'the tree will forgive you']
         : race.finished
-          ? ['you made it to the bottom', 'the stairs are over. you won.', 'gravity: assisted']
-          : pct > 80 ? ['so close you could smell it', pct + '% down, and then the music stopped']
-          : pct > 40 ? [pct + '% of the way down', 'a respectable amount of stairs']
-                     : [pct + '% of the way down', 'the stairs won this one', 'we all start somewhere'])
+          ? ['you made it to the bottom', 'the stairs are over. you won.', 'well, look at you']
+          : pct > 80 ? ['so close you could taste it', pct + '% down when the music quit']
+          : pct > 40 ? [pct + '% of the way down', 'a respectable amount of stairs', "middlin', but honest"]
+                     : [pct + '% of the way down', 'the stairs won this one', 'bless it. we all start somewhere'])
     : (collecting
-        ? ['biggest haul wins', 'counted, weighed, and judged']
+        ? ['biggest haul takes it', 'counted, weighed, and judged']
         : race.finished
-          ? ['first to the bottom', 'you got there first']
+          ? ['first to the bottom', 'you got there first, sugar']
           : ['when the music stopped', 'the song ran out before the stairs did']);
   $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
 
@@ -664,7 +664,7 @@ function showResults(reason) {
   const winner = board[0];
   const winHex = PALETTE[((winner && winner.p.color) || 0) % PALETTE.length];
   const newBest = saveBest();
-  if (newBest) $('results-sub').textContent = 'NEW PERSONAL BEST';
+  if (newBest) $('results-sub').textContent = 'A NEW PERSONAL BEST, SUGAR';
 
   // the round pays: your result becomes session points, once, at the bell
   const payout = Math.max(5, Math.min(150,
@@ -730,7 +730,7 @@ function startRaceIfReady() {
     $('ri-demo').style.display =
       (WORLDS[key].mode === 'RACE' && WORLDS[key].cue !== 'world') ? '' : 'none';
     const pb = getBest();
-    $('ri-state').textContent = pb > 0 ? 'your best here: ' + pb.toLocaleString() : 'preparing';
+    $('ri-state').textContent = pb > 0 ? "your best 'round here: " + pb.toLocaleString() : "fixin' things up";
     setPhase = 'intro';
     $('round-intro').classList.add('show');
     bestBeaten = false;
@@ -740,7 +740,7 @@ function startRaceIfReady() {
       // ignored the card — which is "multiplayer doesn't work right" in one
       // sentence. Guests read the rules while they wait; the round begins the
       // moment the host's progress appears on the wire (see the frame loop).
-      $('ri-state').textContent = 'the host starts the round';
+      $('ri-state').textContent = 'the host will get us started';
       $('ri-play').classList.remove('ready');
       playArm++;          // cancel any stale PLAY armer from a previous world
       guestArmed = true;
@@ -913,7 +913,7 @@ let tapPlayBtn = null;
 function showTapToPlay() {
   if (tapPlayBtn) return;
   tapPlayBtn = document.createElement('button');
-  tapPlayBtn.textContent = '▶ tap to join the music';
+  tapPlayBtn.textContent = '▶ come on in — tap to join the music';
   Object.assign(tapPlayBtn.style, {
     position: 'fixed', left: '50%', bottom: '18%', transform: 'translateX(-50%)',
     zIndex: 60, padding: '14px 26px', borderRadius: '999px',
@@ -1328,14 +1328,14 @@ function drawTempo(gridBeat, rawOnset) {
 // phrase stops being funny on its second appearance, which in a race is about
 // nine seconds in.
 const PASS_THEM = [
-  'BYE, %', 'SEE YOU, %', '% WHO?', 'SORRY, %', 'NOT TODAY, %',
-  'LATER, %', '% IN THE MIRROR', 'NOTHING PERSONAL, %', 'KEEP UP, %',
-  'WAVE GOODBYE, %', 'NICE TRY, %', 'SIT DOWN, %', 'IN A HURRY, %?',
+  'BYE NOW, %', "'SCUSE ME, %", 'SEE YOU, %', '% WHO?', 'SORRY, %',
+  'NOT TODAY, %', 'LATER, %', '% IN THE MIRROR', 'NOTHING PERSONAL, %',
+  'KEEP UP, HON', 'WAVE GOODBYE, %', 'BLESS YOUR HEART, %', 'IN A HURRY, %?',
 ];
 const PASS_YOU = [
   '% SAYS HI', 'RUDE, %', '% HAS SOMEWHERE TO BE', 'THAT WAS %',
-  "% DIDN'T EVEN WAVE", 'OUCH. %.', '% IS SHOWING OFF', 'WOW, %',
-  'REALLY, %?', '% IS DOING NUMBERS', 'NICE MOVES, %',
+  "% DIDN'T EVEN WAVE", 'OUCH. %.', '% IS SHOWING OFF', 'WELL, I NEVER. %.',
+  'REALLY, %?', '% JUST WALTZED BY', 'NICE MOVES, %',
 ];
 // avoid saying the same thing twice in a row, which is when a pool stops
 // feeling like a pool
@@ -1926,7 +1926,7 @@ function startRoom(code, name, asOwner) {
     $('sc-qr').classList.toggle('gone', !drawQR($('sc-qr'), joinURL, 4));
     $('stream-card').classList.remove('hidden');
   }
-  net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = 'pick another name'; };
+  net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = "that name's spoken for, hon"; };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
   // guests ride the host's soundtrack — no track/transport controls for them
   document.body.classList.toggle('guest', !asOwner);
@@ -2010,7 +2010,7 @@ function nextRound() {
   $('ri-demo').style.display =
     (WORLDS[r.world].mode === 'RACE' && WORLDS[r.world].cue !== 'world') ? '' : 'none';
   $('ri-track').textContent = prettyTrack(r.track);
-  $('ri-state').textContent = 'preparing';
+  $('ri-state').textContent = "fixin' things up";
   $('round-intro').classList.add('show');
 
   switchWorld(r.world);
@@ -2098,7 +2098,7 @@ function showSetResults() {
   const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (!rows.length) { endSet(); return; }
   $('results-place').textContent = rows[0][0] === (net.local.name || 'you') ? 'YOU WIN' : 'FULL TIME';
-  const overs = ['the set is over', "that's the lot", 'no more songs, no more stairs'];
+  const overs = ["that's the whole show", "y'all come back now", 'no more songs, no more stairs'];
   $('results-sub').textContent = overs[Math.floor(Math.random() * overs.length)];
   $('results-board').innerHTML = rows.map(([name, pts]) =>
     `<div class="rrow${name === net.local.name ? ' me' : ''}">`
@@ -2130,7 +2130,7 @@ $('join-room').addEventListener('input', e => { e.target.value = e.target.value.
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
 $('btn-join').addEventListener('click', () => {
   const code = $('join-room').value.trim().toUpperCase();
-  if (code.length < 4) { $('join-msg').textContent = 'enter a room code'; return; }
+  if (code.length < 4) { $('join-msg').textContent = "we'll need that room code, sugar"; return; }
   startRoom(code, $('join-name').value.trim(), false);
 });
 $('btn-host').addEventListener('click', () => {
