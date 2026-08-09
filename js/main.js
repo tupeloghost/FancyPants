@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=211';
-import { WORLDS } from './worlds/registry.js?v=211';
-import { Net, PALETTE } from './net.js?v=211';
-import { Presence } from './lib/presence.js?v=211';
-import { Pulses } from './lib/pulse.js?v=211';
-import { BeatClock } from './lib/beatclock.js?v=211';
-import { BeatCue } from './lib/beatcue.js?v=211';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=211';
-import { Race, placeOf, standings } from './lib/race.js?v=211';
-import { RouteMap } from './lib/map.js?v=211';
-import * as sfx from './lib/sfx.js?v=211';
-import { glowTexture } from './lib/glow.js?v=211';
+import { AudioEngine } from './audio-engine.js?v=212';
+import { WORLDS } from './worlds/registry.js?v=212';
+import { Net, PALETTE } from './net.js?v=212';
+import { Presence } from './lib/presence.js?v=212';
+import { Pulses } from './lib/pulse.js?v=212';
+import { BeatClock } from './lib/beatclock.js?v=212';
+import { BeatCue } from './lib/beatcue.js?v=212';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=212';
+import { Race, placeOf, standings } from './lib/race.js?v=212';
+import { RouteMap } from './lib/map.js?v=212';
+import * as sfx from './lib/sfx.js?v=212';
+import { glowTexture } from './lib/glow.js?v=212';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -99,9 +99,18 @@ const anchorV = new THREE.Vector3();
 const race = new Race();
 // every hit in every world plays a note that climbs with your streak; every
 // cost is a soft thud. One wiring point, the whole game finds its voice.
+let hitStop = 0;
+let fovKick = 0;
 race.onEvent = (type, d) => {
-  if (type === 'hit') sfx.hit(d.streak, d.strong);
-  else sfx.thud();
+  if (type === 'hit') {
+    sfx.hit(d.streak, d.strong);
+    // strong hits stop the world; ordinary ones nick it
+    hitStop = Math.max(hitStop, d.strong ? 0.055 : 0.03);
+    fovKick = Math.max(fovKick, d.strong ? 1 : 0.5);
+  } else {
+    sfx.thud();
+    hitStop = Math.max(hitStop, 0.04);   // costs land too
+  }
 };
 let seenMissed = 0;   // cue miss counter we have already fed to the race
 net.onJoin = () => { if (settings.chime) audio.joinChime(); };
@@ -2241,6 +2250,17 @@ let screenshotQueued = false;
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
+
+  // ── hit-stop ── the world freezes for a breath on every strong hit. This is
+  // Nintendo's oldest trick and the whole difference between contact and
+  // passing-through: 55ms of near-stillness makes a hit something that
+  // HAPPENED to the world, not a number that changed. It applies to the verb
+  // itself, in every world, solo included — which is where all the recent
+  // multiplayer-facing juice was silent.
+  if (hitStop > 0) {
+    hitStop -= dt;
+    dt *= 0.06;
+  }
   last = now;
   time += dt;
 
@@ -2304,6 +2324,11 @@ function frame(now) {
     }
     const fogLeft = (debuff.fogUntil - nowMs) / 1000;
     $('fog-veil').style.opacity = fogLeft > 0 ? Math.min(0.86, fogLeft / 1.4) : 0;
+
+    // the boost punch: a strong hit widens the lens for a heartbeat — speed
+    // you can SEE, decaying on the spring
+    fovKick *= Math.pow(0.0005, dt);
+    camera.fov *= 1 + fovKick * 0.055;
 
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 6);   // glide, never jump
     const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
