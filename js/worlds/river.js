@@ -3,9 +3,9 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=213';
-import { themePaint } from '../lib/themes.js?v=213';
-import { TUNE } from '../lib/tune.js?v=213';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=215';
+import { themePaint } from '../lib/themes.js?v=215';
+import { TUNE } from '../lib/tune.js?v=215';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;
@@ -49,7 +49,14 @@ export function createRiver() {
   let riverMyScore = 0;        // kept from the race so placeGhost can read it
   let riverPassSeen = new Map();
   let gatherFlash = 0, rockFlash = 0;
-  let boost = 0;                // 0..1, decays; an arrow tops it back up
+  let boost = 0;
+  // THE THROTTLE — the river no longer sets your pace; your finger does.
+  // Hold (touch, mouse, or space) to open it, release to ease off. Speed is
+  // the round's one continuous choice: flooring it doubles every ramp and
+  // pays for shaving past rocks, but a rock at speed costs more and floods
+  // the engine for a beat.
+  let throttle = 0;
+  let stun = 0;         // seconds of flooded engine after eating a rock                // 0..1, decays; an arrow tops it back up
 
   const lz = new Float32Array(LANTERNS);
   const lside = new Float32Array(LANTERNS);
@@ -293,8 +300,12 @@ export function createRiver() {
         // and how fast you are going decides how soon you meet it. That is what
         // makes a boost feel like a boost instead of a number going up.
         boost = Math.max(0, boost - dt * 0.42);
-        drift += dt * (DRIFT_RATE * (1 + 0.25 * Math.min(1, heat)) + boost * BOOST_ADD) * TUNE.speed;
-        rush = Math.max(rush * Math.pow(0.3, dt), boost);
+        stun = Math.max(0, stun - dt);
+        // spool up fast, ease off slower — feels like a motor, not a switch
+        const gasWanted = (opts.holding && stun <= 0) ? 1 : 0;
+        throttle += (gasWanted - throttle) * Math.min(1, dt * (gasWanted ? 5 : 2.6));
+        drift += dt * (DRIFT_RATE * (0.72 + throttle * 1.05 + 0.25 * Math.min(1, heat)) + boost * BOOST_ADD) * TUNE.speed;
+        rush = Math.max(rush * Math.pow(0.3, dt), Math.max(boost, throttle * 0.85));
         gatherFlash *= Math.pow(0.02, dt);
         rockFlash *= Math.pow(0.05, dt);
       } else if (racing) {
@@ -404,15 +415,26 @@ export function createRiver() {
           // with a wide halo, so anything under about ten units still fills
           // the frame on its last drawn frame.
           if (ahead <= 6) {
-            const touching = Math.abs(wx - playerX) < HIT_W;
+            const gap = Math.abs(wx - playerX);
+            const touching = gap < HIT_W;
+            const flooring = throttle > 0.6;
             if (touching && d.rock) {
-              race.drop(2); rockFlash = 1; boost = 0;   // a rock kills your speed
-              if (opts.impact) opts.impact(0.9);
+              // at speed a rock hits harder AND floods the engine — the risk
+              // side of the throttle bargain
+              race.drop(flooring ? 3 : 2); rockFlash = 1; boost = 0;
+              stun = flooring ? 1.2 : 0.5; throttle *= 0.2;
+              if (opts.impact) opts.impact(flooring ? 1.0 : 0.8);
+            } else if (d.rock && flooring && gap < HIT_W * 2.1) {
+              // the Burnout rule: shave past a rock with the throttle open and
+              // the near-miss itself pays — danger becomes worth steering INTO
+              race.collect(1);
+              gatherFlash = Math.max(gatherFlash, 0.6);
+              if (opts.impact) opts.impact(0.35);
             } else if (touching) {
               // the chain: take a pad while STILL surging from the last one
               // and it pays double — the round becomes about holding a run
               // together, not collecting isolated pickups
-              race.collect(boost > 0.35 ? 2 : 1);
+              race.collect((boost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
               gatherFlash = 1;
               boost = Math.min(1, boost + 0.85);
               if (opts.impact) opts.impact(boost > 0.9 ? 0.75 : 0.5);
@@ -436,7 +458,11 @@ export function createRiver() {
         (0.45 + audio.volume * 1.3 * reactivity + rush * 0.5);
       const camX = riverX(camZ) + steer * 8;
       const ride = swellAt(camX, camZ);
-      camera.position.set(camX, 2.1 + ride * 1.1, camZ);
+      camera.position.set(camX, 2.1 + ride * 1.1 - throttle * 0.55, camZ);
+      if (dodging) {
+        // the lens widens as the throttle opens — speed you can SEE
+        camera.fov += ((66 + throttle * 16 + boost * 4) - camera.fov) * Math.min(1, dt * 4);
+      }
       // your gaze wanders side to side, drifting with the current
       const wander = Math.sin(time * 0.13) * 14;
       camera.lookAt(riverX(camZ - 45) + wander, 2.1 + ride * 0.4, camZ - 45);

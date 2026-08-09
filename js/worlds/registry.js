@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=213';
-import { createSurfer } from './surfer.js?v=213';
-import { createOrbit } from './orbit.js?v=213';
-import { createBloom } from './bloom.js?v=213';
-import { createTrail } from './trail.js?v=213';
-import { createSignal } from './signal.js?v=213';
-import { createRiver } from './river.js?v=213';
-import { createFunhouse } from './funhouse.js?v=213';
-import { createLavaLamp } from './lavalamp.js?v=213';
-import { createPlasma } from './plasma.js?v=213';
-import { createCherryLand } from './cherryland.js?v=213';
-import { createSlinky } from './slinky.js?v=213';
-import { createBlacktop } from './blacktop.js?v=213';
-import { createWaterslide } from './waterslide.js?v=213';
-import { createGarden } from './garden.js?v=213';
-import { createPaint } from './paint.js?v=213';
+import { createTunnel } from './tunnel.js?v=215';
+import { createSurfer } from './surfer.js?v=215';
+import { createOrbit } from './orbit.js?v=215';
+import { createBloom } from './bloom.js?v=215';
+import { createTrail } from './trail.js?v=215';
+import { createSignal } from './signal.js?v=215';
+import { createRiver } from './river.js?v=215';
+import { createFunhouse } from './funhouse.js?v=215';
+import { createLavaLamp } from './lavalamp.js?v=215';
+import { createPlasma } from './plasma.js?v=215';
+import { createCherryLand } from './cherryland.js?v=215';
+import { createSlinky } from './slinky.js?v=215';
+import { createBlacktop } from './blacktop.js?v=215';
+import { createWaterslide } from './waterslide.js?v=215';
+import { createGarden } from './garden.js?v=215';
+import { createPaint } from './paint.js?v=215';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -36,7 +36,7 @@ export const WORLDS = {
   trail:  { pulse: 0.45, goal: 'paint the sky — every click is a new color', label: 'TRAIL',  create: createTrail },
   signal: { pulse: 0.5, goal: 'BOWL the towers — one throw, five columns, big points', label: 'SIGNAL', create: createSignal },
   river:  { pulse: 0.8, rhythm: true, mode: 'DODGE', unit: 'RAMPS',
-            rules: 'Steer with the mouse or the arrow keys. Hit the glowing green ramps, miss the dark rocks \u2014 a rock costs you two. Whoever gets the most ramps by the end wins.', goal: 'ride the rapids — click for a surge of speed', label: 'RIVER',  create: createRiver },
+            rules: 'Steer with the mouse or arrows — and HOLD (press down, or space) to open the throttle. Flooring it doubles every ramp and shaving past a rock pays a bonus, but a rock at speed costs three and floods your engine. Ease off to play it safe. Most ramps wins.', goal: 'ride the rapids — hold to open the throttle', label: 'RIVER',  create: createRiver },
   funhouse: { pulse: 0.85, goal: 'swim the pit — click to lunge, slider adds balls', label: 'BALL PIT', create: createFunhouse },
   lava:   { pulse: 0.7, goal: 'stir the wax — pop blobs at the top for +10', label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { pulse: 0.35, goal: 'tame the lightning — it leaps to your finger', label: 'PLASMA', create: createPlasma },

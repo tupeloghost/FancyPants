@@ -8,19 +8,19 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=213';
-import { WORLDS } from './worlds/registry.js?v=213';
-import { Net, PALETTE } from './net.js?v=213';
-import { Presence } from './lib/presence.js?v=213';
-import { Pulses } from './lib/pulse.js?v=213';
-import { BeatClock } from './lib/beatclock.js?v=213';
-import { BeatCue } from './lib/beatcue.js?v=213';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=213';
-import { Race, placeOf, standings } from './lib/race.js?v=213';
-import { RouteMap } from './lib/map.js?v=213';
-import * as sfx from './lib/sfx.js?v=213';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=213';
-import { glowTexture } from './lib/glow.js?v=213';
+import { AudioEngine } from './audio-engine.js?v=215';
+import { WORLDS } from './worlds/registry.js?v=215';
+import { Net, PALETTE } from './net.js?v=215';
+import { Presence } from './lib/presence.js?v=215';
+import { Pulses } from './lib/pulse.js?v=215';
+import { BeatClock } from './lib/beatclock.js?v=215';
+import { BeatCue } from './lib/beatcue.js?v=215';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=215';
+import { Race, placeOf, standings } from './lib/race.js?v=215';
+import { RouteMap } from './lib/map.js?v=215';
+import * as sfx from './lib/sfx.js?v=215';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=215';
+import { glowTexture } from './lib/glow.js?v=215';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1398,12 +1398,14 @@ function updateHUD() {
 // Worlds that are steered rather than pressed need a keyboard axis on desktop;
 // a mouse is not always the natural hand for a dodge.
 let keySteer = 0, keySteerAt = 0, keyAim = 0;
+let throttleKey = false;   // space / up-arrow holds the gas
 function steeredRound() {
   return race.active && (race.mode === 'DODGE' || race.mode === 'CATCH');
 }
 window.addEventListener('keyup', e => {
   if (e.key === 'ArrowRight' && keySteer > 0) keySteer = 0;
   if (e.key === 'ArrowLeft' && keySteer < 0) keySteer = 0;
+  if (e.key === ' ' || e.key === 'ArrowUp') throttleKey = false;
 });
 
 // Step to the next playable world, or the next round of a set if one is running.
@@ -1524,6 +1526,10 @@ window.addEventListener('keydown', e => {
   // In a steered round the arrows are the controls, not the transport — a
   // player reaching for them to dodge should not skip the track they are
   // playing. They only move the music when nothing is being steered.
+  if ((e.key === ' ' || e.key === 'ArrowUp') && steeredRound()) {
+    e.preventDefault();
+    throttleKey = true;
+  }
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     e.preventDefault();
     const dir = e.key === 'ArrowRight' ? 1 : -1;
@@ -1977,6 +1983,10 @@ function nextRound() {
   $('ri-world').textContent = WORLDS[r.world].label;
   $('ri-mode').textContent = WORLDS[r.world].mode || 'PLAY';
   $('ri-rules').textContent = WORLDS[r.world].rules || '';
+  // same truth-in-teaching gate as the free-round intro: the tap demo only
+  // appears where tapping is actually the verb
+  $('ri-demo').style.display =
+    (WORLDS[r.world].mode === 'RACE' && WORLDS[r.world].cue !== 'world') ? '' : 'none';
   $('ri-track').textContent = prettyTrack(r.track);
   $('ri-state').textContent = 'preparing';
   $('round-intro').classList.add('show');
@@ -2347,7 +2357,7 @@ function frame(now) {
     hdr: settings.hdr,
     stardust: settings.stardust,
     balls: settings.balls,
-    holding: pointerHeld,
+    holding: pointerHeld || throttleKey,
     time,
     addScore,
     impact,
