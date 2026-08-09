@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=222';
-import { drawQR } from './lib/qr.js?v=222';
-import { WORLDS } from './worlds/registry.js?v=222';
-import { Net, PALETTE } from './net.js?v=222';
-import { Presence } from './lib/presence.js?v=222';
-import { Pulses } from './lib/pulse.js?v=222';
-import { BeatClock } from './lib/beatclock.js?v=222';
-import { BeatCue } from './lib/beatcue.js?v=222';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=222';
-import { Race, placeOf, standings } from './lib/race.js?v=222';
-import { RouteMap } from './lib/map.js?v=222';
-import * as sfx from './lib/sfx.js?v=222';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=222';
-import { glowTexture } from './lib/glow.js?v=222';
+import { AudioEngine } from './audio-engine.js?v=223';
+import { drawQR } from './lib/qr.js?v=223';
+import { WORLDS } from './worlds/registry.js?v=223';
+import { Net, PALETTE } from './net.js?v=223';
+import { Presence } from './lib/presence.js?v=223';
+import { Pulses } from './lib/pulse.js?v=223';
+import { BeatClock } from './lib/beatclock.js?v=223';
+import { BeatCue } from './lib/beatcue.js?v=223';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=223';
+import { Race, placeOf, standings } from './lib/race.js?v=223';
+import { RouteMap } from './lib/map.js?v=223';
+import * as sfx from './lib/sfx.js?v=223';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=223';
+import { glowTexture } from './lib/glow.js?v=223';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -730,7 +730,7 @@ function startRaceIfReady() {
     $('ri-demo').style.display =
       (WORLDS[key].mode === 'RACE' && WORLDS[key].cue !== 'world') ? '' : 'none';
     const pb = getBest();
-    $('ri-state').textContent = pb > 0 ? "your best 'round here: " + pb.toLocaleString() : "fixin' things up";
+    $('ri-state').textContent = pb > 0 ? "your best 'round here: " + pb.toLocaleString() : "fixin' to start";
     setPhase = 'intro';
     $('round-intro').classList.add('show');
     bestBeaten = false;
@@ -2010,7 +2010,7 @@ function nextRound() {
   $('ri-demo').style.display =
     (WORLDS[r.world].mode === 'RACE' && WORLDS[r.world].cue !== 'world') ? '' : 'none';
   $('ri-track').textContent = prettyTrack(r.track);
-  $('ri-state').textContent = "fixin' things up";
+  $('ri-state').textContent = "fixin' to start";
   $('round-intro').classList.add('show');
 
   switchWorld(r.world);
