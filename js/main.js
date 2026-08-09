@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=209';
-import { WORLDS } from './worlds/registry.js?v=209';
-import { Net, PALETTE } from './net.js?v=209';
-import { Presence } from './lib/presence.js?v=209';
-import { Pulses } from './lib/pulse.js?v=209';
-import { BeatClock } from './lib/beatclock.js?v=209';
-import { BeatCue } from './lib/beatcue.js?v=209';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=209';
-import { Race, placeOf, standings } from './lib/race.js?v=209';
-import { RouteMap } from './lib/map.js?v=209';
-import * as sfx from './lib/sfx.js?v=209';
-import { glowTexture } from './lib/glow.js?v=209';
+import { AudioEngine } from './audio-engine.js?v=211';
+import { WORLDS } from './worlds/registry.js?v=211';
+import { Net, PALETTE } from './net.js?v=211';
+import { Presence } from './lib/presence.js?v=211';
+import { Pulses } from './lib/pulse.js?v=211';
+import { BeatClock } from './lib/beatclock.js?v=211';
+import { BeatCue } from './lib/beatcue.js?v=211';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=211';
+import { Race, placeOf, standings } from './lib/race.js?v=211';
+import { RouteMap } from './lib/map.js?v=211';
+import * as sfx from './lib/sfx.js?v=211';
+import { glowTexture } from './lib/glow.js?v=211';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -243,7 +243,24 @@ function updateURL() {
 // ── World switcher ──
 let world = null;
 let currentWorldKey = 'tunnel';
+// A world change passes through a breath of black. The dip is 200ms down,
+// the swap happens in the dark, 200ms back up — and it swallows the new
+// world's first-frame build hitch, which is exactly what a hard cut exposes.
+let dipT = 0;
 function switchWorld(key) {
+  // boot must be synchronous — the frame loop cannot meet a null world
+  if (!world) { _switchWorldNow(key); return; }
+  const fade = $('scene-fade');
+  fade.classList.add('dip');
+  clearTimeout(dipT);
+  dipT = setTimeout(() => {
+    _switchWorldNow(key);
+    // let one frame render in the dark before lifting
+    requestAnimationFrame(() => requestAnimationFrame(() => fade.classList.remove('dip')));
+  }, 200);
+}
+
+function _switchWorldNow(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
