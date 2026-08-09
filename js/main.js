@@ -8,19 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=217';
-import { WORLDS } from './worlds/registry.js?v=217';
-import { Net, PALETTE } from './net.js?v=217';
-import { Presence } from './lib/presence.js?v=217';
-import { Pulses } from './lib/pulse.js?v=217';
-import { BeatClock } from './lib/beatclock.js?v=217';
-import { BeatCue } from './lib/beatcue.js?v=217';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=217';
-import { Race, placeOf, standings } from './lib/race.js?v=217';
-import { RouteMap } from './lib/map.js?v=217';
-import * as sfx from './lib/sfx.js?v=217';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=217';
-import { glowTexture } from './lib/glow.js?v=217';
+import { AudioEngine } from './audio-engine.js?v=218';
+import { drawQR } from './lib/qr.js?v=218';
+import { WORLDS } from './worlds/registry.js?v=218';
+import { Net, PALETTE } from './net.js?v=218';
+import { Presence } from './lib/presence.js?v=218';
+import { Pulses } from './lib/pulse.js?v=218';
+import { BeatClock } from './lib/beatclock.js?v=218';
+import { BeatCue } from './lib/beatcue.js?v=218';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=218';
+import { Race, placeOf, standings } from './lib/race.js?v=218';
+import { RouteMap } from './lib/map.js?v=218';
+import * as sfx from './lib/sfx.js?v=218';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=218';
+import { glowTexture } from './lib/glow.js?v=218';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1904,6 +1905,17 @@ function startRoom(code, name, asOwner) {
   $('room-badge').dataset.url = location.host.includes('localhost')
     ? '' : location.host + location.pathname.replace(/\/$/, '');
   $('room-badge').classList.remove('hidden');
+  // The stream card — the host's join lockup for a broadcast. Guests never
+  // see it; their phone IS the controller. It opens with the room and can be
+  // tucked away (click the room code to bring it back).
+  document.body.classList.toggle('hosting', !!asOwner);
+  if (asOwner) {
+    const joinURL = location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
+    $('sc-url').textContent = joinURL.replace(/^https?:\/\//, '');
+    $('sc-code').textContent = code;
+    $('sc-qr').classList.toggle('gone', !drawQR($('sc-qr'), joinURL, 4));
+    $('stream-card').classList.remove('hidden');
+  }
   net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = 'pick another name'; };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
   // guests ride the host's soundtrack — no track/transport controls for them
@@ -2100,6 +2112,10 @@ function showSetResults() {
 }
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
+$('sc-hide').addEventListener('click', () => $('stream-card').classList.add('hidden'));
+$('room-badge').addEventListener('click', () => {
+  if (document.body.classList.contains('hosting')) $('stream-card').classList.toggle('hidden');
+});
 $('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
 $('btn-join').addEventListener('click', () => {
