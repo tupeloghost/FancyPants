@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=204';
-import { WORLDS } from './worlds/registry.js?v=204';
-import { Net, PALETTE } from './net.js?v=204';
-import { Presence } from './lib/presence.js?v=204';
-import { Pulses } from './lib/pulse.js?v=204';
-import { BeatClock } from './lib/beatclock.js?v=204';
-import { BeatCue } from './lib/beatcue.js?v=204';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=204';
-import { Race, placeOf, standings } from './lib/race.js?v=204';
-import { RouteMap } from './lib/map.js?v=204';
-import * as sfx from './lib/sfx.js?v=204';
-import { glowTexture } from './lib/glow.js?v=204';
+import { AudioEngine } from './audio-engine.js?v=205';
+import { WORLDS } from './worlds/registry.js?v=205';
+import { Net, PALETTE } from './net.js?v=205';
+import { Presence } from './lib/presence.js?v=205';
+import { Pulses } from './lib/pulse.js?v=205';
+import { BeatClock } from './lib/beatclock.js?v=205';
+import { BeatCue } from './lib/beatcue.js?v=205';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=205';
+import { Race, placeOf, standings } from './lib/race.js?v=205';
+import { RouteMap } from './lib/map.js?v=205';
+import * as sfx from './lib/sfx.js?v=205';
+import { glowTexture } from './lib/glow.js?v=205';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -272,7 +272,7 @@ function switchWorld(key) {
   if (!WORLDS[key].rhythm) {
     $('press-hint').classList.remove('show');
     document.body.classList.remove('vibe-card');
-    if (!setList) { $('round-intro').classList.remove('show'); setPhase = 'idle'; }
+    if (!setList) { $('round-intro').classList.remove('show'); setPhase = 'idle'; hideResults(); }
   }
   beatCue.reset();
   startRaceIfReady();
@@ -677,6 +677,12 @@ function startRaceIfReady() {
   if (!setList) {
     const key = $('world-select').value;
     race.reset();
+    // One screen at a time. Arriving here with the previous round's results
+    // (or its PLAY AGAIN question) still up layered two cards on top of each
+    // other — title over stats over demo, all fighting. The intro owns the
+    // frame now, so everything else leaves first.
+    hideResults();
+    $('pass-flash').classList.remove('show');
     document.body.classList.add('vibe-card');
     $('ri-world').textContent = WORLDS[key].label;
     $('ri-track').textContent = prettyTrack($('track-select').value || audio.el.currentSrc || '');
