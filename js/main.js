@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=205';
-import { WORLDS } from './worlds/registry.js?v=205';
-import { Net, PALETTE } from './net.js?v=205';
-import { Presence } from './lib/presence.js?v=205';
-import { Pulses } from './lib/pulse.js?v=205';
-import { BeatClock } from './lib/beatclock.js?v=205';
-import { BeatCue } from './lib/beatcue.js?v=205';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=205';
-import { Race, placeOf, standings } from './lib/race.js?v=205';
-import { RouteMap } from './lib/map.js?v=205';
-import * as sfx from './lib/sfx.js?v=205';
-import { glowTexture } from './lib/glow.js?v=205';
+import { AudioEngine } from './audio-engine.js?v=206';
+import { WORLDS } from './worlds/registry.js?v=206';
+import { Net, PALETTE } from './net.js?v=206';
+import { Presence } from './lib/presence.js?v=206';
+import { Pulses } from './lib/pulse.js?v=206';
+import { BeatClock } from './lib/beatclock.js?v=206';
+import { BeatCue } from './lib/beatcue.js?v=206';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=206';
+import { Race, placeOf, standings } from './lib/race.js?v=206';
+import { RouteMap } from './lib/map.js?v=206';
+import * as sfx from './lib/sfx.js?v=206';
+import { glowTexture } from './lib/glow.js?v=206';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -688,6 +688,11 @@ function startRaceIfReady() {
     $('ri-track').textContent = prettyTrack($('track-select').value || audio.el.currentSrc || '');
     $('ri-mode').textContent = WORLDS[key].mode || 'PLAY';
     $('ri-rules').textContent = WORLDS[key].rules || '';
+    // The tap demo shows a ring closing on an orb — which is a LIE for worlds
+    // that draw their own cue (Slinky's stair bars) and for steered worlds
+    // where nobody taps at all. It only appears where it teaches the truth.
+    $('ri-demo').style.display =
+      (WORLDS[key].mode === 'RACE' && WORLDS[key].cue !== 'world') ? '' : 'none';
     const pb = getBest();
     $('ri-state').textContent = pb > 0 ? 'your best here: ' + pb.toLocaleString() : 'preparing';
     setPhase = 'intro';
