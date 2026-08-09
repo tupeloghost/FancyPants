@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=199';
-import { themePaint } from '../lib/themes.js?v=199';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=204';
+import { themePaint } from '../lib/themes.js?v=204';
 
 const TREES = 30;
 const CHERRIES_PER = 6;
@@ -37,6 +37,9 @@ export function createCherryLand() {
   const MAX_FALLERS = 40;
   let basket = null, basketX = 0, basketLip = null;
   let catchTree = null, catchCanopy = null, basketPool = null;
+  let pile = [];               // cherries visibly stacking in the basket
+  let pileN = 0;               // how many the pile currently shows
+  let overflowFlash = 0;       // the basket just paid out
   let fallers = [];            // {x, t0, bomb, alive, mesh}
   let chartAt = 0;             // read head into the chart
   let lastChartRef = null;
@@ -223,6 +226,23 @@ export function createCherryLand() {
       basketPool.material.opacity = 0.2;
       basket.add(basketPool);
       basketPool.position.y = -0.8;
+
+      // ── the pile ── caught cherries visibly stack in the cup. THIS is the
+      // "almost there" the round was missing: you can see the basket getting
+      // full, and a full basket pays out and empties. Ten little spheres,
+      // pre-placed, revealed one per catch.
+      pile = [];
+      const pileMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+      for (let i = 0; i < 10; i++) {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(0.46, 10, 8), pileMat.clone());
+        const a = i * 2.39996;                       // golden-angle scatter
+        const rr = 0.55 + (i % 3) * 0.45;
+        b.position.set(Math.cos(a) * rr, 0.55 + Math.floor(i / 5) * 0.5, Math.sin(a) * rr);
+        b.visible = false;
+        basket.add(b);
+        pile.push(b);
+      }
+      pileN = 0; overflowFlash = 0;
       basketLip = new THREE.Mesh(
         new THREE.TorusGeometry(3.0, 0.2, 8, 34),
         new THREE.MeshBasicMaterial({ toneMapped: false })
@@ -427,6 +447,16 @@ export function createCherryLand() {
         // camZ is authoritative now that the catch shot is derived from it too
         const bz = camZ - 21;
         basket.position.set(pathX(bz) + basketX, hillY(pathX(bz) + basketX, bz) + 1.2, bz);
+        // the pile shows what you hold; overflow flashes the whole basket gold
+        overflowFlash = Math.max(0, overflowFlash - dt * 1.4);
+        for (let i = 0; i < pile.length; i++) {
+          pile[i].visible = i < pileN;
+          if (pile[i].visible) {
+            pile[i].material.color.setHSL(0.99, 0.85, 0.42 + overflowFlash * 0.4);
+            const wob = Math.sin(time * 3 + i) * 0.03;
+            pile[i].scale.setScalar(1 + wob + overflowFlash * 0.3);
+          }
+        }
         // The basket answers what just happened to it: bright on a catch, an
         // angry red on a bomb. Before this, catching a bomb changed a number
         // somewhere and nothing else — an event you could entirely miss.
@@ -478,6 +508,9 @@ export function createCherryLand() {
             // accented notes fall FAST — a third quicker, the ones that catch
             // you flat-footed and make a clean phrase feel earned
             f.fast = n.accent && !f.isBomb;
+            // one cherry in twelve is GOLDEN: faster, brighter, worth five.
+            // Rare enough to be an event, common enough to be chased.
+            f.gold = !f.isBomb && ((chartAt * 104729) % 100) < 8;
             f.spin = ((chartAt * 37) % 100) / 100 * 6.28;
             f.mesh.visible = true;
             f.fruit.visible = !f.isBomb;
@@ -488,7 +521,7 @@ export function createCherryLand() {
         for (const f of fallers) {
           if (!f.alive) continue;
           const left = f.t0 - songTime;                    // seconds until it lands
-          const fallT = f.fast ? FALL_T * 0.62 : FALL_T;
+          const fallT = (f.fast || f.gold) ? FALL_T * 0.62 : FALL_T;
           const u = 1 - Math.max(0, Math.min(1, left / fallT));
           const fz = camZ - 21;
           const fx = pathX(fz) + f.x;
@@ -504,10 +537,17 @@ export function createCherryLand() {
             // PURPLE, deliberately — the orchard is full of red cherries on
             // trees and hills, and red falling fruit vanished into them. The
             // one thing you can catch is the one thing in this colour.
-            color.setHSL(0.78, 0.85, 0.48 + u * 0.14);
-            f.mat.color.copy(color);
-            f.fruitGlow.material.color.setHSL(0.78, 0.9, 0.58);
-            f.fruitGlow.material.opacity = 0.35 + u * 0.4;
+            if (f.gold) {
+              color.setHSL(0.12, 1, 0.55 + Math.sin(songTime * 9) * 0.12);
+              f.mat.color.copy(color);
+              f.fruitGlow.material.color.setHSL(0.12, 1, 0.6);
+              f.fruitGlow.material.opacity = 0.55 + u * 0.4;
+            } else {
+              color.setHSL(0.78, 0.85, 0.48 + u * 0.14);
+              f.mat.color.copy(color);
+              f.fruitGlow.material.color.setHSL(0.78, 0.9, 0.58);
+              f.fruitGlow.material.opacity = 0.35 + u * 0.4;
+            }
           } else {
             // the fuse burns brighter the closer it gets, so a bomb reads as a
             // decision rather than a colour
@@ -525,8 +565,16 @@ export function createCherryLand() {
               race.drop(4); bombFlash = 1;
               if (opts.impact) opts.impact(1.0);
             } else if (caught) {
-              race.collect(1); catchFlash = 1;
-              if (opts.impact) opts.impact(0.28);
+              race.collect(f.gold ? 5 : 1); catchFlash = 1;
+              if (opts.impact) opts.impact(f.gold ? 0.7 : 0.28);
+              // the pile grows — and a FULL basket pays out and empties
+              pileN = Math.min(10, pileN + (f.gold ? 3 : 1));
+              if (pileN >= 10) {
+                pileN = 0;
+                overflowFlash = 1;
+                race.collect(5);               // the overflow bonus
+                if (opts.impact) opts.impact(0.9);
+              }
             } else if (!f.isBomb) {
               race.drop(0);            // a fumble breaks the streak, costs nothing
             }

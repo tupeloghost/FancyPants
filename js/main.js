@@ -8,22 +8,23 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=199';
-import { WORLDS } from './worlds/registry.js?v=199';
-import { Net, PALETTE } from './net.js?v=199';
-import { Presence } from './lib/presence.js?v=199';
-import { Pulses } from './lib/pulse.js?v=199';
-import { BeatClock } from './lib/beatclock.js?v=199';
-import { BeatCue } from './lib/beatcue.js?v=199';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=199';
-import { Race, placeOf, standings } from './lib/race.js?v=199';
-import { RouteMap } from './lib/map.js?v=199';
-import * as sfx from './lib/sfx.js?v=199';
-import { glowTexture } from './lib/glow.js?v=199';
+import { AudioEngine } from './audio-engine.js?v=204';
+import { WORLDS } from './worlds/registry.js?v=204';
+import { Net, PALETTE } from './net.js?v=204';
+import { Presence } from './lib/presence.js?v=204';
+import { Pulses } from './lib/pulse.js?v=204';
+import { BeatClock } from './lib/beatclock.js?v=204';
+import { BeatCue } from './lib/beatcue.js?v=204';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=204';
+import { Race, placeOf, standings } from './lib/race.js?v=204';
+import { RouteMap } from './lib/map.js?v=204';
+import * as sfx from './lib/sfx.js?v=204';
+import { glowTexture } from './lib/glow.js?v=204';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
 const IS_MOBILE = matchMedia('(pointer: coarse)').matches;
+window.__LITE = IS_MOBILE;   // worlds thin their heaviest layers when set
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance' });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
@@ -35,8 +36,11 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 // post-processing: render → bloom → output
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+// mobile renders bloom at half resolution — the pass is the single biggest
+// GPU cost, and glow at half-res is visually indistinguishable on a phone
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), IS_MOBILE ? 0.5 : 0.7, 0.3, 0.5
+  new THREE.Vector2(window.innerWidth >> (IS_MOBILE ? 1 : 0), window.innerHeight >> (IS_MOBILE ? 1 : 0)),
+  IS_MOBILE ? 0.5 : 0.7, 0.3, 0.5
 );
 composer.addPass(bloomPass);
 

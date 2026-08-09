@@ -3,8 +3,8 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=199';
-import { themePaint } from '../lib/themes.js?v=199';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=204';
+import { themePaint } from '../lib/themes.js?v=204';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -26,6 +26,8 @@ export function createWaterslide() {
   const H_SPACING = 2.6;       // min seconds between hoops
   const MAX_HOOPS = 14;
   let hoops = [], hoopChartAt = 0, hoopLastT = -99, hoopBoost = 0;
+  let hoopCount = 0;           // arrivals, for the red cadence
+  let bursts = [];             // golden rings left behind by a catch
   let wLastChartRef = null;
   const tp = [0, 0, 0];
   const dummy = new THREE.Object3D();
@@ -125,7 +127,22 @@ export function createWaterslide() {
         grp.add(ring, gl);
         grp.visible = false;
         group.add(grp);
-        hoops.push({ mesh: grp, ring, gl, alive: false, t: 0, side: 0 });
+        hoops.push({ mesh: grp, ring, gl, alive: false, t: 0, side: 0, red: false });
+      }
+      // catch-bursts: a golden ring blooms where you threaded a hoop
+      bursts = [];
+      for (let i = 0; i < 6; i++) {
+        const b = new THREE.Mesh(
+          new THREE.TorusGeometry(2.6, 0.3, 8, 26),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        b.visible = false;
+        b.userData = { life: 0 };
+        group.add(b);
+        bursts.push(b);
       }
     },
 
@@ -184,9 +201,14 @@ export function createWaterslide() {
             const h = hoops.find(x => !x.alive);
             if (!h) continue;
             hoopLastT = n.t;
+            hoopCount++;
             h.alive = true;
             h.t = travel + 130;                        // fixed distance down the pipe
             h.side = (((hoopChartAt * 48271) % 200) / 100 - 1) * 0.75;  // -0.75..0.75
+            // every fourth hoop is RED: lean AWAY. Same signal grammar as the
+            // whole game — green means through, red means never — and it gives
+            // the flume the tension the green-only version had none of.
+            h.red = (hoopCount % 4) === 0;
             h.mesh.visible = true;
           }
         }
@@ -196,8 +218,9 @@ export function createWaterslide() {
           const hx = curveX(t) + h.side * (R * 0.55);
           h.mesh.position.set(hx, dropY(t) + 2.6, -t);
           h.mesh.rotation.y = Math.atan2(curveX(t - 6) - curveX(t + 6), 12);
-          // fixed signal green, same promise as everywhere else: green = go
-          color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + t) * 0.08 + audio.volume * 0.12);
+          // green = through, red = never — the game's one colour promise
+          color.setHSL(h.red ? 0.01 : 0.36, 0.95,
+            0.5 + Math.sin(time * (h.red ? 8 : 5) + t) * 0.08 + audio.volume * 0.12);
           h.ring.material.color.copy(color);
           h.gl.material.color.copy(color);
           h.gl.material.opacity = 0.3 + audio.volume * 0.25;
@@ -205,11 +228,21 @@ export function createWaterslide() {
           const ahead = t - travel;
           if (ahead < 4) {
             const through = Math.abs(h.side - steer) < 0.42;
-            if (through) {
+            if (through && h.red) {
+              race.drop(2);                            // leaned into the wrong ring
+              hoopBoost = 0;
+              if (opts.impact) opts.impact(1.0);
+            } else if (through) {
               race.collect(hoopBoost > 0.35 ? 2 : 1);
               hoopBoost = Math.min(1, hoopBoost + 0.85);
               if (opts.impact) opts.impact(hoopBoost > 0.9 ? 0.75 : 0.5);
-            } else {
+              // leave a golden bloom where the catch happened
+              const b = bursts.find(x => !x.visible) || bursts[0];
+              b.visible = true;
+              b.userData.life = 1;
+              b.position.copy(h.mesh.position);
+              b.rotation.copy(h.mesh.rotation);
+            } else if (!h.red) {
               race.drop(0);                            // a missed hoop breaks the run
             }
             h.alive = false;
@@ -244,6 +277,16 @@ export function createWaterslide() {
       );
       camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6, -(travel + 34));
       camera.rotation.z += -bank;
+
+      for (const b of bursts) {
+        if (!b.visible) continue;
+        b.userData.life -= dt * 2;
+        if (b.userData.life <= 0) { b.visible = false; continue; }
+        const e = 1 - b.userData.life;
+        b.scale.setScalar(1 + e * 1.8);
+        b.material.opacity = b.userData.life * 0.8;
+        b.material.color.setHSL(0.12, 1, 0.6);
+      }
 
       // half-pipe rings recycle ahead. ringZ is the ring's ABSOLUTE world z
       // (camera lives at z = -travel), and -ringZ is its path parameter.

@@ -11,22 +11,22 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=199';
-import { createSurfer } from './surfer.js?v=199';
-import { createOrbit } from './orbit.js?v=199';
-import { createBloom } from './bloom.js?v=199';
-import { createTrail } from './trail.js?v=199';
-import { createSignal } from './signal.js?v=199';
-import { createRiver } from './river.js?v=199';
-import { createFunhouse } from './funhouse.js?v=199';
-import { createLavaLamp } from './lavalamp.js?v=199';
-import { createPlasma } from './plasma.js?v=199';
-import { createCherryLand } from './cherryland.js?v=199';
-import { createSlinky } from './slinky.js?v=199';
-import { createBlacktop } from './blacktop.js?v=199';
-import { createWaterslide } from './waterslide.js?v=199';
-import { createGarden } from './garden.js?v=199';
-import { createPaint } from './paint.js?v=199';
+import { createTunnel } from './tunnel.js?v=204';
+import { createSurfer } from './surfer.js?v=204';
+import { createOrbit } from './orbit.js?v=204';
+import { createBloom } from './bloom.js?v=204';
+import { createTrail } from './trail.js?v=204';
+import { createSignal } from './signal.js?v=204';
+import { createRiver } from './river.js?v=204';
+import { createFunhouse } from './funhouse.js?v=204';
+import { createLavaLamp } from './lavalamp.js?v=204';
+import { createPlasma } from './plasma.js?v=204';
+import { createCherryLand } from './cherryland.js?v=204';
+import { createSlinky } from './slinky.js?v=204';
+import { createBlacktop } from './blacktop.js?v=204';
+import { createWaterslide } from './waterslide.js?v=204';
+import { createGarden } from './garden.js?v=204';
+import { createPaint } from './paint.js?v=204';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -41,13 +41,13 @@ export const WORLDS = {
   lava:   { pulse: 0.7, goal: 'stir the wax — pop blobs at the top for +10', label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { pulse: 0.35, goal: 'tame the lightning — it leaps to your finger', label: 'PLASMA', create: createPlasma },
   cherry: { pulse: 0.8, rhythm: true, mode: 'CATCH', unit: 'CAUGHT',
-            rules: 'Swipe the basket left and right. Cherries drop on the beat \u2014 catch them. Dark ones are bombs and cost you four, so let those fall. Whoever fills their basket the most wins.', goal: 'snipe cherries (+15) or shake whole trees loose', label: 'CHERRY LAND', create: createCherryLand },
+            rules: 'Swipe the basket to catch falling cherries \u2014 golden ones are worth five. Fill the basket to the brim and it pays a bonus and empties. Dark ones are bombs: let them fall. Biggest total wins.', goal: 'snipe cherries (+15) or shake whole trees loose', label: 'CHERRY LAND', create: createCherryLand },
   slinky: { pulse: 0.6, rhythm: true, feetPerStep: 3, mode: 'RACE', cue: 'world',
             rules: 'Bars of light slide up the stairs \u2014 tap the moment one reaches your slinky. Hits build momentum and the spring walks faster. First one to the bottom wins.', goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { pulse: 0.85, rhythm: true, feetPerStep: 42, mode: 'DODGE', unit: 'GATES',
             rules: 'Steer with the mouse or the arrow keys. Thread the green gates \u2014 every one is a shot of nitro. A dark barrier costs you two and kills your speed. Whoever threads the most gates wins.', goal: 'hold for NITRO — survive the UFO for +40', label: 'BLACKTOP', create: createBlacktop },
   waterslide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
-            rules: 'Lean left and right with the mouse or arrow keys. Ride through the green hoops — each one is a burst of speed, and hoops back-to-back pay double. Whoever rides through the most wins.', goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
+            rules: 'Lean left and right to ride through the green hoops \u2014 each one is a burst of speed, and hoops back-to-back pay double. Red hoops are trouble: lean away. Whoever rides through the most wins.', goal: 'lean into the flume and never slow down', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'the world arrives gray — hold and sweep, and everything you touch turns to colour', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'hold and sweep to gather the floating runes — three alike fuse into a brighter one. Set them in the board to light it up', label: 'LUMEN', create: createGarden },
 };

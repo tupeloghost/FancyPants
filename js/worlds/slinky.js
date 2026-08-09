@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=199';
-import { themePaint } from '../lib/themes.js?v=199';
-import { PALETTE } from '../net.js?v=199';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=204';
+import { themePaint } from '../lib/themes.js?v=204';
+import { PALETTE } from '../net.js?v=204';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
@@ -34,6 +34,9 @@ export function createSlinky() {
   const quat = new THREE.Quaternion();
   let pointer = { x: 0, active: false };
   let beatBars = [], barChartAt = 0;
+  let paceBar = null;          // the line you must stay ahead of
+  let lastTier = 1;            // multiplier tier, for the tier-up moment
+  let behindT = 0;             // seconds spent behind the pace
   let sLastChartRef = null;
   const BAR_LOOK = 2.0;    // seconds a bar is visible before its beat
 
@@ -122,6 +125,7 @@ export function createSlinky() {
       );
       echo.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RINGS * 3), 3);
       echo.frustumCulled = false;
+      echo.visible = !window.__LITE;   // the motion ghost is a desktop luxury
       group.add(echo);
 
       // the endless staircase
@@ -184,6 +188,21 @@ export function createSlinky() {
       // A bar of light slides up the steps and into the spring; you tap the
       // moment they meet. The staircase is the note highway, the spring is
       // the hit line, and there is nothing to watch except the world.
+      // ── the pace line ── a shimmering bar descending the stairs at the pace
+      // that finishes with the song. Ahead of it you are winning time; behind
+      // it the stairs cool and a slow heartbeat starts. Slinky finally has
+      // something to LOSE.
+      paceBar = new THREE.Mesh(
+        new THREE.BoxGeometry(STAIR_W * 0.9, 0.35, 1.1),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0.5,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        })
+      );
+      paceBar.visible = false;
+      group.add(paceBar);
+      lastTier = 1; behindT = 0;
+
       beatBars = [];
       for (let i = 0; i < 8; i++) {
         const bar = new THREE.Mesh(
@@ -297,6 +316,23 @@ export function createSlinky() {
       } else {
         for (const b of beatBars) { b.live = false; b.mesh.visible = false; }
       }
+
+      // ── pace pressure and tier-up moments ──
+      if (racing && opts.songDur) {
+        const paceWalk = RACE_START + (opts.songTime / opts.songDur) * race.finish * 0.92;
+        pathAt(paceWalk, P2);
+        paceBar.visible = true;
+        paceBar.position.set(0, P2.y + 0.6, P2.z);
+        const ahead = walk - paceWalk;                 // >0 you lead the song
+        behindT = ahead < -1.5 ? behindT + dt : 0;
+        color.setHSL(ahead >= 0 ? 0.42 : 0.02, 0.9, 0.55 + Math.sin(time * 5) * 0.1);
+        paceBar.material.color.copy(color);
+        paceBar.material.opacity = ahead >= 0 ? 0.35 : 0.6 + Math.sin(time * 7) * 0.2;
+        // a tier crossing is a MOMENT: the spring boings, the wave fires
+        const tier = race.multiplier;
+        if (tier > lastTier) { boing = 1; landPulse = 1; beatWave = 0; if (opts.impact) opts.impact(0.7); }
+        lastTier = tier;
+      } else if (paceBar) paceBar.visible = false;
 
       if (audio.beat) beatWave = 0;
       beatWave += dt * 90; // the pulse races down the spring
@@ -422,21 +458,26 @@ export function createSlinky() {
         color.setHSL(tp[0], tp[1], Math.min(0.7, (0.3 + audio.volume * 0.25 + boing * 0.15 + landPulse * 0.08 + wave * 0.3) * Math.min(1.5, tp[2])));
         coils.setColorAt(i, color);
 
-        // echo ghost: same coil, a beat behind, faint
-        pathAt(p - 0.16, P);
-        pathAt(p - 0.14, P2);
-        TAN.subVectors(P2, P).normalize();
-        quat.setFromUnitVectors(Z_AXIS, TAN);
-        dummy.position.copy(P);
-        dummy.position.y += RING_R + 0.4;
-        dummy.quaternion.copy(quat);
-        dummy.scale.setScalar(s * 1.04);
-        dummy.updateMatrix();
-        echo.setMatrixAt(i, dummy.matrix);
-        echo.setColorAt(i, color);
+        // echo ghost: same coil, a beat behind, faint — skipped entirely on
+        // lite, where its per-coil path math was pure heat
+        if (echo.visible) {
+          pathAt(p - 0.16, P);
+          pathAt(p - 0.14, P2);
+          TAN.subVectors(P2, P).normalize();
+          quat.setFromUnitVectors(Z_AXIS, TAN);
+          dummy.position.copy(P);
+          dummy.position.y += RING_R + 0.4;
+          dummy.quaternion.copy(quat);
+          dummy.scale.setScalar(s * 1.04);
+          dummy.updateMatrix();
+          echo.setMatrixAt(i, dummy.matrix);
+          echo.setColorAt(i, color);
+        }
       }
-      echo.instanceMatrix.needsUpdate = true;
-      echo.instanceColor.needsUpdate = true;
+      if (echo.visible) {
+        echo.instanceMatrix.needsUpdate = true;
+        echo.instanceColor.needsUpdate = true;
+      }
       coils.instanceMatrix.needsUpdate = true;
       coils.instanceColor.needsUpdate = true;
 
