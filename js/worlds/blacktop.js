@@ -3,9 +3,9 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=218';
-import { themePaint } from '../lib/themes.js?v=218';
-import { TUNE } from '../lib/tune.js?v=218';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=219';
+import { themePaint } from '../lib/themes.js?v=219';
+import { TUNE } from '../lib/tune.js?v=219';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -347,42 +347,54 @@ export function createBlacktop() {
         glow.position.y = 3.4;
         gate.add(glow);
 
-        // A barrier is a WALL, not a frame. The tall end-posts and rail made
-        // it read as another gate — the same silhouette as the thing it must
-        // never be confused with. The distinction is solid versus hollow: a
-        // gate is an opening you drive through, a barrier is a face you would
-        // hit. So: one solid slab, waist-high but wide, the whole face striped
-        // like a road-works board, lit red, blinking faster as it comes.
+        // A barrier is a WALL, not a frame — and not a RAMP either. The
+        // waist-high slab with diagonal stripes read as an incline you would
+        // drive up (diagonals are ramp language, and the river teaches that
+        // low things are for riding over). So the wall is TALL — chest of the
+        // gate, clearly blocking the opening — its stripes run VERTICAL like
+        // a barricade fence, and a red X sits across the face: the one glyph
+        // that means "no" from any distance at any compression.
         const barrier = new THREE.Group();
         const block = new THREE.Mesh(
-          new THREE.BoxGeometry(7.6, 3.4, 1.2),
+          new THREE.BoxGeometry(7.6, 5.2, 1.2),
           new THREE.MeshBasicMaterial({ color: 0x1a0c10, toneMapped: false })
         );
-        block.position.y = 1.7;
+        block.position.y = 2.6;
         barrier.add(block);
-        // full-face diagonal hazard stripes — nothing hollow about it
+        // vertical barricade stripes, full height — nothing slopes here
         const stripeMats = [];
-        for (let k = 0; k < 5; k++) {
+        for (let k = 0; k < 7; k++) {
           const st = new THREE.Mesh(
-            new THREE.BoxGeometry(1.15, 3.9, 0.1),
-            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff3a1a : 0xffb81e, toneMapped: false })
+            new THREE.BoxGeometry(0.62, 5.2, 0.1),
+            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff3a1a : 0xffd9cf, toneMapped: false })
           );
-          st.position.set(-2.6 + k * 1.3, 1.7, 0.66);
-          st.rotation.z = 0.44;
+          st.position.set(-3.15 + k * 1.05, 2.6, 0.66);
           stripeMats.push(st.material);
           barrier.add(st);
+        }
+        // the X — two crossed bars over everything else on the face
+        const xMats = [];
+        for (const rot of [0.65, -0.65]) {
+          const bar = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 6.6, 0.12),
+            new THREE.MeshBasicMaterial({ color: 0xff2012, toneMapped: false })
+          );
+          bar.position.set(0, 2.6, 0.78);
+          bar.rotation.z = rot;
+          xMats.push(bar.material);        // the X breathes; the stripes hold still
+          barrier.add(bar);
         }
         const topLight = new THREE.Mesh(
           new THREE.BoxGeometry(7.8, 0.3, 0.3),
           new THREE.MeshBasicMaterial({ color: 0xff3020, toneMapped: false })
         );
-        topLight.position.y = 3.55;
+        topLight.position.y = 5.4;
         const bGlow = glowSprite(10);
         bGlow.material.color.setHex(0xff3524);
         bGlow.material.opacity = 0.35;
-        bGlow.position.y = 2.0;
+        bGlow.position.y = 2.6;
         barrier.add(topLight, bGlow);
-        barrier.userData = { stripeMats, topLight, bGlow, lampMats: [] };
+        barrier.userData = { stripeMats, xMats, topLight, bGlow, lampMats: [] };
 
                 g.add(gate, barrier);
         g.visible = false;
@@ -529,6 +541,7 @@ export function createBlacktop() {
               bd.topLight.material.color.setHSL(0.01, 1, 0.35 + blink * 0.35);
               bd.bGlow.material.opacity = 0.22 + near * 0.4 * blink;
               for (const lm of bd.lampMats) lm.color.setHSL(0.0, 1, 0.3 + blink * 0.45);
+              for (const xm of bd.xMats) xm.color.setHSL(0.01, 1, 0.38 + blink * 0.34);
             }
           }
           if (!g.isBar) {
