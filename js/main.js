@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=219';
-import { drawQR } from './lib/qr.js?v=219';
-import { WORLDS } from './worlds/registry.js?v=219';
-import { Net, PALETTE } from './net.js?v=219';
-import { Presence } from './lib/presence.js?v=219';
-import { Pulses } from './lib/pulse.js?v=219';
-import { BeatClock } from './lib/beatclock.js?v=219';
-import { BeatCue } from './lib/beatcue.js?v=219';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=219';
-import { Race, placeOf, standings } from './lib/race.js?v=219';
-import { RouteMap } from './lib/map.js?v=219';
-import * as sfx from './lib/sfx.js?v=219';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=219';
-import { glowTexture } from './lib/glow.js?v=219';
+import { AudioEngine } from './audio-engine.js?v=221';
+import { drawQR } from './lib/qr.js?v=221';
+import { WORLDS } from './worlds/registry.js?v=221';
+import { Net, PALETTE } from './net.js?v=221';
+import { Presence } from './lib/presence.js?v=221';
+import { Pulses } from './lib/pulse.js?v=221';
+import { BeatClock } from './lib/beatclock.js?v=221';
+import { BeatCue } from './lib/beatcue.js?v=221';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=221';
+import { Race, placeOf, standings } from './lib/race.js?v=221';
+import { RouteMap } from './lib/map.js?v=221';
+import * as sfx from './lib/sfx.js?v=221';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=221';
+import { glowTexture } from './lib/glow.js?v=221';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -723,7 +723,7 @@ function startRaceIfReady() {
     $('ri-world').textContent = WORLDS[key].label;
     $('ri-track').textContent = prettyTrack($('track-select').value || audio.el.currentSrc || '');
     $('ri-mode').textContent = WORLDS[key].mode || 'PLAY';
-    $('ri-rules').textContent = WORLDS[key].rules || '';
+    $('ri-rules').textContent = rulesFor(key);
     // The tap demo shows a ring closing on an orb — which is a LIE for worlds
     // that draw their own cue (Slinky's stair bars) and for steered worlds
     // where nobody taps at all. It only appears where it teaches the truth.
@@ -1877,6 +1877,16 @@ const validName = n => /^[a-zA-Z0-9_]{3,14}$/.test(n);
 
 $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 
+
+// The same rule, phrased for the device in hand: a phone player has no
+// mouse, no arrows, and no space bar — their finger is all three.
+function rulesFor(key) {
+  const r = WORLDS[key].rules || '';
+  return IS_MOBILE
+    ? r.replace('Steer with the mouse or arrows \u2014 and HOLD (press down, or space) to open the throttle.',
+                'Slide your finger to steer \u2014 and press AND HOLD to open the throttle.')
+    : r;
+}
 let autoWanted = false;
 function dismissOverlay() {
   audio.ensureContext();
@@ -1994,7 +2004,7 @@ function nextRound() {
   $('ri-round').textContent = `round ${setAt + 1} of ${setList.length}`;
   $('ri-world').textContent = WORLDS[r.world].label;
   $('ri-mode').textContent = WORLDS[r.world].mode || 'PLAY';
-  $('ri-rules').textContent = WORLDS[r.world].rules || '';
+  $('ri-rules').textContent = rulesFor(r.world);
   // same truth-in-teaching gate as the free-round intro: the tap demo only
   // appears where tapping is actually the verb
   $('ri-demo').style.display =

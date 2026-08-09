@@ -25,8 +25,8 @@
     --accent-soft: hsla(var(--accent-h), 90%, 65%, 0.16);
     --accent-line: hsla(var(--accent-h), 80%, 65%, 0.28);
     --ink: hsl(var(--accent-h), 40%, 90%);
-    --ink-dim: hsl(var(--accent-h), 25%, 62%);
-    --ink-faint: hsl(var(--accent-h), 20%, 42%);
+    --ink-dim: hsl(var(--accent-h), 28%, 72%);
+    --ink-faint: hsl(var(--accent-h), 22%, 55%);
     --glass: hsla(228, 40%, 6%, 0.72);
     --well: hsla(var(--accent-h), 35%, 55%, 0.10);
   }
@@ -200,7 +200,7 @@
     letter-spacing: 5px; color: hsl(var(--accent-h), 55%, 94%); font-weight: 400;
   }
   #mode-inner p {
-    margin-top: 8px; font: 9px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 8px; font: 11px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2px; text-transform: uppercase; color: var(--ink-faint);
   }
   #mode-opts { display: flex; gap: 12px; margin-top: 26px; }
@@ -217,7 +217,7 @@
   }
   .mode-opt em {
     display: block; margin-top: 7px; font-style: normal;
-    font: 10px/1.55 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+    font: 13px/1.55 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
   }
 
   /* ── Round intro ── the route between rounds, and where charting hides ── */
@@ -227,7 +227,7 @@
     margin: 6px 0 2px;
   }
   #ri-head {
-    font: 8.5px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 10px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 5px; text-transform: uppercase; color: var(--ink-faint);
   }
   #ri-rule {
@@ -235,7 +235,7 @@
     background: hsla(var(--accent-h), 70%, 75%, 0.35);
   }
   #ri-round {
-    font: 9px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 4px; text-transform: uppercase; color: var(--ink-faint);
   }
   #ri-world {
@@ -245,7 +245,7 @@
     text-shadow: 0 0 34px hsla(var(--accent-h), 90%, 70%, 0.42);
   }
   #ri-track {
-    margin-top: 10px; font: 11px/1.5 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 10px; font: 13px/1.5 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2px; color: var(--ink-dim);
   }
   /* ── How this round is won ── words plus a live demonstration, because no
@@ -255,15 +255,15 @@
     margin-top: 18px;
   }
   #ri-demo { width: 108px; height: 108px; flex: none; }
-  #ri-copy { max-width: 340px; text-align: left; }
+  #ri-copy { max-width: 400px; text-align: left; }
   #ri-mode {
-    font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    font: 400 18px 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 4px; color: hsl(var(--accent-h), 55%, 92%);
   }
   #ri-rules {
     margin-top: 7px;
-    font: 11px/1.65 'SF Mono', ui-monospace, Menlo, monospace;
-    color: var(--ink-dim); letter-spacing: 0.3px;
+    font: 14px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
+    color: var(--ink); letter-spacing: 0.2px;
   }
   @media (max-width: 620px) {
     #ri-teach { flex-direction: column; gap: 12px; margin-top: 14px; }
@@ -271,7 +271,7 @@
     #ri-demo { width: 88px; height: 88px; }
   }
   #ri-state {
-    margin-top: 20px; font: 8px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 20px; font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2.4px; text-transform: uppercase; color: var(--ink-faint);
   }
   /* the round starts when YOU say so — instructions wait as long as you need */
@@ -317,12 +317,12 @@
   }
   #hud-unit {
     margin-top: 2px;
-    font: 9px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim);
   }
   #hud-sub {
     margin-top: 7px;
-    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 13px/1 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 1px; color: var(--ink-faint);
     transition: color 200ms ease;
   }
@@ -500,7 +500,7 @@
     text-shadow: 0 0 26px hsla(var(--accent-h), 90%, 70%, 0.4);
   }
   #results-sub {
-    margin-top: 5px; font-size: 9px; letter-spacing: 2.4px;
+    margin-top: 5px; font-size: 11px; letter-spacing: 2.4px;
     text-transform: uppercase; color: var(--ink-faint);
   }
   #results hr {
@@ -548,11 +548,11 @@
   }
   #results-stats div { text-align: center; }
   #results-stats b {
-    display: block; font: 400 19px 'Didot', 'Bodoni 72', Georgia, serif;
+    display: block; font: 400 22px 'Didot', 'Bodoni 72', Georgia, serif;
     color: hsl(var(--accent-h), 50%, 92%); font-variant-numeric: tabular-nums;
   }
   #results-stats em {
-    font-style: normal; font-size: 8px; letter-spacing: 1.6px;
+    font-style: normal; font-size: 10px; letter-spacing: 1.6px;
     text-transform: uppercase; color: var(--ink-faint);
   }
 
@@ -1177,7 +1177,7 @@
       transparent, hsla(var(--accent-h), 80%, 80%, 0.55), transparent);
   }
   #world-intro span {
-    font: italic 300 16px 'Didot', 'Bodoni 72', 'Cormorant Garamond',
+    font: italic 300 19px 'Didot', 'Bodoni 72', 'Cormorant Garamond',
           'Hoefler Text', Baskerville, Georgia, serif;
     letter-spacing: 3.5px;
     color: hsla(var(--accent-h), 35%, 88%, 0.86);
@@ -1307,6 +1307,22 @@
     #file-label { padding: 11px 9px; }
   }
 
+  /* ── Legibility on phones: reading text goes BIGGER than desktop,
+     never smaller — a phone is read at arm's length from a sofa ── */
+  @media (max-width: 620px) {
+    #ri-rules { font-size: 15px; line-height: 1.6; }
+    #ri-mode { font-size: 20px; }
+    #ri-track { font-size: 13px; }
+    #ri-round, #ri-state { font-size: 12px; }
+    .mode-opt em { font-size: 14px; }
+    #mode-inner p { font-size: 12px; }
+    #world-intro span { font-size: 18px; letter-spacing: 2.5px; }
+    #results-sub { font-size: 12px; }
+    #results-stats em { font-size: 11px; }
+    #results-stats b { font-size: 24px; }
+    #hud-sub { font-size: 14px; }
+    #hud-unit { font-size: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -1556,7 +1572,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 219</div>
+      <div id="build-stamp">build 221</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1570,6 +1586,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=219"></script>
+<script type="module" src="js/main.js?v=221"></script>
 </body>
 </html>
