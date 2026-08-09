@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=208';
-import { WORLDS } from './worlds/registry.js?v=208';
-import { Net, PALETTE } from './net.js?v=208';
-import { Presence } from './lib/presence.js?v=208';
-import { Pulses } from './lib/pulse.js?v=208';
-import { BeatClock } from './lib/beatclock.js?v=208';
-import { BeatCue } from './lib/beatcue.js?v=208';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=208';
-import { Race, placeOf, standings } from './lib/race.js?v=208';
-import { RouteMap } from './lib/map.js?v=208';
-import * as sfx from './lib/sfx.js?v=208';
-import { glowTexture } from './lib/glow.js?v=208';
+import { AudioEngine } from './audio-engine.js?v=209';
+import { WORLDS } from './worlds/registry.js?v=209';
+import { Net, PALETTE } from './net.js?v=209';
+import { Presence } from './lib/presence.js?v=209';
+import { Pulses } from './lib/pulse.js?v=209';
+import { BeatClock } from './lib/beatclock.js?v=209';
+import { BeatCue } from './lib/beatcue.js?v=209';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=209';
+import { Race, placeOf, standings } from './lib/race.js?v=209';
+import { RouteMap } from './lib/map.js?v=209';
+import * as sfx from './lib/sfx.js?v=209';
+import { glowTexture } from './lib/glow.js?v=209';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2043,6 +2043,14 @@ switchWorld(startWorld);
 // the bell, and this is what the money is FOR — mischief.
 const EMOJIS = ['\u{1F352}', '\u{1F525}', '\u{1F49C}', '\u{1F602}', '\u{1F451}', '\u{1F300}'];
 const BOMB_COST = 15;
+// Tricks are the Mario Kart layer: not decoration on a rival's screen but a
+// hand on their wheel. Dearer than a bomb because they change the race.
+const TRICKS = [
+  { i: 100, e: '\u{1F32B}\uFE0F', name: 'fog',  cost: 30 },   // a veil of light over their view
+  { i: 101, e: '\u{1F4AB}', name: 'sway', cost: 30 },          // their camera goes drunk
+];
+// what's currently being done TO you
+const debuff = { fogUntil: 0, swayUntil: 0, from: '' };
 
 function emojiRain(char, fromName) {
   const box = $('emoji-rain');
@@ -2083,6 +2091,19 @@ function sendBomb(toName, idx) {
 }
 
 net.onEmote = (p, i, to) => {
+  if (to && to === net.local.name && i >= 100) {
+    // a trick landed ON YOU — four seconds of somebody's hand on your wheel
+    const now = performance.now();
+    if (i === 100) debuff.fogUntil = now + 4000;
+    if (i === 101) debuff.swayUntil = now + 4000;
+    debuff.from = p.name || '?';
+    const el = $('pass-flash');
+    el.textContent = debuff.from.toUpperCase() + ' ' + (i === 100 ? '\u{1F32B}\uFE0F FOGGED YOU' : '\u{1F4AB} SWAYED YOU');
+    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2000);
+    sfx.thud();
+    return;
+  }
   if (to && to === net.local.name) emojiRain(EMOJIS[i] || EMOJIS[0], p.name);
   else if (to) {
     const el = $('pass-flash');
@@ -2117,6 +2138,31 @@ function renderPlist() {
       const price = document.createElement('em');
       price.textContent = BOMB_COST + ' pts';
       pick.appendChild(price);
+      // the tricks row — the ones with a hand on the wheel
+      const trickRow = document.createElement('div');
+      trickRow.className = 'bomb-picker tricks';
+      TRICKS.forEach(t => {
+        const b = document.createElement('button');
+        b.textContent = t.e;
+        b.title = t.name;
+        b.addEventListener('click', ev => {
+          ev.stopPropagation();
+          if (score < t.cost) { sfx.thud(); return; }
+          addScore(-t.cost, undefined, undefined, true);
+          net.sendEmote(t.i, p.name);
+          const el = $('pass-flash');
+          el.textContent = t.e + ' \u2192 ' + p.name.toUpperCase();
+          el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+          clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+          sfx.hit(9, true);
+          pick.remove(); trickRow.remove();
+        });
+        trickRow.appendChild(b);
+      });
+      const tp2 = document.createElement('em');
+      tp2.textContent = 'tricks \u00b7 30 pts';
+      trickRow.appendChild(tp2);
+      row.after(trickRow);
       row.after(pick);
     });
     box.appendChild(row);
@@ -2231,6 +2277,17 @@ function frame(now) {
   // portrait nudge alone drove every world to the 125-degree ceiling).
   const shot = { fov: camera.fov, x: camera.position.x, y: camera.position.y, z: camera.position.z };
   {
+    // ── tricks land here, in viewer space, so every world feels them ──
+    const nowMs = performance.now();
+    const swayLeft = (debuff.swayUntil - nowMs) / 1000;
+    if (swayLeft > 0) {
+      const fall = Math.min(1, swayLeft / 1.2);          // eases off at the end
+      camera.rotation.z += Math.sin(nowMs * 0.006) * 0.3 * fall;
+      camera.fov *= 1 + Math.sin(nowMs * 0.004) * 0.06 * fall;
+    }
+    const fogLeft = (debuff.fogUntil - nowMs) / 1000;
+    $('fog-veil').style.opacity = fogLeft > 0 ? Math.min(0.86, fogLeft / 1.4) : 0;
+
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 6);   // glide, never jump
     const portrait = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 0.34 : 1;
     camera.fov = Math.max(18, Math.min(125, shot.fov * zoom * portrait));
@@ -2286,6 +2343,14 @@ function frame(now) {
 
   updateHUD();
   checkBest();
+
+  // rubber-band: how far ahead is the best rival? Behind, your hits pay more.
+  if (race.active && race.mode === 'RACE') {
+    let lead = 0;
+    for (let i = 1; i < participants.length; i++) lead = Math.max(lead, participants[i].z || 0);
+    const gap = lead - race.progress;
+    race.rubber = gap > 0 ? Math.min(0.5, gap / 60) : 0;
+  }
 
   // a guest's round starts when the host's does — their progress arriving on
   // the wire IS the starting gun

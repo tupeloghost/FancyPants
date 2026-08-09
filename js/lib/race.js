@@ -70,6 +70,7 @@ export class Race {
     this.missed = 0;
     this.finishedAt = null; // song-time you reached the bottom
     this.hits = 0;
+    this.rubber = 0;        // 0..0.5 comeback aid, set from the field
   }
 
   // The finish is set from the track, so every song is a well-paced race with
@@ -132,7 +133,12 @@ export class Race {
       this.progress += base * this.multiplier;
       return;
     }
-    const gain = (rank === 'perfect' ? GAIN_PERFECT : GAIN_GOOD) * this.multiplier;
+    // Mario Kart's other secret: the field pulls you back in. `rubber` is set
+    // by the harness from how far the leader is ahead — behind, your hits are
+    // worth up to half again as much. The leader earns clean; the chaser
+    // closes. Nobody is ever out of it, which is the whole reason to keep
+    // pressing at 40% down.
+    const gain = (rank === 'perfect' ? GAIN_PERFECT : GAIN_GOOD) * this.multiplier * (1 + (this.rubber || 0));
     this.momentum = Math.min(1, this.momentum + gain);
   }
 
