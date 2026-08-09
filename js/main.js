@@ -8,18 +8,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=207';
-import { WORLDS } from './worlds/registry.js?v=207';
-import { Net, PALETTE } from './net.js?v=207';
-import { Presence } from './lib/presence.js?v=207';
-import { Pulses } from './lib/pulse.js?v=207';
-import { BeatClock } from './lib/beatclock.js?v=207';
-import { BeatCue } from './lib/beatcue.js?v=207';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=207';
-import { Race, placeOf, standings } from './lib/race.js?v=207';
-import { RouteMap } from './lib/map.js?v=207';
-import * as sfx from './lib/sfx.js?v=207';
-import { glowTexture } from './lib/glow.js?v=207';
+import { AudioEngine } from './audio-engine.js?v=208';
+import { WORLDS } from './worlds/registry.js?v=208';
+import { Net, PALETTE } from './net.js?v=208';
+import { Presence } from './lib/presence.js?v=208';
+import { Pulses } from './lib/pulse.js?v=208';
+import { BeatClock } from './lib/beatclock.js?v=208';
+import { BeatCue } from './lib/beatcue.js?v=208';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=208';
+import { Race, placeOf, standings } from './lib/race.js?v=208';
+import { RouteMap } from './lib/map.js?v=208';
+import * as sfx from './lib/sfx.js?v=208';
+import { glowTexture } from './lib/glow.js?v=208';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2038,6 +2038,60 @@ $('world-select').value = startWorld;
 switchWorld(startWorld);
 
 // participants overlay: click a name to kill just that name (they keep playing)
+// ── Emoji bombs ── click a player, pick an emoji, and it rains all over
+// THEIR screen. Costs points, which completes the economy: rounds pay you at
+// the bell, and this is what the money is FOR — mischief.
+const EMOJIS = ['\u{1F352}', '\u{1F525}', '\u{1F49C}', '\u{1F602}', '\u{1F451}', '\u{1F300}'];
+const BOMB_COST = 15;
+
+function emojiRain(char, fromName) {
+  const box = $('emoji-rain');
+  for (let i = 0; i < 34; i++) {
+    const sp = document.createElement('span');
+    sp.textContent = char;
+    sp.style.left = (Math.random() * 100) + 'vw';
+    sp.style.fontSize = (18 + Math.random() * 30) + 'px';
+    sp.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
+    sp.style.animationDelay = (Math.random() * 1.2) + 's';
+    sp.addEventListener('animationend', () => sp.remove());
+    box.appendChild(sp);
+  }
+  if (fromName) {
+    const el = $('pass-flash');
+    el.textContent = fromName.toUpperCase() + ' SENT ' + char;
+    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  sfx.fanfare();
+  impact(0.5);
+}
+
+function sendBomb(toName, idx) {
+  if (score < BOMB_COST) {
+    const b = $('score-badge');
+    b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+    sfx.thud();
+    return;
+  }
+  addScore(-BOMB_COST, undefined, undefined, true);
+  net.sendEmote(idx, toName);
+  const el = $('pass-flash');
+  el.textContent = EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase();
+  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+  sfx.hit(6, true);
+}
+
+net.onEmote = (p, i, to) => {
+  if (to && to === net.local.name) emojiRain(EMOJIS[i] || EMOJIS[0], p.name);
+  else if (to) {
+    const el = $('pass-flash');
+    el.textContent = (p.name || '?').toUpperCase() + ' ' + (EMOJIS[i] || '') + ' ' + to.toUpperCase();
+    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1400);
+  }
+};
+
 function renderPlist() {
   const box = $('plist-rows');
   box.innerHTML = '';
@@ -2046,9 +2100,24 @@ function renderPlist() {
     const row = document.createElement('div');
     row.className = 'plist-row' + (presence.hiddenNames.has(p.name) ? ' muted' : '');
     row.innerHTML = `<span>${p.name}${p.local ? ' ·you' : ''}</span><span>${p.score || 0}</span>`;
+    if (p.local) { box.appendChild(row); continue; }
+    // click a rival: the emoji picker unfolds under their name
     row.addEventListener('click', () => {
-      presence.hiddenNames.has(p.name) ? presence.hiddenNames.delete(p.name) : presence.hiddenNames.add(p.name);
-      renderPlist();
+      const open = row.nextElementSibling && row.nextElementSibling.classList.contains('bomb-picker');
+      box.querySelectorAll('.bomb-picker').forEach(x => x.remove());
+      if (open) return;
+      const pick = document.createElement('div');
+      pick.className = 'bomb-picker';
+      EMOJIS.forEach((e2, k) => {
+        const b = document.createElement('button');
+        b.textContent = e2;
+        b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(p.name, k); pick.remove(); });
+        pick.appendChild(b);
+      });
+      const price = document.createElement('em');
+      price.textContent = BOMB_COST + ' pts';
+      pick.appendChild(price);
+      row.after(pick);
     });
     box.appendChild(row);
   }

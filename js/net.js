@@ -97,7 +97,7 @@ export class Net {
       if (!this.owner && this.onWorld) this.onWorld(m.key);
     } else if (m.t === 'emote') {
       const p = this.participants.find(x => x.id === m.id);
-      if (p && this.onEmote) this.onEmote(p, m.i);
+      if (p && this.onEmote) this.onEmote(p, m.i, m.to);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
@@ -107,12 +107,12 @@ export class Net {
   }
 
   // anyone: react — rate-limited so nobody can carpet the stream
-  sendEmote(idx) {
+  sendEmote(idx, to) {
     const now = performance.now();
     if ((this._lastEmote || 0) > now - 700) return;
     this._lastEmote = now;
     if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
-    this._ws.send(JSON.stringify({ t: 'emote', i: idx }));
+    this._ws.send(JSON.stringify({ t: 'emote', i: idx, to }));
   }
 
   // host: move the whole room to another world

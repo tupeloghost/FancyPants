@@ -341,6 +341,39 @@
   #pass-flash.show { opacity: 1; transform: translateX(0); }
   @media (max-width: 620px) { #pass-flash { right: 16px; bottom: 200px; font-size: 17px; } }
 
+  /* ── Emoji rain ── someone spent points on you ── */
+  #emoji-rain {
+    position: fixed; inset: 0; z-index: 155;
+    pointer-events: none; overflow: hidden;
+  }
+  #emoji-rain span {
+    position: absolute; top: -50px;
+    animation: emojiFall linear forwards;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.35));
+  }
+  @keyframes emojiFall {
+    from { transform: translateY(0) rotate(0deg); opacity: 1; }
+    to   { transform: translateY(110vh) rotate(340deg); opacity: 0.7; }
+  }
+  /* the picker that unfolds under a rival's name */
+  .bomb-picker {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; margin: 2px 0 6px;
+    background: hsla(var(--accent-h), 40%, 12%, 0.6);
+    border-radius: 10px;
+  }
+  .bomb-picker button {
+    background: none; border: 0; cursor: pointer;
+    font-size: 19px; line-height: 1; padding: 3px;
+    transition: transform 120ms ease;
+  }
+  .bomb-picker button:hover { transform: scale(1.35); }
+  .bomb-picker em {
+    margin-left: auto; font-style: normal;
+    font: 8px 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-faint);
+  }
+
   /* ── Game jump card ── which game you just landed in, briefly ── */
   #jump-flash {
     position: fixed; z-index: 160; left: 50%; top: 15%;
@@ -1217,6 +1250,7 @@
   </div>
 </div>
 
+<div id="emoji-rain"></div>
 <div id="hurt-vignette"></div>
 <div id="game-hud">
   <div id="hud-value">0</div>
@@ -1384,7 +1418,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 207</div>
+      <div id="build-stamp">build 208</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1398,6 +1432,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=207"></script>
+<script type="module" src="js/main.js?v=208"></script>
 </body>
 </html>

@@ -136,7 +136,8 @@ export class FancyPantsRoom {
       if (now - (p.lastEmote || 0) < 600) return;
       p.lastEmote = now;
       const i = Math.max(0, Math.min(4, Number(m.i) || 0));
-      this.broadcast(JSON.stringify({ t: 'emote', id: connId, i }), connId);
+      // `to` targets one player's screen; everyone still hears about it
+      this.broadcast(JSON.stringify({ t: 'emote', id: connId, i, to: typeof m.to === 'string' ? m.to.slice(0, 14) : undefined }), connId);
       return;
     }
 
