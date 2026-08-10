@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=243';
-import { TUNE } from '../lib/tune.js?v=243';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=244';
+import { TUNE } from '../lib/tune.js?v=244';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -100,6 +100,16 @@ export function createComets() {
       x.fillStyle = g;
       x.fillRect(0, 0, 256, 256);
     }
+    // a radial mask fades everything to zero well inside the canvas — the
+    // hard square edges that flashed as "panes of glass" can never render
+    const mask = x.createRadialGradient(128, 128, 30, 128, 128, 126);
+    mask.addColorStop(0, 'rgba(0,0,0,1)');
+    mask.addColorStop(0.7, 'rgba(0,0,0,0.85)');
+    mask.addColorStop(1, 'rgba(0,0,0,0)');
+    x.globalCompositeOperation = 'destination-in';
+    x.fillStyle = mask;
+    x.fillRect(0, 0, 256, 256);
+    x.globalCompositeOperation = 'source-over';
     return new THREE.CanvasTexture(c);
   }
 
@@ -113,39 +123,60 @@ export function createComets() {
     const hsl = { h: 0, s: 0, l: 0 };
     base.getHSL(hsl);
     const rnd = (n) => (((seed * 92821 + n * 68917) % 1000) / 1000);
-    // wavy bands: each drawn as a ribbon whose edge undulates
+    // solid ground first — no gap can ever show through
+    color.setHSL(hsl.h, hsl.s, hsl.l * 0.8);
+    ctx.fillStyle = '#' + color.getHexString();
+    ctx.fillRect(0, 0, 256, 128);
+    // straight soft-edged bands
     let y = 0, i = 0;
-    while (y < 132) {
-      const bh = 7 + rnd(i) * 16;
-      const dl = (rnd(i + 50) - 0.5) * 0.26;
-      const ds = (rnd(i + 90) - 0.5) * 0.2;
+    while (y < 128) {
+      const bh = 8 + rnd(i) * 16;
+      const dl = (rnd(i + 50) - 0.5) * 0.22;
+      const ds = (rnd(i + 90) - 0.5) * 0.18;
       color.setHSL(hsl.h + (rnd(i + 130) - 0.5) * 0.03, Math.max(0.15, Math.min(1, hsl.s + ds)),
-                   Math.max(0.12, Math.min(0.85, hsl.l * 0.8 + dl)));
-      ctx.fillStyle = '#' + color.getHexString();
-      ctx.beginPath();
-      const amp = 1.5 + rnd(i + 170) * 3, ph = rnd(i + 210) * 6.28, fr = 2 + rnd(i + 250) * 3;
-      ctx.moveTo(0, y + Math.sin(ph) * amp);
-      for (let x = 0; x <= 256; x += 8) ctx.lineTo(x, y + Math.sin(ph + x / 256 * fr * 6.28) * amp);
-      for (let x = 256; x >= 0; x -= 8) ctx.lineTo(x, y + bh + Math.sin(ph + 1 + x / 256 * fr * 6.28) * amp);
-      ctx.closePath();
-      ctx.fill();
+                   Math.max(0.15, Math.min(0.85, hsl.l * 0.82 + dl)));
+      const g = ctx.createLinearGradient(0, y, 0, y + bh);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(0.35, '#' + color.getHexString());
+      g.addColorStop(1, '#' + color.getHexString());
+      ctx.fillStyle = g;
+      ctx.fillRect(0, y, 256, bh + 1);
       y += bh; i++;
     }
-    // storm ovals — every giant carries a few
+    // storms as soft breaths, not hard ovals
     for (let k = 0; k < 3 + (seed % 3); k++) {
-      const sx = rnd(k + 300) * 256, sy = 25 + rnd(k + 340) * 78;
-      const rw = 8 + rnd(k + 380) * 18, rh = rw * (0.35 + rnd(k + 420) * 0.25);
+      const sx = rnd(k + 300) * 256, sy = 28 + rnd(k + 340) * 72;
+      const rr = 9 + rnd(k + 380) * 16;
       const light = rnd(k + 460) > 0.5;
-      color.setHSL(hsl.h + (light ? 0.02 : -0.03), Math.min(1, hsl.s + 0.15), light ? 0.72 : 0.22);
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = '#' + color.getHexString();
-      ctx.beginPath(); ctx.ellipse(sx, sy, rw, rh, 0, 0, 6.28); ctx.fill();
+      color.setHSL(hsl.h + (light ? 0.02 : -0.02), Math.min(1, hsl.s + 0.1), light ? 0.68 : 0.3);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rr);
+      g.addColorStop(0, '#' + color.getHexString());
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = g;
+      ctx.save(); ctx.translate(sx, sy); ctx.scale(1, 0.45); ctx.translate(-sx, -sy);
+      ctx.beginPath(); ctx.arc(sx, sy, rr, 0, 6.28); ctx.fill();
+      ctx.restore();
       ctx.globalAlpha = 1;
     }
+    // turbulence: shear each row sideways — continuity is guaranteed because
+    // the row itself moves, wrapping at the seam
+    const src = ctx.getImageData(0, 0, 256, 128);
+    const out = ctx.createImageData(256, 128);
+    for (let ry = 0; ry < 128; ry++) {
+      const shift = Math.round(Math.sin(ry * 0.19 + seed) * 5 + Math.sin(ry * 0.045 + seed * 2) * 9);
+      for (let rx = 0; rx < 256; rx++) {
+        const sxp = ((rx + shift) % 256 + 256) % 256;
+        const si = (ry * 256 + sxp) * 4, di = (ry * 256 + rx) * 4;
+        out.data[di] = src.data[si]; out.data[di + 1] = src.data[si + 1];
+        out.data[di + 2] = src.data[si + 2]; out.data[di + 3] = 255;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
     // poles darken like real giants do
     for (const [gy0, gy1] of [[0, 22], [128, 106]]) {
       const g = ctx.createLinearGradient(0, gy0, 0, gy1);
-      g.addColorStop(0, 'rgba(0,0,10,0.5)');
+      g.addColorStop(0, 'rgba(0,0,10,0.45)');
       g.addColorStop(1, 'rgba(0,0,10,0)');
       ctx.fillStyle = g;
       ctx.fillRect(0, Math.min(gy0, gy1), 256, Math.abs(gy1 - gy0));
@@ -362,6 +393,7 @@ export function createComets() {
           }
           ring.rotation.x = Math.PI / 2 - 0.32;
           grp.add(ring);
+          grp.userData_ring = ring;
         }
         grp.rotation.z = (i % 2 ? -1 : 1) * (0.12 + (i * 17 % 20) * 0.012);  // axis tilt
         const halo = glowSprite(r * 3.4);
@@ -385,7 +417,9 @@ export function createComets() {
           lift: ((i * 29 % 40) - 20),
           spin: 0.02 + (i * 13 % 10) * 0.004,
           body, halo, moons, pulse: 0,
+          ring: grp.userData_ring || null, ringPulse: 0,
         };
+        delete grp.userData_ring;
         planets.push(grp);
         group.add(grp);
       }
@@ -466,9 +500,13 @@ export function createComets() {
       const ray = new THREE.Raycaster();
       ray.setFromCamera({ x: nx, y: ny }, camera);
       for (const pl of planets) {
-        const hit = ray.intersectObject(pl.userData.body, false);
+        // rings are part of the planet's body politic: tap either
+        const targets = pl.userData.ring ? [pl.userData.body, pl.userData.ring] : [pl.userData.body];
+        const hit = ray.intersectObjects(targets, false);
         if (hit.length) {
+          const hitRing = pl.userData.ring && hit[0].object === pl.userData.ring;
           pl.userData.pulse = 1;
+          if (hitRing) pl.userData.ringPulse = 1;
           pl.userData.wob = 1;                 // it rings like a struck bell
           pl.userData.tapSpin = 1;             // and the moons hurry for a while
           // touching a planet PAYS a little — the sky tips you for curiosity
@@ -737,6 +775,14 @@ export function createComets() {
         u.pulse = Math.max(0, u.pulse - dt * 1.6);
         u.wob = Math.max(0, (u.wob || 0) - dt * 0.7);
         u.tapSpin = Math.max(0, (u.tapSpin || 0) - dt * 0.4);
+        u.ringPulse = Math.max(0, (u.ringPulse || 0) - dt * 0.9);
+        if (u.ring) {
+          // a struck ring shimmers and spins up, then settles
+          u.ring.rotation.z += dt * (0.05 + u.ringPulse * 2.4);
+          const rs = 1 + u.ringPulse * 0.1 + Math.sin(time * 9) * u.ringPulse * 0.03;
+          u.ring.scale.setScalar(rs);
+          u.ring.material.opacity = 0.9 + u.ringPulse * 0.1;
+        }
         // a struck planet rings: a damped wobble you can SEE settle
         const ring = 1 + Math.sin(u.wob * 26) * u.wob * 0.12;
         // flying close, it BLOOMS — mass you can feel on the way past
