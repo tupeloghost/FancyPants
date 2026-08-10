@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=247';
-import { TUNE } from '../lib/tune.js?v=247';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=248';
+import { TUNE } from '../lib/tune.js?v=248';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -93,10 +93,10 @@ export function createComets() {
     for (let i = 0; i < 9; i++) {
       const px = 40 + Math.random() * 176, py = 40 + Math.random() * 176;
       const r = 34 + Math.random() * 68;
-      const h = (baseHue + (Math.random() - 0.5) * 50 + 360) % 360;
+      const l = 55 + Math.random() * 25;                    // white clouds; tint comes live
       const g = x.createRadialGradient(px, py, 0, px, py, r);
-      g.addColorStop(0, 'hsla(' + h + ', 75%, 62%, 0.16)');
-      g.addColorStop(1, 'hsla(' + h + ', 75%, 62%, 0)');
+      g.addColorStop(0, 'hsla(0, 0%, ' + l + '%, 0.16)');
+      g.addColorStop(1, 'hsla(0, 0%, ' + l + '%, 0)');
       x.fillStyle = g;
       x.fillRect(0, 0, 256, 256);
     }
@@ -294,16 +294,15 @@ export function createComets() {
 
       // nebulae — the weather of deep space, in this world's hue family
       {
-        const HUES = [270, 200, 330, 45, 180, 290];
         const count = LITE() ? 4 : 7;
         for (let i = 0; i < count; i++) {
           const sp = new THREE.Sprite(new THREE.SpriteMaterial({
-            map: nebulaTex(HUES[i % HUES.length]),
+            map: nebulaTex(0),
             transparent: true, opacity: 0.5,
             blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
           }));
           sp.scale.setScalar(150 + (i * 47 % 130));
-          sp.userData = { base: i * 130 + 60, side: ((i % 2) ? -1 : 1) * (60 + (i * 31 % 80)), lift: (i * 23 % 90) - 45 };
+          sp.userData = { base: i * 130 + 60, side: ((i % 2) ? -1 : 1) * (60 + (i * 31 % 80)), lift: (i * 23 % 90) - 45, hueOff: (i * 27 % 90) - 45 };
           nebulae.push(sp);
           group.add(sp);
         }
@@ -423,7 +422,8 @@ export function createComets() {
           ring: grp.userData_ring || null, ringPulse: 0,
           // each planet sits at its own offset around the look's hue, and a
           // tap kicks it a golden-angle step to a colour of its own
-          hueOff: i * 55, hueKick: 0, hue: 210 + i * 55,
+          hueOff: i * 24 - 60, hueKick: 0, hue: 210 + i * 24 - 60,
+          sat: 0.42 + (i * 13 % 22) / 100, lit: 0.58 + (i * 7 % 16) / 100,
         };
         delete grp.userData_ring;
         planets.push(grp);
@@ -759,6 +759,8 @@ export function createComets() {
         sp.position.set(pathX(travel) + u.side, u.lift, -travel + z - 50);
         sp.material.opacity = 0.35 + audio.bass * 0.35 * reactivity;
         sp.material.rotation = time * 0.008 * (i % 2 ? 1 : -1);
+        color.setHSL(((hue + sp.userData.hueOff + 360) % 360) / 360, 0.62, 0.58);
+        sp.material.color.copy(color);
       }
       if (milky) milky.position.z = -travel - 0;
       if (milky) milky.position.x = pathX(travel) * 0.9;
@@ -805,7 +807,7 @@ export function createComets() {
         const want = (hue + u.hueOff + u.hueKick) % 360;
         let dh = ((want - u.hue + 540) % 360) - 180;
         u.hue = (u.hue + dh * Math.min(1, dt * 2.2) + 360) % 360;
-        color.setHSL(u.hue / 360, 0.5, 0.66);
+        color.setHSL(u.hue / 360, u.sat, u.lit);
         u.body.material.color.copy(color);
         u.atmo.material.color.copy(color);
         u.halo.material.color.copy(color);
@@ -883,7 +885,7 @@ export function createComets() {
 
       sky.position.set(pathX(travel), 0, -travel);
       // a light touch of the room's hue — never a darkening multiply
-      sky.material.color.setHSL(hue / 360, 0.18, 0.88);
+      sky.material.color.setHSL(hue / 360, 0.4, 0.8);
 
       // ── the comet's eye — low, banking, lens opening with the burn.
       // At the bell it TURNS AROUND: nine seconds facing everything you
