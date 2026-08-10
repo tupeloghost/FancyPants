@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=240';
-import { TUNE } from '../lib/tune.js?v=240';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=242';
+import { TUNE } from '../lib/tune.js?v=242';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -103,28 +103,74 @@ export function createComets() {
     return new THREE.CanvasTexture(c);
   }
 
-  // a gas giant is bands, not a flat ball: paint them once onto a canvas.
-  // Each planet gets its own weather from the same recipe.
+  // a gas giant is WEATHER: wavy bands, storm ovals, darkened poles.
+  // Painted once per planet onto a canvas; the light does the rest.
   function bandTexture(hex, seed) {
     const c = document.createElement('canvas');
-    c.width = 8; c.height = 128;
+    c.width = 256; c.height = 128;
     const ctx = c.getContext('2d');
     const base = new THREE.Color(hex);
     const hsl = { h: 0, s: 0, l: 0 };
     base.getHSL(hsl);
+    const rnd = (n) => (((seed * 92821 + n * 68917) % 1000) / 1000);
+    // wavy bands: each drawn as a ribbon whose edge undulates
     let y = 0, i = 0;
-    while (y < 128) {
-      const bh = 6 + ((seed * 37 + i * 61) % 17);          // band height
-      const dl = (((seed * 13 + i * 29) % 100) / 100 - 0.5) * 0.22;
-      const ds = (((seed * 7 + i * 43) % 100) / 100 - 0.5) * 0.15;
-      color.setHSL(hsl.h, Math.max(0.1, Math.min(1, hsl.s + ds)), Math.max(0.05, Math.min(0.8, hsl.l * 0.55 + dl)));
+    while (y < 132) {
+      const bh = 7 + rnd(i) * 16;
+      const dl = (rnd(i + 50) - 0.5) * 0.26;
+      const ds = (rnd(i + 90) - 0.5) * 0.2;
+      color.setHSL(hsl.h + (rnd(i + 130) - 0.5) * 0.03, Math.max(0.15, Math.min(1, hsl.s + ds)),
+                   Math.max(0.12, Math.min(0.85, hsl.l * 0.8 + dl)));
       ctx.fillStyle = '#' + color.getHexString();
-      ctx.fillRect(0, y, 8, bh);
+      ctx.beginPath();
+      const amp = 1.5 + rnd(i + 170) * 3, ph = rnd(i + 210) * 6.28, fr = 2 + rnd(i + 250) * 3;
+      ctx.moveTo(0, y + Math.sin(ph) * amp);
+      for (let x = 0; x <= 256; x += 8) ctx.lineTo(x, y + Math.sin(ph + x / 256 * fr * 6.28) * amp);
+      for (let x = 256; x >= 0; x -= 8) ctx.lineTo(x, y + bh + Math.sin(ph + 1 + x / 256 * fr * 6.28) * amp);
+      ctx.closePath();
+      ctx.fill();
       y += bh; i++;
+    }
+    // storm ovals — every giant carries a few
+    for (let k = 0; k < 3 + (seed % 3); k++) {
+      const sx = rnd(k + 300) * 256, sy = 25 + rnd(k + 340) * 78;
+      const rw = 8 + rnd(k + 380) * 18, rh = rw * (0.35 + rnd(k + 420) * 0.25);
+      const light = rnd(k + 460) > 0.5;
+      color.setHSL(hsl.h + (light ? 0.02 : -0.03), Math.min(1, hsl.s + 0.15), light ? 0.72 : 0.22);
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#' + color.getHexString();
+      ctx.beginPath(); ctx.ellipse(sx, sy, rw, rh, 0, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    // poles darken like real giants do
+    for (const [gy0, gy1] of [[0, 22], [128, 106]]) {
+      const g = ctx.createLinearGradient(0, gy0, 0, gy1);
+      g.addColorStop(0, 'rgba(0,0,10,0.5)');
+      g.addColorStop(1, 'rgba(0,0,10,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, Math.min(gy0, gy1), 256, Math.abs(gy1 - gy0));
     }
     const tex = new THREE.CanvasTexture(c);
     tex.magFilter = THREE.LinearFilter;
     return tex;
+  }
+
+  // a ring is a DISC of many thin bands, gapped like the real thing
+  function ringTexture(hex) {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 8;
+    const ctx = c.getContext('2d');
+    const base = new THREE.Color(hex);
+    const hsl = { h: 0, s: 0, l: 0 };
+    base.getHSL(hsl);
+    for (let x = 0; x < 128; x++) {
+      const band = Math.sin(x * 0.55) * 0.5 + Math.sin(x * 0.19) * 0.5;
+      const a = Math.max(0, 0.55 + band * 0.45) * (x < 8 ? x / 8 : x > 118 ? (128 - x) / 10 : 1);
+      color.setHSL(hsl.h, hsl.s * 0.5, 0.55 + band * 0.18);
+      ctx.fillStyle = 'rgba(' + Math.round(color.r * 255) + ',' + Math.round(color.g * 255) + ',' + Math.round(color.b * 255) + ',' + a.toFixed(2) + ')';
+      ctx.fillRect(x, 0, 1, 8);
+    }
+    return new THREE.CanvasTexture(c);
   }
 
   // the flight path — a lazy 3D weave, so space itself banks and rolls
@@ -232,6 +278,16 @@ export function createComets() {
         }
       }
 
+      // ── real light: the sun casts it, the planets wear it. Every other
+      // material in this world is unlit glow, so the two lights below touch
+      // only the Lambert planet surfaces and moons.
+      {
+        const dir = new THREE.DirectionalLight(0xfff0d8, 2.2);
+        dir.position.set(-0.55, 0.35, 0.35);
+        group.add(dir);
+        group.add(new THREE.AmbientLight(0x202838, 1.4));
+      }
+
       // one far sun — something for the whole sky to orbit around
       {
         sun = new THREE.Group();
@@ -274,31 +330,51 @@ export function createComets() {
         const grp = new THREE.Group();
         const r = 7 + (i * 37 % 11);
         const body = new THREE.Mesh(
-          new THREE.SphereGeometry(r, 24, 18),
-          new THREE.MeshBasicMaterial({ map: bandTexture(PALETTE_P[i], i + 3), toneMapped: false })
+          new THREE.SphereGeometry(r, 36, 26),
+          new THREE.MeshLambertMaterial({ map: bandTexture(PALETTE_P[i], i + 3) })
         );
         grp.add(body);
+        // atmosphere — a whisper of the planet's own colour past its edge
+        const atmo = new THREE.Mesh(
+          new THREE.SphereGeometry(r * 1.05, 24, 18),
+          new THREE.MeshBasicMaterial({
+            color: PALETTE_P[i], transparent: true, opacity: 0.14,
+            side: THREE.BackSide, blending: THREE.AdditiveBlending,
+            depthWrite: false, toneMapped: false,
+          })
+        );
+        grp.add(atmo);
         if (i % 2 === 0) {
-          // every other one gets the Saturn treatment — "Saturn has the rings"
+          // the Saturn treatment, properly: a flat banded DISC, not a donut
           const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(r * 1.7, r * 0.16, 2, 40),
-            new THREE.MeshBasicMaterial({ color: PALETTE_P[i], transparent: true, opacity: 0.5, toneMapped: false })
+            new THREE.RingGeometry(r * 1.45, r * 2.35, 56),
+            new THREE.MeshBasicMaterial({
+              map: ringTexture(PALETTE_P[i]), transparent: true,
+              side: THREE.DoubleSide, depthWrite: false, toneMapped: false,
+            })
           );
-          ring.rotation.x = Math.PI / 2.4;
+          // map the texture across the ring's radius
+          const uv = ring.geometry.attributes.uv;
+          const pos2 = ring.geometry.attributes.position;
+          for (let v = 0; v < uv.count; v++) {
+            const len = Math.hypot(pos2.getX(v), pos2.getY(v));
+            uv.setXY(v, (len - r * 1.45) / (r * 0.9), 0.5);
+          }
+          ring.rotation.x = Math.PI / 2 - 0.32;
           grp.add(ring);
         }
-        const halo = glowSprite(r * 3.2);
+        grp.rotation.z = (i % 2 ? -1 : 1) * (0.12 + (i * 17 % 20) * 0.012);  // axis tilt
+        const halo = glowSprite(r * 2.6);
         halo.material.color.setHex(PALETTE_P[i]);
-        halo.material.opacity = 0.22;
+        halo.material.opacity = 0.14;
         grp.add(halo);
         // moons — one or two small companions, each on its own clock
         const moons = [];
         for (let m = 0; m < 1 + (i % 2); m++) {
           const moon = new THREE.Mesh(
-            new THREE.SphereGeometry(r * 0.16, 10, 8),
-            new THREE.MeshBasicMaterial({ color: 0xcfcabe, toneMapped: false })
+            new THREE.SphereGeometry(r * 0.16, 12, 10),
+            new THREE.MeshLambertMaterial({ color: 0xbdb8ac })
           );
-          moon.material.color.multiplyScalar(0.75);
           moon.userData = { orbit: r * (2.3 + m * 0.9), speed: 0.5 + m * 0.35 + (i % 3) * 0.15, phase: i * 2.1 + m * 3.3 };
           moons.push(moon);
           grp.add(moon);
@@ -475,12 +551,13 @@ export function createComets() {
           d.mesh.position.set(wx, wy, d.z);
           d.core.rotation.y = d.spin + time * (d.red ? 0.6 : 1.6);
           if (d.red) {
-            // a red giant breathes like an ember — plainly not yours to touch
+            // a red giant is FIRE, not geometry: a small molten heart inside
+            // a huge breathing corona — the silhouette is all glow
             const th = 0.5 + Math.sin(time * 6 + d.spin) * 0.15;
-            d.core.scale.setScalar(2.4 + th * 0.5);
-            d.core.material.color.setHSL(0.01, 0.95, 0.42 + th * 0.15);
-            d.halo.material.color.setHSL(0.01, 0.95, 0.5);
-            d.halo.scale.setScalar(14 + th * 4);
+            d.core.scale.setScalar(0.9 + th * 0.3);
+            d.core.material.color.setHSL(0.05, 1, 0.62 + th * 0.2);
+            d.halo.material.color.setHSL(0.015, 0.95, 0.45);
+            d.halo.scale.setScalar(17 + th * 6);
           } else {
             d.core.scale.setScalar(1);
             d.core.material.color.setHSL(0, 0, 0.95);
