@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=237';
-import { TUNE } from '../lib/tune.js?v=237';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=238';
+import { TUNE } from '../lib/tune.js?v=238';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -16,7 +16,27 @@ const SPACING = 2.1;          // min seconds between arrivals
 const REACH = 9;              // how far steering carries you off the path
 const HIT_W = 3.8;            // close enough counts as threaded
 const SEG_MAX = 300;          // constellation segments alive at once
-const SEG_FADE = 26;          // seconds a drawn line lingers
+const SEG_FADE = 40;          // seconds a drawn line lingers — long enough
+                              // that the turn-around at the bell still finds them
+const LITE = () => !!window.__LITE;
+
+// the constellations you complete get NAMES — the southern sky's own
+const CONSTELLATIONS = [
+  'THE FIDDLE', 'THE PORCH LIGHT', 'THE MASON JAR', 'THE FIREFLY',
+  'THE MAGNOLIA', 'THE SLOW TRAIN', 'THE SCREEN DOOR', 'THE LIGHTNING BUG',
+  'THE BANJO', 'THE HONEYSUCKLE', 'THE CATFISH', 'THE JULEP',
+];
+
+// ceremony text rides the same flash the passes use
+function skyFlash(text, bad) {
+  const el = document.getElementById('pass-flash');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('bad', !!bad);
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(skyFlash._t);
+  skyFlash._t = setTimeout(() => el.classList.remove('show'), 2000);
+}
 
 export function createComets() {
   let scene, camera, group, sky, dust, lines;
@@ -32,6 +52,10 @@ export function createComets() {
   let rivals = [];              // comet ghosts for placeGhost
   let head = null, tail = [];   // your own comet, and the fire it drags
   let tailAt = 0;
+  let previewLine = null;       // the next stitch, shown before you sew it
+  let constAt = 0;              // which named constellation is next
+  let wh = { armed: false, done: false, z: 0, x: 0, grp: null };
+  let wasDodging = false, reviewT = 99;
   const color = new THREE.Color();
 
   // a gas giant is bands, not a flat ball: paint them once onto a canvas.
@@ -83,7 +107,7 @@ export function createComets() {
 
       // dust — the starfield you fly THROUGH, not a painted backdrop
       {
-        const N = 900;
+        const N = LITE() ? 450 : 900;
         const pos = new Float32Array(N * 3);
         for (let i = 0; i < N; i++) {
           pos[i * 3] = (Math.random() - 0.5) * 240;
@@ -142,6 +166,36 @@ export function createComets() {
         group.add(grp);
       }
 
+      // the next stitch — a faint dashed thread from your last star to the
+      // coming one, so you draw on purpose instead of merely reacting
+      {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+        previewLine = new THREE.Line(geo, new THREE.LineDashedMaterial({
+          color: 0xffffff, dashSize: 1.4, gapSize: 1.8, transparent: true,
+          opacity: 0.3, depthWrite: false, toneMapped: false,
+        }));
+        previewLine.frustumCulled = false;
+        previewLine.visible = false;
+        group.add(previewLine);
+      }
+
+      // the wormhole — one per song, off the line, worth the detour
+      {
+        const g = new THREE.Group();
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(5.5, 0.6, 10, 40),
+          new THREE.MeshBasicMaterial({ color: 0xb86bff, toneMapped: false })
+        );
+        const halo = glowSprite(22);
+        halo.material.color.setHex(0xb86bff);
+        halo.material.opacity = 0.4;
+        g.add(ring, halo);
+        g.visible = false;
+        group.add(g);
+        wh.grp = g;
+      }
+
       // star + red giant pools
       for (let i = 0; i < MAX_STARS; i++) {
         const g = new THREE.Group();
@@ -165,7 +219,7 @@ export function createComets() {
       const hGlow = glowSprite(2.4);
       head.add(hGlow);
       group.add(head);
-      for (let i = 0; i < 48; i++) {
+      for (let i = 0; i < (LITE() ? 20 : 48); i++) {
         const sp = glowSprite(1.1);
         sp.visible = false;
         sp.userData = { life: 0, vx: 0, vy: 0 };
@@ -275,6 +329,16 @@ export function createComets() {
               race.collect((boost > 0.35 ? 2 : 1) * (flooring ? 2 : 1) + (fifth ? 4 : 0));
               boost = Math.min(1, boost + 0.8);
               if (opts.impact) opts.impact(fifth ? 0.9 : (boost > 0.9 ? 0.7 : 0.45));
+              if (fifth) {
+                // ── the ceremony: your five stars get a NAME, and the lines
+                // you just drew flare fresh
+                skyFlash(CONSTELLATIONS[constAt % CONSTELLATIONS.length] + ' \u00b7 +5');
+                constAt++;
+                for (let k = 1; k <= 5; k++) {
+                  const idx = (segAt - k + SEG_MAX) % SEG_MAX;
+                  if (segBorn[idx] > -1e8) segBorn[idx] = time;
+                }
+              }
               // ── draw the line: this star joins the constellation ──
               const here = new THREE.Vector3(wx, wy, d.z);
               if (lastStar) {
@@ -294,9 +358,61 @@ export function createComets() {
             d.mesh.visible = false;
           }
         }
+        // ── the wormhole: once per song, past the halfway mark ──
+        if (!wh.done && !wh.armed && opts.songDur && songTime > opts.songDur * 0.55) {
+          wh.armed = true;
+          wh.z = -(travel + 240);
+          wh.x = (steer > 0 ? -1 : 1) * REACH * 0.92;   // the far side, on purpose
+          wh.grp.visible = true;
+        }
+        if (wh.armed && !wh.done) {
+          const t = -wh.z;
+          const wx = pathX(t) + wh.x;
+          const wy = pathY(t) + 1.5;
+          wh.grp.position.set(wx, wy, wh.z);
+          wh.grp.children[0].rotation.z = time * 2.2;
+          const near = Math.max(0, 1 - (t - travel) / 240);
+          wh.grp.children[0].scale.setScalar(1 + Math.sin(time * 5) * 0.06 + near * 0.15);
+          const ahead = t - travel;
+          if (ahead <= 5) {
+            const gap = Math.abs(wx - (pathX(travel) + steer * REACH));
+            if (gap < 5.5) {
+              // skipping through time: a fat payout and a genuine jump ahead
+              race.collect(8);
+              boost = 1;
+              travel += 25;
+              skyFlash('THROUGH THE WORMHOLE \u00b7 +8');
+              if (opts.impact) opts.impact(1.0);
+            }
+            wh.done = true;
+            wh.grp.visible = false;
+          }
+        }
+
+        // ── the next stitch ──
+        if (lastStar) {
+          let next = null, bestAhead = 1e9;
+          for (const d of stars) {
+            if (!d.alive || d.red) continue;
+            const a = -d.z - travel;
+            if (a > 4 && a < bestAhead) { bestAhead = a; next = d; }
+          }
+          if (next) {
+            const pa = previewLine.geometry.attributes.position;
+            pa.setXYZ(0, lastStar.x, lastStar.y, lastStar.z);
+            pa.setXYZ(1, pathX(-next.z) + next.x, pathY(-next.z) + 1.5 + next.y, next.z);
+            pa.needsUpdate = true;
+            previewLine.computeLineDistances();
+            color.setHSL(((hue + 30) % 360) / 360, 0.4, 0.7);
+            previewLine.material.color.copy(color);
+            previewLine.visible = true;
+          } else previewLine.visible = false;
+        } else previewLine.visible = false;
       } else {
         // vibing: stars off, the line rests
         for (const d of stars) { d.alive = false; d.mesh.visible = false; }
+        previewLine.visible = false;
+        wh.grp.visible = false;
       }
 
       // constellation fade — your signature lingers, then returns to the dark
@@ -371,13 +487,26 @@ export function createComets() {
       sky.position.set(pathX(travel), 0, -travel);
       sky.material.color.setHSL(hue / 360, 0.5, 0.5);
 
-      // ── the comet's eye — low, banking, lens opening with the burn ──
+      // ── the comet's eye — low, banking, lens opening with the burn.
+      // At the bell it TURNS AROUND: nine seconds facing everything you
+      // drew, glittering behind the results card. Leaving your mark.
+      if (dodging) { wasDodging = true; reviewT = 0; }
+      else if (wasDodging) { reviewT += dt; if (reviewT > 9) wasDodging = false; }
+      const reviewing = !dodging && wasDodging && reviewT <= 9;
       const camX = pathX(travel) + steer * REACH;
       const camY = pathY(travel) + 1.5 + Math.sin(time * 1.3) * 0.15;
       camera.position.set(camX, camY, -travel);
-      const lookT = travel + 40;
-      camera.lookAt(pathX(lookT) + steer * REACH * 0.4, pathY(lookT) + 1.5, -lookT);
-      camera.rotation.z += steer * -0.16 + Math.sin(time * 0.3) * 0.02;
+      if (reviewing) {
+        const back = travel - 70;
+        const swing = Math.min(1, reviewT / 2.2);          // ease into the turn
+        const lookT = travel + 40 - (110 + Math.sin(reviewT * 0.3) * 20) * swing;
+        camera.lookAt(pathX(back), pathY(back) + 6, -lookT);
+        camera.rotation.z += Math.sin(time * 0.2) * 0.03;
+      } else {
+        const lookT = travel + 40;
+        camera.lookAt(pathX(lookT) + steer * REACH * 0.4, pathY(lookT) + 1.5, -lookT);
+        camera.rotation.z += steer * -0.16 + Math.sin(time * 0.3) * 0.02;
+      }
       camera.fov += ((70 + throttle * 16 + boost * 5) - camera.fov) * Math.min(1, dt * 4);
 
       // rivals: glowing comet heads with tails, placed by score
