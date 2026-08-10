@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=239';
-import { TUNE } from '../lib/tune.js?v=239';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=240';
+import { TUNE } from '../lib/tune.js?v=240';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -148,6 +148,25 @@ export function createComets() {
       camera.fov = 70;
 
       sky = skyDome(400);
+      // The stock dome is near-black away from the horizon, and when the
+      // flight path pitched the camera the dark pole swung into frame — the
+      // "black void" that came and went. Repaint it: indigo depths overhead,
+      // teal warmth at the horizon, colour everywhere, void nowhere.
+      {
+        const posA = sky.geometry.attributes.position;
+        const colA = sky.geometry.attributes.color;
+        for (let i = 0; i < posA.count; i++) {
+          const y = posA.getY(i) / 400;                     // -1..1
+          const horizon = Math.max(0, 1 - Math.abs(y) * 1.4);
+          color.setHSL(
+            0.72 - horizon * 0.22,                          // indigo up top, teal at the rim
+            0.55,
+            0.075 + horizon * horizon * 0.12 + Math.max(0, -y) * 0.02
+          );
+          colA.setXYZ(i, color.r, color.g, color.b);
+        }
+        colA.needsUpdate = true;
+      }
       group.add(sky);
 
       // dust — the starfield you fly THROUGH, not a painted backdrop
@@ -272,11 +291,24 @@ export function createComets() {
         halo.material.color.setHex(PALETTE_P[i]);
         halo.material.opacity = 0.22;
         grp.add(halo);
+        // moons — one or two small companions, each on its own clock
+        const moons = [];
+        for (let m = 0; m < 1 + (i % 2); m++) {
+          const moon = new THREE.Mesh(
+            new THREE.SphereGeometry(r * 0.16, 10, 8),
+            new THREE.MeshBasicMaterial({ color: 0xcfcabe, toneMapped: false })
+          );
+          moon.material.color.multiplyScalar(0.75);
+          moon.userData = { orbit: r * (2.3 + m * 0.9), speed: 0.5 + m * 0.35 + (i % 3) * 0.15, phase: i * 2.1 + m * 3.3 };
+          moons.push(moon);
+          grp.add(moon);
+        }
         grp.userData = {
           base: i * 150 + 80,
           side: (i % 2 ? -1 : 1) * (46 + (i * 53 % 30)),
           lift: ((i * 29 % 40) - 20),
           spin: 0.02 + (i * 13 % 10) * 0.004,
+          body, halo, moons, pulse: 0,
         };
         planets.push(grp);
         group.add(grp);
@@ -350,6 +382,31 @@ export function createComets() {
     },
 
     setInput(x) { steerTarget = x; },
+
+    // tap a planet and it ANSWERS — flare, spin, a burst of sparks. The sky
+    // is scenery you can poke, which is the whole Fancy Britches promise.
+    onTap(nx, ny) {
+      if (!camera) return;
+      const ray = new THREE.Raycaster();
+      ray.setFromCamera({ x: nx, y: ny }, camera);
+      for (const pl of planets) {
+        const hit = ray.intersectObject(pl.userData.body, false);
+        if (hit.length) {
+          pl.userData.pulse = 1;
+          // a handful of embers thrown off the surface
+          for (let k = 0; k < 10; k++) {
+            const sp = tail[tailAt]; tailAt = (tailAt + 1) % tail.length;
+            sp.visible = true;
+            sp.userData.life = 1;
+            sp.userData.vx = (Math.random() - 0.5) * 18;
+            sp.userData.vy = (Math.random() - 0.5) * 18;
+            sp.position.copy(hit[0].point);
+            sp.material.color.copy(pl.userData.halo.material.color);
+          }
+          break;
+        }
+      }
+    },
 
     placeGhost(p, i, out) {
       // rival comets fly the same sky, ahead or behind by score — and each
@@ -587,12 +644,22 @@ export function createComets() {
         }
       }
 
-      // planets wheel past on a long loop
+      // planets wheel past on a long loop — breathing, orbited, poke-able
       for (const pl of planets) {
         const u = pl.userData;
         const z = -(((u.base + travel * 0.35) % 900));   // parallax: far things move slow
         pl.position.set(pathX(travel) + u.side, u.lift, -travel + z);
         pl.rotation.y += u.spin * dt * 10;
+        u.pulse = Math.max(0, u.pulse - dt * 1.6);
+        const breathe = 1 + audio.bass * 0.03 * reactivity + u.pulse * 0.1;
+        u.body.scale.setScalar(breathe);
+        u.halo.material.opacity = 0.22 + u.pulse * 0.5 + audio.bass * 0.06;
+        u.halo.scale.setScalar(u.halo.scale.x);          // keep sprite scale stable
+        for (const moon of u.moons) {
+          const md = moon.userData;
+          const a = time * md.speed + md.phase;
+          moon.position.set(Math.cos(a) * md.orbit, Math.sin(a * 0.7) * md.orbit * 0.25, Math.sin(a) * md.orbit);
+        }
       }
 
       // dust wraps around the flight
