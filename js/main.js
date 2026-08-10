@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=229';
-import { drawQR } from './lib/qr.js?v=229';
-import { WORLDS } from './worlds/registry.js?v=229';
-import { Net, PALETTE } from './net.js?v=229';
-import { Presence } from './lib/presence.js?v=229';
-import { Pulses } from './lib/pulse.js?v=229';
-import { BeatClock } from './lib/beatclock.js?v=229';
-import { BeatCue } from './lib/beatcue.js?v=229';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=229';
-import { Race, placeOf, standings } from './lib/race.js?v=229';
-import { RouteMap } from './lib/map.js?v=229';
-import * as sfx from './lib/sfx.js?v=229';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=229';
-import { glowTexture } from './lib/glow.js?v=229';
+import { AudioEngine } from './audio-engine.js?v=230';
+import { drawQR } from './lib/qr.js?v=230';
+import { WORLDS } from './worlds/registry.js?v=230';
+import { Net, PALETTE } from './net.js?v=230';
+import { Presence } from './lib/presence.js?v=230';
+import { Pulses } from './lib/pulse.js?v=230';
+import { BeatClock } from './lib/beatclock.js?v=230';
+import { BeatCue } from './lib/beatcue.js?v=230';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=230';
+import { Race, placeOf, standings } from './lib/race.js?v=230';
+import { RouteMap } from './lib/map.js?v=230';
+import * as sfx from './lib/sfx.js?v=230';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=230';
+import { glowTexture } from './lib/glow.js?v=230';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2276,7 +2276,7 @@ switchWorld(startWorld);
 // ── Emoji bombs ── click a player, pick an emoji, and it rains all over
 // THEIR screen. Costs points, which completes the economy: rounds pay you at
 // the bell, and this is what the money is FOR — mischief.
-const EMOJIS = ['\u{1F47B}', '\u{1F56F}\uFE0F', '\u{1F987}', '\u{1F319}', '\u{1F578}\uFE0F', '\u{1F352}'];  // ghost, candle, bat, moon, web — and the cherry stays
+const EMOJIS = ['\u2764\uFE0F', '\u{1F47B}', '\u{1F319}', '\u{1F352}', '\u2728', '\u{1F4A9}', '\u{1F61B}', '\u{1F618}'];  // heart, ghost, moon, cherry, stars, poop, tongue, kiss — her list, verbatim
 const BOMB_COST = 15;
 // Tricks are the Mario Kart layer: not decoration on a rival's screen but a
 // hand on their wheel. Dearer than a bomb because they change the race.
