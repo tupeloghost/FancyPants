@@ -9,17 +9,34 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=252';
-import { themePaint } from '../lib/themes.js?v=252';
-import { PALETTE } from '../net.js?v=252';
-import { TUNE } from '../lib/tune.js?v=252';
-import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=252';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=255';
+import { themePaint } from '../lib/themes.js?v=255';
+import { PALETTE } from '../net.js?v=255';
+import { TUNE } from '../lib/tune.js?v=255';
+import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=255';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
 const SPACING = 6;          // distance between rings
 const RADIUS = 16;
 const COUNT = SEGS * RINGS;
+
+// The signs: dead neon on the tunnel wall, begging to be lit. Painting was
+// a sensation without an objective — it got old in five seconds because
+// nothing WANTED the paint. Now the roadside asks, by name.
+const SIGN_NAMES = [
+  'OPEN LATE', 'Y\u2019ALL', 'EAT', 'VACANCY', 'JUKEBOX', 'HOT COFFEE',
+  'MOTEL', 'DANCE HALL', 'SUGAR', 'AMEN', 'FIREWORKS', 'COLD DRINKS',
+];
+function signFlash(text) {
+  window.__lastSign = text;   // observability for tests; harmless in play
+  const el = document.getElementById('pass-flash');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(signFlash._t);
+  signFlash._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
 
 export function createPaint() {
   let scene, camera, group, panels, sky, motes;
@@ -36,6 +53,9 @@ export function createPaint() {
   let nextMilestone = 100;
   let flashRing = -1, flashT = 0;     // the ring that just cleared, white-hot
   let decayAcc = 0, decayWarned = false;   // the gray eating back while you idle
+  let sign = null;                    // the live sign: {cells, need, name, born, ttl}
+  let signCell = null;                // per-panel: part of the live sign?
+  let signNext = 4, signIdx = 0, signStreak = 0;
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const _v = new THREE.Vector3();
@@ -72,6 +92,8 @@ export function createPaint() {
       group.add(panels);
 
       painted = new Float32Array(COUNT);   // 0 gray … 1 fully painted
+      signCell = new Uint8Array(COUNT);
+      sign = null; signNext = 4; signIdx = 0; signStreak = 0;
       hueAt = new Float32Array(COUNT);
       popAt = new Float32Array(COUNT);     // pop animation on the paint moment
       ringZ = new Float32Array(RINGS);
@@ -139,7 +161,7 @@ export function createPaint() {
             hueAt[i] = useHue;
             paintedCount++;
             // the combo pays: unbroken painting is worth up to double
-            if (mine) scoreQueue += strengthBonus * (combo > 40 ? 2 : combo > 15 ? 1.5 : 1);
+            if (mine) scoreQueue += 0.05;
             hit++; hx = wx; hy = wy; hz = wz;
           } else ringFilled = false;
         }
@@ -152,7 +174,7 @@ export function createPaint() {
           if (all && flashRing !== r) {
             ringChain = (performance.now() / 1000 - lastRingT < 7) ? ringChain + 1 : 1;
             lastRingT = performance.now() / 1000;
-            scoreQueue += 20 * ringChain;
+            scoreQueue += 1;   // the clear is its own reward — light and sound, not money
             sfxClear(ringChain);
             flashRing = r; flashT = 1;
             for (let s2 = 0; s2 < SEGS; s2++) popAt[r * SEGS + s2] = 2.0;
@@ -174,7 +196,7 @@ export function createPaint() {
         if (mine && paintedCount >= nextMilestone) {
           nextMilestone += 100;
           waveZ = 0;   // 0 = start at the camera, animates forward in update
-          scoreQueue += 30;
+          scoreQueue += 10;
           sfxFanfare();
         }
       }
@@ -184,7 +206,7 @@ export function createPaint() {
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
 
-      if (scoreQueue && opts.addScore) { opts.addScore(scoreQueue); scoreQueue = 0; }
+      if (scoreQueue >= 1 && opts.addScore) { const n = Math.floor(scoreQueue); opts.addScore(n); scoreQueue -= n; }
 
       // steady glide — painting is the act, flying is the canvas coming to you
       travel += dt * (9 + audio.energy * 7 + audio.volume * 4) * TUNE.speed;
@@ -263,6 +285,63 @@ export function createPaint() {
         }
       }
 
+      // ── the signs ──
+      const clearSign = () => { if (sign) { for (const i of sign.cells) signCell[i] = 0; sign = null; } };
+      signNext -= dt;
+      if (!sign && signNext <= 0 && !attract) {
+        // hang a dead sign on the wall a few seconds up the road
+        const rs = [];
+        for (let r = 0; r < RINGS; r++) { const d = camZ - ringZ[r]; if (d > 28 && d < 58) rs.push(r); }
+        rs.sort((a, b) => ringZ[b] - ringZ[a]);
+        if (rs.length >= 3) {
+          const rows = rs.slice(0, 3);
+          const s0 = (Math.random() * SEGS) | 0, span = 3 + ((Math.random() * 2) | 0);
+          const cells = [];
+          for (const r of rows) for (let k = 0; k < span; k++) cells.push(r * SEGS + ((s0 + k) % SEGS));
+          const need = cells.filter(i => painted[i] < 1);
+          if (need.length >= 6) {
+            sign = { cells, need, name: SIGN_NAMES[signIdx++ % SIGN_NAMES.length], born: time, ttl: 8 };
+            for (const i of cells) signCell[i] = 1;
+          } else signNext = 1.5;
+        } else signNext = 1.5;
+      }
+      if (sign) {
+        // publish the sign's screen position — tests aim like a finger would
+        {
+          let sx = 0, sy = 0, sn = 0;
+          for (const i of sign.cells) {
+            panelPos((i / SEGS) | 0, i % SEGS, _v);
+            _v.project(camera);
+            if (_v.z < 1) { sx += _v.x; sy += _v.y; sn++; }
+          }
+          window.__signAt = sn ? [sx / sn, sy / sn, sign.name] : null;
+        }
+        const done = sign.need.reduce((n, i) => n + (painted[i] >= 1 ? 1 : 0), 0);
+        let passed = false;
+        for (const i of sign.cells) { if (camZ - ringZ[(i / SEGS) | 0] < 6) { passed = true; break; } }
+        if (done >= sign.need.length * 0.9) {
+          // ── IT LIGHTS ── the whole sign pops, pays, and calls its name
+          signStreak++;
+          const pay = 25 + signStreak * 5;
+          scoreQueue += pay;
+          for (const i of sign.cells) {
+            popAt[i] = 2.2;
+            if (painted[i] < 1) { painted[i] = 1; hueAt[i] = brushHue; paintedCount++; }
+          }
+          signFlash(sign.name + ' \u00b7 +' + pay + (signStreak > 2 ? '  \u00d7' + signStreak : ''));
+          sfxClear(Math.min(4, signStreak));
+          clearSign();
+          signNext = 4.5 + Math.random() * 2;
+          window.__signAt = null;
+        } else if (time - sign.born > sign.ttl || passed) {
+          window.__signAt = null;
+          // the sign goes dark, and the strip forgets you
+          signStreak = 0;
+          clearSign();
+          signNext = 2.5;
+        }
+      }
+
       // draw
       const bands = [audio.bass, audio.lowMid, audio.mid, audio.high, audio.treble];
       for (let r = 0; r < RINGS; r++) {
@@ -291,6 +370,12 @@ export function createPaint() {
             themePaint(colorMode, hueAt[i], 0.5 + (s2 % 5) * 0.1, ringZ[r] * 0.01, time, band, s2 / SEGS, tp);
             color.setHSL(tp[0], Math.min(1, tp[1] + 0.2),
               Math.min(0.85, tp[2] + band * 0.22 + pop * 0.4 + waveBoost * 0.35 + ringFlash * 0.3));
+          } else if (signCell[i] && sign) {
+            // dead neon: a tube waiting for current, flickering harder as
+            // its time runs out
+            const left = Math.max(0, 1 - (time - sign.born) / sign.ttl);
+            const buzz = Math.sin(time * (6 + (1 - left) * 14) + i * 1.7);
+            color.setHSL(brushHue, 0.45, 0.16 + Math.max(0, buzz) * (0.14 + (1 - left) * 0.12));
           } else {
             // the unpainted world: near-monochrome, faintly alive, waiting
             const g = 0.07 + ((i * 2654435761) % 100) / 100 * 0.05 + audio.volume * 0.02;

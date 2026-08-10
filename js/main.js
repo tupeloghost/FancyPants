@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=252';
-import { drawQR } from './lib/qr.js?v=252';
-import { WORLDS } from './worlds/registry.js?v=252';
-import { Net, PALETTE } from './net.js?v=252';
-import { Presence } from './lib/presence.js?v=252';
-import { Pulses } from './lib/pulse.js?v=252';
-import { BeatClock } from './lib/beatclock.js?v=252';
-import { BeatCue } from './lib/beatcue.js?v=252';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=252';
-import { Race, placeOf, standings } from './lib/race.js?v=252';
-import { RouteMap } from './lib/map.js?v=252';
-import * as sfx from './lib/sfx.js?v=252';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=252';
-import { glowTexture } from './lib/glow.js?v=252';
+import { AudioEngine } from './audio-engine.js?v=255';
+import { drawQR } from './lib/qr.js?v=255';
+import { WORLDS } from './worlds/registry.js?v=255';
+import { Net, PALETTE } from './net.js?v=255';
+import { Presence } from './lib/presence.js?v=255';
+import { Pulses } from './lib/pulse.js?v=255';
+import { BeatClock } from './lib/beatclock.js?v=255';
+import { BeatCue } from './lib/beatcue.js?v=255';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=255';
+import { Race, placeOf, standings } from './lib/race.js?v=255';
+import { RouteMap } from './lib/map.js?v=255';
+import * as sfx from './lib/sfx.js?v=255';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=255';
+import { glowTexture } from './lib/glow.js?v=255';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2232,8 +2232,8 @@ function armPlayButton(go) {
     if (mine !== playArm) return;
     if (!(chartProgress < 0 && beatCue.chart)) { setTimeout(waitReady, 200); return; }
     const pbNow = getBest();
-    $('ri-state').textContent = beatCue.chart.notes.length + ' notes \u00b7 ready'
-      + (pbNow > 0 ? '  \u00b7  your best: ' + pbNow.toLocaleString() : '');
+    $('ri-state').textContent = 'ready when you are'
+      + (pbNow > 0 ? "  \u00b7  your best 'round here: " + pbNow.toLocaleString() : '');
     $('ri-play').classList.add('ready');
     $('ri-play').onclick = () => {
       if (mine !== playArm) return;
@@ -2699,9 +2699,9 @@ function frame(now) {
     $('ri-state').textContent = chartProgress >= 0
       ? 'charting ' + Math.round(chartProgress * 100) + '%'
       : (beatCue.chart
-          ? beatCue.chart.notes.length + ' notes \u00b7 ready'
-            + (getBest() > 0 ? '  \u00b7  your best: ' + getBest().toLocaleString() : '')
-          : 'preparing');
+          ? 'ready when you are'
+            + (getBest() > 0 ? "  \u00b7  your best 'round here: " + getBest().toLocaleString() : '')
+          : "fixin' to start");
   }
   // a held arrow steers; releasing eases back to centre rather than snapping
   if (steeredRound() && world && world.setInput) {
