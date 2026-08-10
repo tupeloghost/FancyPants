@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=246';
-import { TUNE } from '../lib/tune.js?v=246';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=247';
+import { TUNE } from '../lib/tune.js?v=247';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -119,12 +119,13 @@ export function createComets() {
     const c = document.createElement('canvas');
     c.width = 256; c.height = 128;
     const ctx = c.getContext('2d');
-    const base = new THREE.Color(hex);
-    const hsl = { h: 0, s: 0, l: 0 };
-    base.getHSL(hsl);
+    // GRAYSCALE on purpose: the luminance carries the weather, and the
+    // material's colour tint carries the hue — so planets can follow the
+    // look, and a tap can spin them a new colour, without repainting
+    const hsl = { h: 0, s: 0, l: 0.62 };
     const rnd = (n) => (((seed * 92821 + n * 68917) % 1000) / 1000);
     // solid ground first — no gap can ever show through
-    color.setHSL(hsl.h, hsl.s, hsl.l * 0.8);
+    color.setHSL(0, 0, hsl.l * 0.8);
     ctx.fillStyle = '#' + color.getHexString();
     ctx.fillRect(0, 0, 256, 128);
     // straight soft-edged bands
@@ -133,8 +134,7 @@ export function createComets() {
       const bh = 8 + rnd(i) * 16;
       const dl = (rnd(i + 50) - 0.5) * 0.22;
       const ds = (rnd(i + 90) - 0.5) * 0.18;
-      color.setHSL(hsl.h + (rnd(i + 130) - 0.5) * 0.03, Math.max(0.15, Math.min(1, hsl.s + ds)),
-                   Math.max(0.15, Math.min(0.85, hsl.l * 0.82 + dl)));
+      color.setHSL(0, 0, Math.max(0.15, Math.min(0.85, hsl.l * 0.82 + dl + ds * 0.3)));
       const g = ctx.createLinearGradient(0, y, 0, y + bh);
       g.addColorStop(0, 'rgba(0,0,0,0)');
       g.addColorStop(0.35, '#' + color.getHexString());
@@ -148,7 +148,7 @@ export function createComets() {
       const sx = rnd(k + 300) * 256, sy = 28 + rnd(k + 340) * 72;
       const rr = 9 + rnd(k + 380) * 16;
       const light = rnd(k + 460) > 0.5;
-      color.setHSL(hsl.h + (light ? 0.02 : -0.02), Math.min(1, hsl.s + 0.1), light ? 0.68 : 0.3);
+      color.setHSL(0, 0, light ? 0.68 : 0.3);
       const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, rr);
       g.addColorStop(0, '#' + color.getHexString());
       g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -191,13 +191,10 @@ export function createComets() {
     const c = document.createElement('canvas');
     c.width = 128; c.height = 8;
     const ctx = c.getContext('2d');
-    const base = new THREE.Color(hex);
-    const hsl = { h: 0, s: 0, l: 0 };
-    base.getHSL(hsl);
     for (let x = 0; x < 128; x++) {
       const band = Math.sin(x * 0.55) * 0.5 + Math.sin(x * 0.19) * 0.5;
       const a = Math.max(0, 0.55 + band * 0.45) * (x < 8 ? x / 8 : x > 118 ? (128 - x) / 10 : 1);
-      color.setHSL(hsl.h, hsl.s * 0.5, 0.55 + band * 0.18);
+      color.setHSL(0, 0, 0.55 + band * 0.18);
       ctx.fillStyle = 'rgba(' + Math.round(color.r * 255) + ',' + Math.round(color.g * 255) + ',' + Math.round(color.b * 255) + ',' + a.toFixed(2) + ')';
       ctx.fillRect(x, 0, 1, 8);
     }
@@ -369,7 +366,8 @@ export function createComets() {
         );
         grp.add(body);
         // atmosphere — a whisper of the planet's own colour past its edge
-        const atmo = new THREE.Mesh(
+        let atmo;
+        atmo = new THREE.Mesh(
           new THREE.SphereGeometry(r * 1.05, 24, 18),
           new THREE.MeshBasicMaterial({
             color: PALETTE_P[i], transparent: true, opacity: 0.26,
@@ -421,8 +419,11 @@ export function createComets() {
           side: (i % 2 ? -1 : 1) * (46 + (i * 53 % 30)),
           lift: ((i * 29 % 40) - 20),
           spin: 0.02 + (i * 13 % 10) * 0.004,
-          body, halo, moons, pulse: 0,
+          body, halo, moons, atmo, pulse: 0,
           ring: grp.userData_ring || null, ringPulse: 0,
+          // each planet sits at its own offset around the look's hue, and a
+          // tap kicks it a golden-angle step to a colour of its own
+          hueOff: i * 55, hueKick: 0, hue: 210 + i * 55,
         };
         delete grp.userData_ring;
         planets.push(grp);
@@ -511,6 +512,7 @@ export function createComets() {
         if (hit.length) {
           const hitRing = pl.userData.ring && hit[0].object === pl.userData.ring;
           pl.userData.pulse = 1;
+          pl.userData.hueKick += 137;          // a new colour every touch, never repeating soon
           if (hitRing) {
             pl.userData.ringPulse = 1;
             // sparks around the whole hoop — the ring itself celebrates
@@ -798,6 +800,15 @@ export function createComets() {
         u.wob = Math.max(0, (u.wob || 0) - dt * 0.7);
         u.tapSpin = Math.max(0, (u.tapSpin || 0) - dt * 0.4);
         u.ringPulse = Math.max(0, (u.ringPulse || 0) - dt * 0.9);
+        // the planet's colour FOLLOWS the look, offset per planet, spun by
+        // taps — eased so a look change washes over the sky rather than snaps
+        const want = (hue + u.hueOff + u.hueKick) % 360;
+        let dh = ((want - u.hue + 540) % 360) - 180;
+        u.hue = (u.hue + dh * Math.min(1, dt * 2.2) + 360) % 360;
+        color.setHSL(u.hue / 360, 0.5, 0.66);
+        u.body.material.color.copy(color);
+        u.atmo.material.color.copy(color);
+        u.halo.material.color.copy(color);
         if (u.ring) {
           // a struck ring answers LOUDLY: it flashes white-hot, wobbles on
           // its axis like a flicked coin, and bounces a fifth wider
@@ -805,7 +816,8 @@ export function createComets() {
           u.ring.rotation.x = u.ring.userData.baseTilt + Math.sin(time * 11) * rp * 0.22;
           u.ring.rotation.z += dt * (0.05 + rp * 2.4);
           u.ring.scale.setScalar(1 + rp * 0.2 + Math.sin(time * 9) * rp * 0.04);
-          u.ring.material.color.setScalar(1 + rp * 2.2);   // toneMapped:false — this genuinely over-brightens
+          color.setHSL(u.hue / 360, 0.5 - rp * 0.4, 0.7 + rp * 1.4);  // flash rides on the hue
+          u.ring.material.color.copy(color);
         }
         // a struck planet rings: a damped wobble you can SEE settle
         const ring = 1 + Math.sin(u.wob * 26) * u.wob * 0.12;
