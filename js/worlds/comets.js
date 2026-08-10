@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=244';
-import { TUNE } from '../lib/tune.js?v=244';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=245';
+import { TUNE } from '../lib/tune.js?v=245';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -224,25 +224,28 @@ export function createComets() {
       scene.fog = null;                       // space has no weather
       camera.fov = 70;
 
-      sky = skyDome(400);
-      // The stock dome is near-black away from the horizon, and when the
-      // flight path pitched the camera the dark pole swung into frame — the
-      // "black void" that came and went. Repaint it: indigo depths overhead,
-      // teal warmth at the horizon, colour everywhere, void nowhere.
+      // camera.far is 400. The old dome had radius 400 — parked exactly ON
+      // the far plane, so the frustum sliced hard-edged black holes out of
+      // it as the camera pitched. Radius 300 now, and the colour comes from
+      // a smooth painted gradient instead of faceted vertex shading.
       {
-        const posA = sky.geometry.attributes.position;
-        const colA = sky.geometry.attributes.color;
-        for (let i = 0; i < posA.count; i++) {
-          const y = posA.getY(i) / 400;                     // -1..1
-          const horizon = Math.max(0, 1 - Math.abs(y) * 1.4);
-          color.setHSL(
-            0.72 - horizon * 0.22,                          // indigo up top, teal at the rim
-            0.55,
-            0.075 + horizon * horizon * 0.12 + Math.max(0, -y) * 0.02
-          );
-          colA.setXYZ(i, color.r, color.g, color.b);
-        }
-        colA.needsUpdate = true;
+        const c = document.createElement('canvas');
+        c.width = 4; c.height = 256;
+        const x = c.getContext('2d');
+        const g = x.createLinearGradient(0, 0, 0, 256);
+        g.addColorStop(0.00, '#1a1440');   // indigo overhead
+        g.addColorStop(0.35, '#241d5c');
+        g.addColorStop(0.52, '#2b3a6e');   // violet-blue midline
+        g.addColorStop(0.62, '#1f4a63');   // teal horizon warmth
+        g.addColorStop(0.78, '#182a52');
+        g.addColorStop(1.00, '#120e33');   // deep below
+        x.fillStyle = g;
+        x.fillRect(0, 0, 4, 256);
+        const tex = new THREE.CanvasTexture(c);
+        sky = new THREE.Mesh(
+          new THREE.SphereGeometry(300, 32, 24),
+          new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false, toneMapped: false })
+        );
       }
       group.add(sky);
 
@@ -253,7 +256,7 @@ export function createComets() {
         for (let i = 0; i < N; i++) {
           pos[i * 3] = (Math.random() - 0.5) * 240;
           pos[i * 3 + 1] = (Math.random() - 0.5) * 160;
-          pos[i * 3 + 2] = -Math.random() * 500;
+          pos[i * 3 + 2] = -Math.random() * 340;
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -283,7 +286,7 @@ export function createComets() {
           const thick = (Math.random() - 0.5) * (Math.random() - 0.5) * 160;
           pos[i * 3] = along * 0.8;
           pos[i * 3 + 1] = along * 0.28 + thick;         // the tilt
-          pos[i * 3 + 2] = -120 - Math.random() * 320;
+          pos[i * 3 + 2] = -100 - Math.random() * 200;
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -731,14 +734,14 @@ export function createComets() {
       for (let i = 0; i < nebulae.length; i++) {
         const sp = nebulae[i];
         const u = sp.userData;
-        const z = -(((u.base + travel * 0.18) % 800));
-        sp.position.set(pathX(travel) + u.side, u.lift, -travel + z - 80);
+        const z = -(((u.base + travel * 0.18) % 260));
+        sp.position.set(pathX(travel) + u.side, u.lift, -travel + z - 50);
         sp.material.opacity = 0.35 + audio.bass * 0.35 * reactivity;
         sp.material.rotation = time * 0.008 * (i % 2 ? 1 : -1);
       }
       if (milky) milky.position.z = -travel - 0;
       if (milky) milky.position.x = pathX(travel) * 0.9;
-      if (sun) sun.position.set(pathX(travel) - 130, 40, -travel - 380);
+      if (sun) sun.position.set(pathX(travel) - 110, 36, -travel - 280);
 
       // a meteor now and then — the sky is alive even between beats
       if (meteors.length) {
@@ -749,7 +752,7 @@ export function createComets() {
           if (m) {
             m.visible = true;
             m.userData.life = 1;
-            m.position.set(pathX(travel) + (Math.random() - 0.5) * 160, 30 + Math.random() * 50, -travel - 200 - Math.random() * 150);
+            m.position.set(pathX(travel) + (Math.random() - 0.5) * 160, 30 + Math.random() * 50, -travel - 160 - Math.random() * 100);
             m.userData.vx = 30 + Math.random() * 40;
             m.userData.vy = -(12 + Math.random() * 18);
             m.material.rotation = Math.atan2(-m.userData.vy, m.userData.vx);
@@ -769,7 +772,7 @@ export function createComets() {
       this._addScore = opts.addScore;
       for (const pl of planets) {
         const u = pl.userData;
-        const z = -(((u.base + travel * 0.35) % 900));   // parallax: far things move slow
+        const z = -(((u.base + travel * 0.35) % 330)) - 25;   // parallax — and never past the far plane
         pl.position.set(pathX(travel) + u.side, u.lift, -travel + z);
         pl.rotation.y += u.spin * dt * 10;
         u.pulse = Math.max(0, u.pulse - dt * 1.6);
@@ -804,7 +807,7 @@ export function createComets() {
         // cheap wrap: dust lives in camera space via group offset — recycle
         // points that fall behind by pushing them ahead
         for (let i = 0; i < pos.count; i++) {
-          if (pos.getZ(i) + 40 > 0) pos.setZ(i, pos.getZ(i) - 500);
+          if (pos.getZ(i) + 40 > 0) pos.setZ(i, pos.getZ(i) - 340);
         }
         // slide the field back as we fly so there is always dust ahead
         const drift = speed * dt;
@@ -846,7 +849,8 @@ export function createComets() {
       }
 
       sky.position.set(pathX(travel), 0, -travel);
-      sky.material.color.setHSL(hue / 360, 0.5, 0.5);
+      // a light touch of the room's hue — never a darkening multiply
+      sky.material.color.setHSL(hue / 360, 0.18, 0.88);
 
       // ── the comet's eye — low, banking, lens opening with the burn.
       // At the bell it TURNS AROUND: nine seconds facing everything you
