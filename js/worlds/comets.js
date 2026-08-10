@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=234';
-import { TUNE } from '../lib/tune.js?v=234';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=237';
+import { TUNE } from '../lib/tune.js?v=237';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -30,7 +30,33 @@ export function createComets() {
   let cLastChartRef = null;
   let planets = [];
   let rivals = [];              // comet ghosts for placeGhost
+  let head = null, tail = [];   // your own comet, and the fire it drags
+  let tailAt = 0;
   const color = new THREE.Color();
+
+  // a gas giant is bands, not a flat ball: paint them once onto a canvas.
+  // Each planet gets its own weather from the same recipe.
+  function bandTexture(hex, seed) {
+    const c = document.createElement('canvas');
+    c.width = 8; c.height = 128;
+    const ctx = c.getContext('2d');
+    const base = new THREE.Color(hex);
+    const hsl = { h: 0, s: 0, l: 0 };
+    base.getHSL(hsl);
+    let y = 0, i = 0;
+    while (y < 128) {
+      const bh = 6 + ((seed * 37 + i * 61) % 17);          // band height
+      const dl = (((seed * 13 + i * 29) % 100) / 100 - 0.5) * 0.22;
+      const ds = (((seed * 7 + i * 43) % 100) / 100 - 0.5) * 0.15;
+      color.setHSL(hsl.h, Math.max(0.1, Math.min(1, hsl.s + ds)), Math.max(0.05, Math.min(0.8, hsl.l * 0.55 + dl)));
+      ctx.fillStyle = '#' + color.getHexString();
+      ctx.fillRect(0, y, 8, bh);
+      y += bh; i++;
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  }
 
   // the flight path — a lazy 3D weave, so space itself banks and rolls
   const pathX = t => Math.sin(t * 0.021) * 22 + Math.sin(t * 0.0077) * 30;
@@ -89,10 +115,9 @@ export function createComets() {
         const grp = new THREE.Group();
         const r = 7 + (i * 37 % 11);
         const body = new THREE.Mesh(
-          new THREE.SphereGeometry(r, 20, 14),
-          new THREE.MeshBasicMaterial({ color: PALETTE_P[i], toneMapped: false })
+          new THREE.SphereGeometry(r, 24, 18),
+          new THREE.MeshBasicMaterial({ map: bandTexture(PALETTE_P[i], i + 3), toneMapped: false })
         );
-        body.material.color.multiplyScalar(0.5);   // dim: lit by starlight, not neon
         grp.add(body);
         if (i % 2 === 0) {
           // every other one gets the Saturn treatment — "Saturn has the rings"
@@ -129,6 +154,23 @@ export function createComets() {
         g.visible = false;
         group.add(g);
         stars.push({ mesh: g, core, halo, alive: false, z: 0, x: 0, y: 0, red: false, spin: i * 2.3 });
+      }
+
+      // ── your own comet: a bright head riding just under the lens, and a
+      // tail of embers that stream back past the frame. The tail is the
+      // speedometer you feel instead of read.
+      // glow-only: geometry that close to the lens only ever reads as an
+      // artifact — a comet head IS light
+      head = new THREE.Group();
+      const hGlow = glowSprite(2.4);
+      head.add(hGlow);
+      group.add(head);
+      for (let i = 0; i < 48; i++) {
+        const sp = glowSprite(1.1);
+        sp.visible = false;
+        sp.userData = { life: 0, vx: 0, vy: 0 };
+        group.add(sp);
+        tail.push(sp);
       }
     },
 
@@ -291,6 +333,39 @@ export function createComets() {
         const drift = speed * dt;
         for (let i = 0; i < pos.count; i++) pos.setZ(i, pos.getZ(i) + drift);
         pos.needsUpdate = true;
+      }
+
+      // ── the head leads the lens; the tail streams home past it ──
+      if (head) {
+        const hx = pathX(travel + 12) + steer * REACH * 0.9;
+        const hy = pathY(travel + 12) - 0.6;
+        head.position.set(hx, hy, -(travel + 12));
+        head.children[0].scale.setScalar(2.2 + throttle * 1.4 + boost * 1);
+        head.children[0].material.opacity = 0.55;
+        color.setHSL(((hue + 30) % 360) / 360, 0.5, 0.8);
+        head.children[0].material.color.copy(color);
+        // spawn embers at the head — more and hotter the harder you burn
+        const born = throttle > 0.3 ? 2 : 1;
+        for (let k = 0; k < born; k++) {
+          const sp = tail[tailAt]; tailAt = (tailAt + 1) % tail.length;
+          sp.visible = true;
+          sp.userData.life = 1;
+          sp.userData.vx = (Math.random() - 0.5) * 3;
+          sp.userData.vy = (Math.random() - 0.5) * 3;
+          // scatter along the flight line so a slow frame never stacks them
+          sp.position.set(hx, hy, -(travel + 12) + (Math.random() - 0.2) * 4);
+          sp.material.color.copy(color);
+        }
+        for (const sp of tail) {
+          if (!sp.visible) continue;
+          sp.userData.life -= dt * 2.2;
+          if (sp.userData.life <= 0) { sp.visible = false; continue; }
+          // embers hold still in space — flying past them is what reads as speed
+          sp.position.x += sp.userData.vx * dt;
+          sp.position.y += sp.userData.vy * dt;
+          sp.material.opacity = sp.userData.life * 0.3;
+          sp.scale.setScalar(0.7 + (1 - sp.userData.life) * (1.2 + throttle * 1.4));
+        }
       }
 
       sky.position.set(pathX(travel), 0, -travel);
