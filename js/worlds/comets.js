@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=238';
-import { TUNE } from '../lib/tune.js?v=238';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=239';
+import { TUNE } from '../lib/tune.js?v=239';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -49,6 +49,8 @@ export function createComets() {
   let lastStar = null;          // world position of the previous threaded star
   let cLastChartRef = null;
   let planets = [];
+  let nebulae = [], milky = null, sun = null, meteors = [];
+  let meteorNext = 3;
   let rivals = [];              // comet ghosts for placeGhost
   let head = null, tail = [];   // your own comet, and the fire it drags
   let tailAt = 0;
@@ -57,6 +59,49 @@ export function createComets() {
   let wh = { armed: false, done: false, z: 0, x: 0, grp: null };
   let wasDodging = false, reviewT = 99;
   const color = new THREE.Color();
+
+  // a pickup should GLINT, not blob: a four-point star cross
+  function sparkleTex() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 30);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.25, 'rgba(255,255,255,0.45)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 64, 64);
+    x.globalCompositeOperation = 'lighter';
+    x.fillStyle = 'rgba(255,255,255,0.95)';
+    for (const [w, h] of [[2.6, 30], [30, 2.6]]) {
+      x.save(); x.translate(32, 32);
+      const gr = x.createRadialGradient(0, 0, 0, 0, 0, h);
+      gr.addColorStop(0, 'rgba(255,255,255,0.9)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = gr;
+      x.fillRect(-w / 2, -h, w, h * 2);
+      x.restore();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+
+  // a nebula is weather, not wallpaper: a few soft blobs of one hue family
+  function nebulaTex(baseHue) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 9; i++) {
+      const px = 40 + Math.random() * 176, py = 40 + Math.random() * 176;
+      const r = 34 + Math.random() * 68;
+      const h = (baseHue + (Math.random() - 0.5) * 50 + 360) % 360;
+      const g = x.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, 'hsla(' + h + ', 75%, 62%, 0.16)');
+      g.addColorStop(1, 'hsla(' + h + ', 75%, 62%, 0)');
+      x.fillStyle = g;
+      x.fillRect(0, 0, 256, 256);
+    }
+    return new THREE.CanvasTexture(c);
+  }
 
   // a gas giant is bands, not a flat ball: paint them once onto a canvas.
   // Each planet gets its own weather from the same recipe.
@@ -118,6 +163,77 @@ export function createComets() {
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         dust = new THREE.Points(geo, glowPoints(1.6, 0.75));
         group.add(dust);
+      }
+
+      // colour the dust: most stars white, some blue-hot, some gold
+      {
+        const pos = dust.geometry.attributes.position;
+        const cols = new Float32Array(pos.count * 3);
+        for (let i = 0; i < pos.count; i++) {
+          const roll = Math.random();
+          color.setHSL(roll < 0.12 ? 0.58 : roll < 0.24 ? 0.12 : 0, roll < 0.24 ? 0.7 : 0, 0.75 + Math.random() * 0.25);
+          cols[i * 3] = color.r; cols[i * 3 + 1] = color.g; cols[i * 3 + 2] = color.b;
+        }
+        dust.geometry.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+        dust.material.vertexColors = true;
+      }
+
+      // the Milky Way — a dense tilted river of faint stars behind everything
+      {
+        const N = LITE() ? 700 : 1600;
+        const pos = new Float32Array(N * 3);
+        for (let i = 0; i < N; i++) {
+          const along = (Math.random() - 0.5) * 700;
+          const thick = (Math.random() - 0.5) * (Math.random() - 0.5) * 160;
+          pos[i * 3] = along * 0.8;
+          pos[i * 3 + 1] = along * 0.28 + thick;         // the tilt
+          pos[i * 3 + 2] = -120 - Math.random() * 320;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        milky = new THREE.Points(geo, glowPoints(1.0, 0.4));
+        milky.material.color.setHSL(0.09, 0.35, 0.8);    // old starlight is warm
+        group.add(milky);
+      }
+
+      // nebulae — the weather of deep space, in this world's hue family
+      {
+        const HUES = [270, 200, 330, 45, 180, 290];
+        const count = LITE() ? 4 : 7;
+        for (let i = 0; i < count; i++) {
+          const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: nebulaTex(HUES[i % HUES.length]),
+            transparent: true, opacity: 0.5,
+            blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+          }));
+          sp.scale.setScalar(150 + (i * 47 % 130));
+          sp.userData = { base: i * 130 + 60, side: ((i % 2) ? -1 : 1) * (60 + (i * 31 % 80)), lift: (i * 23 % 90) - 45 };
+          nebulae.push(sp);
+          group.add(sp);
+        }
+      }
+
+      // one far sun — something for the whole sky to orbit around
+      {
+        sun = new THREE.Group();
+        const g1 = glowSprite(60);
+        g1.material.color.setHSL(0.09, 0.9, 0.75);
+        const g2 = glowSprite(22);
+        g2.material.color.setHSL(0.12, 0.6, 0.92);
+        sun.add(g1, g2);
+        group.add(sun);
+      }
+
+      // shooting stars — rare, fast, and worth pointing at
+      if (!LITE()) {
+        for (let i = 0; i < 3; i++) {
+          const sp = glowSprite(3);
+          sp.scale.set(14, 0.8, 1);
+          sp.visible = false;
+          sp.userData = { life: 0, vx: 0, vy: 0 };
+          group.add(sp);
+          meteors.push(sp);
+        }
       }
 
       // the constellation — one growing line, additive, fading by color
@@ -196,14 +312,19 @@ export function createComets() {
         wh.grp = g;
       }
 
-      // star + red giant pools
+      // star + red giant pools — silver stars GLINT with a four-point cross
+      const sparkMap = sparkleTex();
       for (let i = 0; i < MAX_STARS; i++) {
         const g = new THREE.Group();
         const core = new THREE.Mesh(
           new THREE.IcosahedronGeometry(0.9, 1),
           new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
         );
-        const halo = glowSprite(9);
+        const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: sparkMap, transparent: true,
+          blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+        }));
+        halo.scale.setScalar(9);
         g.add(core, halo);
         g.visible = false;
         group.add(g);
@@ -426,6 +547,44 @@ export function createComets() {
           segCol[o + 3] = color.r * a; segCol[o + 4] = color.g * a; segCol[o + 5] = color.b * a;
         }
         lines.geometry.attributes.color.needsUpdate = true;
+      }
+
+      // nebulae drift on the longest loop of all, breathing with the bass
+      for (let i = 0; i < nebulae.length; i++) {
+        const sp = nebulae[i];
+        const u = sp.userData;
+        const z = -(((u.base + travel * 0.18) % 800));
+        sp.position.set(pathX(travel) + u.side, u.lift, -travel + z - 80);
+        sp.material.opacity = 0.35 + audio.bass * 0.35 * reactivity;
+        sp.material.rotation = time * 0.008 * (i % 2 ? 1 : -1);
+      }
+      if (milky) milky.position.z = -travel - 0;
+      if (milky) milky.position.x = pathX(travel) * 0.9;
+      if (sun) sun.position.set(pathX(travel) - 130, 40, -travel - 380);
+
+      // a meteor now and then — the sky is alive even between beats
+      if (meteors.length) {
+        meteorNext -= dt;
+        if (meteorNext <= 0) {
+          meteorNext = 4 + Math.random() * 7;
+          const m = meteors.find(x => !x.visible);
+          if (m) {
+            m.visible = true;
+            m.userData.life = 1;
+            m.position.set(pathX(travel) + (Math.random() - 0.5) * 160, 30 + Math.random() * 50, -travel - 200 - Math.random() * 150);
+            m.userData.vx = 30 + Math.random() * 40;
+            m.userData.vy = -(12 + Math.random() * 18);
+            m.material.rotation = Math.atan2(-m.userData.vy, m.userData.vx);
+          }
+        }
+        for (const m of meteors) {
+          if (!m.visible) continue;
+          m.userData.life -= dt * 0.7;
+          if (m.userData.life <= 0) { m.visible = false; continue; }
+          m.position.x += m.userData.vx * dt;
+          m.position.y += m.userData.vy * dt;
+          m.material.opacity = Math.sin(m.userData.life * Math.PI) * 0.8;
+        }
       }
 
       // planets wheel past on a long loop
