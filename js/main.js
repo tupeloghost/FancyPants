@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=233';
-import { drawQR } from './lib/qr.js?v=233';
-import { WORLDS } from './worlds/registry.js?v=233';
-import { Net, PALETTE } from './net.js?v=233';
-import { Presence } from './lib/presence.js?v=233';
-import { Pulses } from './lib/pulse.js?v=233';
-import { BeatClock } from './lib/beatclock.js?v=233';
-import { BeatCue } from './lib/beatcue.js?v=233';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=233';
-import { Race, placeOf, standings } from './lib/race.js?v=233';
-import { RouteMap } from './lib/map.js?v=233';
-import * as sfx from './lib/sfx.js?v=233';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=233';
-import { glowTexture } from './lib/glow.js?v=233';
+import { AudioEngine } from './audio-engine.js?v=234';
+import { drawQR } from './lib/qr.js?v=234';
+import { WORLDS } from './worlds/registry.js?v=234';
+import { Net, PALETTE } from './net.js?v=234';
+import { Presence } from './lib/presence.js?v=234';
+import { Pulses } from './lib/pulse.js?v=234';
+import { BeatClock } from './lib/beatclock.js?v=234';
+import { BeatCue } from './lib/beatcue.js?v=234';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=234';
+import { Race, placeOf, standings } from './lib/race.js?v=234';
+import { RouteMap } from './lib/map.js?v=234';
+import * as sfx from './lib/sfx.js?v=234';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=234';
+import { glowTexture } from './lib/glow.js?v=234';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1979,6 +1979,8 @@ function rulesFor(key) {
   return IS_MOBILE
     ? r.replace('Steer with the mouse or arrows \u2014 and HOLD (press down, or space) to open the throttle.',
                 'Slide your finger to steer \u2014 and press AND HOLD to open the throttle.')
+       .replace('Steer with the mouse or arrows \u2014 and HOLD (press down, or space) to burn.',
+                'Slide your finger to steer \u2014 and press AND HOLD to burn.')
     : r;
 }
 let autoWanted = false;
