@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=245';
-import { TUNE } from '../lib/tune.js?v=245';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=246';
+import { TUNE } from '../lib/tune.js?v=246';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -395,6 +395,8 @@ export function createComets() {
             uv.setXY(v, (len - r * 1.45) / (r * 0.9), 0.5);
           }
           ring.rotation.x = Math.PI / 2 - 0.32;
+          ring.userData.baseTilt = ring.rotation.x;
+          ring.userData.midR = r * 1.9;
           grp.add(ring);
           grp.userData_ring = ring;
         }
@@ -509,7 +511,24 @@ export function createComets() {
         if (hit.length) {
           const hitRing = pl.userData.ring && hit[0].object === pl.userData.ring;
           pl.userData.pulse = 1;
-          if (hitRing) pl.userData.ringPulse = 1;
+          if (hitRing) {
+            pl.userData.ringPulse = 1;
+            // sparks around the whole hoop — the ring itself celebrates
+            const ring = pl.userData.ring;
+            const v = new THREE.Vector3();
+            for (let k = 0; k < 12; k++) {
+              const a = (k / 12) * Math.PI * 2;
+              v.set(Math.cos(a) * ring.userData.midR, Math.sin(a) * ring.userData.midR, 0);
+              ring.localToWorld(v);
+              const sp = tail[tailAt]; tailAt = (tailAt + 1) % tail.length;
+              sp.visible = true;
+              sp.userData.life = 1;
+              sp.userData.vx = Math.cos(a) * 6;
+              sp.userData.vy = Math.sin(a) * 6;
+              sp.position.copy(v);
+              sp.material.color.copy(pl.userData.halo.material.color);
+            }
+          }
           pl.userData.wob = 1;                 // it rings like a struck bell
           pl.userData.tapSpin = 1;             // and the moons hurry for a while
           // touching a planet PAYS a little — the sky tips you for curiosity
@@ -780,11 +799,13 @@ export function createComets() {
         u.tapSpin = Math.max(0, (u.tapSpin || 0) - dt * 0.4);
         u.ringPulse = Math.max(0, (u.ringPulse || 0) - dt * 0.9);
         if (u.ring) {
-          // a struck ring shimmers and spins up, then settles
-          u.ring.rotation.z += dt * (0.05 + u.ringPulse * 2.4);
-          const rs = 1 + u.ringPulse * 0.1 + Math.sin(time * 9) * u.ringPulse * 0.03;
-          u.ring.scale.setScalar(rs);
-          u.ring.material.opacity = 0.9 + u.ringPulse * 0.1;
+          // a struck ring answers LOUDLY: it flashes white-hot, wobbles on
+          // its axis like a flicked coin, and bounces a fifth wider
+          const rp = u.ringPulse;
+          u.ring.rotation.x = u.ring.userData.baseTilt + Math.sin(time * 11) * rp * 0.22;
+          u.ring.rotation.z += dt * (0.05 + rp * 2.4);
+          u.ring.scale.setScalar(1 + rp * 0.2 + Math.sin(time * 9) * rp * 0.04);
+          u.ring.material.color.setScalar(1 + rp * 2.2);   // toneMapped:false — this genuinely over-brightens
         }
         // a struck planet rings: a damped wobble you can SEE settle
         const ring = 1 + Math.sin(u.wob * 26) * u.wob * 0.12;
