@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=251';
-import { TUNE } from '../lib/tune.js?v=251';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=252';
+import { TUNE } from '../lib/tune.js?v=252';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -415,9 +415,11 @@ export function createComets() {
           grp.add(moon);
         }
         grp.userData = {
-          base: i * 150 + 80,
-          side: (i % 2 ? -1 : 1) * (46 + (i * 53 % 30)),
-          lift: ((i * 29 % 40) - 20),
+          // z-lanes 55 apart with alternating sides and spread heights —
+          // two giants can no longer interpenetrate mid-frame
+          base: i * 55 + 40,
+          side: (i % 2 ? -1 : 1) * (52 + i * 9),
+          lift: ((i * 37 % 80) - 40),
           spin: 0.02 + (i * 13 % 10) * 0.004,
           body, halo, moons, atmo, pulse: 0,
           ring: grp.userData_ring || null, ringPulse: 0,
@@ -920,7 +922,7 @@ export function createComets() {
 
       sky.position.set(pathX(travel), 0, -travel);
       // a light touch of the room's hue — never a darkening multiply
-      sky.material.color.setHSL(hue / 360, 0.35, 0.62);
+      sky.material.color.setHSL(hue / 360, 0.32, 0.45);
 
       // ── the comet's eye — low, banking, lens opening with the burn.
       // At the bell it TURNS AROUND: nine seconds facing everything you

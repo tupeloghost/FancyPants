@@ -122,6 +122,9 @@
     opacity: 1; transition: opacity 700ms ease, transform 260ms ease;
   }
   #qbar.dim { opacity: 0.16; }
+  /* mid-round the transport is a hazard, not a convenience: a thumb grazing
+     NEXT or WORLD torpedoes the race. It returns the moment the round ends. */
+  body.playing-round #qbar { opacity: 0 !important; pointer-events: none; }
   #qbar.hidden { display: none; }
   #qbar:hover { opacity: 1 !important; }
 
@@ -160,7 +163,11 @@
 
   @media (max-width: 620px) {
     /* the collapsed sheet sits on the bottom edge — ride just above its lip */
-    #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px); padding: 7px 9px; }
+    #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px); padding: 7px 9px; max-width: 96vw; }
+    /* icons alone below 430px — BACK and SHARE were hanging off both edges */
+    #qbar .qb { min-width: 38px; padding: 8px 6px; }
+    #qbar .qb em { display: none; }
+    #qbar .qb i { font-size: 16px; }
     #qbar .qb { min-width: 50px; padding: 9px 10px; }  /* 44px tall — thumb-sized */
     #qbar .qb i { font-size: 16px; }
     /* the sheet owns the bottom of the screen while it's open */
@@ -1658,7 +1665,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 251</div>
+      <div id="build-stamp">build 252</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1672,6 +1679,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=251"></script>
+<script type="module" src="js/main.js?v=252"></script>
 </body>
 </html>
