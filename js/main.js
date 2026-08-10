@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=226';
-import { drawQR } from './lib/qr.js?v=226';
-import { WORLDS } from './worlds/registry.js?v=226';
-import { Net, PALETTE } from './net.js?v=226';
-import { Presence } from './lib/presence.js?v=226';
-import { Pulses } from './lib/pulse.js?v=226';
-import { BeatClock } from './lib/beatclock.js?v=226';
-import { BeatCue } from './lib/beatcue.js?v=226';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=226';
-import { Race, placeOf, standings } from './lib/race.js?v=226';
-import { RouteMap } from './lib/map.js?v=226';
-import * as sfx from './lib/sfx.js?v=226';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=226';
-import { glowTexture } from './lib/glow.js?v=226';
+import { AudioEngine } from './audio-engine.js?v=227';
+import { drawQR } from './lib/qr.js?v=227';
+import { WORLDS } from './worlds/registry.js?v=227';
+import { Net, PALETTE } from './net.js?v=227';
+import { Presence } from './lib/presence.js?v=227';
+import { Pulses } from './lib/pulse.js?v=227';
+import { BeatClock } from './lib/beatclock.js?v=227';
+import { BeatCue } from './lib/beatcue.js?v=227';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=227';
+import { Race, placeOf, standings } from './lib/race.js?v=227';
+import { RouteMap } from './lib/map.js?v=227';
+import * as sfx from './lib/sfx.js?v=227';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=227';
+import { glowTexture } from './lib/glow.js?v=227';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -238,6 +238,9 @@ const settings = {
   if (qp.get('dust') === 'off') settings.stardust = false;
   if (qp.get('chime') === 'off') settings.chime = false;
   if (qp.get('names') === 'off') window.__namesOff = true;
+  // a shared link names a world and a song — the visitor lands inside both
+  if (qp.get('world') && WORLDS[qp.get('world')]) window.__shareWorld = qp.get('world');
+  if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
 }
 
 function updateURL() {
@@ -394,6 +397,17 @@ function shuffled(a) {
 }
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
+  // a shared link's song plays first — the whole point of following the link
+  if (window.__shareTrack) {
+    const want = window.__shareTrack; window.__shareTrack = null;
+    if (trackList.includes(want)) {
+      audio.loadURL(want);
+      $('track-select').value = want;
+      audio.play().catch(() => {});
+      updatePlayBtn();
+      return;
+    }
+  }
   if (!autoOrder.length) { autoOrder = shuffled(trackList); autoAt = 0; }
   if (next) autoAt = (autoAt + 1) % autoOrder.length;
   const url = autoOrder[autoAt];
@@ -1961,6 +1975,7 @@ function rulesFor(key) {
 let autoWanted = false;
 function dismissOverlay() {
   audio.ensureContext();
+  if (window.__shareWorld) { switchWorld(window.__shareWorld); window.__shareWorld = null; }
   // start the music by itself — unless we're a guest, who follows the host
   if (!document.body.classList.contains('guest')) {
     autoWanted = true;
@@ -2146,6 +2161,31 @@ function setNodeOf(p, i) {
   const key = p.name || ('p' + i);
   return nodeReached.has(key) ? nodeReached.get(key) : setAt;
 }
+
+// ── Share — the marketing loop: this song, this world, one link ──
+const SITE = location.host.includes('localhost')
+  ? location.origin + location.pathname
+  : 'https://' + location.host + location.pathname.replace(/index\.html$/, '');
+function shareThis() {
+  const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
+  const w = WORLDS[currentWorldKey];
+  const url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
+  const text = file
+    ? "come play '" + prettyTrack(file) + "' in " + (w ? w.label : '') + ' \u2014 Fancy Britches, by Tupelo Ghost'
+    : 'come play Fancy Britches, by Tupelo Ghost';
+  if (navigator.share) {
+    navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + '\n' + url).then(() => {
+      const el = $('pass-flash');
+      el.textContent = 'LINK COPIED, SUGAR';
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+    }).catch(() => {});
+  }
+}
+$('qb-share').addEventListener('click', shareThis);
+$('rb-share').addEventListener('click', shareThis);
 
 function prettyTrack(url) {
   return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
