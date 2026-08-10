@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=225';
-import { drawQR } from './lib/qr.js?v=225';
-import { WORLDS } from './worlds/registry.js?v=225';
-import { Net, PALETTE } from './net.js?v=225';
-import { Presence } from './lib/presence.js?v=225';
-import { Pulses } from './lib/pulse.js?v=225';
-import { BeatClock } from './lib/beatclock.js?v=225';
-import { BeatCue } from './lib/beatcue.js?v=225';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=225';
-import { Race, placeOf, standings } from './lib/race.js?v=225';
-import { RouteMap } from './lib/map.js?v=225';
-import * as sfx from './lib/sfx.js?v=225';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=225';
-import { glowTexture } from './lib/glow.js?v=225';
+import { AudioEngine } from './audio-engine.js?v=226';
+import { drawQR } from './lib/qr.js?v=226';
+import { WORLDS } from './worlds/registry.js?v=226';
+import { Net, PALETTE } from './net.js?v=226';
+import { Presence } from './lib/presence.js?v=226';
+import { Pulses } from './lib/pulse.js?v=226';
+import { BeatClock } from './lib/beatclock.js?v=226';
+import { BeatCue } from './lib/beatcue.js?v=226';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=226';
+import { Race, placeOf, standings } from './lib/race.js?v=226';
+import { RouteMap } from './lib/map.js?v=226';
+import * as sfx from './lib/sfx.js?v=226';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=226';
+import { glowTexture } from './lib/glow.js?v=226';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1785,6 +1785,72 @@ function renderStandings() {
 }
 setInterval(renderStandings, 600);
 
+// ── The rivals bar: the emoji arsenal, finally on the game screen ──
+let rivalsTarget = null;   // whose picker is open
+function renderRivals() {
+  const bar = $('rivals-bar');
+  const rivals = participants.filter(p => !p.local && p.name);
+  if (!rivals.length || settings.attract) { bar.classList.add('hidden'); rivalsTarget = null; return; }
+  bar.classList.remove('hidden');
+  const row = $('rivals-row');
+  const sig = rivals.map(p => p.name + ':' + (p.color || 0)).join('|');
+  if (row.dataset.sig !== sig) {
+    row.dataset.sig = sig;
+    row.innerHTML = '';
+    for (const p of rivals.slice(0, 8)) {
+      const chip = document.createElement('div');
+      chip.className = 'rival-chip';
+      const css = '#' + PALETTE[(p.color || 0) % PALETTE.length].toString(16).padStart(6, '0');
+      chip.innerHTML = `<i style="background:${css};box-shadow:0 0 8px ${css}"></i>`;
+      chip.appendChild(document.createTextNode(p.name));
+      chip.addEventListener('click', () => {
+        rivalsTarget = rivalsTarget === p.name ? null : p.name;
+        openRivalsPick();
+      });
+      chip.dataset.name = p.name;
+      row.appendChild(chip);
+    }
+  }
+  row.querySelectorAll('.rival-chip').forEach(c =>
+    c.classList.toggle('armed', c.dataset.name === rivalsTarget));
+  if (rivalsTarget && !rivals.some(p => p.name === rivalsTarget)) {
+    rivalsTarget = null; openRivalsPick();
+  }
+}
+function openRivalsPick() {
+  const pick = $('rivals-pick');
+  pick.classList.toggle('open', !!rivalsTarget);
+  if (!rivalsTarget) return;
+  const name = rivalsTarget;
+  pick.innerHTML = '';
+  EMOJIS.forEach((e2, k) => {
+    const b = document.createElement('button');
+    b.textContent = e2;
+    b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
+    pick.appendChild(b);
+  });
+  const sep = document.createElement('span'); sep.className = 'sep'; pick.appendChild(sep);
+  TRICKS.forEach(t => {
+    const b = document.createElement('button');
+    b.textContent = t.e; b.title = t.name;
+    b.addEventListener('click', () => {
+      if (score < t.cost) { sfx.thud(); return; }
+      addScore(-t.cost, undefined, undefined, true);
+      net.sendEmote(t.i, name);
+      const el = $('pass-flash');
+      el.textContent = t.e + ' \u2192 ' + name.toUpperCase();
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+      rivalsTarget = null; openRivalsPick(); renderRivals();
+    });
+    pick.appendChild(b);
+  });
+  const em = document.createElement('em');
+  em.textContent = '\u2192 ' + name + ' \u00b7 ' + BOMB_COST + '/' + TRICKS[0].cost + ' pts';
+  pick.appendChild(em);
+}
+setInterval(renderRivals, 600);
+
 // a world can name what's on its easel and how far along it is
 window.__setFigure = (name, done, total) => {
   const el = $('figure-label');
@@ -1799,6 +1865,11 @@ let introTimer = 0;
 function showWorldIntro(key) {
   const w = WORLDS[key];
   if (!w) return;
+  // Two screens must never talk at once. Mid-set the round card already
+  // names the world — the floating greeting on top of it was the overlap.
+  if ($('round-intro').classList.contains('show') ||
+      $('mode-card').classList.contains('show') ||
+      $('results').classList.contains('show')) return;
   const el = $('world-intro');
   $('intro-name').textContent = w.label;
   $('intro-goal').textContent = w.goal || '';

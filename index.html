@@ -1115,6 +1115,56 @@
   #standings .st.me .nm { color: var(--accent); }
   #standings .st.me .pt { color: var(--accent); }
 
+  /* ── The rivals bar — the emoji arsenal, ON the game screen ──
+     The bomb picker used to live in a hidden debug list behind the P key,
+     which is to say it did not exist. Rivals now sit as chips at the bottom
+     of the play screen on every device; tap one, the picker unfolds. */
+  #rivals-bar {
+    position: fixed; z-index: 97; left: 50%; bottom: 76px;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  #rivals-bar.hidden { display: none; }
+  #rivals-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .rival-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 14px; cursor: pointer;
+    font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 1px;
+    color: var(--ink);
+    background: hsla(var(--accent-h), 30%, 8%, 0.72);
+    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25);
+    border-radius: 999px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform 140ms ease, border-color 140ms ease;
+  }
+  .rival-chip:hover { transform: translateY(-2px); border-color: hsla(var(--accent-h), 80%, 70%, 0.6); }
+  .rival-chip i { width: 8px; height: 8px; border-radius: 50%; }
+  .rival-chip.armed { border-color: hsla(var(--accent-h), 90%, 75%, 0.9); }
+  #rivals-pick {
+    display: none; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: hsla(var(--accent-h), 30%, 8%, 0.85);
+    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.3);
+    border-radius: 999px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  #rivals-pick.open { display: flex; }
+  #rivals-pick button {
+    background: none; border: 0; cursor: pointer;
+    font-size: 22px; line-height: 1; padding: 4px;
+    transition: transform 120ms ease;
+  }
+  #rivals-pick button:hover { transform: scale(1.35); }
+  #rivals-pick .sep { width: 1px; height: 20px; background: hsla(var(--accent-h),60%,70%,0.3); }
+  #rivals-pick em {
+    font: 10px 'SF Mono', Menlo, monospace; font-style: normal;
+    letter-spacing: 1px; color: var(--ink-dim); white-space: nowrap;
+  }
+  @media (max-width: 620px) {
+    #rivals-bar { bottom: calc(env(safe-area-inset-bottom) + 86px); width: 96vw; }
+    #rivals-pick button { font-size: 26px; padding: 6px; }
+  }
+
   /* zoom readout — appears while you're framing, then bows out */
   #zoom-badge {
     position: fixed; right: 22px; bottom: 22px; z-index: 96;
@@ -1358,6 +1408,10 @@
 <div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
 
 
+<div id="rivals-bar" class="hidden">
+  <div id="rivals-pick"></div>
+  <div id="rivals-row"></div>
+</div>
 <div id="plist" class="hidden">
   <div class="plist-title">participants — click to hide a name</div>
   <div id="plist-rows"></div>
@@ -1572,7 +1626,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 225</div>
+      <div id="build-stamp">build 226</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1586,6 +1640,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=225"></script>
+<script type="module" src="js/main.js?v=226"></script>
 </body>
 </html>
