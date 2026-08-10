@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=249';
-import { drawQR } from './lib/qr.js?v=249';
-import { WORLDS } from './worlds/registry.js?v=249';
-import { Net, PALETTE } from './net.js?v=249';
-import { Presence } from './lib/presence.js?v=249';
-import { Pulses } from './lib/pulse.js?v=249';
-import { BeatClock } from './lib/beatclock.js?v=249';
-import { BeatCue } from './lib/beatcue.js?v=249';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=249';
-import { Race, placeOf, standings } from './lib/race.js?v=249';
-import { RouteMap } from './lib/map.js?v=249';
-import * as sfx from './lib/sfx.js?v=249';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=249';
-import { glowTexture } from './lib/glow.js?v=249';
+import { AudioEngine } from './audio-engine.js?v=251';
+import { drawQR } from './lib/qr.js?v=251';
+import { WORLDS } from './worlds/registry.js?v=251';
+import { Net, PALETTE } from './net.js?v=251';
+import { Presence } from './lib/presence.js?v=251';
+import { Pulses } from './lib/pulse.js?v=251';
+import { BeatClock } from './lib/beatclock.js?v=251';
+import { BeatCue } from './lib/beatcue.js?v=251';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=251';
+import { Race, placeOf, standings } from './lib/race.js?v=251';
+import { RouteMap } from './lib/map.js?v=251';
+import * as sfx from './lib/sfx.js?v=251';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=251';
+import { glowTexture } from './lib/glow.js?v=251';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -578,6 +578,7 @@ function replayRound() {
   audio.el.currentTime = 0;
   beatCue.seek(0);
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  armGhost();
   seenMissed = beatCue.stats.missed;
   audio.play().catch(() => {});
 }
@@ -622,6 +623,9 @@ function countUp(el, target, ms = 900) {
 }
 
 function showResults(reason) {
+  statsRoundDone();
+  ghostRoundDone();
+  $('awards').innerHTML = '';   // honours belong to set finales only
   if (resultsShown || !race.active) return;
   resultsShown = true;
 
@@ -764,6 +768,7 @@ function startRaceIfReady() {
     return;
   }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  armGhost();
   seenMissed = beatCue.stats.missed;
   hideResults();
 }
@@ -1364,6 +1369,8 @@ function pickPass(pool, who) {
 
 let passT = 0;
 function flashPass(p, youWent) {
+  if (youWent) myStats.passes++; else myStats.passed++;
+  statsPush();
   const el = $('pass-flash');
   const who = (p.name || 'them').toUpperCase();
   el.textContent = pickPass(youWent ? PASS_THEM : PASS_YOU, who);
@@ -1859,6 +1866,7 @@ function openRivalsPick() {
         return;
       }
       addScore(-t.cost, undefined, undefined, true);
+      myStats.bombs++; statsPush();
       net.sendEmote(t.i, name);
       const el = $('pass-flash');
       el.textContent = t.e + ' \u2192 ' + name.toUpperCase();
@@ -2067,6 +2075,7 @@ $('opt-play').addEventListener('click', () => {
 });
 
 function startSet(rounds) {
+  statsReset();
   const picks = shuffled(trackList).slice(0, Math.max(1, Math.min(rounds, trackList.length)));
   setList = picks.map((t, i) => ({ track: t, world: RHYTHM_WORLDS[i % RHYTHM_WORLDS.length] }));
   // Name each stop by whatever actually varies along the route. With one
@@ -2135,6 +2144,73 @@ function nextRound() {
 }
 
 // one place that actually starts a free round, for host click AND guest sync
+// ── Set-stats: the raw material of the end-of-set awards. Mine ride the
+// state blobs (net.local.st); everyone else's arrive the same way.
+const myStats = { bombs: 0, passes: 0, passed: 0, streak: 0, accSum: 0, accN: 0 };
+function statsReset() {
+  myStats.bombs = 0; myStats.passes = 0; myStats.passed = 0;
+  myStats.streak = 0; myStats.accSum = 0; myStats.accN = 0;
+  statsPush();
+}
+function statsPush() {
+  const acc = myStats.accN ? Math.round(myStats.accSum / myStats.accN * 100) : 0;
+  net.local.st = [myStats.bombs, myStats.passes, myStats.passed, myStats.streak, acc];
+}
+function statsRoundDone() {
+  myStats.streak = Math.max(myStats.streak, race.bestStreak);
+  myStats.accSum += race.accuracy; myStats.accN++;
+  statsPush();
+}
+
+// ── The ghost: your best run on this song+world, back to race you. Solo's
+// missing rival. Recorded as a progress curve, replayed as a phantom peer —
+// the whole rival pipeline (placeGhost, standings, pass flashes) treats it
+// as just another player called "your ghost".
+let ghostRec = [], ghostKey = null, ghostData = null;
+const GHOST_DT = 0.5;
+function soloNow() {
+  return !net.participants.some(p => !p.local && p.id !== 'ghost');
+}
+function armGhost() {
+  ghostRec = [];
+  const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
+  ghostKey = file ? 'fp_ghost_' + currentWorldKey + '_' + file : null;
+  ghostData = null;
+  net.participants = net.participants.filter(p => p.id !== 'ghost');
+  if (!ghostKey || !soloNow()) return;
+  try { ghostData = JSON.parse(localStorage.getItem(ghostKey) || 'null'); } catch (e) { ghostData = null; }
+  if (ghostData && Array.isArray(ghostData.v) && ghostData.v.length) {
+    net.participants.push({
+      id: 'ghost', name: 'your ghost', local: false, color: 7,
+      x: 0, y: 0, z: 0, heading: 0, action: 'idle', joinedAt: performance.now(),
+    });
+  } else ghostData = null;
+}
+function ghostTick() {
+  if (!race.active) return;
+  const t = audio.currentTime;
+  const idx = Math.floor(t / GHOST_DT);
+  while (ghostRec.length <= idx) ghostRec.push(+race.progress.toFixed(1));
+  ghostRec[idx] = +race.progress.toFixed(1);
+  const g = net.participants.find(p => p.id === 'ghost');
+  if (g && ghostData) {
+    const f = t / GHOST_DT;
+    const i0 = Math.min(ghostData.v.length - 1, Math.floor(f));
+    const i1 = Math.min(ghostData.v.length - 1, i0 + 1);
+    g.z = ghostData.v[i0] + (ghostData.v[i1] - ghostData.v[i0]) * (f - i0);
+  }
+}
+function ghostRoundDone() {
+  const wasGhostRun = !!ghostKey && soloNow() && ghostRec.length > 4;
+  if (wasGhostRun && (!ghostData || race.progress > (ghostData.final || 0))) {
+    try {
+      localStorage.setItem(ghostKey, JSON.stringify({ dt: GHOST_DT, final: +race.progress.toFixed(1), v: ghostRec.slice(0, 700) }));
+    } catch (e) { }
+  }
+  net.participants = net.participants.filter(p => p.id !== 'ghost');
+  ghostKey = null; ghostData = null;
+}
+
 let guestArmed = false;
 function beginFreeRound() {
   guestArmed = false;
@@ -2142,6 +2218,7 @@ function beginFreeRound() {
   $('round-intro').classList.remove('show');
   setPhase = 'idle';
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  armGhost();
   seenMissed = beatCue.stats.missed;
   hideResults();
 }
@@ -2242,6 +2319,43 @@ function showSetResults() {
   $('results').classList.add('show');
   clearTimeout(resultsTimer);
   setList = null;   // the set is settled; the buttons decide what happens next
+
+  // ── the awards: the set's last word, one honour at a time ──
+  // Everyone computes the same winners from the same shared stats, so every
+  // screen agrees; you bank the bonus only for awards YOU won.
+  const entrants = [
+    { name: net.local.name || 'you', st: net.local.st || [0, 0, 0, 0, 0] },
+    ...net.participants.filter(p => !p.local && p.id !== 'ghost' && p.st)
+      .map(p => ({ name: p.name, st: p.st })),
+  ];
+  const CATS = [
+    { i: 0, title: 'MOST TROUBLE', why: 'bombs thrown' },
+    { i: 1, title: "'SCUSE ME", why: 'most passes made' },
+    { i: 2, title: 'BLESS YOUR HEART', why: 'most passed-by' },
+    { i: 3, title: 'STEADIEST HAND', why: 'longest streak' },
+    { i: 4, title: 'CLEANEST RUN', why: 'best accuracy' },
+  ];
+  const box = $('awards');
+  box.innerHTML = '';
+  let shown = 0;
+  for (const cat of CATS) {
+    const ranked = entrants.filter(e => (e.st[cat.i] || 0) > 0)
+      .sort((a, b) => (b.st[cat.i] - a.st[cat.i]) || a.name.localeCompare(b.name));
+    if (!ranked.length) continue;
+    const win = ranked[0];
+    const mine = win.name === (net.local.name || 'you');
+    const row = document.createElement('div');
+    row.className = 'award';
+    row.innerHTML = `<b>${cat.title}</b><span>${win.name.replace(/[<>&]/g, '')} \u00b7 ${cat.why}</span><em>+15</em>`;
+    setTimeout(() => {
+      box.appendChild(row);
+      sfx.pass(true);
+      impact(0.5);
+      if (mine) addScore(15, undefined, undefined, true);
+    }, 1200 + shown * 1400);
+    shown++;
+  }
+  if (shown) setTimeout(() => sfx.fanfare(), 1200 + shown * 1400);
 }
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
@@ -2323,6 +2437,7 @@ function sendBomb(toName, idx) {
     return;
   }
   addScore(-BOMB_COST, undefined, undefined, true);
+  myStats.bombs++; statsPush();
   net.sendEmote(idx, toName);
   const el = $('pass-flash');
   el.textContent = EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase();
@@ -2390,6 +2505,7 @@ function renderPlist() {
           ev.stopPropagation();
           if (score < t.cost) { sfx.thud(); return; }
           addScore(-t.cost, undefined, undefined, true);
+          myStats.bombs++; statsPush();
           net.sendEmote(t.i, p.name);
           const el = $('pass-flash');
           el.textContent = t.e + ' \u2192 ' + p.name.toUpperCase();
@@ -2637,6 +2753,7 @@ function frame(now) {
     }
     const wasFinished = race.finished;
     race.update(dt, audio.currentTime);
+    ghostTick();
     if (race.finished && !wasFinished) showResults('finished');
     // progress rides on z, which is already on the wire and already
     // interpolated — the field on screen is everyone's real position

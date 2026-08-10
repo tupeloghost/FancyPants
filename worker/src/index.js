@@ -188,6 +188,8 @@ export class FancyPantsRoom {
       this.broadcast(JSON.stringify({
         t: 'state', id: connId, x: m.x, y: m.y, z: m.z, heading: m.heading, action: m.action,
         score: Number(m.score) || 0,
+        // set-stats for the end-of-set awards: [bombs, passes, passed, streak, acc]
+        st: Array.isArray(m.st) ? m.st.slice(0, 6).map(n => Number(n) || 0) : undefined,
       }), connId);
 
       // opportunistic prune of the silent
