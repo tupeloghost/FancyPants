@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=242';
-import { TUNE } from '../lib/tune.js?v=242';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=243';
+import { TUNE } from '../lib/tune.js?v=243';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -338,7 +338,7 @@ export function createComets() {
         const atmo = new THREE.Mesh(
           new THREE.SphereGeometry(r * 1.05, 24, 18),
           new THREE.MeshBasicMaterial({
-            color: PALETTE_P[i], transparent: true, opacity: 0.14,
+            color: PALETTE_P[i], transparent: true, opacity: 0.26,
             side: THREE.BackSide, blending: THREE.AdditiveBlending,
             depthWrite: false, toneMapped: false,
           })
@@ -364,9 +364,9 @@ export function createComets() {
           grp.add(ring);
         }
         grp.rotation.z = (i % 2 ? -1 : 1) * (0.12 + (i * 17 % 20) * 0.012);  // axis tilt
-        const halo = glowSprite(r * 2.6);
+        const halo = glowSprite(r * 3.4);
         halo.material.color.setHex(PALETTE_P[i]);
-        halo.material.opacity = 0.14;
+        halo.material.opacity = 0.3;
         grp.add(halo);
         // moons — one or two small companions, each on its own clock
         const moons = [];
@@ -469,6 +469,12 @@ export function createComets() {
         const hit = ray.intersectObject(pl.userData.body, false);
         if (hit.length) {
           pl.userData.pulse = 1;
+          pl.userData.wob = 1;                 // it rings like a struck bell
+          pl.userData.tapSpin = 1;             // and the moons hurry for a while
+          // touching a planet PAYS a little — the sky tips you for curiosity
+          if (this._addScore) {
+            this._addScore(2, (nx + 1) / 2 * window.innerWidth, (1 - (ny + 1) / 2) * window.innerHeight);
+          }
           // a handful of embers thrown off the surface
           for (let k = 0; k < 10; k++) {
             const sp = tail[tailAt]; tailAt = (tailAt + 1) % tail.length;
@@ -722,19 +728,25 @@ export function createComets() {
       }
 
       // planets wheel past on a long loop — breathing, orbited, poke-able
+      this._addScore = opts.addScore;
       for (const pl of planets) {
         const u = pl.userData;
         const z = -(((u.base + travel * 0.35) % 900));   // parallax: far things move slow
         pl.position.set(pathX(travel) + u.side, u.lift, -travel + z);
         pl.rotation.y += u.spin * dt * 10;
         u.pulse = Math.max(0, u.pulse - dt * 1.6);
-        const breathe = 1 + audio.bass * 0.03 * reactivity + u.pulse * 0.1;
+        u.wob = Math.max(0, (u.wob || 0) - dt * 0.7);
+        u.tapSpin = Math.max(0, (u.tapSpin || 0) - dt * 0.4);
+        // a struck planet rings: a damped wobble you can SEE settle
+        const ring = 1 + Math.sin(u.wob * 26) * u.wob * 0.12;
+        // flying close, it BLOOMS — mass you can feel on the way past
+        const near = Math.max(0, 1 - Math.abs(pl.position.z - -travel) / 90);
+        const breathe = (1 + audio.bass * 0.05 * reactivity + u.pulse * 0.1) * ring;
         u.body.scale.setScalar(breathe);
-        u.halo.material.opacity = 0.22 + u.pulse * 0.5 + audio.bass * 0.06;
-        u.halo.scale.setScalar(u.halo.scale.x);          // keep sprite scale stable
+        u.halo.material.opacity = 0.3 + u.pulse * 0.55 + audio.bass * 0.12 + near * 0.3;
         for (const moon of u.moons) {
           const md = moon.userData;
-          const a = time * md.speed + md.phase;
+          const a = time * md.speed * (1 + (u.tapSpin || 0) * 2.5) + md.phase;
           moon.position.set(Math.cos(a) * md.orbit, Math.sin(a * 0.7) * md.orbit * 0.25, Math.sin(a) * md.orbit);
         }
       }
