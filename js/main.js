@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=255';
-import { drawQR } from './lib/qr.js?v=255';
-import { WORLDS } from './worlds/registry.js?v=255';
-import { Net, PALETTE } from './net.js?v=255';
-import { Presence } from './lib/presence.js?v=255';
-import { Pulses } from './lib/pulse.js?v=255';
-import { BeatClock } from './lib/beatclock.js?v=255';
-import { BeatCue } from './lib/beatcue.js?v=255';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=255';
-import { Race, placeOf, standings } from './lib/race.js?v=255';
-import { RouteMap } from './lib/map.js?v=255';
-import * as sfx from './lib/sfx.js?v=255';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=255';
-import { glowTexture } from './lib/glow.js?v=255';
+import { AudioEngine } from './audio-engine.js?v=256';
+import { drawQR } from './lib/qr.js?v=256';
+import { WORLDS } from './worlds/registry.js?v=256';
+import { Net, PALETTE } from './net.js?v=256';
+import { Presence } from './lib/presence.js?v=256';
+import { Pulses } from './lib/pulse.js?v=256';
+import { BeatClock } from './lib/beatclock.js?v=256';
+import { BeatCue } from './lib/beatcue.js?v=256';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=256';
+import { Race, placeOf, standings } from './lib/race.js?v=256';
+import { RouteMap } from './lib/map.js?v=256';
+import * as sfx from './lib/sfx.js?v=256';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=256';
+import { glowTexture } from './lib/glow.js?v=256';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -241,6 +241,7 @@ const settings = {
   // a shared link names a world and a song — the visitor lands inside both
   if (qp.get('world') && WORLDS[qp.get('world')]) window.__shareWorld = qp.get('world');
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
+  if (qp.get('suno')) window.__shareSuno = qp.get('suno');
 }
 
 function updateURL() {
@@ -397,6 +398,7 @@ function shuffled(a) {
 }
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
+  window.__sunoShare = null;
   // a shared link's song plays first — the whole point of following the link
   if (window.__shareTrack) {
     const want = window.__shareTrack; window.__shareTrack = null;
@@ -839,6 +841,7 @@ function loadSuno() {
     .then(info => {
       if (!info.id) throw new Error('no song');
       sunoTrack = [info.title, info.artist].filter(Boolean).join(' — ') || 'a suno track';
+      window.__sunoShare = path.startsWith('suno-s') ? 's_' + token : info.id;
       sunoSay(sunoTrack, 'ok');
       audio.loadURL(`${SUNO_PROXY}suno/${info.id}.mp3`);
       $('track-select').value = '';
@@ -1995,6 +1998,15 @@ let autoWanted = false;
 function dismissOverlay() {
   audio.ensureContext();
   if (window.__shareWorld) { switchWorld(window.__shareWorld); window.__shareWorld = null; }
+  // a shared suno link: reconstruct the paste and load it like a hand did
+  if (window.__shareSuno) {
+    const t = window.__shareSuno; window.__shareSuno = null;
+    $('suno-input').value = t.startsWith('s_')
+      ? 'https://suno.com/s/' + t.slice(2)
+      : 'https://suno.com/song/' + t;
+    setTimeout(() => loadSuno(), 300);
+    autoWanted = false;   // their song is the show; don't start ours under it
+  }
   // start the music by itself — unless we're a guest, who follows the host
   if (!document.body.classList.contains('guest')) {
     autoWanted = true;
@@ -2258,10 +2270,17 @@ const SITE = location.host.includes('localhost')
 function shareThis() {
   const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
   const w = WORLDS[currentWorldKey];
-  const url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
-  const text = file
-    ? "come play '" + prettyTrack(file) + "' in " + (w ? w.label : '') + ' \u2014 Fancy Britches, by Tupelo Ghost'
-    : 'come play Fancy Britches, by Tupelo Ghost';
+  let url, text;
+  if (window.__sunoShare) {
+    // an artist's own song: the link carries THEIR track into the world
+    url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
+    text = "come play '" + (sunoTrack || 'my song') + "' in " + (w ? w.label : '') + ' \u2014 on Fancy Britches';
+  } else {
+    url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
+    text = file
+      ? "come play '" + prettyTrack(file) + "' in " + (w ? w.label : '') + ' \u2014 Fancy Britches, by Tupelo Ghost'
+      : 'come play Fancy Britches, by Tupelo Ghost';
+  }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
   } else {
@@ -2371,13 +2390,34 @@ $('btn-join').addEventListener('click', () => {
   startRoom(code, $('join-name').value.trim(), false);
 });
 $('btn-host').addEventListener('click', () => {
-  startRoom(genCode(), $('join-name').value.trim() || 'host', true);
+  startRoom(genCode(), ensureName(), true);
   setTimeout(askMode, 400);
 });
+// a name nobody had to type — southern, friendly, never blocking the door
+const NAME_POOL = ['junebug', 'firefly', 'possum', 'magnolia', 'catfish',
+                   'sugarplum', 'clover', 'biscuit', 'dixie', 'banjo'];
+function ensureName() {
+  let n = $('join-name').value.trim();
+  if (!validName(n)) {
+    n = NAME_POOL[(Math.random() * NAME_POOL.length) | 0] + (10 + (Math.random() * 90 | 0));
+    $('join-name').value = n;
+  }
+  net.local.name = n;
+  localStorage.setItem('fp_name', n);
+  return n;
+}
 $('btn-solo').addEventListener('click', () => {
-  if ($('join-name').value.trim()) net.local.name = $('join-name').value.trim();
+  ensureName();
   dismissOverlay();
   setTimeout(askMode, 400);
+});
+// the artist's door: straight into the room with the song slot open
+$('btn-own').addEventListener('click', () => {
+  ensureName();
+  dismissOverlay();
+  panel.classList.remove('hidden', 'collapsed');
+  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+  setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
 });
 // clicking outside the card still starts solo (the old behavior)
 tap.addEventListener('click', e => { if (e.target === tap) dismissOverlay(); });
