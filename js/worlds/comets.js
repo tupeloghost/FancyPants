@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=248';
-import { TUNE } from '../lib/tune.js?v=248';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=249';
+import { TUNE } from '../lib/tune.js?v=249';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -210,6 +210,7 @@ export function createComets() {
   const segCol = new Float32Array(SEG_MAX * 6);
   const segBorn = new Float32Array(SEG_MAX).fill(-1e9);
   let segAt = 0;
+  let nodes = [], nodeAt = 0;   // the chart's star-points, one per caught star
 
   return {
     name: 'COMETS',
@@ -230,12 +231,12 @@ export function createComets() {
         c.width = 4; c.height = 256;
         const x = c.getContext('2d');
         const g = x.createLinearGradient(0, 0, 0, 256);
-        g.addColorStop(0.00, '#1a1440');   // indigo overhead
-        g.addColorStop(0.35, '#241d5c');
-        g.addColorStop(0.52, '#2b3a6e');   // violet-blue midline
-        g.addColorStop(0.62, '#1f4a63');   // teal horizon warmth
-        g.addColorStop(0.78, '#182a52');
-        g.addColorStop(1.00, '#120e33');   // deep below
+        g.addColorStop(0.00, '#0c0a22');   // indigo overhead — DARK: glow needs night
+        g.addColorStop(0.35, '#141033');
+        g.addColorStop(0.52, '#1a2344');   // violet-blue midline
+        g.addColorStop(0.62, '#132e40');   // teal horizon warmth
+        g.addColorStop(0.78, '#0e1a33');
+        g.addColorStop(1.00, '#0a081f');   // deep below
         x.fillStyle = g;
         x.fillRect(0, 0, 4, 256);
         const tex = new THREE.CanvasTexture(c);
@@ -430,6 +431,22 @@ export function createComets() {
         group.add(grp);
       }
 
+      // chart nodes — persistent sparkle points where stars were caught
+      {
+        const nmap = sparkleTex();
+        for (let i = 0; i < 64; i++) {
+          const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: nmap, transparent: true,
+            blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+          }));
+          sp.scale.setScalar(2.2);
+          sp.visible = false;
+          sp.userData = { born: -1e9 };
+          group.add(sp);
+          nodes.push(sp);
+        }
+      }
+
       // the next stitch — a faint dashed thread from your last star to the
       // coming one, so you draw on purpose instead of merely reacting
       {
@@ -486,7 +503,10 @@ export function createComets() {
       // artifact — a comet head IS light
       head = new THREE.Group();
       const hGlow = glowSprite(2.4);
-      head.add(hGlow);
+      const hCore = glowSprite(0.9);         // the pinpoint the eye locks onto
+      hCore.material.color.setHex(0xffffff);
+      hCore.material.opacity = 1;
+      head.add(hGlow, hCore);
       group.add(head);
       for (let i = 0; i < (LITE() ? 20 : 48); i++) {
         const sp = glowSprite(1.1);
@@ -664,6 +684,11 @@ export function createComets() {
               }
               // ── draw the line: this star joins the constellation ──
               const here = new THREE.Vector3(wx, wy, d.z);
+              // and plant a chart-star where it was caught
+              const nd = nodes[nodeAt]; nodeAt = (nodeAt + 1) % nodes.length;
+              nd.visible = true;
+              nd.userData.born = time;
+              nd.position.copy(here);
               if (lastStar) {
                 const o = segAt * 6;
                 segPos[o] = lastStar.x; segPos[o + 1] = lastStar.y; segPos[o + 2] = lastStar.z;
@@ -739,8 +764,18 @@ export function createComets() {
       }
 
       // constellation fade — your signature lingers, then returns to the dark
+      for (const nd of nodes) {
+        if (!nd.visible) continue;
+        const age = time - nd.userData.born;
+        if (age > SEG_FADE) { nd.visible = false; continue; }
+        const a = Math.pow(1 - age / SEG_FADE, 1.2);
+        nd.material.opacity = a;
+        nd.scale.setScalar(2.2 + Math.sin(time * 4 + nd.userData.born) * 0.3);
+        color.setHSL(((hue + 30) % 360) / 360, 0.4, 0.85);
+        nd.material.color.copy(color);
+      }
       {
-        color.setHSL(((hue + 30) % 360) / 360, 0.55, 0.75);
+        color.setHSL(((hue + 30) % 360) / 360, 0.55, 0.85);
         for (let i = 0; i < SEG_MAX; i++) {
           const age = time - segBorn[i];
           const a = age > SEG_FADE ? 0 : Math.pow(1 - age / SEG_FADE, 1.4);
@@ -757,7 +792,7 @@ export function createComets() {
         const u = sp.userData;
         const z = -(((u.base + travel * 0.18) % 260));
         sp.position.set(pathX(travel) + u.side, u.lift, -travel + z - 50);
-        sp.material.opacity = 0.35 + audio.bass * 0.35 * reactivity;
+        sp.material.opacity = 0.24 + audio.bass * 0.3 * reactivity;
         sp.material.rotation = time * 0.008 * (i % 2 ? 1 : -1);
         color.setHSL(((hue + sp.userData.hueOff + 360) % 360) / 360, 0.62, 0.58);
         sp.material.color.copy(color);
@@ -865,10 +900,10 @@ export function createComets() {
           const sp = tail[tailAt]; tailAt = (tailAt + 1) % tail.length;
           sp.visible = true;
           sp.userData.life = 1;
-          sp.userData.vx = (Math.random() - 0.5) * 3;
-          sp.userData.vy = (Math.random() - 0.5) * 3;
+          sp.userData.vx = (Math.random() - 0.5) * 1.6;
+          sp.userData.vy = (Math.random() - 0.5) * 1.6;
           // scatter along the flight line so a slow frame never stacks them
-          sp.position.set(hx, hy, -(travel + 12) + (Math.random() - 0.2) * 4);
+          sp.position.set(hx, hy, -(travel + 12) + (Math.random() - 0.2) * 2.5);
           sp.material.color.copy(color);
         }
         for (const sp of tail) {
@@ -879,13 +914,13 @@ export function createComets() {
           sp.position.x += sp.userData.vx * dt;
           sp.position.y += sp.userData.vy * dt;
           sp.material.opacity = sp.userData.life * 0.3;
-          sp.scale.setScalar(0.7 + (1 - sp.userData.life) * (1.2 + throttle * 1.4));
+          sp.scale.setScalar(0.5 + (1 - sp.userData.life) * (0.8 + throttle * 1.0));
         }
       }
 
       sky.position.set(pathX(travel), 0, -travel);
       // a light touch of the room's hue — never a darkening multiply
-      sky.material.color.setHSL(hue / 360, 0.4, 0.8);
+      sky.material.color.setHSL(hue / 360, 0.35, 0.62);
 
       // ── the comet's eye — low, banking, lens opening with the burn.
       // At the bell it TURNS AROUND: nine seconds facing everything you
