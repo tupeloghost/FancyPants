@@ -1032,6 +1032,11 @@
   }
   .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
   #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
+  #doors {
+    margin-top: 6px; text-align: center;
+    font: 10.5px/1.7 'SF Mono', Menlo, monospace; letter-spacing: 0.6px;
+    color: var(--ink-faint);
+  }
 
   /* room code — prominent, part of the broadcast frame */
   #room-badge {
@@ -1445,7 +1450,7 @@
 
 <div id="tap-to-start">
   <div class="big">FANCY BRITCHES</div>
-  <div id="tagline">your music is a world &mdash; race it, light it, share it</div>
+  <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
   <div id="join-card">
     <button id="btn-solo" class="cta">COME ON IN</button>
     <button id="btn-own" class="cta-soft">&#9834; PLAY YOUR OWN SONG</button>
@@ -1456,6 +1461,7 @@
       <button id="btn-join">JOIN</button>
       <button id="btn-host">HOST A ROOM</button>
     </div>
+    <div id="doors">here to play? come on in &nbsp;&middot;&nbsp; streaming? host a room &nbsp;&middot;&nbsp; made a song? it&rsquo;s yours to ride</div>
   </div>
 </div>
 
@@ -1696,7 +1702,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 256</div>
+      <div id="build-stamp">build 257</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1710,6 +1716,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=256"></script>
+<script type="module" src="js/main.js?v=257"></script>
 </body>
 </html>

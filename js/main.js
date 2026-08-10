@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=256';
-import { drawQR } from './lib/qr.js?v=256';
-import { WORLDS } from './worlds/registry.js?v=256';
-import { Net, PALETTE } from './net.js?v=256';
-import { Presence } from './lib/presence.js?v=256';
-import { Pulses } from './lib/pulse.js?v=256';
-import { BeatClock } from './lib/beatclock.js?v=256';
-import { BeatCue } from './lib/beatcue.js?v=256';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=256';
-import { Race, placeOf, standings } from './lib/race.js?v=256';
-import { RouteMap } from './lib/map.js?v=256';
-import * as sfx from './lib/sfx.js?v=256';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=256';
-import { glowTexture } from './lib/glow.js?v=256';
+import { AudioEngine } from './audio-engine.js?v=257';
+import { drawQR } from './lib/qr.js?v=257';
+import { WORLDS } from './worlds/registry.js?v=257';
+import { Net, PALETTE } from './net.js?v=257';
+import { Presence } from './lib/presence.js?v=257';
+import { Pulses } from './lib/pulse.js?v=257';
+import { BeatClock } from './lib/beatclock.js?v=257';
+import { BeatCue } from './lib/beatcue.js?v=257';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=257';
+import { Race, placeOf, standings } from './lib/race.js?v=257';
+import { RouteMap } from './lib/map.js?v=257';
+import * as sfx from './lib/sfx.js?v=257';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=257';
+import { glowTexture } from './lib/glow.js?v=257';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -318,6 +318,8 @@ function _switchWorldNow(key) {
   if (window.__applyWorldBloom) window.__applyWorldBloom(key); // world's bloom default (or your remembered tweak)
   $('guest-world').textContent = WORLDS[key] ? WORLDS[key].label : '';
   showWorldIntro(key); // nobody should ever wonder what this world wants
+  if (!tap.classList.contains('gone')) { /* still at the front door — no autoplay yet */ }
+  else playSignature(key);
   net.sendWorld(key); // no-op unless we're the connected host
 }
 
@@ -399,6 +401,16 @@ function shuffled(a) {
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
   window.__sunoShare = null;
+  if (!next) {
+    const sig = signatureFor(currentWorldKey);
+    if (sig && !audio.el.src) {
+      audio.loadURL(sig);
+      $('track-select').value = sig;
+      audio.play().catch(() => {});
+      updatePlayBtn();
+      return;
+    }
+  }
   // a shared link's song plays first — the whole point of following the link
   if (window.__shareTrack) {
     const want = window.__shareTrack; window.__shareTrack = null;
@@ -2066,6 +2078,46 @@ function startRoom(code, name, asOwner) {
 // one rhythm world today a set is four different tracks; as more worlds get a
 // race the same code gives real variety without changing.
 const RHYTHM_WORLDS = Object.keys(WORLDS).filter(k => WORLDS[k].rhythm);
+
+// Every world has a signature song — matched by name and nature, so entering
+// a world means hearing the track it was born for. chasing the comets IS
+// Comets; liquid light IS the lava lamp. The pairing is the product.
+const WORLD_TRACKS = {
+  tunnel: 'holographic.mp3',
+  surfer: 'running.mp3',
+  orbit: 'planet_synthetica.mp3',
+  bloom: 'garden_of_color.mp3',
+  trail: 'paint_trail.mp3',
+  signal: 'glitch_in_the_matrix.mp3',
+  river: 'wasting_time.mp3',
+  funhouse: 'candy_lady.mp3',
+  lava: 'liquid_light.mp3',
+  plasma: 'black_light_special.mp3',
+  cherry: 'purple_cherries.mp3',
+  slinky: 'let_em_look.mp3',
+  blacktop: 'fly_by_night.mp3',
+  comets: 'chasing_the_comets.mp3',
+  slide: 'zoomin.mp3',
+  paint: 'paint_me_by_numbers.mp3',
+  lumen: 'magic_number.mp3',
+};
+function signatureFor(key) {
+  const f = WORLD_TRACKS[key];
+  return f && trackList.includes('audio/' + f) ? 'audio/' + f : null;
+}
+// entering a world brings its song along — unless someone's own music is
+// playing (artist mode), a set owns the order, or we're a guest riding along
+function playSignature(key) {
+  if (document.body.classList.contains('guest')) return;
+  if (setList || window.__sunoShare) return;
+  const sig = signatureFor(key);
+  if (!sig) return;
+  if ((audio.el.currentSrc || '').endsWith(sig.split('/').pop())) return;
+  audio.loadURL(sig);
+  $('track-select').value = sig;
+  audio.play().catch(() => {});
+  updatePlayBtn();
+}
 const SET_POINTS = [0, 5, 3, 2, 1];     // by placement
 let setList = null, setAt = -1, setPhase = 'idle';
 const routeMap = new RouteMap(document.getElementById('map-canvas'));
@@ -2088,8 +2140,12 @@ $('opt-play').addEventListener('click', () => {
 
 function startSet(rounds) {
   statsReset();
-  const picks = shuffled(trackList).slice(0, Math.max(1, Math.min(rounds, trackList.length)));
-  setList = picks.map((t, i) => ({ track: t, world: RHYTHM_WORLDS[i % RHYTHM_WORLDS.length] }));
+  const worldsPick = shuffled(RHYTHM_WORLDS).slice(0, Math.max(1, rounds));
+  const spare = shuffled(trackList);
+  setList = worldsPick.map((w, i) => ({
+    world: w,
+    track: signatureFor(w) || spare[i % spare.length],
+  }));
   // Name each stop by whatever actually varies along the route. With one
   // rhythm world every medallion would otherwise read SLINKY, which tells the
   // room nothing; the track is the thing that changes.
