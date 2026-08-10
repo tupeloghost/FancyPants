@@ -1120,9 +1120,15 @@
      which is to say it did not exist. Rivals now sit as chips at the bottom
      of the play screen on every device; tap one, the picker unfolds. */
   #rivals-bar {
-    position: fixed; z-index: 97; left: 50%; bottom: 76px;
+    /* top centre — the one lane nothing else uses. The bottom edge is a
+       traffic jam (transport, HUD, stream card) and the chips kept parking
+       on the LOOK and MUTE buttons at some window sizes. */
+    /* centred in the space LEFT of the panel — at narrow windows a true
+       centre slid the chips underneath it */
+    position: fixed; z-index: 97; left: calc((100vw - 320px) / 2); top: 14px;
     transform: translateX(-50%);
     display: flex; flex-direction: column; align-items: center; gap: 6px;
+    max-width: calc(100vw - 660px);  /* left edge never crosses 170px — the room code's column */
   }
   #rivals-bar.hidden { display: none; }
   #rivals-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
@@ -1161,7 +1167,7 @@
     letter-spacing: 1px; color: var(--ink-dim); white-space: nowrap;
   }
   @media (max-width: 620px) {
-    #rivals-bar { bottom: calc(env(safe-area-inset-bottom) + 86px); width: 96vw; }
+    #rivals-bar { left: 50%; top: calc(env(safe-area-inset-top) + 52px); max-width: 96vw; }  /* no side panel on phones */
     #rivals-pick button { font-size: 26px; padding: 6px; }
   }
 
@@ -1409,8 +1415,8 @@
 
 
 <div id="rivals-bar" class="hidden">
-  <div id="rivals-pick"></div>
   <div id="rivals-row"></div>
+  <div id="rivals-pick"></div>
 </div>
 <div id="plist" class="hidden">
   <div class="plist-title">participants — click to hide a name</div>
@@ -1629,7 +1635,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 230</div>
+      <div id="build-stamp">build 233</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1643,6 +1649,6 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="js/main.js?v=230"></script>
+<script type="module" src="js/main.js?v=233"></script>
 </body>
 </html>
