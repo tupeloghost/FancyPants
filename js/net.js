@@ -4,7 +4,7 @@
 // If the socket drops, the world keeps running single-player, silently.
 
 const SEND_HZ = 15;
-const DROP_AFTER = 5000; // ms of silence before a peer is pruned
+const DROP_AFTER = 15000; // ms of silence before a peer is pruned — background tabs throttle to ~1Hz, so be patient
 
 // Set your deployed PartyKit host here (e.g. 'fancy-pants.username.partykit.dev').
 // Empty string = solo/sim only.
@@ -35,6 +35,17 @@ export class Net {
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
     this._lastSeen = new Map();
+    // rAF stops in a background tab; a timer merely slows to ~1Hz. This
+    // heartbeat is what keeps a pocketed phone in everyone else's roster.
+    setInterval(() => {
+      if (this.connected && !this.spectator && this._ws && this._ws.readyState === 1) {
+        const l = this.local;
+        this._ws.send(JSON.stringify({
+          t: 'state', x: +l.x.toFixed(2), y: +l.y.toFixed(2), z: +l.z.toFixed(2),
+          heading: +l.heading.toFixed(2), action: l.action, score: l.score || 0,
+        }));
+      }
+    }, 1000);
   }
 
   get local() { return this.participants[0]; }
@@ -96,8 +107,11 @@ export class Net {
     } else if (m.t === 'world') {
       if (!this.owner && this.onWorld) this.onWorld(m.key);
     } else if (m.t === 'emote') {
+      // NEVER drop an emote because the sender was pruned while our tab
+      // slept — the rain is the payload, the name is just the label
       const p = this.participants.find(x => x.id === m.id);
-      if (p && this.onEmote) this.onEmote(p, m.i, m.to);
+      if (!p) this._who(m.id);
+      if (this.onEmote) this.onEmote(p || { name: 'someone', color: 0 }, m.i, m.to);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
@@ -205,7 +219,8 @@ export class Net {
       }
     }
 
-    // broadcast local state at ~15Hz
+    // broadcast local state at ~15Hz — and see the constructor's heartbeat,
+    // which keeps us alive from a background tab where this loop never runs
     if (this.connected && !this.spectator && this._ws && this._ws.readyState === 1) {
       this._sendTimer += dt;
       if (this._sendTimer >= 1 / SEND_HZ) {

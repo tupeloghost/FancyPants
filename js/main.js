@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=227';
-import { drawQR } from './lib/qr.js?v=227';
-import { WORLDS } from './worlds/registry.js?v=227';
-import { Net, PALETTE } from './net.js?v=227';
-import { Presence } from './lib/presence.js?v=227';
-import { Pulses } from './lib/pulse.js?v=227';
-import { BeatClock } from './lib/beatclock.js?v=227';
-import { BeatCue } from './lib/beatcue.js?v=227';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=227';
-import { Race, placeOf, standings } from './lib/race.js?v=227';
-import { RouteMap } from './lib/map.js?v=227';
-import * as sfx from './lib/sfx.js?v=227';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=227';
-import { glowTexture } from './lib/glow.js?v=227';
+import { AudioEngine } from './audio-engine.js?v=229';
+import { drawQR } from './lib/qr.js?v=229';
+import { WORLDS } from './worlds/registry.js?v=229';
+import { Net, PALETTE } from './net.js?v=229';
+import { Presence } from './lib/presence.js?v=229';
+import { Pulses } from './lib/pulse.js?v=229';
+import { BeatClock } from './lib/beatclock.js?v=229';
+import { BeatCue } from './lib/beatcue.js?v=229';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=229';
+import { Race, placeOf, standings } from './lib/race.js?v=229';
+import { RouteMap } from './lib/map.js?v=229';
+import * as sfx from './lib/sfx.js?v=229';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=229';
+import { glowTexture } from './lib/glow.js?v=229';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1840,6 +1840,7 @@ function openRivalsPick() {
   EMOJIS.forEach((e2, k) => {
     const b = document.createElement('button');
     b.textContent = e2;
+    b.style.opacity = score >= BOMB_COST ? '1' : '0.35';
     b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
@@ -1847,8 +1848,16 @@ function openRivalsPick() {
   TRICKS.forEach(t => {
     const b = document.createElement('button');
     b.textContent = t.e; b.title = t.name;
+    b.style.opacity = score >= t.cost ? '1' : '0.35';
     b.addEventListener('click', () => {
-      if (score < t.cost) { sfx.thud(); return; }
+      if (score < t.cost) {
+        sfx.thud();
+        const el = $('pass-flash');
+        el.textContent = "YOU'LL NEED " + t.cost + ' PTS FOR THAT, SUGAR';
+        el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+        clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+        return;
+      }
       addScore(-t.cost, undefined, undefined, true);
       net.sendEmote(t.i, name);
       const el = $('pass-flash');
@@ -2024,6 +2033,7 @@ function startRoom(code, name, asOwner) {
     }
   }
   dismissOverlay();
+  if (score < 30) addScore(30 - score, undefined, undefined, true);
   updateURL();
 }
 // ── Sets ── PLAY is a run of rounds: one song, one world, one race each.
@@ -2266,7 +2276,7 @@ switchWorld(startWorld);
 // ── Emoji bombs ── click a player, pick an emoji, and it rains all over
 // THEIR screen. Costs points, which completes the economy: rounds pay you at
 // the bell, and this is what the money is FOR — mischief.
-const EMOJIS = ['\u{1F352}', '\u{1F525}', '\u{1F49C}', '\u{1F602}', '\u{1F451}', '\u{1F300}'];
+const EMOJIS = ['\u{1F47B}', '\u{1F56F}\uFE0F', '\u{1F987}', '\u{1F319}', '\u{1F578}\uFE0F', '\u{1F352}'];  // ghost, candle, bat, moon, web — and the cherry stays
 const BOMB_COST = 15;
 // Tricks are the Mario Kart layer: not decoration on a rival's screen but a
 // hand on their wheel. Dearer than a bomb because they change the race.
@@ -2304,6 +2314,10 @@ function sendBomb(toName, idx) {
     const b = $('score-badge');
     b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
     sfx.thud();
+    const el = $('pass-flash');
+    el.textContent = "YOU'LL NEED " + BOMB_COST + ' PTS FOR THAT, SUGAR';
+    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
     return;
   }
   addScore(-BOMB_COST, undefined, undefined, true);
