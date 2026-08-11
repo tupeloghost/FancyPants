@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=274';
-import { drawQR } from './lib/qr.js?v=274';
-import { WORLDS } from './worlds/registry.js?v=274';
-import { Net, PALETTE } from './net.js?v=274';
-import { Presence } from './lib/presence.js?v=274';
-import { Pulses } from './lib/pulse.js?v=274';
-import { BeatClock } from './lib/beatclock.js?v=274';
-import { BeatCue } from './lib/beatcue.js?v=274';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=274';
-import { Race, placeOf, standings } from './lib/race.js?v=274';
-import { RouteMap } from './lib/map.js?v=274';
-import * as sfx from './lib/sfx.js?v=274';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=274';
-import { glowTexture } from './lib/glow.js?v=274';
+import { AudioEngine } from './audio-engine.js?v=275';
+import { drawQR } from './lib/qr.js?v=275';
+import { WORLDS } from './worlds/registry.js?v=275';
+import { Net, PALETTE } from './net.js?v=275';
+import { Presence } from './lib/presence.js?v=275';
+import { Pulses } from './lib/pulse.js?v=275';
+import { BeatClock } from './lib/beatclock.js?v=275';
+import { BeatCue } from './lib/beatcue.js?v=275';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=275';
+import { Race, placeOf, standings } from './lib/race.js?v=275';
+import { RouteMap } from './lib/map.js?v=275';
+import * as sfx from './lib/sfx.js?v=275';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=275';
+import { glowTexture } from './lib/glow.js?v=275';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2627,8 +2627,9 @@ $('btn-own').addEventListener('click', () => {
   document.querySelector('#tabs .tab[data-tab="music"]')?.click();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
 });
-// clicking outside the card still starts solo (the old behavior)
-tap.addEventListener('click', e => { if (e.target === tap) dismissOverlay(); });
+// The door only opens when a button is pressed. The old click-anywhere
+// fallback predates the real buttons and turned every stray tap into an
+// accidental game.
 
 // URL params (?world=tunnel supported now; room/names reserved for later phases)
 const params = new URLSearchParams(location.search);

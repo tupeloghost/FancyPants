@@ -3,8 +3,8 @@
 // Tap the glass and a tendril leaps to your finger — just like the real toy.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=274';
-import { themePaint } from '../lib/themes.js?v=274';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=275';
+import { themePaint } from '../lib/themes.js?v=275';
 
 const TENDRILS = 9;
 const PTS = 22;             // points per tendril
