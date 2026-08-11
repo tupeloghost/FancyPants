@@ -1105,6 +1105,10 @@
   .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
   #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
   #suno-rights { font: 9.5px/1.5 'SF Mono', Menlo, monospace; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.4px; }
+  /* self-serve song pasting is waitlist-gated for launch; the machinery
+     stays for ?suno= demo links. body.suno-live re-opens the slot. */
+  body:not(.suno-live) #suno-input, body:not(.suno-live) #suno-go,
+  body:not(.suno-live) #suno-status, body:not(.suno-live) #suno-rights { display: none; }
   #promo-box { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
   body.guest #promo-box { display: none; }
   #promo-box input {
@@ -1629,7 +1633,7 @@
   <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
   <div id="join-card">
     <button id="btn-solo" class="cta">COME ON IN</button>
-    <button id="btn-own" class="cta-soft">&#9834; PLAY YOUR OWN SONG</button>
+    <button id="btn-own" class="cta-soft">&#9834; WANT YOUR MUSIC IN HERE? JOIN THE LIST</button>
     <input id="join-name" maxlength="14" placeholder="your name (or we'll pick one)" autocomplete="off">
     <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
     <div id="join-msg"></div>
@@ -1637,7 +1641,7 @@
       <button id="btn-join">JOIN</button>
       <button id="btn-host">HOST A ROOM</button>
     </div>
-    <div id="doors"><span>here to play? come on in</span><span>streaming? host a room</span><span>made a song? play it here</span></div>
+    <div id="doors"><span>here to play? come on in</span><span>streaming? host a room</span><span>made a song? join the waiting list</span></div>
     <div id="today" class="hidden"></div>
   </div>
   <div id="maker-line">
@@ -1920,7 +1924,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 275</div>
+      <div id="build-stamp">build 276</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1962,6 +1966,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=275"></script>
+<script type="module" src="js/main.js?v=276"></script>
 </body>
 </html>

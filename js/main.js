@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=275';
-import { drawQR } from './lib/qr.js?v=275';
-import { WORLDS } from './worlds/registry.js?v=275';
-import { Net, PALETTE } from './net.js?v=275';
-import { Presence } from './lib/presence.js?v=275';
-import { Pulses } from './lib/pulse.js?v=275';
-import { BeatClock } from './lib/beatclock.js?v=275';
-import { BeatCue } from './lib/beatcue.js?v=275';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=275';
-import { Race, placeOf, standings } from './lib/race.js?v=275';
-import { RouteMap } from './lib/map.js?v=275';
-import * as sfx from './lib/sfx.js?v=275';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=275';
-import { glowTexture } from './lib/glow.js?v=275';
+import { AudioEngine } from './audio-engine.js?v=276';
+import { drawQR } from './lib/qr.js?v=276';
+import { WORLDS } from './worlds/registry.js?v=276';
+import { Net, PALETTE } from './net.js?v=276';
+import { Presence } from './lib/presence.js?v=276';
+import { Pulses } from './lib/pulse.js?v=276';
+import { BeatClock } from './lib/beatclock.js?v=276';
+import { BeatCue } from './lib/beatcue.js?v=276';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=276';
+import { Race, placeOf, standings } from './lib/race.js?v=276';
+import { RouteMap } from './lib/map.js?v=276';
+import * as sfx from './lib/sfx.js?v=276';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=276';
+import { glowTexture } from './lib/glow.js?v=276';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2036,6 +2036,7 @@ function dismissOverlay() {
   if (window.__shareWorld) { switchWorld(window.__shareWorld); window.__shareWorld = null; }
   // a shared suno link: reconstruct the paste and load it like a hand did
   if (window.__shareSuno) {
+    document.body.classList.add('suno-live');   // an invited song unlocks the slot
     const t = window.__shareSuno; window.__shareSuno = null;
     $('suno-input').value = t.startsWith('s_')
       ? 'https://suno.com/s/' + t.slice(2)
@@ -2619,13 +2620,13 @@ $('btn-solo').addEventListener('click', () => {
   dismissOverlay();
   setTimeout(askMode, 400);
 });
-// the artist's door: straight into the room with the song slot open
+// the artist's door feeds the waiting list for now — self-serve pasting
+// returns when artist features launch (?suno= demo links still work)
 $('btn-own').addEventListener('click', () => {
-  ensureName();
-  dismissOverlay();
-  panel.classList.remove('hidden', 'collapsed');
-  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
-  setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
+  $('custom-form').classList.add('hidden');
+  $('waitlist-form').classList.remove('hidden');
+  $('wl-email').focus();
+  $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
 });
 // The door only opens when a button is pressed. The old click-anywhere
 // fallback predates the real buttons and turned every stray tap into an
