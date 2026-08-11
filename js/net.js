@@ -64,7 +64,19 @@ export class Net {
         this._ws.send(JSON.stringify({ t: 'join', name, owner: asOwner }));
       };
       this._ws.onmessage = e => this._onMessage(JSON.parse(e.data));
-      this._ws.onclose = () => { this.connected = false; }; // silent solo fallback
+      this._ws.onclose = () => {
+        this.connected = false;
+        // a blip must not quietly convert a player to solo forever: retry
+        // with backoff until the room answers or we were told to stop
+        if (this._noRetry || !this.room) return;
+        const n = (this._retry || 0) + 1;
+        this._retry = n;
+        const delay = Math.min(15000, 900 * Math.pow(1.6, n));
+        clearTimeout(this._retryT);
+        this._retryT = setTimeout(() => {
+          if (!this.connected && this.room) this.join(this.room, this.local.name, this.owner);
+        }, delay);
+      };
       this._ws.onerror = () => { this.connected = false; };
     } catch { this.connected = false; }
     return true;
@@ -73,6 +85,12 @@ export class Net {
   _onMessage(m) {
     if (m.t === 'welcome') {
       this.connected = true;
+      this._retry = 0;   // the room answered; the slate is clean
+      // a refreshed host joining by name gets the crown back — and is TOLD
+      if (m.owner && !this.owner) {
+        this.owner = true;
+        if (this.onPromoted) this.onPromoted();
+      }
       this.spectator = !!m.spectator;
       this.local.id = m.id;
       this.local.color = m.color;
@@ -117,6 +135,7 @@ export class Net {
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
+      this._noRetry = true;   // told no is not the same as cut off
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }

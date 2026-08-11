@@ -72,7 +72,7 @@ export class FancyPantsRoom {
     const norm = normalize(name);
     if (!norm || leo.check(norm) || leo.check(name.toLowerCase())) return false;
     // no impersonating the owner — but the owner's own connection may reclaim it
-    if (this.ownerName && norm === normalize(this.ownerName) && connId !== this.ownerId) return false;
+    if (this.ownerName && norm === normalize(this.ownerName) && this.ownerId !== null && connId !== this.ownerId) return false;
     if (this.nameTaken(norm)) return false;
     return true;
   }
@@ -110,7 +110,12 @@ export class FancyPantsRoom {
         lastSeen: now, lastRename: now, spectator,
         x: 0, y: 0, z: 0,
       };
-      if ((m.owner && !this.ownerName) || connId === this.ownerId) {
+      // Who wears the crown: the first joiner of a fresh (or hibernated —
+      // memory wiped) room, the same connection that already has it, or the
+      // reserved owner NAME returning while the crown sits vacant. A room
+      // must never be headless: headless means nobody can start a round.
+      if (!this.ownerName || connId === this.ownerId ||
+          (this.ownerId === null && normalize(name) === normalize(this.ownerName))) {
         this.ownerName = name;
         this.ownerId = connId;
       }
@@ -118,6 +123,7 @@ export class FancyPantsRoom {
 
       ws.send(JSON.stringify({
         t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(), world: this.worldKey,
+        owner: connId === this.ownerId,
         roster: [...this.peers.entries()]
           .filter(([id]) => id !== connId)
           .map(([id, q]) => ({ id, name: q.name, color: q.color, x: q.x, y: q.y, z: q.z })),
@@ -208,6 +214,10 @@ export class FancyPantsRoom {
     if (connId && this.peers.delete(connId)) {
       this.broadcast(JSON.stringify({ t: 'leave', id: connId }));
     }
+    // the host's crown outlives their socket: a refresh or blip must never
+    // leave the room permanently headless. The NAME stays reserved; the
+    // next join wearing it (with owner intent) reclaims the room.
+    if (connId === this.ownerId) this.ownerId = null;
     // room hibernates automatically when the last connection closes
   }
 }

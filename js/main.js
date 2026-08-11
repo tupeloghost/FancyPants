@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=257';
-import { drawQR } from './lib/qr.js?v=257';
-import { WORLDS } from './worlds/registry.js?v=257';
-import { Net, PALETTE } from './net.js?v=257';
-import { Presence } from './lib/presence.js?v=257';
-import { Pulses } from './lib/pulse.js?v=257';
-import { BeatClock } from './lib/beatclock.js?v=257';
-import { BeatCue } from './lib/beatcue.js?v=257';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=257';
-import { Race, placeOf, standings } from './lib/race.js?v=257';
-import { RouteMap } from './lib/map.js?v=257';
-import * as sfx from './lib/sfx.js?v=257';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=257';
-import { glowTexture } from './lib/glow.js?v=257';
+import { AudioEngine } from './audio-engine.js?v=260';
+import { drawQR } from './lib/qr.js?v=260';
+import { WORLDS } from './worlds/registry.js?v=260';
+import { Net, PALETTE } from './net.js?v=260';
+import { Presence } from './lib/presence.js?v=260';
+import { Pulses } from './lib/pulse.js?v=260';
+import { BeatClock } from './lib/beatclock.js?v=260';
+import { BeatCue } from './lib/beatcue.js?v=260';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=260';
+import { Race, placeOf, standings } from './lib/race.js?v=260';
+import { RouteMap } from './lib/map.js?v=260';
+import * as sfx from './lib/sfx.js?v=260';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=260';
+import { glowTexture } from './lib/glow.js?v=260';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2056,6 +2056,19 @@ function startRoom(code, name, asOwner) {
     $('stream-card').classList.remove('hidden');
   }
   net.onReject = () => { tap.classList.remove('gone'); $('join-msg').textContent = "that name's spoken for, hon"; };
+  // a refreshed host who joined by code gets their room back mid-air
+  net.onPromoted = () => {
+    document.body.classList.remove('guest');
+    document.body.classList.add('hosting');
+    const code = net.room || '';
+    if (code) {
+      const joinURL = location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
+      $('sc-url').textContent = joinURL.replace(/^https?:\/\//, '');
+      $('sc-code').textContent = code;
+      $('sc-qr').classList.toggle('gone', !drawQR($('sc-qr'), joinURL, 4));
+      $('stream-card').classList.remove('hidden');
+    }
+  };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
   // guests ride the host's soundtrack — no track/transport controls for them
   document.body.classList.toggle('guest', !asOwner);
@@ -2463,6 +2476,11 @@ function ensureName() {
   return n;
 }
 $('btn-solo').addEventListener('click', () => {
+  if (window.__joinIntent) {
+    const code = window.__joinIntent; window.__joinIntent = null;
+    startRoom(code, ensureName(), false);
+    return;
+  }
   ensureName();
   dismissOverlay();
   setTimeout(askMode, 400);
@@ -2665,7 +2683,13 @@ if (window.__namesOff) presence.namesVisible = false;
   const sim = parseInt(qp.get('sim') || '0', 10);
   if (sim > 0) net.simulate(Math.min(sim, 60));
   const room = qp.get('room');
-  if (room) $('join-room').value = room.toUpperCase();
+  if (room) {
+    // a scanned QR carries maximum intent: the big button becomes the door
+    // to THAT room, name auto-picked — one tap from camera to the game
+    $('join-room').value = room.toUpperCase();
+    window.__joinIntent = room.toUpperCase();
+    $('btn-solo').textContent = 'JOIN ROOM ' + room.toUpperCase();
+  }
 }
 settings.broadcast = false;
 
