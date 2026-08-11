@@ -3,9 +3,9 @@
 // Ghosts are rival cars ahead of you.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=276';
-import { themePaint } from '../lib/themes.js?v=276';
-import { TUNE } from '../lib/tune.js?v=276';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=279';
+import { themePaint } from '../lib/themes.js?v=279';
+import { TUNE } from '../lib/tune.js?v=279';
 
 const DASHES = 46;
 const RAILSEGS = 120;
@@ -366,20 +366,30 @@ export function createBlacktop() {
         for (let k = 0; k < 7; k++) {
           const st = new THREE.Mesh(
             new THREE.BoxGeometry(0.62, 5.2, 0.1),
-            new THREE.MeshBasicMaterial({ color: k % 2 ? 0xff3a1a : 0xffd9cf, toneMapped: false })
+            new THREE.MeshBasicMaterial({ color: k % 2 ? 0x8f1d0e : 0x6e5a52, toneMapped: false })
           );
           st.position.set(-3.15 + k * 1.05, 2.6, 0.66);
           stripeMats.push(st.material);
           barrier.add(st);
         }
-        // the X — two crossed bars over everything else on the face
+        // the X — white-hot on a black underlay, so it reads against ANY
+        // stripe. The underlay is the trick: contrast needs a frame.
         const xMats = [];
+        for (const rot of [0.65, -0.65]) {
+          const under = new THREE.Mesh(
+            new THREE.BoxGeometry(1.5, 7.0, 0.1),
+            new THREE.MeshBasicMaterial({ color: 0x0a0508, toneMapped: false })
+          );
+          under.position.set(0, 2.6, 0.74);
+          under.rotation.z = rot;
+          barrier.add(under);
+        }
         for (const rot of [0.65, -0.65]) {
           const bar = new THREE.Mesh(
             new THREE.BoxGeometry(0.8, 6.6, 0.12),
-            new THREE.MeshBasicMaterial({ color: 0xff2012, toneMapped: false })
+            new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
           );
-          bar.position.set(0, 2.6, 0.78);
+          bar.position.set(0, 2.6, 0.82);
           bar.rotation.z = rot;
           xMats.push(bar.material);        // the X breathes; the stripes hold still
           barrier.add(bar);
@@ -541,7 +551,7 @@ export function createBlacktop() {
               bd.topLight.material.color.setHSL(0.01, 1, 0.35 + blink * 0.35);
               bd.bGlow.material.opacity = 0.22 + near * 0.4 * blink;
               for (const lm of bd.lampMats) lm.color.setHSL(0.0, 1, 0.3 + blink * 0.45);
-              for (const xm of bd.xMats) xm.color.setHSL(0.01, 1, 0.38 + blink * 0.34);
+              for (const xm of bd.xMats) xm.color.setHSL(0.02, 0.75 - blink * 0.6, 0.72 + blink * 0.26);
             }
           }
           if (!g.isBar) {

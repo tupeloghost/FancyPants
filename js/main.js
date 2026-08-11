@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=276';
-import { drawQR } from './lib/qr.js?v=276';
-import { WORLDS } from './worlds/registry.js?v=276';
-import { Net, PALETTE } from './net.js?v=276';
-import { Presence } from './lib/presence.js?v=276';
-import { Pulses } from './lib/pulse.js?v=276';
-import { BeatClock } from './lib/beatclock.js?v=276';
-import { BeatCue } from './lib/beatcue.js?v=276';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=276';
-import { Race, placeOf, standings } from './lib/race.js?v=276';
-import { RouteMap } from './lib/map.js?v=276';
-import * as sfx from './lib/sfx.js?v=276';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=276';
-import { glowTexture } from './lib/glow.js?v=276';
+import { AudioEngine } from './audio-engine.js?v=279';
+import { drawQR } from './lib/qr.js?v=279';
+import { WORLDS } from './worlds/registry.js?v=279';
+import { Net, PALETTE } from './net.js?v=279';
+import { Presence } from './lib/presence.js?v=279';
+import { Pulses } from './lib/pulse.js?v=279';
+import { BeatClock } from './lib/beatclock.js?v=279';
+import { BeatCue } from './lib/beatcue.js?v=279';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=279';
+import { Race, placeOf, standings } from './lib/race.js?v=279';
+import { RouteMap } from './lib/map.js?v=279';
+import * as sfx from './lib/sfx.js?v=279';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=279';
+import { glowTexture } from './lib/glow.js?v=279';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1703,11 +1703,12 @@ canvas.addEventListener('touchend', e => {
 // portrait phone can steer the full range without reaching for landscape.
 // Worlds where x IS an angle get unbounded x (keep swiping = keep circling).
 const FULL_TURN = new Set(['slinky']);
-const touchSteer = { x: 0, y: 0, lastX: 0, lastY: 0, active: false, lastT: 0 };
+const touchSteer = { x: 0, y: 0, lastX: 0, lastY: 0, active: false, lastT: 0, moved: 0 };
 window.__touchSteer = touchSteer; // world switcher resets accumulated steer
 canvas.addEventListener('touchstart', e => {
   if (!e.touches[0]) return;
   touchSteer.active = true;
+  touchSteer.moved = 0;   // a hold is a throttle, not a steer, until it MOVES
   touchSteer.lastX = e.touches[0].clientX;
   touchSteer.lastY = e.touches[0].clientY;
 }, { passive: true });
@@ -1995,6 +1996,13 @@ window.addEventListener('touchmove', e => {
   const t = e.touches[0];
   if (!t || !touchSteer.active) return;
   if (settings.attract || !world || !world.setInput) return;
+  // a stationary throttle hold must not hijack the wheel from tilt: the
+  // finger has to genuinely travel before it counts as drag steering
+  touchSteer.moved += Math.abs(t.clientX - touchSteer.lastX) + Math.abs(t.clientY - touchSteer.lastY);
+  if (touchSteer.moved < 14) {
+    touchSteer.lastX = t.clientX; touchSteer.lastY = t.clientY;
+    return;
+  }
   // one full-screen swipe ≈ the full steering range; keep swiping for more
   touchSteer.x += ((t.clientX - touchSteer.lastX) / window.innerWidth) * 2.4;
   touchSteer.y += (-(t.clientY - touchSteer.lastY) / window.innerHeight) * 2.4;
@@ -2005,10 +2013,12 @@ window.addEventListener('touchmove', e => {
   world.setInput(touchSteer.x, touchSteer.y);
 }, { passive: true });
 
-// tilt steering on mobile (interactive mode) — yields to active drag steering
+// tilt steering on mobile — yields only to a REAL drag, never to a
+// stationary throttle hold (the regression: hold-to-burn was silencing
+// tilt for the whole burn)
 window.addEventListener('deviceorientation', e => {
   if (settings.attract || !world || !world.setInput || e.gamma == null) return;
-  if (touchSteer.active || performance.now() - touchSteer.lastT < 2500) return;
+  if ((touchSteer.active && touchSteer.moved >= 14) || performance.now() - touchSteer.lastT < 1200) return;
   world.setInput(Math.max(-1, Math.min(1, e.gamma / 30)), Math.max(-1, Math.min(1, (e.beta - 45) / -30)));
 });
 
