@@ -178,6 +178,13 @@ export class FancyPantsRoom {
     }
 
     // emotes: anyone can react, everyone sees it (server-side rate limit too)
+    if (m.t === 'go') {
+      // the starting gun: only the host fires it, everyone hears it at once
+      if (connId !== this.ownerId) return;
+      this.broadcast(JSON.stringify({ t: 'go', at: Number(m.at) || 0 }), connId);
+      return;
+    }
+
     if (m.t === 'promo') {
       if (connId !== this.ownerId) return;   // only the host promotes
       const label = typeof m.label === 'string' ? m.label.slice(0, 48) : '';

@@ -127,6 +127,8 @@ export class Net {
       if (!this.owner && this.onSong) this.onSong(m);
     } else if (m.t === 'world') {
       if (!this.owner && this.onWorld) this.onWorld(m.key);
+    } else if (m.t === 'go') {
+      if (this.onGo) this.onGo(m.at || 0);
     } else if (m.t === 'promo') {
       if (this.onPromo) this.onPromo(m.promo || null);
     } else if (m.t === 'emote') {
@@ -142,6 +144,12 @@ export class Net {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }
+  }
+
+  // host: the starting gun — the round begins NOW, everywhere
+  sendGo(at) {
+    if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'go', at }));
   }
 
   // host: tell the room what's being promoted (label + link)

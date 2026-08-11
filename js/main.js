@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=279';
-import { drawQR } from './lib/qr.js?v=279';
-import { WORLDS } from './worlds/registry.js?v=279';
-import { Net, PALETTE } from './net.js?v=279';
-import { Presence } from './lib/presence.js?v=279';
-import { Pulses } from './lib/pulse.js?v=279';
-import { BeatClock } from './lib/beatclock.js?v=279';
-import { BeatCue } from './lib/beatcue.js?v=279';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=279';
-import { Race, placeOf, standings } from './lib/race.js?v=279';
-import { RouteMap } from './lib/map.js?v=279';
-import * as sfx from './lib/sfx.js?v=279';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=279';
-import { glowTexture } from './lib/glow.js?v=279';
+import { AudioEngine } from './audio-engine.js?v=280';
+import { drawQR } from './lib/qr.js?v=280';
+import { WORLDS } from './worlds/registry.js?v=280';
+import { Net, PALETTE } from './net.js?v=280';
+import { Presence } from './lib/presence.js?v=280';
+import { Pulses } from './lib/pulse.js?v=280';
+import { BeatClock } from './lib/beatclock.js?v=280';
+import { BeatCue } from './lib/beatcue.js?v=280';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=280';
+import { Race, placeOf, standings } from './lib/race.js?v=280';
+import { RouteMap } from './lib/map.js?v=280';
+import * as sfx from './lib/sfx.js?v=280';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=280';
+import { glowTexture } from './lib/glow.js?v=280';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -614,6 +614,7 @@ function replayRound() {
   beatCue.seek(0);
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   armGhost();
+  hostGo();
   seenMissed = beatCue.stats.missed;
   audio.play().catch(() => {});
 }
@@ -804,6 +805,7 @@ function startRaceIfReady() {
   }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   armGhost();
+  hostGo();
   seenMissed = beatCue.stats.missed;
   hideResults();
 }
@@ -2293,6 +2295,11 @@ function statsRoundDone() {
 // the whole rival pipeline (placeGhost, standings, pass flashes) treats it
 // as just another player called "your ghost".
 let ghostRec = [], ghostKey = null, ghostData = null;
+// the host's PLAY is the room's PLAY: broadcast the gun the instant a
+// round starts, instead of making guests wait for score to cross the wire
+function hostGo() {
+  if (net.owner && net.connected) net.sendGo(audio.currentTime);
+}
 const GHOST_DT = 0.5;
 function soloNow() {
   return !net.participants.some(p => !p.local && p.id !== 'ghost');
@@ -2338,13 +2345,24 @@ function ghostRoundDone() {
 }
 
 let guestArmed = false;
+let goPending = false;   // the gun fired before our chart was ready
+net.onGo = () => {
+  if (!document.body.classList.contains('guest')) return;
+  if (guestArmed && beatCue.chart && chartProgress < 0 && !race.active) {
+    beginFreeRound();
+  } else if (guestArmed) {
+    goPending = true;    // start the moment the chart lands
+  }
+};
 function beginFreeRound() {
+  goPending = false;
   guestArmed = false;
   document.body.classList.remove('vibe-card');
   $('round-intro').classList.remove('show');
   setPhase = 'idle';
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
   armGhost();
+  hostGo();
   seenMissed = beatCue.stats.missed;
   hideResults();
 }
@@ -3010,7 +3028,7 @@ function frame(now) {
   // a guest's round starts when the host's does — their progress arriving on
   // the wire IS the starting gun
   if (guestArmed && beatCue.chart && chartProgress < 0 && !race.active &&
-      participants.some(p => !p.local && (p.z || 0) > 0.5)) {
+      (goPending || participants.some(p => !p.local && (p.z || 0) > 0.5))) {
     beginFreeRound();
   }
 
