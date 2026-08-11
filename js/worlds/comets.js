@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=268';
-import { TUNE } from '../lib/tune.js?v=268';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=269';
+import { TUNE } from '../lib/tune.js?v=269';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -636,6 +636,17 @@ export function createComets() {
         for (const d of stars) {
           if (!d.alive) continue;
           const t = -d.z;
+          // magnetism: a silver star CLOSE to your line drifts toward it in
+          // the last stretch — near-misses become catches, and the game
+          // feels generous without the red giants softening one bit
+          if (!d.red) {
+            const aheadNow = t - travel;
+            if (aheadNow < 26 && aheadNow > 4) {
+              const px = pathX(travel) + steer * REACH;
+              const gapNow = px - (pathX(t) + d.x);
+              if (Math.abs(gapNow) < HIT_W * 1.8) d.x += gapNow * Math.min(1, dt * 2.6);
+            }
+          }
           const wx = pathX(t) + d.x;
           const wy = pathY(t) + 1.5 + d.y;
           d.mesh.position.set(wx, wy, d.z);
@@ -664,6 +675,7 @@ export function createComets() {
               race.drop(flooring ? 3 : 2);
               boost = 0; stun = flooring ? 1.2 : 0.5; throttle *= 0.2;
               caught = 0; lastStar = null;          // the line breaks
+              skyFlash(flooring ? 'FLAME OUT' : 'CLIPPED A RED GIANT', true);
               if (opts.impact) opts.impact(flooring ? 1.0 : 0.8);
             } else if (d.red && flooring && gap < HIT_W * 2.1) {
               race.collect(1);                       // the close call pays

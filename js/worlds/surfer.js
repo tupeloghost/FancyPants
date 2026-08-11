@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=268';
-import { themePaint } from '../lib/themes.js?v=268';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=269';
+import { themePaint } from '../lib/themes.js?v=269';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -15,6 +15,9 @@ export function createSurfer() {
   let scene, camera, group, mesh, ceiling, sun, sunHalo, stars, sky;
   let steer = 0, steerTarget = 0;
   let jumpY = 0, jumpVel = 0;
+  // ── airtime is the verb's paycheck: hang time counts, beats crossed
+  // mid-air multiply, and the landing announces what you earned ──
+  let airT = 0, airBeats = 0, airCombo = 0, comboT = 0;
   let rowTimer = 0, scrollOff = 0;
   let waveR = -1;             // tap shockwave position in row units (-1 = off)
   const history = [];       // ring of Float32Array(COLS), newest first
@@ -125,11 +128,32 @@ export function createSurfer() {
       if (attract) steerTarget = Math.sin(time * 0.25) * 0.5;
       steer += (steerTarget - steer) * Math.min(1, dt * 3);
 
-      // jump physics
+      // jump physics — and the airtime meter that makes it a game
+      const wasAir = jumpY > 0.01;
       if (jumpY > 0 || jumpVel > 0) {
         jumpVel -= 60 * dt;
         jumpY = Math.max(0, jumpY + jumpVel * dt);
         if (jumpY === 0) jumpVel = 0;
+        airT += dt;
+        if (audio.beat) airBeats++;
+      }
+      // the landing: real jumps pay, beats crossed mid-air pay more,
+      // and back-to-back clean jumps build a combo
+      if (wasAir && jumpY <= 0.01 && !attract) {
+        if (airT > 0.45) {
+          comboT = 0;
+          airCombo = Math.min(9, airCombo + 1);
+          const pay = Math.round(airT * 6) + airBeats * 3 + (airCombo >= 3 ? airCombo : 0);
+          if (opts.addScore) opts.addScore(pay);
+          if (opts.impact) opts.impact(Math.min(1, 0.35 + airT * 0.25));
+          if (window.__setFigure) window.__setFigure('AIR ' + airT.toFixed(1) + 's' + (airBeats ? ' \u00b7 ' + airBeats + ' beats' : '') + (airCombo >= 3 ? ' \u00b7 \u00d7' + airCombo : ''), 0, 0);
+        }
+        airT = 0; airBeats = 0;
+      }
+      // the combo cools if you stay grounded too long
+      if (!wasAir) {
+        comboT += dt;
+        if (comboT > 4 && airCombo) { airCombo = 0; if (window.__setFigure) window.__setFigure(null); }
       } else if (attract && audio.beat && audio.beatIntensity > 0.6) {
         jumpVel = 16 + audio.beatIntensity * 10; // auto-hop on hard beats
       }

@@ -1,9 +1,11 @@
-// ORBIT — participants circle a central core. Shapes spawn on beats and
-// expand outward; you steer through the gaps with a single axis (radius).
+// ORBIT — you circle a living core, and the core FLARES. When the middle
+// ignites you swing wide; when the outer sky ignites you tuck in close.
+// One axis, chart-timed eruptions, and nowhere to park: the boundary is
+// deadly from both sides, so every flare demands a real decision.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=268';
-import { themePaint } from '../lib/themes.js?v=268';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=269';
+import { themePaint } from '../lib/themes.js?v=269';
 
 
 const SHAPE_POOL = 24;
@@ -18,6 +20,11 @@ export function createOrbit() {
   let angle = 0;
   let radius = 12, radiusTarget = 12;
   let corePulse = 0;
+  // ── the flares ──
+  let innerFlare, outerFlare;
+  let flare = null;          // {kind:'in'|'out', phase:'warn'|'fire', t, hit}
+  let fChartAt = 0, fLastT = -99, fArrivals = 0, fChain = 0;
+  let oLastChartRef = null;
   const color = new THREE.Color();
 
   return {
@@ -112,6 +119,20 @@ export function createOrbit() {
       stars.material.color.set(0x8899bb);
       group.add(stars);
 
+      // ── flare zones: a disc for the middle, an annulus for the sky ──
+      innerFlare = new THREE.Mesh(
+        new THREE.CircleGeometry(12, 48),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending })
+      );
+      innerFlare.rotation.x = -Math.PI / 2;
+      outerFlare = new THREE.Mesh(
+        new THREE.RingGeometry(14, 44, 64),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending })
+      );
+      outerFlare.rotation.x = -Math.PI / 2;
+      group.add(innerFlare, outerFlare);
+      flare = null; fChartAt = 0; fLastT = -99; fArrivals = 0; fChain = 0; oLastChartRef = null;
+
       // local player mote
       player = new THREE.Mesh(
         new THREE.SphereGeometry(0.55, 12, 12),
@@ -126,7 +147,13 @@ export function createOrbit() {
     },
 
     // single-axis input: x steers orbit radius
-    setInput(x) { radiusTarget = 13 + x * 7; },
+    setInput(x) { radiusTarget = 13 + x * 8; },
+
+    placeGhost(p, i, out) {
+      const a = angle + i * 1.1;
+      const r = 13 + (p.x || 0) * 8;
+      out.set(Math.cos(a) * r, Math.sin(a * 0.7) * 2, Math.sin(a) * r);
+    },
 
     // everyone circles the same core; their steer picks the orbit radius
     placeGhost(p, i, out) {
@@ -148,8 +175,68 @@ export function createOrbit() {
         participants[0].y = 0;
       }
       if (attract) radiusTarget = 13 + Math.sin(time * 0.5) * 5;
-      radius += (radiusTarget - radius) * Math.min(1, dt * 4);
+      radius += (radiusTarget - radius) * Math.min(1, dt * 6);
       angle += dt * (0.5 + audio.volume * 1.6 * reactivity);
+
+      // ── the flares: chart-timed eruptions, in or out ──
+      const race = opts.race, chart = opts.chart, songTime = opts.songTime || 0;
+      const dodging = !!(race && race.active && race.mode === 'DODGE');
+      if (dodging) {
+        if (chart !== oLastChartRef) { oLastChartRef = chart; fChartAt = 0; fLastT = -99; fArrivals = 0; fChain = 0; flare = null; }
+        const heat = (opts.songDur ? Math.min(1, songTime / opts.songDur) : 0);
+        const spacing = 2.6 * (1 - 0.35 * heat);
+        if (!flare && chart) {
+          while (fChartAt < chart.length && chart[fChartAt].t <= songTime + 0.05) {
+            const n = chart[fChartAt++];
+            if (n.t < songTime - 0.4) { fLastT = Math.max(fLastT, n.t); continue; }
+            if (n.t - fLastT < spacing) continue;
+            fLastT = n.t; fArrivals++;
+            flare = { kind: (fArrivals % 2) ? 'in' : 'out', phase: 'warn', t: 0, hit: false };
+            break;
+          }
+        }
+        if (flare) {
+          flare.t += dt;
+          const mesh = flare.kind === 'in' ? innerFlare : outerFlare;
+          const other = flare.kind === 'in' ? outerFlare : innerFlare;
+          other.material.opacity = Math.max(0, other.material.opacity - dt * 3);
+          if (flare.phase === 'warn') {
+            // the warning breathes faster as it ripens — read it, move
+            const w = flare.t / 1.2;
+            color.setHSL(0.06, 0.95, 0.4);
+            mesh.material.color.copy(color);
+            mesh.material.opacity = (0.1 + w * 0.15) * (0.7 + Math.sin(time * (6 + w * 10)) * 0.3);
+            if (flare.t > 1.2) { flare.phase = 'fire'; flare.t = 0; corePulse = 1; }
+          } else {
+            // FIRE: white-hot for a heartbeat — the middle is deadly below
+            // 14, the sky deadly above 12; the fence sits in the flame
+            color.setHSL(0.08, 0.6, 0.85);
+            mesh.material.color.copy(color);
+            mesh.material.opacity = 0.75 * (1 - flare.t / 0.5);
+            const deadly = flare.kind === 'in' ? radius < 14 : radius > 12;
+            if (deadly && !flare.hit) {
+              flare.hit = true;
+              fChain = 0;
+              race.drop(2);
+              if (opts.impact) opts.impact(0.9);
+            }
+            if (flare.t > 0.5) {
+              if (!flare.hit) {
+                fChain++;
+                race.collect(fChain >= 3 ? 2 : 1);   // a run of clean dodges pays double
+                if (opts.impact) opts.impact(fChain >= 3 ? 0.6 : 0.4);
+              }
+              flare = null;
+            }
+          }
+        } else {
+          innerFlare.material.opacity = Math.max(0, innerFlare.material.opacity - dt * 3);
+          outerFlare.material.opacity = Math.max(0, outerFlare.material.opacity - dt * 3);
+        }
+      } else {
+        innerFlare.material.opacity = Math.max(0, innerFlare.material.opacity - dt * 3);
+        outerFlare.material.opacity = Math.max(0, outerFlare.material.opacity - dt * 3);
+      }
 
       // core throbs with bass
       const s = 1 + audio.bass * 0.8 * reactivity + corePulse * 0.5;

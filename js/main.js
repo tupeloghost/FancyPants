@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=268';
-import { drawQR } from './lib/qr.js?v=268';
-import { WORLDS } from './worlds/registry.js?v=268';
-import { Net, PALETTE } from './net.js?v=268';
-import { Presence } from './lib/presence.js?v=268';
-import { Pulses } from './lib/pulse.js?v=268';
-import { BeatClock } from './lib/beatclock.js?v=268';
-import { BeatCue } from './lib/beatcue.js?v=268';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=268';
-import { Race, placeOf, standings } from './lib/race.js?v=268';
-import { RouteMap } from './lib/map.js?v=268';
-import * as sfx from './lib/sfx.js?v=268';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=268';
-import { glowTexture } from './lib/glow.js?v=268';
+import { AudioEngine } from './audio-engine.js?v=269';
+import { drawQR } from './lib/qr.js?v=269';
+import { WORLDS } from './worlds/registry.js?v=269';
+import { Net, PALETTE } from './net.js?v=269';
+import { Presence } from './lib/presence.js?v=269';
+import { Pulses } from './lib/pulse.js?v=269';
+import { BeatClock } from './lib/beatclock.js?v=269';
+import { BeatCue } from './lib/beatcue.js?v=269';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=269';
+import { Race, placeOf, standings } from './lib/race.js?v=269';
+import { RouteMap } from './lib/map.js?v=269';
+import * as sfx from './lib/sfx.js?v=269';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=269';
+import { glowTexture } from './lib/glow.js?v=269';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1928,7 +1928,7 @@ window.__setFigure = (name, done, total) => {
   if (!name) { el.classList.add('hidden'); return; }
   el.classList.remove('hidden');
   $('fig-name').textContent = name;
-  $('fig-progress').textContent = `${done} / ${total}`;
+  $('fig-progress').textContent = total ? `${done} / ${total}` : '';
 };
 
 // ── World intro: name + the one line that explains the whole game ──
@@ -2026,6 +2026,7 @@ function rulesFor(key) {
   const r = WORLDS[key].rules || '';
   return IS_MOBILE
     ? r.replace('Steer with the mouse or arrows.', 'Slide your finger to steer.')
+       .replace('Steer in and out with the mouse or arrows.', 'Slide your finger to steer in and out.')
     : r;
 }
 let autoWanted = false;

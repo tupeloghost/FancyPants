@@ -10,8 +10,8 @@
 // room draws a larger figure.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=268';
-import { themePaint } from '../lib/themes.js?v=268';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=269';
+import { themePaint } from '../lib/themes.js?v=269';
 
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [
@@ -241,6 +241,16 @@ export function createGarden() {
   // ── tray ──
   const tray = [];         // tiers you're holding
   let fuseFlash = 0, denyFlash = 0, placeFlash = 0;
+  // ── the wordless teacher: three hints, each earned by the last ──
+  let taught = 0, teachT = 0, hadRune = false;
+  function lumenHint(text) {
+    const el = document.getElementById('pass-flash');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(lumenHint._t);
+    lumenHint._t = setTimeout(() => el.classList.remove('show'), 3400);
+  }
   let scoreQueue = 0;
 
   // ── sparks ──
@@ -524,6 +534,25 @@ export function createGarden() {
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+
+      // teach by stages: each hint appears only when the player is ready
+      // for it, and never again after they've done the thing
+      if (!attract) {
+        teachT += dt;
+        if (taught === 0 && teachT > 4) {
+          lumenHint('hold and sweep your light through a rune');
+          taught = 1;
+        }
+        if (taught <= 1 && tray.length > 0 && !hadRune) {
+          hadRune = true;
+          lumenHint('catch three alike \u2014 they fuse into a brighter one');
+          taught = 2;
+        }
+        if (taught === 2 && fuseFlash >= 0.99) {
+          lumenHint('now set it in the picture \u2014 find the cell that wants it');
+          taught = 3;
+        }
+      }
 
       // ── move-and-catch ── hold and sweep the pointer through the runes and
       // they gather themselves. Clicking each one made harvesting feel like
