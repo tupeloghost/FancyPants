@@ -3,8 +3,8 @@
 // hue from the dominant band) that never fades. PNG export: press S.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=261';
-import { themePaint } from '../lib/themes.js?v=261';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=262';
+import { themePaint } from '../lib/themes.js?v=262';
 
 
 const MAX_POINTS = 14000;   // capped total segment count
@@ -37,6 +37,13 @@ export function createTrail() {
   const tmpDir = new THREE.Vector3();
   const tmpSide = new THREE.Vector3();
   const toCam = new THREE.Vector3();
+  // the camera aims along THIS — a continuously-smoothed path tangent.
+  // headDir only stepped when a ribbon point appended, so the lens twitched
+  // on every append; this one glides every frame regardless.
+  const smoothDir = new THREE.Vector3(0, 0, -1);
+  const pathA = new THREE.Vector3(), pathB = new THREE.Vector3();
+  const camLift = new THREE.Vector3(0, 3.5, 0);
+  let spd = 0;
 
   function pathAt(p, out) {
     out.set(
@@ -177,9 +184,17 @@ export function createTrail() {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
       const tp = this._tp || (this._tp = [0, 0, 0]);
 
-      // the head's speed IS the music — crawls in silence, tears on drops
-      phase += dt * (0.25 + audio.volume * 2.6 * reactivity + audio.beatIntensity * 1.2);
+      // the head's speed IS the music — but eased, not raw: per-frame volume
+      // wobbles read as stutter when they drive position directly
+      const spdT = 0.25 + audio.volume * 2.6 * reactivity + audio.beatIntensity * 1.2;
+      spd += (spdT - spd) * Math.min(1, dt * 3);
+      phase += dt * spd;
       kick *= Math.pow(0.05, dt);
+      // the smooth tangent: where the path is going, sampled symmetrically
+      pathAt(phase + 0.06, pathA);
+      pathAt(phase - 0.06, pathB);
+      tmpDir.subVectors(pathA, pathB).normalize();
+      smoothDir.lerp(tmpDir, Math.min(1, dt * 4)).normalize();
 
       // steering is a SMOOTHED offset — raw pointer deltas were teleporting
       // the head every frame and scribbling the ribbon in play mode
@@ -301,9 +316,9 @@ export function createTrail() {
       headHalo.material.opacity = 0.3 + audio.volume * 0.25;
 
       // chase-cam: sit behind and above the head, look past it
-      camTarget.copy(head).addScaledVector(headDir, -13).add(new THREE.Vector3(0, 3.5, 0));
-      camera.position.lerp(camTarget, Math.min(1, dt * 3));
-      lookTarget.copy(head).addScaledVector(headDir, 10);
+      camTarget.copy(head).addScaledVector(smoothDir, -13).add(camLift);
+      camera.position.lerp(camTarget, Math.min(1, dt * 4));
+      lookTarget.copy(head).addScaledVector(smoothDir, 10);
       camera.lookAt(lookTarget);
       camera.rotation.z += Math.sin(time * 0.5) * 0.02 + kick * 0.05;
       const fovT = 74 + audio.volume * 12 * reactivity + audio.beatIntensity * 6;
