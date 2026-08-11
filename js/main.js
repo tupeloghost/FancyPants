@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=266';
-import { drawQR } from './lib/qr.js?v=266';
-import { WORLDS } from './worlds/registry.js?v=266';
-import { Net, PALETTE } from './net.js?v=266';
-import { Presence } from './lib/presence.js?v=266';
-import { Pulses } from './lib/pulse.js?v=266';
-import { BeatClock } from './lib/beatclock.js?v=266';
-import { BeatCue } from './lib/beatcue.js?v=266';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=266';
-import { Race, placeOf, standings } from './lib/race.js?v=266';
-import { RouteMap } from './lib/map.js?v=266';
-import * as sfx from './lib/sfx.js?v=266';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=266';
-import { glowTexture } from './lib/glow.js?v=266';
+import { AudioEngine } from './audio-engine.js?v=267';
+import { drawQR } from './lib/qr.js?v=267';
+import { WORLDS } from './worlds/registry.js?v=267';
+import { Net, PALETTE } from './net.js?v=267';
+import { Presence } from './lib/presence.js?v=267';
+import { Pulses } from './lib/pulse.js?v=267';
+import { BeatClock } from './lib/beatclock.js?v=267';
+import { BeatCue } from './lib/beatcue.js?v=267';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=267';
+import { Race, placeOf, standings } from './lib/race.js?v=267';
+import { RouteMap } from './lib/map.js?v=267';
+import * as sfx from './lib/sfx.js?v=267';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=267';
+import { glowTexture } from './lib/glow.js?v=267';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2025,10 +2025,7 @@ $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 function rulesFor(key) {
   const r = WORLDS[key].rules || '';
   return IS_MOBILE
-    ? r.replace('Steer with the mouse or arrows \u2014 HOLD to speed up.',
-                'Slide your finger to steer \u2014 press and HOLD to speed up.')
-       .replace('Steer with the mouse or arrows \u2014 HOLD to burn.',
-                'Slide your finger to steer \u2014 press and HOLD to burn.')
+    ? r.replace('Steer with the mouse or arrows.', 'Slide your finger to steer.')
     : r;
 }
 let autoWanted = false;
