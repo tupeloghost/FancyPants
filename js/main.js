@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=265';
-import { drawQR } from './lib/qr.js?v=265';
-import { WORLDS } from './worlds/registry.js?v=265';
-import { Net, PALETTE } from './net.js?v=265';
-import { Presence } from './lib/presence.js?v=265';
-import { Pulses } from './lib/pulse.js?v=265';
-import { BeatClock } from './lib/beatclock.js?v=265';
-import { BeatCue } from './lib/beatcue.js?v=265';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=265';
-import { Race, placeOf, standings } from './lib/race.js?v=265';
-import { RouteMap } from './lib/map.js?v=265';
-import * as sfx from './lib/sfx.js?v=265';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=265';
-import { glowTexture } from './lib/glow.js?v=265';
+import { AudioEngine } from './audio-engine.js?v=266';
+import { drawQR } from './lib/qr.js?v=266';
+import { WORLDS } from './worlds/registry.js?v=266';
+import { Net, PALETTE } from './net.js?v=266';
+import { Presence } from './lib/presence.js?v=266';
+import { Pulses } from './lib/pulse.js?v=266';
+import { BeatClock } from './lib/beatclock.js?v=266';
+import { BeatCue } from './lib/beatcue.js?v=266';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=266';
+import { Race, placeOf, standings } from './lib/race.js?v=266';
+import { RouteMap } from './lib/map.js?v=266';
+import * as sfx from './lib/sfx.js?v=266';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=266';
+import { glowTexture } from './lib/glow.js?v=266';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2025,10 +2025,10 @@ $('join-name').value = net.local.name === 'you' ? '' : net.local.name;
 function rulesFor(key) {
   const r = WORLDS[key].rules || '';
   return IS_MOBILE
-    ? r.replace('Steer with the mouse or arrows \u2014 and HOLD (press down, or space) to open the throttle.',
-                'Slide your finger to steer \u2014 and press AND HOLD to open the throttle.')
-       .replace('Steer with the mouse or arrows \u2014 and HOLD (press down, or space) to burn.',
-                'Slide your finger to steer \u2014 and press AND HOLD to burn.')
+    ? r.replace('Steer with the mouse or arrows \u2014 HOLD to speed up.',
+                'Slide your finger to steer \u2014 press and HOLD to speed up.')
+       .replace('Steer with the mouse or arrows \u2014 HOLD to burn.',
+                'Slide your finger to steer \u2014 press and HOLD to burn.')
     : r;
 }
 let autoWanted = false;
@@ -3003,6 +3003,9 @@ function frame(now) {
     const wasFinished = race.finished;
     race.update(dt, audio.currentTime);
     ghostTick();
+    // the edge glow answers the same hold the worlds feel
+    const burnable = race.active && race.mode === 'DODGE';
+    document.body.classList.toggle('burning', burnable && (pointerHeld || throttleKey));
     if (race.finished && !wasFinished) showResults('finished');
     // progress rides on z, which is already on the wire and already
     // interpolated — the field on screen is everyone's real position
