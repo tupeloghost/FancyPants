@@ -29,6 +29,7 @@ export class FancyPantsRoom {
     this.ownerId = null;         // conn allowed to reclaim the owner name
     this.nextColor = 0;
     this.song = null;            // {url, pos, playing, at} — what the host is playing
+    this.promo = null;           // {label, url} — what the host is promoting
     this.worldKey = null;        // which world the host has the room in
   }
 
@@ -143,6 +144,7 @@ export class FancyPantsRoom {
       ws.send(JSON.stringify({
         t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(), world: this.worldKey,
         owner: connId === this.ownerId,
+        promo: this.promo,
         roster: [...this.peers.entries()]
           .filter(([id]) => id !== connId)
           .map(([id, q]) => ({ id, name: q.name, color: q.color, x: q.x, y: q.y, z: q.z })),
@@ -155,6 +157,15 @@ export class FancyPantsRoom {
     }
 
     // emotes: anyone can react, everyone sees it (server-side rate limit too)
+    if (m.t === 'promo') {
+      if (connId !== this.ownerId) return;   // only the host promotes
+      const label = typeof m.label === 'string' ? m.label.slice(0, 48) : '';
+      const rawUrl = typeof m.url === 'string' ? m.url.slice(0, 300) : '';
+      this.promo = (label && /^https?:\/\//.test(rawUrl)) ? { label, url: rawUrl } : null;
+      this.broadcast(JSON.stringify({ t: 'promo', promo: this.promo }));
+      return;
+    }
+
     if (m.t === 'emote') {
       const p = this.peers.get(connId);
       if (!p) return;

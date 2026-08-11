@@ -1105,6 +1105,38 @@
   .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
   #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
   #suno-rights { font: 9.5px/1.5 'SF Mono', Menlo, monospace; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.4px; }
+  #promo-box { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+  body.guest #promo-box { display: none; }
+  #promo-box input {
+    padding: 9px 11px; border-radius: 9px;
+    background: rgba(10, 16, 30, 0.85); color: var(--ink);
+    border: 1px solid var(--accent-line); font: 12px 'SF Mono', Menlo, monospace; outline: none;
+  }
+  #promo-box input:focus { border-color: var(--accent); }
+  #promo-set {
+    padding: 9px 0; border-radius: 9px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent-line); font: 700 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+  }
+  #promo-status { font: 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 12px; }
+
+  /* the room-facing pill: quiet, elegant, tappable */
+  #promo-pill {
+    position: fixed; z-index: 96; left: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 66px);
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 999px; cursor: pointer;
+    background: hsla(var(--accent-h), 30%, 8%, 0.75);
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.4);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font: italic 400 14px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1.2px; color: hsl(var(--accent-h), 45%, 92%);
+    box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 65%, 0.18);
+    transition: transform 180ms var(--spring), box-shadow 180ms ease;
+    max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #promo-pill:hover { transform: scale(1.04); box-shadow: 0 0 34px hsla(var(--accent-h), 90%, 65%, 0.35); }
+  #promo-pill.hidden { display: none; }
+  #promo-pill i { font-style: normal; }
   #doors {
     margin-top: 6px; text-align: center;
     font: 10.5px/1.7 'SF Mono', Menlo, monospace; letter-spacing: 0.6px;
@@ -1605,6 +1637,7 @@
 <div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
 
 
+<div id="promo-pill" class="hidden"><i>&#9834;</i><span id="promo-pill-text"></span></div>
 <div id="balls-quick" class="hidden">
   <span>balls</span>
   <input id="balls-quick-range" type="range" min="400" max="8000" step="100" value="4500">
@@ -1747,6 +1780,13 @@
         </div>
         <div id="suno-status"></div>
     <div id="suno-rights">paste a song YOU made or have rights to &mdash; artists&rsquo; rights matter &rsquo;round here</div>
+    <div id="promo-box">
+      <div class="mini-label">promote &mdash; shown to everyone in your room</div>
+      <input id="promo-label" maxlength="48" placeholder="what to call it &mdash; e.g. Tupelo Ghost on Spotify" autocomplete="off">
+      <input id="promo-url" maxlength="300" placeholder="the link (https://...)" autocomplete="off">
+      <button id="promo-set">SHARE IT WITH THE ROOM</button>
+      <div id="promo-status"></div>
+    </div>
       </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
@@ -1833,7 +1873,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 264</div>
+      <div id="build-stamp">build 265</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1875,6 +1915,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=264"></script>
+<script type="module" src="js/main.js?v=265"></script>
 </body>
 </html>

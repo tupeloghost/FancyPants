@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=264';
-import { drawQR } from './lib/qr.js?v=264';
-import { WORLDS } from './worlds/registry.js?v=264';
-import { Net, PALETTE } from './net.js?v=264';
-import { Presence } from './lib/presence.js?v=264';
-import { Pulses } from './lib/pulse.js?v=264';
-import { BeatClock } from './lib/beatclock.js?v=264';
-import { BeatCue } from './lib/beatcue.js?v=264';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=264';
-import { Race, placeOf, standings } from './lib/race.js?v=264';
-import { RouteMap } from './lib/map.js?v=264';
-import * as sfx from './lib/sfx.js?v=264';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=264';
-import { glowTexture } from './lib/glow.js?v=264';
+import { AudioEngine } from './audio-engine.js?v=265';
+import { drawQR } from './lib/qr.js?v=265';
+import { WORLDS } from './worlds/registry.js?v=265';
+import { Net, PALETTE } from './net.js?v=265';
+import { Presence } from './lib/presence.js?v=265';
+import { Pulses } from './lib/pulse.js?v=265';
+import { BeatClock } from './lib/beatclock.js?v=265';
+import { BeatCue } from './lib/beatcue.js?v=265';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=265';
+import { Race, placeOf, standings } from './lib/race.js?v=265';
+import { RouteMap } from './lib/map.js?v=265';
+import * as sfx from './lib/sfx.js?v=265';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=265';
+import { glowTexture } from './lib/glow.js?v=265';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2095,6 +2095,10 @@ function startRoom(code, name, asOwner) {
     }
   };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
+  if (asOwner) {
+    const pl = localStorage.getItem('fp_promo_label'), pu = localStorage.getItem('fp_promo_url');
+    if (pl && pu) setTimeout(() => { if (net.connected) { net.sendPromo(pl, pu); showPromo({ label: pl, url: pu }); } }, 1500);
+  }
   // guests ride the host's soundtrack — no track/transport controls for them
   document.body.classList.toggle('guest', !asOwner);
   if (!asOwner) {
@@ -2479,6 +2483,36 @@ function showSetResults() {
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
 $('sc-hide').addEventListener('click', () => $('stream-card').classList.add('hidden'));
+
+// ── promo: the host's shout-out, shown to the whole room ──
+function showPromo(promo) {
+  const pill = $('promo-pill');
+  if (!promo || !promo.label || !/^https?:\/\//.test(promo.url || '')) {
+    pill.classList.add('hidden');
+    pill.onclick = null;
+    return;
+  }
+  $('promo-pill-text').textContent = promo.label;
+  pill.classList.remove('hidden');
+  pill.onclick = () => window.open(promo.url, '_blank', 'noopener');
+}
+net.onPromo = showPromo;
+$('promo-label').value = localStorage.getItem('fp_promo_label') || '';
+$('promo-url').value = localStorage.getItem('fp_promo_url') || '';
+$('promo-set').addEventListener('click', () => {
+  const label = $('promo-label').value.trim();
+  const url = $('promo-url').value.trim();
+  if (!label || !/^https?:\/\//.test(url)) {
+    $('promo-status').textContent = "needs a name and a link that starts with https://";
+    return;
+  }
+  localStorage.setItem('fp_promo_label', label);
+  localStorage.setItem('fp_promo_url', url);
+  net.sendPromo(label, url);
+  showPromo({ label, url });   // the host sees what the room sees
+  $('promo-status').textContent = "shared \u2014 the room can tap it now";
+});
+
 $('balls-quick-range').addEventListener('input', e => {
   const v = +e.target.value;
   settings.balls = v;

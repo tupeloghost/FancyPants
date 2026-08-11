@@ -91,6 +91,7 @@ export class Net {
         this.owner = true;
         if (this.onPromoted) this.onPromoted();
       }
+      if (m.promo && this.onPromo) this.onPromo(m.promo);
       this.spectator = !!m.spectator;
       this.local.id = m.id;
       this.local.color = m.color;
@@ -126,6 +127,8 @@ export class Net {
       if (!this.owner && this.onSong) this.onSong(m);
     } else if (m.t === 'world') {
       if (!this.owner && this.onWorld) this.onWorld(m.key);
+    } else if (m.t === 'promo') {
+      if (this.onPromo) this.onPromo(m.promo || null);
     } else if (m.t === 'emote') {
       // NEVER drop an emote because the sender was pruned while our tab
       // slept — the rain is the payload, the name is just the label
@@ -139,6 +142,12 @@ export class Net {
       if (this.onReject) this.onReject();
       this._ws && this._ws.close();
     }
+  }
+
+  // host: tell the room what's being promoted (label + link)
+  sendPromo(label, url) {
+    if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'promo', label, url }));
   }
 
   // anyone: react — rate-limited so nobody can carpet the stream
