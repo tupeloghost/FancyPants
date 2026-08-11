@@ -131,7 +131,7 @@ export class Net {
       // slept — the rain is the payload, the name is just the label
       const p = this.participants.find(x => x.id === m.id);
       if (!p) this._who(m.id);
-      if (this.onEmote) this.onEmote(p || { name: 'someone', color: 0 }, m.i, m.to);
+      if (this.onEmote) this.onEmote(p || { name: 'someone', color: 0 }, m.i, m.to, m.e);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
@@ -142,12 +142,13 @@ export class Net {
   }
 
   // anyone: react — rate-limited so nobody can carpet the stream
-  sendEmote(idx, to) {
+  sendEmote(idx, to, char) {
     const now = performance.now();
     if ((this._lastEmote || 0) > now - 700) return;
     this._lastEmote = now;
     if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
-    this._ws.send(JSON.stringify({ t: 'emote', i: idx, to }));
+    // the character rides the wire so sender and receiver can never disagree
+    this._ws.send(JSON.stringify({ t: 'emote', i: idx, to, e: char }));
   }
 
   // host: move the whole room to another world

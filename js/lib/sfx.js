@@ -19,7 +19,7 @@ function ensure() {
   try {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain();
-    master.gain.value = 0.16;          // present, never competing with the track
+    master.gain.value = 0.09;          // an accent under the music, never a voice over it          // present, never competing with the track
     master.connect(ctx.destination);
   } catch { return false; }
   return true;
@@ -28,7 +28,7 @@ function ensure() {
 export function setSfxMuted(m) { muted = m; }
 
 export function setSfxLevel(v) {
-  if (ensure()) master.gain.value = 0.16 * Math.max(0, Math.min(2, v));
+  if (ensure()) master.gain.value = 0.09 * Math.max(0, Math.min(2, v));
 }
 
 // pentatonic, so any climb is musical against any track

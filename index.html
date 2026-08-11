@@ -280,8 +280,8 @@
   }
   #ri-rules {
     margin-top: 7px;
-    font: 14px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
-    color: var(--ink); letter-spacing: 0.2px;
+    font: 400 16px/1.7 'Iowan Old Style', 'Palatino', Georgia, serif;
+    color: var(--ink); letter-spacing: 0.3px;
   }
   @media (max-width: 620px) {
     #ri-teach { flex-direction: column; gap: 12px; margin-top: 14px; }
@@ -454,6 +454,73 @@
   @keyframes emojiFall {
     from { transform: translateY(0) rotate(0deg); opacity: 1; }
     to   { transform: translateY(110vh) rotate(340deg); opacity: 0.7; }
+  }
+  /* ── each emoji lands like itself ── */
+  #emoji-rain span.rain-rise { top: auto; bottom: -50px; animation-name: emojiRise; animation-timing-function: ease-out; }
+  @keyframes emojiRise {
+    0% { transform: translateY(0) scale(0.7); opacity: 0; }
+    12% { opacity: 1; }
+    50% { transform: translateY(-55vh) translateX(3vw) scale(1.1); }
+    100% { transform: translateY(-112vh) translateX(-3vw) scale(1.25); opacity: 0; }
+  }
+  #emoji-rain span.rain-spook { animation-name: emojiSpook; animation-timing-function: ease-in-out; }
+  @keyframes emojiSpook {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    15% { opacity: 0.9; }
+    35% { transform: translateY(32vh) translateX(9vw); opacity: 0.25; }
+    55% { transform: translateY(60vh) translateX(-9vw); opacity: 0.9; }
+    80% { opacity: 0.3; }
+    100% { transform: translateY(110vh) translateX(6vw); opacity: 0; }
+  }
+  #emoji-rain span.rain-arc { animation-name: emojiArc; animation-timing-function: ease-in-out; }
+  @keyframes emojiArc {
+    0% { transform: translate(-15vw, 25vh) rotate(-20deg); opacity: 0; }
+    15% { opacity: 1; }
+    50% { transform: translate(40vw, -4vh) rotate(0deg); }
+    100% { transform: translate(105vw, 30vh) rotate(20deg); opacity: 0; }
+  }
+  #emoji-rain span.rain-bounce { animation-name: emojiBounce; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 1); }
+  @keyframes emojiBounce {
+    0% { transform: translateY(0); opacity: 1; }
+    62% { transform: translateY(96vh) scaleY(1); }
+    68% { transform: translateY(93vh) scaleY(0.72); }
+    76% { transform: translateY(78vh); }
+    84% { transform: translateY(93vh) scaleY(0.85); }
+    92% { transform: translateY(86vh); }
+    100% { transform: translateY(94vh); opacity: 0; }
+  }
+  #emoji-rain span.rain-twinkle { animation-name: emojiTwinkle; animation-timing-function: ease-in-out; }
+  @keyframes emojiTwinkle {
+    0% { transform: scale(0) rotate(0deg); opacity: 0; }
+    30% { transform: scale(1.25) rotate(20deg); opacity: 1; }
+    60% { transform: scale(0.8) rotate(-12deg); opacity: 0.8; }
+    100% { transform: scale(0) rotate(8deg); opacity: 0; }
+  }
+  #emoji-rain span.rain-splat { animation-name: emojiSplat; animation-timing-function: cubic-bezier(0.5, 0, 0.9, 1); }
+  @keyframes emojiSplat {
+    0% { transform: translateY(0) scaleY(1); opacity: 1; }
+    55% { transform: translateY(92vh) scaleY(1); }
+    60% { transform: translateY(94vh) scaleY(0.55) scaleX(1.45); }
+    70% { transform: translateY(93vh) scaleY(0.8) scaleX(1.15); }
+    92% { transform: translateY(93.5vh) scaleY(0.75) scaleX(1.2); opacity: 1; }
+    100% { transform: translateY(93.5vh) scaleY(0.75) scaleX(1.2); opacity: 0; }
+  }
+  #emoji-rain span.rain-boing { animation-name: emojiBoing; animation-timing-function: ease-in-out; }
+  @keyframes emojiBoing {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    25% { transform: translate(12vw, 30vh) rotate(40deg); }
+    50% { transform: translate(-8vw, 55vh) rotate(-35deg); }
+    75% { transform: translate(10vw, 80vh) rotate(30deg); }
+    100% { transform: translate(-4vw, 108vh) rotate(-15deg); opacity: 0; }
+  }
+  #emoji-rain span.rain-smooch { animation-name: emojiSmooch; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  @keyframes emojiSmooch {
+    0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+    20% { opacity: 1; }
+    55% { transform: translate(calc(48vw - 100%), 42vh) scale(1.6); }
+    70% { transform: translate(calc(48vw - 100%), 40vh) scale(2.1); }
+    100% { transform: translate(calc(48vw - 100%), 38vh) scale(2.6); opacity: 0; }
   }
   /* the picker that unfolds under a rival's name */
   .bomb-picker {
@@ -1212,6 +1279,20 @@
   #standings .st.me .nm { color: var(--accent); }
   #standings .st.me .pt { color: var(--accent); }
 
+  /* the pit's own faucet: the ball count lives IN the world, not in a menu */
+  #balls-quick {
+    position: fixed; z-index: 96; right: 22px; bottom: 84px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; border-radius: 999px;
+    background: hsla(var(--accent-h), 30%, 8%, 0.72);
+    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px; color: var(--ink-dim);
+  }
+  #balls-quick.hidden { display: none; }
+  #balls-quick input { width: 130px; }
+  #balls-quick b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 38px; }
+
   /* ── The rivals bar — the emoji arsenal, ON the game screen ──
      The bomb picker used to live in a hidden debug list behind the P key,
      which is to say it did not exist. Rivals now sit as chips at the bottom
@@ -1524,6 +1605,11 @@
 <div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
 
 
+<div id="balls-quick" class="hidden">
+  <span>balls</span>
+  <input id="balls-quick-range" type="range" min="400" max="8000" step="100" value="4500">
+  <b id="balls-quick-val">4500</b>
+</div>
 <div id="rivals-bar" class="hidden">
   <div id="rivals-row"></div>
   <div id="rivals-pick"></div>
@@ -1747,7 +1833,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 262</div>
+      <div id="build-stamp">build 264</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1789,6 +1875,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=262"></script>
+<script type="module" src="js/main.js?v=264"></script>
 </body>
 </html>

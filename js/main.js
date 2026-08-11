@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=262';
-import { drawQR } from './lib/qr.js?v=262';
-import { WORLDS } from './worlds/registry.js?v=262';
-import { Net, PALETTE } from './net.js?v=262';
-import { Presence } from './lib/presence.js?v=262';
-import { Pulses } from './lib/pulse.js?v=262';
-import { BeatClock } from './lib/beatclock.js?v=262';
-import { BeatCue } from './lib/beatcue.js?v=262';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=262';
-import { Race, placeOf, standings } from './lib/race.js?v=262';
-import { RouteMap } from './lib/map.js?v=262';
-import * as sfx from './lib/sfx.js?v=262';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=262';
-import { glowTexture } from './lib/glow.js?v=262';
+import { AudioEngine } from './audio-engine.js?v=264';
+import { drawQR } from './lib/qr.js?v=264';
+import { WORLDS } from './worlds/registry.js?v=264';
+import { Net, PALETTE } from './net.js?v=264';
+import { Presence } from './lib/presence.js?v=264';
+import { Pulses } from './lib/pulse.js?v=264';
+import { BeatClock } from './lib/beatclock.js?v=264';
+import { BeatCue } from './lib/beatcue.js?v=264';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=264';
+import { Race, placeOf, standings } from './lib/race.js?v=264';
+import { RouteMap } from './lib/map.js?v=264';
+import * as sfx from './lib/sfx.js?v=264';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=264';
+import { glowTexture } from './lib/glow.js?v=264';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -226,7 +226,7 @@ const settings = {
   hdr: 1.0,
   stardust: true,
   chime: true,        // do arrivals announce themselves?
-  balls: 1500,
+  balls: 4500,
 };
 
 // ── URL params: every knob is shareable ──
@@ -318,6 +318,8 @@ function _switchWorldNow(key) {
   document.querySelectorAll('.wchip').forEach(b => b.classList.toggle('on', b.dataset.key === key));
   if (window.__applyWorldBloom) window.__applyWorldBloom(key); // world's bloom default (or your remembered tweak)
   $('guest-world').textContent = WORLDS[key] ? WORLDS[key].label : '';
+  // the ball pit's faucet rides along only in the ball pit
+  $('balls-quick').classList.toggle('hidden', key !== 'funhouse' || document.body.classList.contains('guest'));
   showWorldIntro(key); // nobody should ever wonder what this world wants
   if (!tap.classList.contains('gone')) { /* still at the front door — no autoplay yet */ }
   else playSignature(key);
@@ -1018,7 +1020,7 @@ $('hue-val').textContent = settings.hue;
 document.documentElement.style.setProperty('--accent-h', settings.hue);
 $('bloom').value = 70;
 $('hdr').value = 100;
-$('balls').value = 1500;
+$('balls').value = 4500;
 $('scrub').value = 0;
 
 // sliders — keep the filled portion of the track in sync via --fill
@@ -1905,7 +1907,7 @@ function openRivalsPick() {
       }
       addScore(-t.cost, undefined, undefined, true);
       myStats.bombs++; statsPush();
-      net.sendEmote(t.i, name);
+      net.sendEmote(t.i, name, t.e);
       const el = $('pass-flash');
       el.textContent = t.e + ' \u2192 ' + name.toUpperCase();
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
@@ -2477,6 +2479,13 @@ function showSetResults() {
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
 $('sc-hide').addEventListener('click', () => $('stream-card').classList.add('hidden'));
+$('balls-quick-range').addEventListener('input', e => {
+  const v = +e.target.value;
+  settings.balls = v;
+  $('balls-quick-val').textContent = v;
+  $('balls').value = v;
+  const bv = $('balls-val'); if (bv) bv.textContent = v;
+});
 $('waitlist-open').addEventListener('click', e => {
   e.preventDefault();
   $('waitlist-form').classList.toggle('hidden');
@@ -2587,13 +2596,29 @@ const TRICKS = [
 // what's currently being done TO you
 const debuff = { fogUntil: 0, swayUntil: 0, from: '' };
 
+// each emoji lands like ITSELF: hearts rise, ghosts drift, the moon arcs,
+// sparkles twinkle in place, poop splats and sits there (the funniest part),
+// the tongue bounces, kisses fly to the middle and smack
+const RAIN_STYLE = {
+  '\u2764\uFE0F': { cls: 'rain-rise', n: 26 },
+  '\u{1F47B}': { cls: 'rain-spook', n: 22 },
+  '\u{1F319}': { cls: 'rain-arc', n: 12 },
+  '\u{1F352}': { cls: 'rain-bounce', n: 26 },
+  '\u2728': { cls: 'rain-twinkle', n: 44 },
+  '\u{1F4A9}': { cls: 'rain-splat', n: 22 },
+  '\u{1F61B}': { cls: 'rain-boing', n: 16 },
+  '\u{1F618}': { cls: 'rain-smooch', n: 8 },
+};
 function emojiRain(char, fromName) {
   const box = $('emoji-rain');
-  for (let i = 0; i < 34; i++) {
+  const style = RAIN_STYLE[char] || { cls: '', n: 34 };
+  for (let i = 0; i < style.n; i++) {
     const sp = document.createElement('span');
     sp.textContent = char;
+    if (style.cls) sp.className = style.cls;
     sp.style.left = (Math.random() * 100) + 'vw';
-    sp.style.fontSize = (18 + Math.random() * 30) + 'px';
+    sp.style.top = style.cls === 'rain-twinkle' ? (Math.random() * 90) + 'vh' : '';
+    sp.style.fontSize = (style.cls === 'rain-smooch' ? 44 + Math.random() * 30 : 18 + Math.random() * 30) + 'px';
     sp.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
     sp.style.animationDelay = (Math.random() * 1.2) + 's';
     sp.addEventListener('animationend', () => sp.remove());
@@ -2622,7 +2647,7 @@ function sendBomb(toName, idx) {
   }
   addScore(-BOMB_COST, undefined, undefined, true);
   myStats.bombs++; statsPush();
-  net.sendEmote(idx, toName);
+  net.sendEmote(idx, toName, EMOJIS[idx]);
   const el = $('pass-flash');
   el.textContent = EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase();
   el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
@@ -2630,7 +2655,7 @@ function sendBomb(toName, idx) {
   sfx.hit(6, true);
 }
 
-net.onEmote = (p, i, to) => {
+net.onEmote = (p, i, to, e) => {
   if (to && to === net.local.name && i >= 100) {
     // a trick landed ON YOU — four seconds of somebody's hand on your wheel
     const now = performance.now();
@@ -2644,7 +2669,7 @@ net.onEmote = (p, i, to) => {
     sfx.thud();
     return;
   }
-  if (to && to === net.local.name) emojiRain(EMOJIS[i] || EMOJIS[0], p.name);
+  if (to && to === net.local.name) emojiRain(e || EMOJIS[i] || EMOJIS[0], p.name);
   else if (to) {
     const el = $('pass-flash');
     el.textContent = (p.name || '?').toUpperCase() + ' ' + (EMOJIS[i] || '') + ' ' + to.toUpperCase();
@@ -2690,7 +2715,7 @@ function renderPlist() {
           if (score < t.cost) { sfx.thud(); return; }
           addScore(-t.cost, undefined, undefined, true);
           myStats.bombs++; statsPush();
-          net.sendEmote(t.i, p.name);
+          net.sendEmote(t.i, p.name, t.e);
           const el = $('pass-flash');
           el.textContent = t.e + ' \u2192 ' + p.name.toUpperCase();
           el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');

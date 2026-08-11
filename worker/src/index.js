@@ -160,9 +160,13 @@ export class FancyPantsRoom {
       if (!p) return;
       if (now - (p.lastEmote || 0) < 600) return;
       p.lastEmote = now;
-      const i = Math.max(0, Math.min(4, Number(m.i) || 0));
+      // 0-7 are bombs, 100-101 are tricks. The old clamp to 4 crushed
+      // poop, tongue, kiss AND both tricks into sparkles — the great
+      // sparkle mystery, solved.
+      const i = Math.max(0, Math.min(120, Number(m.i) || 0));
+      const e = typeof m.e === 'string' ? m.e.slice(0, 8) : undefined;
       // `to` targets one player's screen; everyone still hears about it
-      this.broadcast(JSON.stringify({ t: 'emote', id: connId, i, to: typeof m.to === 'string' ? m.to.slice(0, 14) : undefined }), connId);
+      this.broadcast(JSON.stringify({ t: 'emote', id: connId, i, e, to: typeof m.to === 'string' ? m.to.slice(0, 14) : undefined }), connId);
       return;
     }
 
