@@ -8,23 +8,24 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=260';
-import { drawQR } from './lib/qr.js?v=260';
-import { WORLDS } from './worlds/registry.js?v=260';
-import { Net, PALETTE } from './net.js?v=260';
-import { Presence } from './lib/presence.js?v=260';
-import { Pulses } from './lib/pulse.js?v=260';
-import { BeatClock } from './lib/beatclock.js?v=260';
-import { BeatCue } from './lib/beatcue.js?v=260';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=260';
-import { Race, placeOf, standings } from './lib/race.js?v=260';
-import { RouteMap } from './lib/map.js?v=260';
-import * as sfx from './lib/sfx.js?v=260';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=260';
-import { glowTexture } from './lib/glow.js?v=260';
+import { AudioEngine } from './audio-engine.js?v=261';
+import { drawQR } from './lib/qr.js?v=261';
+import { WORLDS } from './worlds/registry.js?v=261';
+import { Net, PALETTE } from './net.js?v=261';
+import { Presence } from './lib/presence.js?v=261';
+import { Pulses } from './lib/pulse.js?v=261';
+import { BeatClock } from './lib/beatclock.js?v=261';
+import { BeatCue } from './lib/beatcue.js?v=261';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=261';
+import { Race, placeOf, standings } from './lib/race.js?v=261';
+import { RouteMap } from './lib/map.js?v=261';
+import * as sfx from './lib/sfx.js?v=261';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=261';
+import { glowTexture } from './lib/glow.js?v=261';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
+window.__booted = true;   // the watchdog stands down; the module runs
 const IS_MOBILE = matchMedia('(pointer: coarse)').matches;
 window.__LITE = IS_MOBILE;   // worlds thin their heaviest layers when set
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance' });
@@ -386,6 +387,23 @@ fetch('audio/manifest.json?t=' + Date.now())
     }
     // if the room's already running and silent, start the music now
     if (autoWanted && !audio.el.src) playAuto(false);
+    // ── today's song: one date-picked track, named at the front door ──
+    if (trackList.length) {
+      const d = new Date();
+      const dayN = d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
+      const file = trackList[dayN % trackList.length];
+      const wkey = Object.keys(WORLD_TRACKS).find(k => 'audio/' + WORLD_TRACKS[k] === file);
+      const el = $('today');
+      if (el) {
+        el.textContent = "today's song: " + prettyTrack(file) + (wkey && WORLDS[wkey] ? ' \u00b7 in ' + WORLDS[wkey].label : '') + ' \u2014 tap to ride it';
+        el.classList.remove('hidden');
+        el.onclick = () => {
+          window.__shareTrack = file;
+          if (wkey) window.__shareWorld = wkey;
+          $('btn-solo').click();
+        };
+      }
+    }
   })
   .catch(() => {});
 // Autoplay: nobody should have to go hunting for audio. When you start
@@ -1778,6 +1796,11 @@ window.__impact = impact;
 let score = 0;
 function addScore(n, x, y, force = false) {
   if (settings.attract) return; // watching earns nothing
+  // the ladder remembers: points persist per name across visits
+  clearTimeout(addScore._saveT);
+  addScore._saveT = setTimeout(() => {
+    try { localStorage.setItem('fp_score_' + (net.local.name || 'you'), String(score)); } catch (e) { }
+  }, 400);
   // ONE currency per world. During a round the tally on the HUD is the score,
   // and the old pts ticking beside it decided nothing — worthless, as charged.
   // Worlds' incidental scoring is ignored while a race runs; the round itself
@@ -2112,7 +2135,7 @@ const WORLD_TRACKS = {
   comets: 'chasing_the_comets.mp3',
   slide: 'zoomin.mp3',
   paint: 'paint_me_by_numbers.mp3',
-  lumen: 'magic_number.mp3',
+  garden: 'magic_number.mp3',
 };
 function signatureFor(key) {
   const f = WORLD_TRACKS[key];
@@ -2139,7 +2162,13 @@ let setScores = new Map();
 let roundTimer = 0;
 
 function askMode() {
-  if (!trackList.length) return;          // nothing to build a set from
+  if (!trackList.length) {
+    // manifest still in flight (slow network): ask again when it lands
+    // rather than stranding a first-timer with no card at all
+    clearTimeout(askMode._t);
+    askMode._t = setTimeout(askMode, 500);
+    return;
+  }
   $('mode-card').classList.add('show');
 }
 $('opt-vibe').addEventListener('click', () => {
@@ -2448,6 +2477,24 @@ function showSetResults() {
 
 $('join-name').value = localStorage.getItem('fp_name') || '';
 $('sc-hide').addEventListener('click', () => $('stream-card').classList.add('hidden'));
+$('waitlist-open').addEventListener('click', e => {
+  e.preventDefault();
+  $('waitlist-form').classList.toggle('hidden');
+  $('wl-email').focus();
+});
+$('wl-join').addEventListener('click', () => {
+  const email = $('wl-email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('wl-msg').textContent = "that email doesn't look right, hon"; return; }
+  $('wl-msg').textContent = 'signing you up\u2026';
+  fetch('https://' + window.FANCYPANTS_HOST + '/waitlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, note: 'artist waitlist' }),
+  }).then(r => {
+    $('wl-msg').textContent = r.ok ? "you're on the list, sugar \u2014 we'll holler" : 'that did not take \u2014 try again?';
+    if (r.ok) { $('wl-email').value = ''; setTimeout(() => $('waitlist-form').classList.add('hidden'), 2200); }
+  }).catch(() => { $('wl-msg').textContent = 'no connection \u2014 try again in a spell'; });
+});
 $('room-badge').addEventListener('click', () => {
   if (document.body.classList.contains('hosting')) $('stream-card').classList.toggle('hidden');
 });
@@ -2473,6 +2520,29 @@ function ensureName() {
   }
   net.local.name = n;
   localStorage.setItem('fp_name', n);
+  // the ladder remembers this name's points from every visit before
+  const kept = parseInt(localStorage.getItem('fp_score_' + n) || '0', 10);
+  if (kept > score) { score = kept; net.local.score = score; $('score-val').textContent = score; $('score-badge').classList.remove('hidden'); }
+
+  // ── the visit streak: coming back is worth something ──
+  const today = new Date(); const stamp = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+  const last = localStorage.getItem('fp_lastVisit');
+  if (last !== stamp) {
+    const y = new Date(Date.now() - 86400000); const yesterday = y.getFullYear() + '-' + (y.getMonth() + 1) + '-' + y.getDate();
+    const streak = last === yesterday ? (parseInt(localStorage.getItem('fp_streak') || '0', 10) + 1) : 1;
+    localStorage.setItem('fp_streak', String(streak));
+    localStorage.setItem('fp_lastVisit', stamp);
+    if (streak > 1) {
+      const bonus = Math.min(50, streak * 5);
+      setTimeout(() => {
+        addScore(bonus, undefined, undefined, true);
+        const el = $('pass-flash');
+        el.textContent = 'DAY ' + streak + ' IN A ROW \u00b7 +' + bonus + ', SUGAR';
+        el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+        clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
+      }, 2500);
+    }
+  }
   return n;
 }
 $('btn-solo').addEventListener('click', () => {

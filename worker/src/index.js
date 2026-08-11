@@ -39,6 +39,25 @@ export class FancyPantsRoom {
   }
 
   async fetch(request) {
+    const url = new URL(request.url);
+    // ── the artist waiting list lives in one special DO's durable storage ──
+    if (url.pathname === '/waitlist' && request.method === 'POST') {
+      const body = await request.json().catch(() => null);
+      const email = body && String(body.email || '').trim().slice(0, 200);
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return new Response('bad email', { status: 400 });
+      }
+      const key = 'wl:' + email.toLowerCase();
+      const existing = await this.state.storage.get(key);
+      if (!existing) await this.state.storage.put(key, { email, at: Date.now(), note: String(body.note || '').slice(0, 500) });
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/waitlist-list') {
+      if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
+      const all = await this.state.storage.list({ prefix: 'wl:' });
+      const rows = [...all.values()];
+      return new Response(JSON.stringify(rows, null, 2), { headers: { 'Content-Type': 'application/json' } });
+    }
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('expected websocket', { status: 426 });
     }
@@ -239,6 +258,29 @@ function allowedOrigin(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // browsers preflight cross-origin JSON POSTs — answer politely
+    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log')) {
+      return new Response(null, { headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      } });
+    }
+
+    // ── crash telemetry: the launch-day eyes. Browsers POST their errors
+    // here; they land in the worker logs (dashboard > Workers > Logs).
+    if (url.pathname === '/log' && request.method === 'POST') {
+      const body = await request.text().catch(() => '');
+      console.log('CLIENT-ERROR', body.slice(0, 2000));
+      return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // the waiting list rides one well-known DO instance
+    if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list') {
+      const id = env.ROOMS.idFromName('THE-WAITING-LIST');
+      return env.ROOMS.get(id).fetch(request);
+    }
     if (url.pathname.startsWith('/suno') && !allowedOrigin(request)) {
       return new Response('not available', { status: 403 });
     }
