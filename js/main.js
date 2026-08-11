@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=272';
-import { drawQR } from './lib/qr.js?v=272';
-import { WORLDS } from './worlds/registry.js?v=272';
-import { Net, PALETTE } from './net.js?v=272';
-import { Presence } from './lib/presence.js?v=272';
-import { Pulses } from './lib/pulse.js?v=272';
-import { BeatClock } from './lib/beatclock.js?v=272';
-import { BeatCue } from './lib/beatcue.js?v=272';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=272';
-import { Race, placeOf, standings } from './lib/race.js?v=272';
-import { RouteMap } from './lib/map.js?v=272';
-import * as sfx from './lib/sfx.js?v=272';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=272';
-import { glowTexture } from './lib/glow.js?v=272';
+import { AudioEngine } from './audio-engine.js?v=273';
+import { drawQR } from './lib/qr.js?v=273';
+import { WORLDS } from './worlds/registry.js?v=273';
+import { Net, PALETTE } from './net.js?v=273';
+import { Presence } from './lib/presence.js?v=273';
+import { Pulses } from './lib/pulse.js?v=273';
+import { BeatClock } from './lib/beatclock.js?v=273';
+import { BeatCue } from './lib/beatcue.js?v=273';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=273';
+import { Race, placeOf, standings } from './lib/race.js?v=273';
+import { RouteMap } from './lib/map.js?v=273';
+import * as sfx from './lib/sfx.js?v=273';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=273';
+import { glowTexture } from './lib/glow.js?v=273';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2521,8 +2521,30 @@ $('balls-quick-range').addEventListener('input', e => {
 });
 $('waitlist-open').addEventListener('click', e => {
   e.preventDefault();
+  $('custom-form').classList.add('hidden');
   $('waitlist-form').classList.toggle('hidden');
   $('wl-email').focus();
+});
+$('custom-open').addEventListener('click', e => {
+  e.preventDefault();
+  $('waitlist-form').classList.add('hidden');
+  $('custom-form').classList.toggle('hidden');
+});
+$('cw-send').addEventListener('click', () => {
+  const email = $('cw-email').value.trim();
+  const occasion = $('cw-occasion').value;
+  const vision = $('cw-vision').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('cw-msg').textContent = "that email doesn't look right, hon"; return; }
+  if (!occasion && !vision) { $('cw-msg').textContent = 'tell us a little something first'; return; }
+  $('cw-msg').textContent = 'sending\u2026';
+  fetch('https://' + window.FANCYPANTS_HOST + '/custom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, occasion, vision }),
+  }).then(r => {
+    $('cw-msg').textContent = r.ok ? "got it, sugar \u2014 we'll be in touch soon" : 'that did not take \u2014 try again?';
+    if (r.ok) setTimeout(() => $('custom-form').classList.add('hidden'), 2600);
+  }).catch(() => { $('cw-msg').textContent = 'no connection \u2014 try again in a spell'; });
 });
 $('wl-join').addEventListener('click', () => {
   const email = $('wl-email').value.trim();

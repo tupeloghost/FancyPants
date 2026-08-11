@@ -1171,6 +1171,21 @@
     border: 1px solid var(--accent-line); font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
   }
   #wl-msg { width: 100%; text-align: center; font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 14px; }
+  #custom-form { margin: 14px auto 0; display: flex; flex-direction: column; gap: 8px; width: min(360px, 88vw); }
+  #custom-form.hidden { display: none; }
+  #cw-lead { font: italic 400 13px/1.6 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: var(--ink-dim); text-align: center; }
+  #custom-form select, #custom-form textarea, #custom-form input {
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(10, 16, 30, 0.85); color: var(--ink);
+    border: 1px solid var(--accent-line); font: 13px 'SF Mono', Menlo, monospace; outline: none;
+  }
+  #custom-form textarea { resize: vertical; font-family: Georgia, serif; font-size: 14px; }
+  #cw-send {
+    padding: 11px 0; border-radius: 10px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent-line); font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+  }
+  #cw-msg { text-align: center; font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 14px; }
 
   /* room code — prominent, part of the broadcast frame */
   #room-badge {
@@ -1627,12 +1642,29 @@
   </div>
   <div id="maker-line">
     made by a creator, for creators
-    <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="waitlist-open" href="#">promote your music &mdash; join the waiting list</a></span>
+    <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="waitlist-open" href="#">promote your music &mdash; join the waiting list</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
   </div>
   <div id="waitlist-form" class="hidden">
     <input id="wl-email" type="email" placeholder="your email, sugar" autocomplete="email">
     <button id="wl-join">JOIN</button>
     <div id="wl-msg"></div>
+  </div>
+  <div id="custom-form" class="hidden">
+    <div id="cw-lead">a world built for your moment &mdash; a wedding, a birthday, a release night, a stream. tell us what you&rsquo;re dreaming of.</div>
+    <select id="cw-occasion">
+      <option value="">what&rsquo;s the occasion?</option>
+      <option>wedding</option>
+      <option>birthday</option>
+      <option>party or event</option>
+      <option>album or single release</option>
+      <option>stream or channel</option>
+      <option>brand or business</option>
+      <option>something else</option>
+    </select>
+    <textarea id="cw-vision" maxlength="1200" rows="3" placeholder="your vision &mdash; colors, feelings, songs, anything"></textarea>
+    <input id="cw-email" type="email" placeholder="your email" autocomplete="email">
+    <button id="cw-send">SEND IT</button>
+    <div id="cw-msg"></div>
   </div>
 </div>
 
@@ -1888,7 +1920,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 272</div>
+      <div id="build-stamp">build 273</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1930,6 +1962,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=272"></script>
+<script type="module" src="js/main.js?v=273"></script>
 </body>
 </html>

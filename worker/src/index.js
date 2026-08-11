@@ -53,6 +53,27 @@ export class FancyPantsRoom {
       if (!existing) await this.state.storage.put(key, { email, at: Date.now(), note: String(body.note || '').slice(0, 500) });
       return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
+    // ── custom world inquiries: the commission book ──
+    if (url.pathname === '/custom' && request.method === 'POST') {
+      const body = await request.json().catch(() => null);
+      const email = body && String(body.email || '').trim().slice(0, 200);
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return new Response('bad email', { status: 400 });
+      }
+      const key = 'cw:' + Date.now() + ':' + email.toLowerCase();
+      await this.state.storage.put(key, {
+        email,
+        occasion: String((body && body.occasion) || '').slice(0, 60),
+        vision: String((body && body.vision) || '').slice(0, 1200),
+        at: Date.now(),
+      });
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/custom-list') {
+      if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
+      const all = await this.state.storage.list({ prefix: 'cw:' });
+      return new Response(JSON.stringify([...all.values()], null, 2), { headers: { 'Content-Type': 'application/json' } });
+    }
     if (url.pathname === '/waitlist-list') {
       if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
       const all = await this.state.storage.list({ prefix: 'wl:' });
@@ -275,7 +296,7 @@ export default {
     const url = new URL(request.url);
 
     // browsers preflight cross-origin JSON POSTs — answer politely
-    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log')) {
+    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom')) {
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -292,7 +313,8 @@ export default {
     }
 
     // the waiting list rides one well-known DO instance
-    if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list') {
+    if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list' ||
+        url.pathname === '/custom' || url.pathname === '/custom-list') {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       return env.ROOMS.get(id).fetch(request);
     }
