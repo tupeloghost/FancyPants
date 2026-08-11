@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=271';
-import { drawQR } from './lib/qr.js?v=271';
-import { WORLDS } from './worlds/registry.js?v=271';
-import { Net, PALETTE } from './net.js?v=271';
-import { Presence } from './lib/presence.js?v=271';
-import { Pulses } from './lib/pulse.js?v=271';
-import { BeatClock } from './lib/beatclock.js?v=271';
-import { BeatCue } from './lib/beatcue.js?v=271';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=271';
-import { Race, placeOf, standings } from './lib/race.js?v=271';
-import { RouteMap } from './lib/map.js?v=271';
-import * as sfx from './lib/sfx.js?v=271';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=271';
-import { glowTexture } from './lib/glow.js?v=271';
+import { AudioEngine } from './audio-engine.js?v=272';
+import { drawQR } from './lib/qr.js?v=272';
+import { WORLDS } from './worlds/registry.js?v=272';
+import { Net, PALETTE } from './net.js?v=272';
+import { Presence } from './lib/presence.js?v=272';
+import { Pulses } from './lib/pulse.js?v=272';
+import { BeatClock } from './lib/beatclock.js?v=272';
+import { BeatCue } from './lib/beatcue.js?v=272';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=272';
+import { Race, placeOf, standings } from './lib/race.js?v=272';
+import { RouteMap } from './lib/map.js?v=272';
+import * as sfx from './lib/sfx.js?v=272';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=272';
+import { glowTexture } from './lib/glow.js?v=272';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -397,7 +397,8 @@ fetch('audio/manifest.json?t=' + Date.now())
       const wkey = Object.keys(WORLD_TRACKS).find(k => 'audio/' + WORLD_TRACKS[k] === file);
       const el = $('today');
       if (el) {
-        el.textContent = "today's song: " + prettyTrack(file) + (wkey && WORLDS[wkey] ? ' \u00b7 in ' + WORLDS[wkey].label : '') + ' \u2014 tap to ride it';
+        el.textContent = "today\u2019s song: " + prettyTrack(file)
+          + (wkey && WORLDS[wkey] ? ' \u2014 tap to play it in ' + WORLDS[wkey].label : ' \u2014 tap to play it');
         el.classList.remove('hidden');
         el.onclick = () => {
           window.__shareTrack = file;

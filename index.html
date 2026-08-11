@@ -1138,10 +1138,11 @@
   #promo-pill.hidden { display: none; }
   #promo-pill i { font-style: normal; }
   #doors {
-    margin-top: 6px; text-align: center;
-    font: 10.5px/1.7 'SF Mono', Menlo, monospace; letter-spacing: 0.6px;
+    margin-top: 10px; text-align: center;
+    font: 11px/1.9 'SF Mono', Menlo, monospace; letter-spacing: 0.6px;
     color: var(--ink-faint);
   }
+  #doors span { display: block; }
   #today {
     margin-top: 10px; text-align: center; cursor: pointer;
     font: italic 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
@@ -1621,7 +1622,7 @@
       <button id="btn-join">JOIN</button>
       <button id="btn-host">HOST A ROOM</button>
     </div>
-    <div id="doors">here to play? come on in &nbsp;&middot;&nbsp; streaming? host a room &nbsp;&middot;&nbsp; made a song? it&rsquo;s yours to ride</div>
+    <div id="doors"><span>here to play? come on in</span><span>streaming? host a room</span><span>made a song? play it here</span></div>
     <div id="today" class="hidden"></div>
   </div>
   <div id="maker-line">
@@ -1887,7 +1888,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 271</div>
+      <div id="build-stamp">build 272</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1929,6 +1930,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=271"></script>
+<script type="module" src="js/main.js?v=272"></script>
 </body>
 </html>
