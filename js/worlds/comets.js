@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=269';
-import { TUNE } from '../lib/tune.js?v=269';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=271';
+import { TUNE } from '../lib/tune.js?v=271';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
@@ -19,6 +19,99 @@ const SEG_MAX = 300;          // constellation segments alive at once
 const SEG_FADE = 40;          // seconds a drawn line lingers — long enough
                               // that the turn-around at the bell still finds them
 const LITE = () => !!window.__LITE;
+
+// ── GLSL: shared noise, the sky's weather, the planets' skins ──
+const GLSL_NOISE = `
+  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+  float noise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x),
+               mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + 17.0; a *= 0.5; }
+    return v;
+  }
+  vec3 hsl2rgb(vec3 c) {
+    vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0 * c.z - 1.0));
+  }
+`;
+
+// the sky: a vertical night gradient with two families of flowing nebula
+// clouds painted per-pixel, breathing with the bass
+const SKY_FRAG = GLSL_NOISE + `
+  uniform float uTime, uHue, uBass;
+  varying vec3 vDir;
+  void main() {
+    vec3 d = normalize(vDir);
+    float up = d.y * 0.5 + 0.5;
+    // deep at the poles, teal warmth at the rim — the old gradient, alive
+    vec3 base = mix(hsl2rgb(vec3(uHue, 0.5, 0.05)),
+                    hsl2rgb(vec3(fract(uHue + 0.08), 0.55, 0.13)),
+                    1.0 - abs(up - 0.5) * 1.6);
+    // two cloud families drift at different speeds and hues
+    // no atan: longitude wrapping painted a visible seam down the sky.
+    // A continuous function of the direction vector has no seam to show.
+    vec2 sky = vec2(d.x * 2.1 + d.z * 1.4, d.y * 2.4 + d.z * 0.6);
+    float c1 = fbm(sky * 1.6 + vec2(uTime * 0.008, 0.0));
+    float c2 = fbm(sky * 2.7 - vec2(uTime * 0.005, uTime * 0.003) + 40.0);
+    float cloud1 = smoothstep(0.45, 0.85, c1);
+    float cloud2 = smoothstep(0.5, 0.9, c2);
+    vec3 neb1 = hsl2rgb(vec3(fract(uHue + 0.10), 0.6, 0.32)) * cloud1;
+    vec3 neb2 = hsl2rgb(vec3(fract(uHue - 0.07), 0.55, 0.26)) * cloud2;
+    vec3 col = base + (neb1 + neb2) * (0.35 + uBass * 0.3);
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+const SKY_VERT = `
+  varying vec3 vDir;
+  void main() {
+    vDir = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+// the planets: flowing storm bands, a soft terminator, a fresnel atmosphere
+const PLANET_FRAG = GLSL_NOISE + `
+  uniform float uTime, uSeed;
+  uniform vec3 uTint, uLightDir;
+  varying vec3 vNormal, vView;
+  varying vec2 vUv;
+  void main() {
+    // bands flow: latitude striping warped by drifting turbulence
+    float warp = fbm(vUv * vec2(3.0, 6.0) + vec2(uTime * 0.02, uSeed));
+    float bands = fbm(vec2(uSeed * 7.0, vUv.y * 9.0 + warp * 0.7 + uTime * 0.004));
+    float lum = 0.42 + bands * 0.5;
+    // storms: bright knots that crawl
+    float storm = smoothstep(0.72, 0.95, fbm(vUv * vec2(9.0, 7.0) + vec2(uTime * 0.03, uSeed * 3.0)));
+    lum += storm * 0.25;
+    // poles darken
+    lum *= 1.0 - smoothstep(0.32, 0.5, abs(vUv.y - 0.5)) * 0.45;
+    vec3 n = normalize(vNormal);
+    float day = smoothstep(-0.18, 0.4, dot(n, normalize(uLightDir)));
+    vec3 surf = uTint * lum;
+    vec3 night = surf * 0.10 + vec3(0.01, 0.015, 0.03);
+    vec3 col = mix(night, surf, day);
+    // atmosphere: the tint glows past the limb
+    float rim = pow(1.0 - max(dot(n, normalize(vView)), 0.0), 3.0);
+    col += uTint * rim * (0.35 + day * 0.4);
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+const PLANET_VERT = `
+  varying vec3 vNormal, vView;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vView = -mv.xyz;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
 
 // the constellations you complete get NAMES — the southern sky's own
 const CONSTELLATIONS = [
@@ -224,9 +317,20 @@ export function createComets() {
 
       // camera.far is 400. The old dome had radius 400 — parked exactly ON
       // the far plane, so the frustum sliced hard-edged black holes out of
-      // it as the camera pitched. Radius 300 now, and the colour comes from
-      // a smooth painted gradient instead of faceted vertex shading.
-      {
+      // it as the camera pitched. Radius 300 now — and on desktop the sky
+      // is a living SHADER: per-pixel nebula weather breathing with the
+      // bass. Phones keep the painted gradient.
+      if (!LITE()) {
+        sky = new THREE.Mesh(
+          new THREE.SphereGeometry(300, 32, 24),
+          new THREE.ShaderMaterial({
+            vertexShader: SKY_VERT,
+            fragmentShader: SKY_FRAG,
+            uniforms: { uTime: { value: 0 }, uHue: { value: 0.58 }, uBass: { value: 0 } },
+            side: THREE.BackSide, depthWrite: false, fog: false,
+          })
+        );
+      } else {
         const c = document.createElement('canvas');
         c.width = 4; c.height = 256;
         const x = c.getContext('2d');
@@ -362,7 +466,18 @@ export function createComets() {
         const r = 7 + (i * 37 % 11);
         const body = new THREE.Mesh(
           new THREE.SphereGeometry(r, 36, 26),
-          new THREE.MeshLambertMaterial({ map: bandTexture(PALETTE_P[i], i + 3) })
+          LITE()
+            ? new THREE.MeshLambertMaterial({ map: bandTexture(PALETTE_P[i], i + 3) })
+            : new THREE.ShaderMaterial({
+                vertexShader: PLANET_VERT,
+                fragmentShader: PLANET_FRAG,
+                uniforms: {
+                  uTime: { value: 0 },
+                  uSeed: { value: i * 1.618 + 0.37 },
+                  uTint: { value: new THREE.Color(PALETTE_P[i]) },
+                  uLightDir: { value: new THREE.Vector3(-0.55, 0.35, 0.35) },
+                },
+              })
         );
         grp.add(body);
         // atmosphere — a whisper of the planet's own colour past its edge
@@ -857,7 +972,12 @@ export function createComets() {
         let dh = ((want - u.hue + 540) % 360) - 180;
         u.hue = (u.hue + dh * Math.min(1, dt * 2.2) + 360) % 360;
         color.setHSL(u.hue / 360, u.sat, u.lit);
-        u.body.material.color.copy(color);
+        if (u.body.material.uniforms) {
+          u.body.material.uniforms.uTint.value.copy(color);
+          u.body.material.uniforms.uTime.value = time;
+        } else {
+          u.body.material.color.copy(color);
+        }
         u.atmo.material.color.copy(color);
         u.halo.material.color.copy(color);
         if (u.ring) {
@@ -933,8 +1053,14 @@ export function createComets() {
       }
 
       sky.position.set(pathX(travel), 0, -travel);
-      // a light touch of the room's hue — never a darkening multiply
-      sky.material.color.setHSL(hue / 360, 0.32, 0.45);
+      if (sky.material.uniforms) {
+        sky.material.uniforms.uTime.value = time;
+        sky.material.uniforms.uHue.value = (hue / 360) % 1;
+        sky.material.uniforms.uBass.value = audio.bass * reactivity;
+      } else {
+        // a light touch of the room's hue — never a darkening multiply
+        sky.material.color.setHSL(hue / 360, 0.32, 0.45);
+      }
 
       // ── the comet's eye — low, banking, lens opening with the burn.
       // At the bell it TURNS AROUND: nine seconds facing everything you
