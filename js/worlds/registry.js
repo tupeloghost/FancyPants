@@ -11,23 +11,23 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=267';
-import { createSurfer } from './surfer.js?v=267';
-import { createOrbit } from './orbit.js?v=267';
-import { createBloom } from './bloom.js?v=267';
-import { createTrail } from './trail.js?v=267';
-import { createSignal } from './signal.js?v=267';
-import { createRiver } from './river.js?v=267';
-import { createFunhouse } from './funhouse.js?v=267';
-import { createLavaLamp } from './lavalamp.js?v=267';
-import { createPlasma } from './plasma.js?v=267';
-import { createCherryLand } from './cherryland.js?v=267';
-import { createSlinky } from './slinky.js?v=267';
-import { createBlacktop } from './blacktop.js?v=267';
-import { createWaterslide } from './waterslide.js?v=267';
-import { createGarden } from './garden.js?v=267';
-import { createPaint } from './paint.js?v=267';
-import { createComets } from './comets.js?v=267';
+import { createTunnel } from './tunnel.js?v=268';
+import { createSurfer } from './surfer.js?v=268';
+import { createOrbit } from './orbit.js?v=268';
+import { createBloom } from './bloom.js?v=268';
+import { createTrail } from './trail.js?v=268';
+import { createSignal } from './signal.js?v=268';
+import { createRiver } from './river.js?v=268';
+import { createFunhouse } from './funhouse.js?v=268';
+import { createLavaLamp } from './lavalamp.js?v=268';
+import { createPlasma } from './plasma.js?v=268';
+import { createCherryLand } from './cherryland.js?v=268';
+import { createSlinky } from './slinky.js?v=268';
+import { createBlacktop } from './blacktop.js?v=268';
+import { createWaterslide } from './waterslide.js?v=268';
+import { createGarden } from './garden.js?v=268';
+import { createPaint } from './paint.js?v=268';
+import { createComets } from './comets.js?v=268';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -37,21 +37,21 @@ export const WORLDS = {
   trail:  { pulse: 0.45, goal: 'paint the sky — every click is a new color', label: 'TRAIL',  create: createTrail },
   signal: { pulse: 0.5, goal: 'BOWL the towers — one throw, five columns, big points', label: 'SIGNAL', create: createSignal },
   river:  { pulse: 0.8, rhythm: true, mode: 'DODGE', unit: 'RAMPS',
-            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Ride over the glowing green ramps — each one is a point, worth double at full speed. Steer around the dark rocks — they take points away. Whoever has the most ramps when the song ends wins.', goal: 'ride the rapids — hold to open the throttle', label: 'RIVER',  create: createRiver },
+            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Ride over the glowing green ramps — each one’s a point, worth double at full speed. Steer around the dark rocks — they take points away, and they don’t apologize. Whoever has the most ramps when the song ends wins.', goal: 'ride the rapids — hold to open the throttle', label: 'RIVER',  create: createRiver },
   funhouse: { pulse: 0.85, goal: 'swim the pit — click to lunge, slider adds balls', label: 'BALL PIT', create: createFunhouse },
   lava:   { pulse: 0.7, goal: 'stir the wax — pop blobs at the top for +10', label: 'LAVA LAMP', create: createLavaLamp },
   plasma: { pulse: 0.35, goal: 'tame the lightning — it leaps to your finger', label: 'PLASMA', create: createPlasma },
   cherry: { pulse: 0.8, rhythm: true, mode: 'CATCH', unit: 'CAUGHT',
-            rules: 'Swipe to move the basket. Catch the falling cherries — each one is a point, and golden cherries are worth five. Let the dark bombs fall past. Whoever catches the most when the song ends wins.', goal: 'snipe cherries (+15) or shake whole trees loose', label: 'CHERRY LAND', create: createCherryLand },
+            rules: 'Swipe to move the basket. Catch the falling cherries — each one’s a point, and the golden ones are worth five. Let the dark bombs fall on past — nothing inside a bomb worth catching. Whoever catches the most when the song ends wins.', goal: 'snipe cherries (+15) or shake whole trees loose', label: 'CHERRY LAND', create: createCherryLand },
   slinky: { pulse: 0.6, rhythm: true, feetPerStep: 3, mode: 'RACE', cue: 'world',
-            rules: 'A bar of light slides up the stairs toward your slinky. Tap the moment it arrives. Good taps make your slinky walk faster down the stairs. Whoever reaches the bottom first wins.', goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
+            rules: 'A bar of light climbs the stairs toward your slinky. Tap the very moment it arrives — good taps make your slinky hustle. Whoever reaches the bottom of the stairs first wins, and gravity does half the work.', goal: 'swipe to circle the spring — it never stops falling', label: 'SLINKY', create: createSlinky },
   blacktop: { pulse: 0.85, rhythm: true, feetPerStep: 42, mode: 'DODGE', unit: 'GATES',
-            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Drive through the green gates — each one is a point, worth double at full speed. Miss the striped walls — they take points away. Whoever has the most gates when the song ends wins.', goal: 'run the midnight road — hold to open the throttle', label: 'BLACKTOP', create: createBlacktop },
+            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Drive through the green gates — each one’s a point, worth double at full speed. Miss the striped walls — they take points away, and they’ve never once moved for anybody. Whoever has the most gates when the song ends wins.', goal: 'run the midnight road — hold to open the throttle', label: 'BLACKTOP', create: createBlacktop },
   comets: { pulse: 0.9, rhythm: true, mode: 'DODGE', unit: 'STARS',
-            rules: 'Steer with the mouse or arrows. Press and HOLD to fly faster. Fly through the silver stars — each one is a point, and five in a row completes a constellation worth extra. Stay away from the big red stars. Whoever has the most stars when the song ends wins.',
+            rules: 'Steer with the mouse or arrows. Press and HOLD to fly faster. Fly through the silver stars — each one’s a point, and five in a row makes a constellation worth extra. Stay away from the big red stars — they’re not the friendly kind. Whoever has the most stars when the song ends wins.',
             goal: 'chase the comets — hold to burn', label: 'COMETS', create: createComets },
   slide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
-            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Lean through the green hoops — each one is a point, worth double at full speed. Stay out of the red hoops — they take points away. Whoever has the most hoops when the song ends wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
+            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Lean through the green hoops — each one’s a point, worth double at full speed. The red hoops take points away — pretty, but so is poison ivy. Whoever has the most hoops when the song ends wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'dead neon flickers on the walls — spray the signs alight before they go dark', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'sweep up the runes — three alike fuse. Light the whole picture', label: 'LUMEN', create: createGarden },
 };
