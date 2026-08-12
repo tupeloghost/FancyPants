@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=287';
-import { drawQR } from './lib/qr.js?v=287';
-import { WORLDS } from './worlds/registry.js?v=287';
-import { Net, PALETTE } from './net.js?v=287';
-import { Presence } from './lib/presence.js?v=287';
-import { Pulses } from './lib/pulse.js?v=287';
-import { BeatClock } from './lib/beatclock.js?v=287';
-import { BeatCue } from './lib/beatcue.js?v=287';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=287';
-import { Race, placeOf, standings } from './lib/race.js?v=287';
-import { RouteMap } from './lib/map.js?v=287';
-import * as sfx from './lib/sfx.js?v=287';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=287';
-import { glowTexture } from './lib/glow.js?v=287';
+import { AudioEngine } from './audio-engine.js?v=288';
+import { drawQR } from './lib/qr.js?v=288';
+import { WORLDS } from './worlds/registry.js?v=288';
+import { Net, PALETTE } from './net.js?v=288';
+import { Presence } from './lib/presence.js?v=288';
+import { Pulses } from './lib/pulse.js?v=288';
+import { BeatClock } from './lib/beatclock.js?v=288';
+import { BeatCue } from './lib/beatcue.js?v=288';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=288';
+import { Race, placeOf, standings } from './lib/race.js?v=288';
+import { RouteMap } from './lib/map.js?v=288';
+import * as sfx from './lib/sfx.js?v=288';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=288';
+import { glowTexture } from './lib/glow.js?v=288';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2160,34 +2160,12 @@ function signatureFor(key) {
   const f = WORLD_TRACKS[key];
   return f && trackList.includes('audio/' + f) ? 'audio/' + f : null;
 }
-// entering a world brings its song along. An artist's own song rides the
-// three free worlds; everywhere else the house catalog is the demo — and
-// the first locked door explains the deal once, politely.
+// entering a world brings its song along — unless the artist's own song is
+// playing: PLAYING your music is free everywhere, so their track follows
+// them into every world untouched. The gate lives on SHARING, not playing.
 function playSignature(key) {
   if (document.body.classList.contains('guest')) return;
-  if (setList) return;
-  if (window.__sunoShare) {
-    if (ARTIST_FREE.has(key)) {
-      // their song belongs here — bring it back if a signature displaced it
-      if (window.__sunoUrl && !(audio.el.src || '').startsWith(window.__sunoUrl)) {
-        audio.loadURL(window.__sunoUrl);
-        $('track-select').value = '';
-        audio.play().catch(() => {});
-        updatePlayBtn();
-      }
-      return;
-    }
-    // a locked-for-your-song world: the house catalog demos it
-    if (!ropeShown) {
-      ropeShown = true;
-      $('taste-card').classList.remove('hidden');
-    } else {
-      const el = $('pass-flash');
-      el.textContent = 'ARTIST ACCESS PUTS YOUR SONG HERE \u2014 ENJOY THE HOUSE BAND';
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2400);
-    }
-  }
+  if (setList || window.__sunoShare) return;
   const sig = signatureFor(key);
   if (!sig) return;
   if ((audio.el.currentSrc || '').endsWith(sig.split('/').pop())) return;
@@ -2482,10 +2460,23 @@ function shareThis() {
   const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
   const w = WORLDS[currentWorldKey];
   let url, text;
-  if (window.__sunoShare) {
-    // an artist's own song: the link carries THEIR track into the world
+  if (window.__sunoShare && ARTIST_FREE.has(currentWorldKey)) {
+    // an artist's own song in a showcase world: the link carries THEIR track
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
     text = "come play '" + (sunoTrack || 'my song') + "' in " + (w ? w.label : '') + ' \u2014 on Fancy Britches';
+  } else if (window.__sunoShare) {
+    // their song outside the trio: the rope, once as the full card, then a
+    // flash — and no link goes out, so the choice stays theirs
+    if (!ropeShown) {
+      ropeShown = true;
+      $('taste-card').classList.remove('hidden');
+    } else {
+      const el = $('pass-flash');
+      el.textContent = 'SHARE LINKS CARRY YOUR SONG IN TUNNEL \u00b7 RIVER \u00b7 COMETS \u2014 ARTIST ACCESS OPENS THE REST';
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+    return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
@@ -2738,7 +2729,7 @@ $('btn-own').addEventListener('click', () => {
   panel.classList.remove('hidden', 'collapsed');
   document.querySelector('#tabs .tab[data-tab="music"]')?.click();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
-  $('suno-rights').textContent = 'your song rides TUNNEL, RIVER & COMETS free \u2014 the rest open with artist access';
+  $('suno-rights').textContent = 'play your song in every world, free \u2014 share links ride TUNNEL, RIVER & COMETS';
 });
 $('taste-join').addEventListener('click', () => {
   const email = $('taste-email').value.trim();
