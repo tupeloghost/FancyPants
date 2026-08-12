@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=307';
-import { drawQR } from './lib/qr.js?v=307';
-import { WORLDS } from './worlds/registry.js?v=307';
-import { Net, PALETTE } from './net.js?v=307';
-import { Presence } from './lib/presence.js?v=307';
-import { Pulses } from './lib/pulse.js?v=307';
-import { BeatClock } from './lib/beatclock.js?v=307';
-import { BeatCue } from './lib/beatcue.js?v=307';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=307';
-import { Race, placeOf, standings } from './lib/race.js?v=307';
-import { Signals } from './lib/signals.js?v=307';
-import { RouteMap } from './lib/map.js?v=307';
-import * as sfx from './lib/sfx.js?v=307';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=307';
-import { glowTexture } from './lib/glow.js?v=307';
+import { AudioEngine } from './audio-engine.js?v=308';
+import { drawQR } from './lib/qr.js?v=308';
+import { WORLDS } from './worlds/registry.js?v=308';
+import { Net, PALETTE } from './net.js?v=308';
+import { Presence } from './lib/presence.js?v=308';
+import { Pulses } from './lib/pulse.js?v=308';
+import { BeatClock } from './lib/beatclock.js?v=308';
+import { BeatCue } from './lib/beatcue.js?v=308';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=308';
+import { Race, placeOf, standings } from './lib/race.js?v=308';
+import { Signals } from './lib/signals.js?v=308';
+import { RouteMap } from './lib/map.js?v=308';
+import * as sfx from './lib/sfx.js?v=308';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=308';
+import { glowTexture } from './lib/glow.js?v=308';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -674,6 +674,10 @@ function countUp(el, target, ms = 900) {
 function showResults(reason) {
   toyLast = false;
   clipBufStop(true);   // freeze the reel on the run that just ended
+  sig.endRun(runMeta('race', {
+    feet: race.feet, accuracy: +race.accuracy.toFixed(2),
+    bestStreak: race.bestStreak, finished: race.finished, mode: race.mode,
+  }));
   statsRoundDone();
   ghostRoundDone();
   $('awards').innerHTML = '';   // honours belong to set finales only
@@ -857,6 +861,7 @@ function startToyRound() {
 function showToyResults() {
   clipBufStop(true);
   const gained = Math.max(0, score - toyRound.score0);
+  sig.endRun(runMeta('toy', { pointsGained: gained }));
   toyRound = null;
   toyLast = true;
   resultsShown = true;
@@ -2771,6 +2776,7 @@ function scoreRound() {
 
 function showSetResults() {
   clipBufStop(true);
+  sig.endRun(runMeta('set', { rounds: setList ? setList.length : 0 }));
   document.body.classList.remove('play');
   setPhase = 'idle';
   const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -2884,6 +2890,16 @@ audio.el.addEventListener('playing', () => {
     looks.addEventListener('input', () => sig.tweak());
   }
 }
+function runMeta(kind, extra = {}) {
+  return {
+    kind,
+    songTitle: window.__sunoShare ? (sunoTrack.split(' — ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
+    artistName: window.__sunoShare ? (sunoTrack.split(' — ')[1] || '') : 'Tupelo Ghost',
+    lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,
+    ...extra,
+  };
+}
+window.__lastRun = () => sig.lastRun || null;
 window.__signals = () => sig.snapshot({
   worldId: currentWorldKey,
   lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,

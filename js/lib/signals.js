@@ -89,6 +89,32 @@ export class Signals {
     if (this.current && obj && typeof obj === 'object') Object.assign(this.current.declared, obj);
   }
 
+  // ── end of run ── the one moment share cards are built from. Every world
+  // now has one: a race finishing (results card), a toy round's song ending
+  // (tally card), or a set wrapping (finale board). The run record is the
+  // open segment's story PLUS the session totals, frozen at the bell.
+  endRun(meta = {}) {
+    const c = this.current;
+    const run = {
+      ...meta,                                   // kind: 'race'|'toy'|'set', plus app context
+      at: Date.now(),
+      worldId: c ? c.world : null,
+      runSeconds: c ? Math.round((Date.now() - c.enteredAt) / 1000) : 0,
+      movementRatio: c && c.samples ? +(c.moving / c.samples).toFixed(2) : 0,
+      declared: c ? { ...c.declared } : {},
+      sessionSeconds: Math.round((Date.now() - this.startedAt) / 1000),
+      tweakCount: this.tweakCount,
+      worldsVisited: this.worldsVisited.size,
+      songsPlayed: this.songs.size,
+      roomSize: this.roomSize,
+      wasAlone: this.wasAlone,
+      rejoined: this.rejoined,
+    };
+    this.lastRun = run;
+    console.debug('[signals:run]', JSON.stringify(run));
+    return run;
+  }
+
   // meta: { worldId, lookId, songTitle, artistName } supplied by the host app
   snapshot(meta = {}) {
     const c = this.current;
