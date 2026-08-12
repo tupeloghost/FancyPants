@@ -264,12 +264,27 @@
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
-  #pr-world, #pr-url {
+  #pr-url {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
     font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
   }
   #pr-url:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
+  #pr-worlds { display: flex; flex-direction: column; gap: 6px; }
+  .pr-opt {
+    text-align: left; padding: 10px 14px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line); background: var(--glass);
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .pr-opt.on { border-color: hsla(var(--accent-h),80%,70%,0.7); background: var(--accent-soft); }
+  .pr-opt b {
+    display: block; font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 2.6px; color: hsl(var(--accent-h), 55%, 93%);
+  }
+  .pr-opt em {
+    display: block; margin-top: 2px; font-style: normal;
+    font: 11px/1.5 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+  }
   #pr-go {
     padding: 12px 18px; border-radius: 11px; cursor: pointer;
     border: 1px solid var(--accent-line);
@@ -1718,7 +1733,7 @@
     <button id="btn-solo" class="cta">COME ON IN</button>
     <button id="btn-own" class="cta-soft">&#9834; PROMOTE A SONG &mdash; IT BECOMES A WORLD, FREE</button>
     <div id="promote-form" class="hidden">
-      <select id="pr-world"></select>
+      <div id="pr-worlds"></div>
       <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
       <button id="pr-go">PUT IT IN THE WORLD</button>
       <label id="pr-file" for="file-input">or load the mp3 instead</label>
@@ -2039,7 +2054,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 316</div>
+      <div id="build-stamp">build 317</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2081,6 +2096,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=316"></script>
+<script type="module" src="js/main.js?v=317"></script>
 </body>
 </html>

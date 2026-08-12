@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=316';
-import { drawQR } from './lib/qr.js?v=316';
-import { WORLDS } from './worlds/registry.js?v=316';
-import { Net, PALETTE } from './net.js?v=316';
-import { Presence } from './lib/presence.js?v=316';
-import { Pulses } from './lib/pulse.js?v=316';
-import { BeatClock } from './lib/beatclock.js?v=316';
-import { BeatCue } from './lib/beatcue.js?v=316';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=316';
-import { Race, placeOf, standings } from './lib/race.js?v=316';
-import { Signals } from './lib/signals.js?v=316';
-import { pickShareLine } from './lib/lines.js?v=316';
-import { RouteMap } from './lib/map.js?v=316';
-import * as sfx from './lib/sfx.js?v=316';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=316';
-import { glowTexture } from './lib/glow.js?v=316';
+import { AudioEngine } from './audio-engine.js?v=317';
+import { drawQR } from './lib/qr.js?v=317';
+import { WORLDS } from './worlds/registry.js?v=317';
+import { Net, PALETTE } from './net.js?v=317';
+import { Presence } from './lib/presence.js?v=317';
+import { Pulses } from './lib/pulse.js?v=317';
+import { BeatClock } from './lib/beatclock.js?v=317';
+import { BeatCue } from './lib/beatcue.js?v=317';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=317';
+import { Race, placeOf, standings } from './lib/race.js?v=317';
+import { Signals } from './lib/signals.js?v=317';
+import { pickShareLine } from './lib/lines.js?v=317';
+import { RouteMap } from './lib/map.js?v=317';
+import * as sfx from './lib/sfx.js?v=317';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=317';
+import { glowTexture } from './lib/glow.js?v=317';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -922,8 +922,7 @@ function showToyResults() {
   delete $('rb-next').dataset.mode;
   $('results').classList.add('show');
   $('results-actions').classList.add('show');
-  clearTimeout(resultsTimer);
-  resultsTimer = setTimeout(() => { hideResults(); playAuto(true); }, 12000);
+  clearTimeout(resultsTimer);   // the card waits — leaving is the player's call
   impact(0.7);
 }
 
@@ -1365,10 +1364,14 @@ function applyPreset(cfg) {
 // panel stays for the deep settings nobody touches while a track is playing.
 const WORLD_KEYS = Object.keys(WORLDS);
 
+// the walkable circuit: the featured pair + this week's guest. The other
+// fourteen are reachable on purpose (SEE ALL), never by accident.
+function openWorlds() { return [...FEATURED, WEEK_WORLD].filter(k => WORLDS[k]); }
 function stepWorld(dir = 1) {
   if (document.body.classList.contains('guest')) return; // the host drives the world
-  const i = WORLD_KEYS.indexOf($('world-select').value);
-  const next = WORLD_KEYS[(i + dir + WORLD_KEYS.length) % WORLD_KEYS.length];
+  const ring = openWorlds();
+  const i = ring.indexOf($('world-select').value);
+  const next = ring[((i < 0 ? 0 : i + dir) + ring.length) % ring.length];
   $('world-select').value = next;
   switchWorld(next);
 }
@@ -1615,10 +1618,10 @@ function jumpGame(dir) {
     else { setAt = Math.max(-1, setAt - 2); nextRound(); }
     return;
   }
-  if (!RHYTHM_WORLDS.length) return;
+  const ring = openWorlds();
   const cur = $('world-select').value;
-  const at = RHYTHM_WORLDS.indexOf(cur);
-  const next = RHYTHM_WORLDS[((at < 0 ? 0 : at + dir) + RHYTHM_WORLDS.length) % RHYTHM_WORLDS.length];
+  const at = ring.indexOf(cur);
+  const next = ring[((at < 0 ? 0 : at + dir) + ring.length) % ring.length];
   $('world-select').value = next;
   switchWorld(next);
   flashWorldName(WORLDS[next].label + '  \u00b7  ' + (WORLDS[next].mode || 'PLAY'));
@@ -1738,9 +1741,10 @@ window.addEventListener('keydown', e => {
   // 1–9, 0 jump straight to a world — a Stream Deck is just a keyboard
   if (e.key >= '0' && e.key <= '9') {
     const i = e.key === '0' ? 9 : +e.key - 1;
-    if (i < WORLD_KEYS.length && !document.body.classList.contains('guest')) {
-      $('world-select').value = WORLD_KEYS[i];
-      switchWorld(WORLD_KEYS[i]);
+    const ring = openWorlds();
+    if (i < ring.length && !document.body.classList.contains('guest')) {
+      $('world-select').value = ring[i];
+      switchWorld(ring[i]);
     }
   }
 
@@ -2938,7 +2942,12 @@ window.__forceArchetype = null;   // dev: pin an archetype id to preview its poo
 function recordRun(meta) {
   const run = sig.endRun(meta);
   pickShareLine(run, '', window.__forceArchetype)
-    .then(l => { window.__shareLine = l; console.debug('[line]', JSON.stringify(l)); })
+    .then(l => {
+      window.__shareLine = l;
+      console.debug('[line]', JSON.stringify(l));
+      // the card's sub-line becomes this world's verdict on this run
+      if (resultsShown) $('results-sub').textContent = l.text;
+    })
     .catch(() => {});
   return run;
 }
@@ -3075,19 +3084,34 @@ function ropeGate(msg) {
 // (the three a free song can share from), hand over the song, go. The
 // player path shares too; this one exists to make the SONG the point.
 let promoteWorld = null;   // remembered for the mp3 route
+// each open world gets one honest sentence, so an artist knows what
+// they're putting their song inside before they commit
+const WORLD_BLURBS = {
+  tunnel: 'float through a tunnel of light \u2014 calm, hypnotic, your song is the whole sky',
+  surfer: 'ride a neon river \u2014 ramps, airtime, your song sets the current',
+  slide: 'race a glowing waterslide \u2014 speed and hoops on your song\u2019s beat',
+};
+let prWorldPick = null;
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
   const f = $('promote-form');
   f.classList.toggle('hidden');
   if (f.classList.contains('hidden')) return;
-  const sel = $('pr-world');
-  if (!sel.options.length) {
+  const box = $('pr-worlds');
+  if (!box.children.length) {
     for (const k of [...FEATURED, WEEK_WORLD]) {
-      const o = document.createElement('option');
-      o.value = k;
-      o.textContent = WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 this week' : '');
-      sel.appendChild(o);
+      const b = document.createElement('button');
+      b.className = 'pr-opt';
+      b.dataset.key = k;
+      b.innerHTML = '<b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 this week' : '') + '</b>'
+        + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em>';
+      b.addEventListener('click', () => {
+        prWorldPick = k;
+        [...box.children].forEach(x => x.classList.toggle('on', x === b));
+      });
+      box.appendChild(b);
     }
+    box.firstElementChild.click();   // tunnel pre-picked, never un-picked
   }
   $('pr-url').focus();
 });
@@ -3100,7 +3124,7 @@ $('pr-go').addEventListener('click', () => {
       : 'paste a suno link, or load the mp3 below';
     return;
   }
-  const key = $('pr-world').value;
+  const key = prWorldPick;
   ensureName();
   dismissOverlay();
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
@@ -3110,7 +3134,7 @@ $('pr-go').addEventListener('click', () => {
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
-  promoteWorld = $('pr-world').value;
+  promoteWorld = prWorldPick;
   ensureName();
 });
 $('taste-join').addEventListener('click', () => {
