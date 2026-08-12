@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=293';
-import { drawQR } from './lib/qr.js?v=293';
-import { WORLDS } from './worlds/registry.js?v=293';
-import { Net, PALETTE } from './net.js?v=293';
-import { Presence } from './lib/presence.js?v=293';
-import { Pulses } from './lib/pulse.js?v=293';
-import { BeatClock } from './lib/beatclock.js?v=293';
-import { BeatCue } from './lib/beatcue.js?v=293';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=293';
-import { Race, placeOf, standings } from './lib/race.js?v=293';
-import { RouteMap } from './lib/map.js?v=293';
-import * as sfx from './lib/sfx.js?v=293';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=293';
-import { glowTexture } from './lib/glow.js?v=293';
+import { AudioEngine } from './audio-engine.js?v=294';
+import { drawQR } from './lib/qr.js?v=294';
+import { WORLDS } from './worlds/registry.js?v=294';
+import { Net, PALETTE } from './net.js?v=294';
+import { Presence } from './lib/presence.js?v=294';
+import { Pulses } from './lib/pulse.js?v=294';
+import { BeatClock } from './lib/beatclock.js?v=294';
+import { BeatCue } from './lib/beatcue.js?v=294';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=294';
+import { Race, placeOf, standings } from './lib/race.js?v=294';
+import { RouteMap } from './lib/map.js?v=294';
+import * as sfx from './lib/sfx.js?v=294';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=294';
+import { glowTexture } from './lib/glow.js?v=294';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2488,8 +2488,8 @@ function shareThis() {
       $('taste-card').classList.remove('hidden');
     } else {
       const el = $('pass-flash');
-      el.textContent = 'SHARE LINKS CARRY YOUR SONG IN TUNNEL \u00b7 RIVER \u00b7 COMETS \u2014 OR THIS WEEK\u2019S GUEST, '
-        + WORLDS[WEEK_WORLD].label + ' \u2014 ARTIST ACCESS OPENS THE REST';
+      el.textContent = 'THIS WEEK YOUR SONG SHARES FROM ' + WORLDS[WEEK_WORLD].label
+        + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
       clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2800);
     }
@@ -2540,7 +2540,7 @@ function startClip() {
     if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
     else {
       const el = $('pass-flash');
-      el.textContent = 'CLIPS RIDE WHERE SHARES RIDE \u2014 TUNNEL \u00b7 RIVER \u00b7 COMETS, OR ' + WORLDS[WEEK_WORLD].label;
+      el.textContent = 'CLIPS RIDE THE WORLD OF THE WEEK \u2014 ' + WORLDS[WEEK_WORLD].label + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
       clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
     }
@@ -2848,16 +2848,16 @@ $('btn-solo').addEventListener('click', () => {
 // ── the artist door: paste and share all you want. Your song rides
 // three worlds free; the other fourteen play the house catalog — the
 // demo IS her music, and every share is marketing ──
-const ARTIST_FREE = new Set(['tunnel', 'river', 'comets']);
-// ── world of the week: a fourth free share world, rotating through the other
-// fourteen. Deterministic from the calendar, so every browser on earth agrees
-// with no server round-trip — and feeds see a new world every Monday instead
-// of the same three forever.
+// ── the world of the week: THE free share world, rotating through all
+// seventeen. Deterministic from the calendar, so every browser on earth
+// agrees with no server round-trip. One rule, one sentence: free artists
+// share from this week's world; artist access opens all seventeen. A song
+// keeps whatever home it claimed — rotation never breaks an old link.
 const WEEK_WORLD = (() => {
-  const others = Object.keys(WORLDS).filter(k => !ARTIST_FREE.has(k)).sort();
-  return others[Math.floor(Date.now() / 604800000) % others.length];
+  const all = Object.keys(WORLDS).sort();
+  return all[Math.floor(Date.now() / 604800000) % all.length];
 })();
-const shareableFree = k => ARTIST_FREE.has(k) || k === WEEK_WORLD;
+const shareableFree = k => k === WEEK_WORLD;
 let ropeShown = false;   // the explainer card appears once per session
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
@@ -2867,7 +2867,7 @@ $('btn-own').addEventListener('click', () => {
   panel.classList.remove('hidden', 'collapsed');
   document.querySelector('#tabs .tab[data-tab="music"]')?.click();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
-  $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, RIVER, COMETS, or this week\u2019s guest: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play your song in every world, free \u2014 share it from this week\u2019s world: ' + WORLDS[WEEK_WORLD].label;
 });
 $('taste-join').addEventListener('click', () => {
   const email = $('taste-email').value.trim();
