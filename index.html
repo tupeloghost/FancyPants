@@ -253,7 +253,14 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
-  #qb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
+  #rb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
+  #marquee-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  #marquee-edit.hidden { display: none; }
+  #marquee-edit input {
+    padding: 9px 12px; border-radius: 10px; border: 1px solid var(--accent-line);
+    background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
+    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+  }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
   #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
   #pl-pick { width: 100%; display: flex; gap: 8px; justify-content: center; }
@@ -1151,11 +1158,6 @@
     border: 1px solid var(--accent-line); font: 12px 'SF Mono', Menlo, monospace; outline: none;
   }
   #promo-box input:focus { border-color: var(--accent); }
-  #promo-set {
-    padding: 9px 0; border-radius: 9px; cursor: pointer;
-    background: var(--accent-soft); color: var(--accent);
-    border: 1px solid var(--accent-line); font: 700 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
-  }
   #promo-status { font: 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 12px; }
 
   /* the room-facing pill: quiet, elegant, tappable */
@@ -1855,6 +1857,7 @@
     <button class="rbtn" id="rb-again">PLAY AGAIN</button>
     <button class="rbtn" id="rb-next">NEXT WORLD</button>
     <button class="rbtn" id="rb-share">SHARE THIS ONE</button>
+    <button class="rbtn" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
   </div>
   <div id="results-stats">
     <div><b id="rs-acc">0%</b><em>accuracy</em></div>
@@ -1887,8 +1890,7 @@
   <span class="qsep"></span>
   <button class="qb" id="qb-mute" title="silence your speakers — the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
   <span class="qsep"></span>
-  <button class="qb" id="qb-share" title="share this song &amp; world"><i>&#8599;</i><em>share</em></button>
-  <button class="qb" id="qb-clip" title="record 15 seconds &mdash; song name &amp; QR baked in"><i>&#9678;</i><em>clip</em></button>
+
 </div>
 
 <div id="panel">
@@ -1920,14 +1922,12 @@
           <button id="suno-go" title="load this link">&#9654;</button>
         </div>
         <div id="suno-status"></div>
+        <div id="marquee-edit" class="hidden">
+          <div class="mini-label">on the marquee &mdash; edit it if you like</div>
+          <input id="mq-title" maxlength="60" placeholder="song title" autocomplete="off">
+          <input id="mq-artist" maxlength="40" placeholder="artist name" autocomplete="off">
+        </div>
     <div id="suno-rights">paste a song YOU made or have rights to &mdash; artists&rsquo; rights matter &rsquo;round here</div>
-    <div id="promo-box">
-      <div class="mini-label">promote &mdash; shown to everyone in your room</div>
-      <input id="promo-label" maxlength="48" placeholder="what to call it &mdash; e.g. Tupelo Ghost on Spotify" autocomplete="off">
-      <input id="promo-url" maxlength="300" placeholder="the link (https://...)" autocomplete="off">
-      <button id="promo-set">SHARE IT WITH THE ROOM</button>
-      <div id="promo-status"></div>
-    </div>
       </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
@@ -2014,7 +2014,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 303</div>
+      <div id="build-stamp">build 305</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2056,6 +2056,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=303"></script>
+<script type="module" src="js/main.js?v=305"></script>
 </body>
 </html>

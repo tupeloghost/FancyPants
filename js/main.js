@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=303';
-import { drawQR } from './lib/qr.js?v=303';
-import { WORLDS } from './worlds/registry.js?v=303';
-import { Net, PALETTE } from './net.js?v=303';
-import { Presence } from './lib/presence.js?v=303';
-import { Pulses } from './lib/pulse.js?v=303';
-import { BeatClock } from './lib/beatclock.js?v=303';
-import { BeatCue } from './lib/beatcue.js?v=303';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=303';
-import { Race, placeOf, standings } from './lib/race.js?v=303';
-import { Signals } from './lib/signals.js?v=303';
-import { RouteMap } from './lib/map.js?v=303';
-import * as sfx from './lib/sfx.js?v=303';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=303';
-import { glowTexture } from './lib/glow.js?v=303';
+import { AudioEngine } from './audio-engine.js?v=305';
+import { drawQR } from './lib/qr.js?v=305';
+import { WORLDS } from './worlds/registry.js?v=305';
+import { Net, PALETTE } from './net.js?v=305';
+import { Presence } from './lib/presence.js?v=305';
+import { Pulses } from './lib/pulse.js?v=305';
+import { BeatClock } from './lib/beatclock.js?v=305';
+import { BeatCue } from './lib/beatcue.js?v=305';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=305';
+import { Race, placeOf, standings } from './lib/race.js?v=305';
+import { Signals } from './lib/signals.js?v=305';
+import { RouteMap } from './lib/map.js?v=305';
+import * as sfx from './lib/sfx.js?v=305';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=305';
+import { glowTexture } from './lib/glow.js?v=305';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -841,6 +841,9 @@ $('file-input').addEventListener('change', e => {
   if (!f) return;
   const fl = $('file-label'); if (fl) fl.textContent = '♪ ' + f.name;
   sunoSay('♪ ' + f.name + ' — loaded and yours', 'ok');
+  $('mq-title').value = f.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ');
+  $('mq-artist').value = '';
+  $('marquee-edit').classList.remove('hidden');
   audio.loadFile(f);
   audio.play().catch(() => {});
   updatePlayBtn();
@@ -889,6 +892,9 @@ function loadSuno() {
     .then(info => {
       if (!info.id) throw new Error('no song');
       sunoTrack = [info.title, info.artist].filter(Boolean).join(' — ') || 'a suno track';
+      $('mq-title').value = info.title || '';
+      $('mq-artist').value = info.artist || '';
+      $('marquee-edit').classList.remove('hidden');
       window.__sunoShare = path.startsWith('suno-s') ? 's_' + token : info.id;
       window.__sunoUrl = `${SUNO_PROXY}suno/${info.id}.mp3`;
       sunoSay(sunoTrack, 'ok');
@@ -2137,10 +2143,6 @@ function startRoom(code, name, asOwner) {
     }
   };
   net.join(code, name, asOwner); // no host configured → runs solo, silently
-  if (asOwner) {
-    const pl = localStorage.getItem('fp_promo_label'), pu = localStorage.getItem('fp_promo_url');
-    if (pl && pu) setTimeout(() => { if (net.connected) { net.sendPromo(pl, pu); showPromo({ label: pl, url: pu }); } }, 1500);
-  }
   // guests ride the host's soundtrack — no track/transport controls for them
   document.body.classList.toggle('guest', !asOwner);
   if (!asOwner) {
@@ -2556,7 +2558,6 @@ function shareThis() {
     }).catch(() => {});
   }
 }
-$('qb-share').addEventListener('click', shareThis);
 $('rb-share').addEventListener('click', shareThis);
 
 // ── CLIP: fifteen seconds of the run with the song's name and a scannable
@@ -2572,8 +2573,8 @@ function clipURL() {
 function stopClip() {
   if (clipRec && clipRec.state !== 'inactive') clipRec.stop();
   clearTimeout(clipTimer); clearInterval(clipTick);
-  $('qb-clip').querySelector('em').textContent = 'clip';
-  $('qb-clip').classList.remove('rec');
+  $('rb-clip').textContent = 'CLIP 15s';
+  $('rb-clip').classList.remove('rec');
 }
 function startClip() {
   if (clipRec && clipRec.state === 'recording') { stopClip(); return; }
@@ -2660,13 +2661,13 @@ function startClip() {
   };
   clipRec.start(500);
   let left = 15;
-  const em = $('qb-clip').querySelector('em');
-  em.textContent = '0:15';
-  $('qb-clip').classList.add('rec');
-  clipTick = setInterval(() => { left--; em.textContent = '0:' + String(Math.max(0, left)).padStart(2, '0'); }, 1000);
+  const em = $('rb-clip');
+  em.textContent = '\u25CE 0:15';
+  em.classList.add('rec');
+  clipTick = setInterval(() => { left--; em.textContent = '\u25CE 0:' + String(Math.max(0, left)).padStart(2, '0'); }, 1000);
   clipTimer = setTimeout(stopClip, 15000);
 }
-$('qb-clip').addEventListener('click', startClip);
+$('rb-clip').addEventListener('click', startClip);
 
 function prettyTrack(url) {
   return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
@@ -2766,21 +2767,17 @@ function showPromo(promo) {
   pill.onclick = () => window.open(promo.url, '_blank', 'noopener');
 }
 net.onPromo = showPromo;
-$('promo-label').value = localStorage.getItem('fp_promo_label') || '';
-$('promo-url').value = localStorage.getItem('fp_promo_url') || '';
-$('promo-set').addEventListener('click', () => {
-  const label = $('promo-label').value.trim();
-  const url = $('promo-url').value.trim();
-  if (!label || !/^https?:\/\//.test(url)) {
-    $('promo-status').textContent = "needs a name and a link that starts with https://";
-    return;
-  }
-  localStorage.setItem('fp_promo_label', label);
-  localStorage.setItem('fp_promo_url', url);
-  net.sendPromo(label, url);
-  showPromo({ label, url });   // the host sees what the room sees
-  $('promo-status').textContent = "shared \u2014 the room can tap it now";
-});
+// (the promo sender retired: the marquee announces the song automatically —
+// guests still render a pill if a promo ever arrives on the wire)
+// The marquee is theirs to word — for THEIR songs. The house catalog's names
+// are not editable; this row only ever appears for suno links and mp3s.
+function marqueeApply() {
+  const t = $('mq-title').value.trim(), a = $('mq-artist').value.trim();
+  sunoTrack = [t, a].filter(Boolean).join(' — ') || sunoTrack;
+  hostSong();   // push the new words to the room now, not in 4 seconds
+}
+$('mq-title').addEventListener('input', marqueeApply);
+$('mq-artist').addEventListener('input', marqueeApply);
 
 $('balls-quick-range').addEventListener('input', e => {
   const v = +e.target.value;
