@@ -8,21 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=313';
-import { drawQR } from './lib/qr.js?v=313';
-import { WORLDS } from './worlds/registry.js?v=313';
-import { Net, PALETTE } from './net.js?v=313';
-import { Presence } from './lib/presence.js?v=313';
-import { Pulses } from './lib/pulse.js?v=313';
-import { BeatClock } from './lib/beatclock.js?v=313';
-import { BeatCue } from './lib/beatcue.js?v=313';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=313';
-import { Race, placeOf, standings } from './lib/race.js?v=313';
-import { Signals } from './lib/signals.js?v=313';
-import { RouteMap } from './lib/map.js?v=313';
-import * as sfx from './lib/sfx.js?v=313';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=313';
-import { glowTexture } from './lib/glow.js?v=313';
+import { AudioEngine } from './audio-engine.js?v=314';
+import { drawQR } from './lib/qr.js?v=314';
+import { WORLDS } from './worlds/registry.js?v=314';
+import { Net, PALETTE } from './net.js?v=314';
+import { Presence } from './lib/presence.js?v=314';
+import { Pulses } from './lib/pulse.js?v=314';
+import { BeatClock } from './lib/beatclock.js?v=314';
+import { BeatCue } from './lib/beatcue.js?v=314';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=314';
+import { Race, placeOf, standings } from './lib/race.js?v=314';
+import { Signals } from './lib/signals.js?v=314';
+import { pickShareLine } from './lib/lines.js?v=314';
+import { RouteMap } from './lib/map.js?v=314';
+import * as sfx from './lib/sfx.js?v=314';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=314';
+import { glowTexture } from './lib/glow.js?v=314';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -691,7 +692,7 @@ function countUp(el, target, ms = 900) {
 function showResults(reason) {
   toyLast = false;
   clipBufStop(true);   // freeze the reel on the run that just ended
-  sig.endRun(runMeta('race', {
+  recordRun(runMeta('race', {
     feet: race.feet, accuracy: +race.accuracy.toFixed(2),
     bestStreak: race.bestStreak, finished: race.finished, mode: race.mode,
   }));
@@ -904,7 +905,7 @@ function startToyRound() {
 function showToyResults() {
   clipBufStop(true);
   const gained = Math.max(0, score - toyRound.score0);
-  sig.endRun(runMeta('toy', { pointsGained: gained }));
+  recordRun(runMeta('toy', { pointsGained: gained }));
   toyRound = null;
   toyLast = true;
   resultsShown = true;
@@ -2819,7 +2820,7 @@ function scoreRound() {
 
 function showSetResults() {
   clipBufStop(true);
-  sig.endRun(runMeta('set', { rounds: setList ? setList.length : 0 }));
+  recordRun(runMeta('set', { rounds: setList ? setList.length : 0 }));
   document.body.classList.remove('play');
   setPhase = 'idle';
   const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -2943,6 +2944,15 @@ function runMeta(kind, extra = {}) {
   };
 }
 window.__lastRun = () => sig.lastRun || null;
+window.__forceArchetype = null;   // dev: pin an archetype id to preview its pool
+function recordRun(meta) {
+  const run = sig.endRun(meta);
+  pickShareLine(run, '', window.__forceArchetype)
+    .then(l => { window.__shareLine = l; console.debug('[line]', JSON.stringify(l)); })
+    .catch(() => {});
+  return run;
+}
+window.__previewLine = force => pickShareLine(sig.lastRun || {}, '', force || null);
 window.__signals = () => sig.snapshot({
   worldId: currentWorldKey,
   lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,

@@ -1,0 +1,143 @@
+{
+  "world": "slide",
+  "note": "slide is the neon chute: throttle and steer, hoops to thread, feet is distance, streak is hoops chained, pct is accuracy. order matters — first match wins. weights: big common, small rare.",
+  "archetypes": [
+    {
+      "id": "ghost-rider",
+      "when": { "roomSize": [">=", 4], "feet": ["<=", 50] },
+      "lines": [
+        { "t": "{room} people racin’ the slide and you logged {feet} feet. you came to the drag strip to sit in the car.", "c": "turn the key →", "w": 10 },
+        { "t": "a full room, {feet} feet. the slide’s not sure you were ever actually IN it, and neither are we.", "c": "leave a skid mark →", "w": 6 },
+        { "t": "{room} racers, one apparition. you haunted the startin’ line all song.", "c": "haunt the finish instead →", "w": 6 },
+        { "t": "{feet} feet in company. even the hoops started wavin’ folks through on your behalf.", "c": "wave back at speed →", "w": 3 },
+        { "t": "the room finished, cheered, and left. you’re still in the tube somewhere, legally speakin’.", "c": "come out swingin’ →", "w": 1 }
+      ]
+    },
+    {
+      "id": "hoop-earring",
+      "when": { "bestStreak": [">=", 10] },
+      "lines": [
+        { "t": "{streak} hoops threaded clean. the slide is thinkin’ about renamin’ itself after you and it does NOT do that.", "c": "make it official →", "w": 10 },
+        { "t": "a {streak}-hoop chain. needles envy that kind of threadin’.", "c": "sew somethin’ bigger →", "w": 8 },
+        { "t": "{streak} straight. the hoops formed a fan club and they’re arguin’ over who you touched last.", "c": "settle the dispute →", "w": 6 },
+        { "t": "you strung {streak} hoops like porch lights. the whole slide’s brighter for it.", "c": "string the block →", "w": 3 },
+        { "t": "{streak} in a row. carnival games are illegal for you in nine states now.", "c": "make it ten →", "w": 1 }
+      ]
+    },
+    {
+      "id": "leadfoot",
+      "when": { "feet": [">=", 1500] },
+      "lines": [
+        { "t": "{feet} feet of slide in one song. the neon is still catchin’ its breath behind you.", "c": "lap the lights →", "w": 10 },
+        { "t": "{feet} feet. wherever that tube ends, you got there before the song did.", "c": "beat the next song too →", "w": 8 },
+        { "t": "you did {feet} feet like the slide was greased and the rent was due.", "c": "rent’s due again →", "w": 6 },
+        { "t": "{feet} feet downslide. radar guns tell stories about runs like this at their little radar parties.", "c": "give ’em a sequel →", "w": 3 },
+        { "t": "the slide added a speed limit sign tonight. it’s got your silhouette on it.", "c": "break your own law →", "w": 1 }
+      ]
+    },
+    {
+      "id": "parked",
+      "when": { "movementRatio": ["<=", 0.18] },
+      "lines": [
+        { "t": "you moved {move}% of the song on a SLIDE. that’s not slidin’, sugar, that’s loiterin’ at altitude.", "c": "loiter faster →", "w": 10 },
+        { "t": "{move}% movement in a neon chute. mannequins in mall windows are showin’ more hustle.", "c": "out-hustle retail →", "w": 8 },
+        { "t": "gravity offered to do all the work and you STILL said no. {move}% motion.", "c": "let gravity cook →", "w": 6 },
+        { "t": "you turned the fastest world in the buildin’ into a park bench with mood lightin’.", "c": "vacate the bench →", "w": 4 },
+        { "t": "{move}%. the slide checked twice if you needed assistance. it doesn’t have arms and it still almost helped.", "c": "decline assistance →", "w": 3 },
+        { "t": "physics wrote you up as an exception. peer review is furious.", "c": "stay unexplainable →", "w": 1 }
+      ]
+    },
+    {
+      "id": "pinball",
+      "when": { "accuracy": ["<=", 0.3] },
+      "lines": [
+        { "t": "{pct}% of the hoops, 100% of the walls. you played this less like a slide and more like a maraca.", "c": "shake it truer →", "w": 10 },
+        { "t": "{pct}% accuracy. the hoops feel personally dodged and they’re bein’ dramatic about it.", "c": "apologize through one →", "w": 8 },
+        { "t": "you found angles in that tube the builders never drew. wrong ones, but new.", "c": "patent ’em later →", "w": 6 },
+        { "t": "{pct}% on the hoops. the bumpers know you by first name and they’re tired.", "c": "learn theirs →", "w": 3 },
+        { "t": "somewhere an actual pinball machine just felt a disturbance and lit TILT in your honor.", "c": "earn the multiball →", "w": 1 }
+      ]
+    },
+    {
+      "id": "sunday-driver",
+      "when": { "feet": ["<=", 300], "runSeconds": [">=", 90] },
+      "lines": [
+        { "t": "{feet} feet in {seconds} seconds. you took a waterslide at parade speed and waved at every hoop.", "c": "floor it once →", "w": 10 },
+        { "t": "{seconds} seconds for {feet} feet. the slide is fast, sugar. the slide is SUPPOSED to be fast.", "c": "let it be fast →", "w": 8 },
+        { "t": "you cruised the chute like it had a farmers market in the middle.", "c": "skip the produce →", "w": 6 },
+        { "t": "{feet} feet all song. snails watchin’ from the rail called it ‘relatable content.’", "c": "lose your audience →", "w": 3 },
+        { "t": "the hoops aged waitin’ on you. one of ’em retired mid-run.", "c": "catch the young ones →", "w": 1 }
+      ]
+    },
+    {
+      "id": "drive-thru",
+      "when": { "bailedEarly": ["==", true] },
+      "lines": [
+        { "t": "{seconds} seconds in the tube. you ordered the slide to go.", "c": "dine in this time →", "w": 10 },
+        { "t": "in and gone in {seconds} seconds. the neon didn’t even finish sayin’ your color.", "c": "hear it out →", "w": 8 },
+        { "t": "{seconds} seconds is a peek, sugar. the slide don’t do peeks, it does plunges.", "c": "take the plunge →", "w": 6 },
+        { "t": "you left before the first drop dropped. it drops for everybody but it wanted to drop for you.", "c": "let it drop →", "w": 3 },
+        { "t": "fastest exit the slide’s ever seen, and it’s a SLIDE. think on that.", "c": "think inside the tube →", "w": 1 }
+      ]
+    },
+    {
+      "id": "all-gas",
+      "when": { "movementRatio": [">=", 0.85] },
+      "lines": [
+        { "t": "{move}% of the song at full send. the throttle’s filin’ for overtime.", "c": "deny the claim →", "w": 10 },
+        { "t": "you steered {move}% of the time like the tube was tryin’ to lose you. it was. it failed.", "c": "stay unlosable →", "w": 8 },
+        { "t": "{move}% motion, zero coastin’. coastin’ is free, sugar. you paid full price anyway.", "c": "spend it again →", "w": 6 },
+        { "t": "the slide usually does the throwin’. tonight it mostly held on.", "c": "throw it further →", "w": 3 },
+        { "t": "your throttle finger has its own trainer now. sessions start monday.", "c": "skip leg day →", "w": 1 }
+      ]
+    },
+    {
+      "id": "finisher",
+      "when": { "finished": ["==", true] },
+      "lines": [
+        { "t": "top to bottom, whole song, still upright. the slide shook your hand on the way out.", "c": "shake it again →", "w": 10 },
+        { "t": "you rode every foot the song had. the neon dimmed a second when you left — that’s slide for ‘come back.’", "c": "answer the lights →", "w": 8 },
+        { "t": "finished the run with the last note. timing like that ain’t luck twice.", "c": "prove it ain’t →", "w": 6 },
+        { "t": "the bottom of the slide sees fewer folks than you’d think. put your feet up a second.", "c": "then climb back →", "w": 3 },
+        { "t": "run complete. somewhere a checkered flag just felt useful again.", "c": "wave it twice →", "w": 1 }
+      ]
+    },
+    {
+      "id": "flipper",
+      "when": { "worldsVisited": [">=", 5] },
+      "lines": [
+        { "t": "{worlds} worlds tonight and the slide caught you mid-tour. it’s the best stop, but you knew that.", "c": "end the tour here →", "w": 10 },
+        { "t": "you slid in from {worlds} worlds deep. the tube can smell wanderlust, sugar. it’s like chlorine to it.", "c": "rinse and repeat →", "w": 8 },
+        { "t": "{worlds} stamps in the passport and this one’s the only one with skid marks.", "c": "add another mark →", "w": 4 },
+        { "t": "world number {worlds} tonight. your restlessness has better cardio than most players.", "c": "tire it out here →", "w": 3 }
+      ]
+    },
+    {
+      "id": "regular",
+      "when": { "rejoined": ["==", true] },
+      "lines": [
+        { "t": "back in the tube again. the slide kept your line warm and your record intact, in that order.", "c": "break one of ’em →", "w": 10 },
+        { "t": "you came back. the hoops re-formed the welcome arch and everything.", "c": "walk the arch →", "w": 8 },
+        { "t": "second visit tonight. the neon buzzed a little brighter when it saw the door open.", "c": "make it flicker →", "w": 4 },
+        { "t": "returners get no discount but plenty of judgment. welcome home.", "c": "earn the discount →", "w": 3 }
+      ]
+    },
+    {
+      "id": "night-shift",
+      "when": { "sessionSeconds": [">=", 900] },
+      "lines": [
+        { "t": "{minutes} minutes in the building and still slidin’. your evenin’ has a theme now.", "c": "commit to the theme →", "w": 10 },
+        { "t": "{minutes} minutes deep. the slide’s night crew clocked out and left you the keys.", "c": "lock up when done →", "w": 8 },
+        { "t": "you’ve been at this {minutes} minutes. hydrate, then get back in the tube.", "c": "water, then throttle →", "w": 4 },
+        { "t": "{minutes} minutes tonight. the neon’s startin’ to think y’all are goin’ steady.", "c": "make it exclusive →", "w": 3 }
+      ]
+    }
+  ],
+  "fallback": [
+    { "t": "{feet} feet, {streak} hoops at best. the slide files that under ‘fixable.’", "c": "file an appeal →", "w": 10 },
+    { "t": "you and ‘{song}’ took the tube together. one of you was ready.", "c": "both of you next time →", "w": 8 },
+    { "t": "a middlin’ run down a maximal slide. the neon withholds judgment. we don’t.", "c": "change our minds →", "w": 6 },
+    { "t": "some hoops, some walls, some song. the slide calls that tuesday.", "c": "give it a friday →", "w": 4 },
+    { "t": "{seconds} seconds of tube time, zero paperwork. cleanest run legally possible.", "c": "get messier →", "w": 3 }
+  ]
+}

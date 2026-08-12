@@ -1,0 +1,144 @@
+{
+  "world": "surfer",
+  "note": "surfer is the river racer: airtime pays, ramps chain, feet is distance, streak is chained ramps, pct is accuracy. order matters — first match wins. weights: big common, small rare.",
+  "archetypes": [
+    {
+      "id": "cannonball",
+      "when": { "movementRatio": [">=", 0.9], "accuracy": ["<=", 0.25] },
+      "lines": [
+        { "t": "you moved {move}% of the song and hit {pct}% of anything. maximum effort, zero aim — the river respects one of those.", "c": "aim second, live first →", "w": 10 },
+        { "t": "{move}% thrash, {pct}% accuracy. you didn’t surf the river, you fought it, and it was rootin’ for you the whole time.", "c": "rematch →", "w": 6 },
+        { "t": "all that motion for {pct}%. a washing machine on spin does the same work and it doesn’t even get a scorecard.", "c": "beat the appliance →", "w": 6 },
+        { "t": "you were everywhere except where the ramps were. statistically impressive, honestly.", "c": "find one ramp →", "w": 3 },
+        { "t": "the river’s puttin’ your run on its blooper reel. openin’ slot. big honor.", "c": "make the highlight reel →", "w": 1 }
+      ]
+    },
+    {
+      "id": "big-air",
+      "when": { "bestStreak": [">=", 12] },
+      "lines": [
+        { "t": "{streak} ramps chained without breathin’. the fish are still talkin’ about the shadow that went over.", "c": "block out the sun →", "w": 10 },
+        { "t": "a {streak}-streak on the water. gravity filed a complaint and got laughed out of the office.", "c": "appeal denied →", "w": 8 },
+        { "t": "{streak} in a row. that’s not a streak, sugar, that’s a flight itinerary.", "c": "book the return trip →", "w": 6 },
+        { "t": "you spent so much of that song airborne the river marked you as a bird.", "c": "migrate back →", "w": 3 },
+        { "t": "{streak} straight. the ramps met after the show and agreed none of ’em felt you land.", "c": "give ’em somethin’ to feel →", "w": 1 }
+      ]
+    },
+    {
+      "id": "hot-rod",
+      "when": { "feet": [">=", 1200] },
+      "lines": [
+        { "t": "{feet} feet of river in one song. the current called ahead to warn the next county.", "c": "outrun the warnin’ →", "w": 10 },
+        { "t": "{feet} feet. the river usually does the carryin’ — tonight it mostly watched.", "c": "carry it further →", "w": 8 },
+        { "t": "you put {feet} feet behind you like the water was chasin’ you for money.", "c": "it still is →", "w": 6 },
+        { "t": "{feet} feet downstream. somewhere a map is bein’ redrawn with your name on a bend.", "c": "earn the whole river →", "w": 3 },
+        { "t": "the river’s addin’ a plaque. small one. bronze. it says ‘slow down.’", "c": "ignore the plaque →", "w": 1 }
+      ]
+    },
+    {
+      "id": "metronome",
+      "when": { "accuracy": [">=", 0.85] },
+      "lines": [
+        { "t": "{pct}% on the beat, every beat. the song thought it was playin’ YOU for a while there.", "c": "let it wonder →", "w": 10 },
+        { "t": "{pct}% accuracy on movin’ water. clocks have missed more.", "c": "spook a clock →", "w": 8 },
+        { "t": "you hit {pct}% like the ramps texted you their schedule.", "c": "leak the schedule →", "w": 6 },
+        { "t": "{pct}%. the river checked its own rhythm against yours and quietly adjusted.", "c": "conduct the encore →", "w": 3 },
+        { "t": "surgeons watch footage like this to calm down.", "c": "operate again →", "w": 1 }
+      ]
+    },
+    {
+      "id": "iron-liver",
+      "when": { "finished": ["==", true] },
+      "lines": [
+        { "t": "you rode the whole song to the last note and stepped off dry-ish. the river tips its hat.", "c": "run it back wetter →", "w": 10 },
+        { "t": "start to finish, no bailin’. the river keeps a short list of folks who last the whole song. you’re on it in pencil.", "c": "get inked →", "w": 8 },
+        { "t": "full song, full river. your legs are writin’ their memoirs already.", "c": "give ’em a chapter two →", "w": 6 },
+        { "t": "you finished what the current started. that’s rarer than it sounds and it sounds rare.", "c": "make it a habit →", "w": 3 },
+        { "t": "the last note landed and you were still standin’. the river’s still not over it.", "c": "console the river →", "w": 1 }
+      ]
+    },
+    {
+      "id": "driftwood",
+      "when": { "movementRatio": ["<=", 0.2] },
+      "lines": [
+        { "t": "you moved {move}% of the song on a RIVER. actual driftwood is out here showin’ more initiative.", "c": "out-paddle a log →", "w": 10 },
+        { "t": "{move}% movement in whitewater. the current did all the work and it wants credit in the caption.", "c": "earn the caption →", "w": 8 },
+        { "t": "you floated like a lily pad with a login. the frogs are confused but supportive.", "c": "hop once →", "w": 6 },
+        { "t": "{move}% on the river. baptisms involve more thrashin’ than that.", "c": "get dunked proper →", "w": 4 },
+        { "t": "the river carried you {seconds} seconds like a sleepin’ toddler. it’ll want somethin’ for that.", "c": "wake up and pay →", "w": 3 },
+        { "t": "downstream logged you as cargo.", "c": "reclassify yourself →", "w": 1 }
+      ]
+    },
+    {
+      "id": "eggbeater",
+      "when": { "movementRatio": [">=", 0.85] },
+      "lines": [
+        { "t": "{move}% of that song spent thrashin’. the river came out of it whipped like meringue.", "c": "whip it stiffer →", "w": 10 },
+        { "t": "you moved {move}% of the time. trout are fillin’ out incident reports as we speak.", "c": "give ’em page two →", "w": 8 },
+        { "t": "all that churn for one song. somewhere downstream there’s butter now. your butter.", "c": "go collect it →", "w": 6 },
+        { "t": "{move}% motion. the rapids asked YOU to settle down, which is a first for everybody.", "c": "decline politely →", "w": 3 },
+        { "t": "the river now has a you-shaped current. hydrologists are baffled. keep it that way.", "c": "baffle ’em worse →", "w": 1 }
+      ]
+    },
+    {
+      "id": "toe-dipper",
+      "when": { "bailedEarly": ["==", true] },
+      "lines": [
+        { "t": "{seconds} seconds on the water. you checked the temperature with your whole body and left.", "c": "commit to the swim →", "w": 10 },
+        { "t": "in and out in {seconds} seconds. the river’s seen skipping stones stay longer.", "c": "outlast a rock →", "w": 8 },
+        { "t": "{seconds} seconds is a rinse, sugar, not a ride.", "c": "take the full ride →", "w": 6 },
+        { "t": "you left before the first good ramp. it did a little flip for nobody. saddest thing on the river all night.", "c": "catch the flip →", "w": 3 },
+        { "t": "the lifeguard didn’t even have time to sit down.", "c": "make ’em earn it →", "w": 1 }
+      ]
+    },
+    {
+      "id": "glass-ankles",
+      "when": { "accuracy": ["<=", 0.3], "runSeconds": [">=", 60] },
+      "lines": [
+        { "t": "{seconds} seconds of honest effort at {pct}% accuracy. the ramps started duckin’ out of sympathy.", "c": "hit one on purpose →", "w": 10 },
+        { "t": "{pct}% on the ramps but you never quit. the river loves a scrapper, it just also laughs at ’em.", "c": "scrap louder →", "w": 8 },
+        { "t": "you missed most of the ramps but caught ALL of the water. completionist behavior.", "c": "complete the ramps too →", "w": 6 },
+        { "t": "{pct}% accuracy, 100% commitment. frame the second number.", "c": "fix the first one →", "w": 3 },
+        { "t": "the river’s writin’ you a participation trophy in waterproof ink. mostly waterproof.", "c": "smudge it →", "w": 1 }
+      ]
+    },
+    {
+      "id": "scenic-router",
+      "when": { "feet": ["<=", 200], "runSeconds": [">=", 120] },
+      "lines": [
+        { "t": "{seconds} seconds on the river for {feet} feet. you weren’t racin’, you were birdwatchin’ with extra steps.", "c": "spot the finish line →", "w": 10 },
+        { "t": "{feet} feet in {seconds} seconds. molasses checked your time and felt better about itself.", "c": "beat breakfast condiments →", "w": 8 },
+        { "t": "you took the scenic route on a river with one direction. that takes talent, honestly.", "c": "take the fast one →", "w": 6 },
+        { "t": "{feet} feet. the start line can still see you, sugar. it’s wavin’.", "c": "wave goodbye →", "w": 3 },
+        { "t": "somewhere upstream, a leaf you passed at the start just lapped you.", "c": "settle the score →", "w": 1 }
+      ]
+    },
+    {
+      "id": "flipper",
+      "when": { "worldsVisited": [">=", 5] },
+      "lines": [
+        { "t": "{worlds} worlds tonight and the river got a cameo. it’s used to bein’ the whole show.", "c": "give it top billin’ →", "w": 10 },
+        { "t": "you brought {worlds}-world energy to a one-river town. slow down, tourist.", "c": "stay a spell →", "w": 8 },
+        { "t": "{worlds} worlds deep and still surfin’. your evenin’ has a table of contents.", "c": "write the river’s chapter →", "w": 4 },
+        { "t": "the river knows a drifter when it carries one. it carried {worlds} worlds’ worth of restless tonight.", "c": "let one river hold you →", "w": 3 }
+      ]
+    },
+    {
+      "id": "night-shift",
+      "when": { "sessionSeconds": [">=", 900] },
+      "lines": [
+        { "t": "{minutes} minutes in and still paddlin’. the river’s puttin’ you on payroll.", "c": "work the double →", "w": 10 },
+        { "t": "{minutes} minutes tonight. your ears are pruned even if your fingers aren’t.", "c": "one more song won’t hurt →", "w": 8 },
+        { "t": "you’ve been out here {minutes} minutes. the moon’s been askin’ about you.", "c": "tell the moon yourself →", "w": 4 },
+        { "t": "{minutes} minutes deep. this stopped bein’ a session and became a residency.", "c": "extend the residency →", "w": 3 }
+      ]
+    }
+  ],
+  "fallback": [
+    { "t": "{feet} feet, {pct}% on the beat. the river’s seen better and buried worse.", "c": "climb the standings →", "w": 10 },
+    { "t": "you rode ‘{song}’ down the river and both of you came out fine. fine is a start.", "c": "aim past fine →", "w": 8 },
+    { "t": "some ramps hit, some ramps missed, the water kept your secrets.", "c": "make it talk →", "w": 6 },
+    { "t": "a perfectly medium run. the river doesn’t remember it and neither will you, unless.", "c": "unless →", "w": 4 },
+    { "t": "{seconds} seconds of river and nobody drowned. by surfer math that’s a win.", "c": "win bigger →", "w": 3 }
+  ]
+}
