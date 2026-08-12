@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=309';
-import { drawQR } from './lib/qr.js?v=309';
-import { WORLDS } from './worlds/registry.js?v=309';
-import { Net, PALETTE } from './net.js?v=309';
-import { Presence } from './lib/presence.js?v=309';
-import { Pulses } from './lib/pulse.js?v=309';
-import { BeatClock } from './lib/beatclock.js?v=309';
-import { BeatCue } from './lib/beatcue.js?v=309';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=309';
-import { Race, placeOf, standings } from './lib/race.js?v=309';
-import { Signals } from './lib/signals.js?v=309';
-import { RouteMap } from './lib/map.js?v=309';
-import * as sfx from './lib/sfx.js?v=309';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=309';
-import { glowTexture } from './lib/glow.js?v=309';
+import { AudioEngine } from './audio-engine.js?v=310';
+import { drawQR } from './lib/qr.js?v=310';
+import { WORLDS } from './worlds/registry.js?v=310';
+import { Net, PALETTE } from './net.js?v=310';
+import { Presence } from './lib/presence.js?v=310';
+import { Pulses } from './lib/pulse.js?v=310';
+import { BeatClock } from './lib/beatclock.js?v=310';
+import { BeatCue } from './lib/beatcue.js?v=310';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=310';
+import { Race, placeOf, standings } from './lib/race.js?v=310';
+import { Signals } from './lib/signals.js?v=310';
+import { RouteMap } from './lib/map.js?v=310';
+import * as sfx from './lib/sfx.js?v=310';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=310';
+import { glowTexture } from './lib/glow.js?v=310';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -287,8 +287,6 @@ function _switchWorldNow(key) {
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
   if (window.__sig) window.__sig.enterWorld(key);
-  const qr = $('qb-round');
-  if (qr) qr.style.display = (WORLDS[key] && WORLDS[key].rhythm) ? 'none' : '';
   toyRound = null;   // switching worlds mid-song cancels a toy round quietly
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
@@ -861,21 +859,27 @@ audio.el.addEventListener('ended', () => {
   if (!setList) playAuto(true);
 });
 
-// ── toy rounds ── the wandering worlds (no race chart) get an ending too:
-// ONE SONG starts the current track over as a round of its own; when the
-// song ends, the tally card comes up and share/clip are right there.
+// ── toy rounds ── in the wandering worlds (no race chart) every song IS a
+// round: it begins when the track does, and when the track ends the tally
+// card comes up with share and clip right there. Untouched, it rolls on to
+// the next song by itself — a party room never stalls on a card.
 let toyRound = null, toyLast = false;
+audio.el.addEventListener('playing', () => {
+  const w = WORLDS[currentWorldKey];
+  if (!w || w.rhythm || setList || document.body.classList.contains('guest')) return;
+  const src = audio.el.currentSrc || audio.el.src;
+  if (!toyRound || toyRound.src !== src) {
+    toyRound = { score0: score, src };
+    clipBufStart();
+  }
+});
 function startToyRound() {
-  if (toyRound || document.body.classList.contains('guest')) return;
+  if (document.body.classList.contains('guest')) return;
   hideResults();
-  toyRound = { score0: score };
+  toyRound = { score0: score, src: audio.el.currentSrc || audio.el.src };
   audio.el.currentTime = 0;
   audio.play().catch(() => {});
   clipBufStart();
-  const el = $('pass-flash');
-  el.textContent = 'ONE SONG \u2014 MAKE IT COUNT';
-  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2000);
 }
 function showToyResults() {
   clipBufStop(true);
@@ -898,9 +902,9 @@ function showToyResults() {
   $('results').classList.add('show');
   $('results-actions').classList.add('show');
   clearTimeout(resultsTimer);
+  resultsTimer = setTimeout(() => { hideResults(); playAuto(true); }, 12000);
   impact(0.7);
 }
-$('qb-round').addEventListener('click', startToyRound);
 
 $('track-select').addEventListener('change', e => {
   if (!e.target.value) return;
