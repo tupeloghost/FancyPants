@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=308';
-import { drawQR } from './lib/qr.js?v=308';
-import { WORLDS } from './worlds/registry.js?v=308';
-import { Net, PALETTE } from './net.js?v=308';
-import { Presence } from './lib/presence.js?v=308';
-import { Pulses } from './lib/pulse.js?v=308';
-import { BeatClock } from './lib/beatclock.js?v=308';
-import { BeatCue } from './lib/beatcue.js?v=308';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=308';
-import { Race, placeOf, standings } from './lib/race.js?v=308';
-import { Signals } from './lib/signals.js?v=308';
-import { RouteMap } from './lib/map.js?v=308';
-import * as sfx from './lib/sfx.js?v=308';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=308';
-import { glowTexture } from './lib/glow.js?v=308';
+import { AudioEngine } from './audio-engine.js?v=309';
+import { drawQR } from './lib/qr.js?v=309';
+import { WORLDS } from './worlds/registry.js?v=309';
+import { Net, PALETTE } from './net.js?v=309';
+import { Presence } from './lib/presence.js?v=309';
+import { Pulses } from './lib/pulse.js?v=309';
+import { BeatClock } from './lib/beatclock.js?v=309';
+import { BeatCue } from './lib/beatcue.js?v=309';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=309';
+import { Race, placeOf, standings } from './lib/race.js?v=309';
+import { Signals } from './lib/signals.js?v=309';
+import { RouteMap } from './lib/map.js?v=309';
+import * as sfx from './lib/sfx.js?v=309';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=309';
+import { glowTexture } from './lib/glow.js?v=309';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -375,16 +375,35 @@ document.querySelectorAll('#tabs .tab').forEach(t => {
   if (saved) document.querySelector(`#tabs .tab[data-tab="${saved}"]`)?.click();
 }
 
-// world select (hidden element keeps URL/param plumbing) + visible chip grid
+// world select (hidden element keeps URL/param plumbing) + visible chip grid.
+// The grid leads with the showcase pair and this week's guest; the other
+// fourteen wait one click behind SEE ALL — a shorter menu reads faster.
+window.__pickerInit = () => {
+  const front = [...window.__FEATURED_KEYS, window.__WEEK_KEY].filter((k, i, a) => WORLDS[k] && a.indexOf(k) === i);
+  const rest = Object.keys(WORLDS).filter(k => !front.includes(k));
+  const chips = $('world-chips');
+  const mk = (key, extra) => {
+    const b = document.createElement('button');
+    b.className = 'wchip' + (extra ? ' ' + extra : '');
+    b.dataset.key = key;
+    b.textContent = WORLDS[key].label + (key === window.__WEEK_KEY ? ' \u2605' : '');
+    if (key === window.__WEEK_KEY) b.title = 'world of the week';
+    b.addEventListener('click', () => { $('world-select').value = key; switchWorld(key); });
+    chips.appendChild(b);
+  };
+  front.forEach(k => mk(k));
+  const more = document.createElement('button');
+  more.className = 'wchip'; more.id = 'wchip-more'; more.textContent = 'SEE ALL \u2026';
+  more.addEventListener('click', () => {
+    more.remove();
+    rest.forEach(k => mk(k));
+  }, { once: true });
+  chips.appendChild(more);
+};
 for (const [key, w] of Object.entries(WORLDS)) {
   const opt = document.createElement('option');
   opt.value = key; opt.textContent = w.label;
   $('world-select').appendChild(opt);
-
-  const b = document.createElement('button');
-  b.className = 'wchip'; b.dataset.key = key; b.textContent = w.label;
-  b.addEventListener('click', () => { $('world-select').value = key; switchWorld(key); });
-  $('world-chips').appendChild(b);
 }
 $('world-select').addEventListener('change', e => switchWorld(e.target.value));
 
@@ -3007,16 +3026,22 @@ $('btn-solo').addEventListener('click', () => {
 // ── the artist door: paste and share all you want. Your song rides
 // three worlds free; the other fourteen play the house catalog — the
 // demo IS her music, and every share is marketing ──
-// ── the world of the week: THE free share world, rotating through all
-// seventeen. Deterministic from the calendar, so every browser on earth
-// agrees with no server round-trip. One rule, one sentence: free artists
-// share from this week's world; artist access opens all seventeen. A song
-// keeps whatever home it claimed — rotation never breaks an old link.
+// ── the showcase pair and the world of the week ──
+// FEATURED: the front-porch worlds, always up top in the picker.
+// The week world rotates through everything EXCEPT the featured pair
+// (they're always around — the guest spot belongs to the others), anchored
+// so week 2953 = SLIDE and it advances every Monday from there.
+const FEATURED = ['tunnel', 'surfer'];
 const WEEK_WORLD = (() => {
-  const all = Object.keys(WORLDS).sort();
-  return all[Math.floor(Date.now() / 604800000) % all.length];
+  const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k)).sort();
+  const week = Math.floor(Date.now() / 604800000);
+  const anchor = pool.indexOf('slide') - 2953;
+  return pool[((week + anchor) % pool.length + pool.length) % pool.length];
 })();
 const shareableFree = k => k === WEEK_WORLD;
+window.__FEATURED_KEYS = FEATURED;
+window.__WEEK_KEY = WEEK_WORLD;
+window.__pickerInit();
 let ropeShown = false;   // the explainer card appears once per session
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
