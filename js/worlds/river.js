@@ -3,9 +3,9 @@
 // state, no hurry. Tap drops a ripple where you touch the water.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=305';
-import { themePaint } from '../lib/themes.js?v=305';
-import { TUNE } from '../lib/tune.js?v=305';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=306';
+import { themePaint } from '../lib/themes.js?v=306';
+import { TUNE } from '../lib/tune.js?v=306';
 
 const WCOLS = 40, WROWS = 70;       // water mesh
 const WW = 26, WL = 340;

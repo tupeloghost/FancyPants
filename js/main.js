@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=305';
-import { drawQR } from './lib/qr.js?v=305';
-import { WORLDS } from './worlds/registry.js?v=305';
-import { Net, PALETTE } from './net.js?v=305';
-import { Presence } from './lib/presence.js?v=305';
-import { Pulses } from './lib/pulse.js?v=305';
-import { BeatClock } from './lib/beatclock.js?v=305';
-import { BeatCue } from './lib/beatcue.js?v=305';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=305';
-import { Race, placeOf, standings } from './lib/race.js?v=305';
-import { Signals } from './lib/signals.js?v=305';
-import { RouteMap } from './lib/map.js?v=305';
-import * as sfx from './lib/sfx.js?v=305';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=305';
-import { glowTexture } from './lib/glow.js?v=305';
+import { AudioEngine } from './audio-engine.js?v=306';
+import { drawQR } from './lib/qr.js?v=306';
+import { WORLDS } from './worlds/registry.js?v=306';
+import { Net, PALETTE } from './net.js?v=306';
+import { Presence } from './lib/presence.js?v=306';
+import { Pulses } from './lib/pulse.js?v=306';
+import { BeatClock } from './lib/beatclock.js?v=306';
+import { BeatCue } from './lib/beatcue.js?v=306';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=306';
+import { Race, placeOf, standings } from './lib/race.js?v=306';
+import { Signals } from './lib/signals.js?v=306';
+import { RouteMap } from './lib/map.js?v=306';
+import * as sfx from './lib/sfx.js?v=306';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=306';
+import { glowTexture } from './lib/glow.js?v=306';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -621,6 +621,7 @@ function replayRound() {
   audio.el.currentTime = 0;
   beatCue.seek(0);
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  clipBufStart();   // the reel rolls with the round
   armGhost();
   hostGo();
   seenMissed = beatCue.stats.missed;
@@ -667,6 +668,7 @@ function countUp(el, target, ms = 900) {
 }
 
 function showResults(reason) {
+  clipBufStop(true);   // freeze the reel on the run that just ended
   statsRoundDone();
   ghostRoundDone();
   $('awards').innerHTML = '';   // honours belong to set finales only
@@ -812,6 +814,7 @@ function startRaceIfReady() {
     return;
   }
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  clipBufStart();   // the reel rolls with the round
   armGhost();
   hostGo();
   seenMissed = beatCue.stats.missed;
@@ -2471,6 +2474,7 @@ function beginFreeRound() {
   $('round-intro').classList.remove('show');
   setPhase = 'idle';
   race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  clipBufStart();   // the reel rolls with the round
   armGhost();
   hostGo();
   seenMissed = beatCue.stats.missed;
@@ -2564,45 +2568,34 @@ $('rb-share').addEventListener('click', shareThis);
 // QR baked into the frame — the post IS the ad, the link rides inside it.
 // Clips follow the share rule: house songs clip anywhere; an artist's song
 // clips only where its share link works (the trio + the world of the week).
-let clipRec = null, clipTimer = 0, clipTick = 0;
+let clipDraw = false, clipRecs = [], clipRot = 0, clipStag = 0, clipSaved = null, clipMime = '';
 function clipURL() {
   if (window.__sunoShare) return SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
   const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
   return SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
 }
-function stopClip() {
-  if (clipRec && clipRec.state !== 'inactive') clipRec.stop();
-  clearTimeout(clipTimer); clearInterval(clipTick);
-  $('rb-clip').textContent = 'CLIP 15s';
-  $('rb-clip').classList.remove('rec');
-}
-function startClip() {
-  if (clipRec && clipRec.state === 'recording') { stopClip(); return; }
-  if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    // same rope as sharing — the clip is a share in video form
-    if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
-    else {
-      const el = $('pass-flash');
-      el.textContent = 'CLIPS RIDE THE WORLD OF THE WEEK \u2014 ' + WORLDS[WEEK_WORLD].label + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
-    }
-    return;
-  }
+// ── the rolling reel: while a round runs, two staggered recorders keep the
+// last 7.5–15 seconds of the actual run — title and QR baked into every
+// frame. When the results card appears the reel freezes; CLIP hands over
+// the footage of what just happened, not the scoreboard.
+function clipBufStart() {
+  clipBufStop(false);
+  clipSaved = null;
+  if (!window.MediaRecorder) return;
   const game = document.getElementById('canvas');
+  if (!game || !game.width) return;
   const W = 1280, H = Math.round(1280 * game.height / Math.max(1, game.width));
   const comp = document.createElement('canvas');
   comp.width = W; comp.height = H;
   const ctx2 = comp.getContext('2d');
-  // the QR renders once, small and quiet in the corner
   const qrc = document.createElement('canvas');
   const hasQR = drawQR(qrc, clipURL(), 3);
   const title = (window.__sunoShare ? (sunoTrack || 'my song')
     : prettyTrack(($('track-select').value || audio.el.currentSrc || 'this song'))).toUpperCase();
   const wlabel = WORLDS[currentWorldKey] ? WORLDS[currentWorldKey].label : '';
-  let drawing = true;
+  clipDraw = true;
   (function frame() {
-    if (!drawing) return;
+    if (!clipDraw) return;
     ctx2.drawImage(game, 0, 0, W, H);
     const bh = Math.round(H * 0.09);
     ctx2.fillStyle = 'rgba(4,4,10,0.62)';
@@ -2618,7 +2611,6 @@ function startClip() {
     requestAnimationFrame(frame);
   })();
   const stream = comp.captureStream(30);
-  // audio taps the analyser (pre-mute), so a muted room still clips with sound
   try {
     audio.ensureContext();
     if (audio.ctx && audio.analyser) {
@@ -2626,48 +2618,91 @@ function startClip() {
       audio._recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
     }
   } catch (e) { /* silent clip beats no clip */ }
-  const mime = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm']
-    .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
-  let chunks = [];
-  try {
-    clipRec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 5_000_000 } : undefined);
-  } catch (e) {
-    const el = $('pass-flash');
-    el.textContent = 'THIS BROWSER CANNOT CLIP \u2014 TRY CHROME OR SAFARI';
-    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show', 'bad'), 2400);
+  clipMime = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+    .find(m => MediaRecorder.isTypeSupported(m)) || '';
+  const mk = () => {
+    let r;
+    try {
+      r = new MediaRecorder(stream, clipMime ? { mimeType: clipMime, videoBitsPerSecond: 5_000_000 } : undefined);
+    } catch (e) { return null; }
+    r._chunks = [];
+    r._born = Date.now();
+    r.ondataavailable = e => { if (e.data && e.data.size) r._chunks.push(e.data); };
+    r.start(1000);
+    return r;
+  };
+  const first = mk();
+  if (!first) { clipDraw = false; return; }
+  clipRecs = [first];
+  clipStag = setTimeout(() => { if (clipDraw) { const r = mk(); if (r) clipRecs.push(r); } }, 7500);
+  // rotation: any recorder past 15s starts over — between the pair there is
+  // always one holding at least the last 7.5 seconds
+  clipRot = setInterval(() => {
+    clipRecs.forEach((r, i) => {
+      if (r && r.state === 'recording' && Date.now() - r._born >= 15000) {
+        try { r.onstop = null; r.stop(); } catch (e) {}
+        const fresh = mk();
+        if (fresh) clipRecs[i] = fresh;
+      }
+    });
+  }, 1000);
+}
+function clipBufStop(keep) {
+  clearTimeout(clipStag); clearInterval(clipRot);
+  clipDraw = false;
+  const recs = clipRecs; clipRecs = [];
+  if (!recs.length) return;
+  // the elder of the pair holds the most footage — that's the take
+  const best = keep ? recs.slice().sort((x, y) => (y ? Date.now() - y._born : 0) - (x ? Date.now() - x._born : 0))[0] : null;
+  recs.forEach(r => {
+    if (!r) return;
+    if (keep && r === best) {
+      r.onstop = () => {
+        const type = clipMime || 'video/webm';
+        clipSaved = { blob: new Blob(r._chunks, { type }), type };
+      };
+    } else r.onstop = null;
+    try { if (r.state !== 'inactive') r.stop(); } catch (e) {}
+  });
+}
+function deliverClip() {
+  const { blob, type } = clipSaved;
+  const ext = type.includes('mp4') ? 'mp4' : 'webm';
+  const fname = 'fancy-britches-clip.' + ext;
+  const file = new File([blob], fname, { type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: 'Fancy Britches' }).catch(() => {});
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  }
+  const el = $('pass-flash');
+  el.textContent = 'CLIP SAVED \u2014 POST IT, SUGAR';
+  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+}
+$('rb-clip').addEventListener('click', () => {
+  if (window.__sunoShare && !shareableFree(currentWorldKey)) {
+    if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
+    else {
+      const el = $('pass-flash');
+      el.textContent = 'CLIPS RIDE THE WORLD OF THE WEEK \u2014 ' + WORLDS[WEEK_WORLD].label + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
+    }
     return;
   }
-  clipRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-  clipRec.onstop = () => {
-    drawing = false;
-    const type = mime || 'video/webm';
-    const blob = new Blob(chunks, { type });
-    const ext = type.includes('mp4') ? 'mp4' : 'webm';
-    const fname = 'fancy-britches-clip.' + ext;
-    const file = new File([blob], fname, { type });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: 'Fancy Britches' }).catch(() => {});
-    } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = fname;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-    }
+  if (!clipSaved) {
     const el = $('pass-flash');
-    el.textContent = 'CLIP SAVED \u2014 POST IT, SUGAR';
+    el.textContent = 'NOTHING ON THE REEL YET \u2014 PLAY A ROUND FIRST';
     el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
-  };
-  clipRec.start(500);
-  let left = 15;
-  const em = $('rb-clip');
-  em.textContent = '\u25CE 0:15';
-  em.classList.add('rec');
-  clipTick = setInterval(() => { left--; em.textContent = '\u25CE 0:' + String(Math.max(0, left)).padStart(2, '0'); }, 1000);
-  clipTimer = setTimeout(stopClip, 15000);
-}
-$('rb-clip').addEventListener('click', startClip);
+    return;
+  }
+  deliverClip();
+});
 
 function prettyTrack(url) {
   return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
@@ -2686,6 +2721,7 @@ function scoreRound() {
 }
 
 function showSetResults() {
+  clipBufStop(true);
   document.body.classList.remove('play');
   setPhase = 'idle';
   const rows = [...setScores.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
