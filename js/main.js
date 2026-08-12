@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=285';
-import { drawQR } from './lib/qr.js?v=285';
-import { WORLDS } from './worlds/registry.js?v=285';
-import { Net, PALETTE } from './net.js?v=285';
-import { Presence } from './lib/presence.js?v=285';
-import { Pulses } from './lib/pulse.js?v=285';
-import { BeatClock } from './lib/beatclock.js?v=285';
-import { BeatCue } from './lib/beatcue.js?v=285';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=285';
-import { Race, placeOf, standings } from './lib/race.js?v=285';
-import { RouteMap } from './lib/map.js?v=285';
-import * as sfx from './lib/sfx.js?v=285';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=285';
-import { glowTexture } from './lib/glow.js?v=285';
+import { AudioEngine } from './audio-engine.js?v=286';
+import { drawQR } from './lib/qr.js?v=286';
+import { WORLDS } from './worlds/registry.js?v=286';
+import { Net, PALETTE } from './net.js?v=286';
+import { Presence } from './lib/presence.js?v=286';
+import { Pulses } from './lib/pulse.js?v=286';
+import { BeatClock } from './lib/beatclock.js?v=286';
+import { BeatCue } from './lib/beatcue.js?v=286';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=286';
+import { Race, placeOf, standings } from './lib/race.js?v=286';
+import { RouteMap } from './lib/map.js?v=286';
+import * as sfx from './lib/sfx.js?v=286';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=286';
+import { glowTexture } from './lib/glow.js?v=286';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2203,24 +2203,10 @@ window.__map = routeMap;
 let setScores = new Map();
 let roundTimer = 0;
 
-function askMode() {
-  if (!trackList.length) {
-    // manifest still in flight (slow network): ask again when it lands
-    // rather than stranding a first-timer with no card at all
-    clearTimeout(askMode._t);
-    askMode._t = setTimeout(askMode, 500);
-    return;
-  }
-  $('mode-card').classList.add('show');
-}
-$('opt-vibe').addEventListener('click', () => {
-  $('mode-card').classList.remove('show');
-  endSet();
-});
-$('opt-play').addEventListener('click', () => {
-  $('mode-card').classList.remove('show');
-  startSet(4);
-});
+// The VIBE/PLAY question was retired: free rounds live inside vibe (the
+// in-world PLAY button), so the up-front card only added a decision. The
+// set runner below stays intact for when sets earn their way back.
+function askMode() {}
 
 function startSet(rounds) {
   statsReset();
@@ -2620,7 +2606,6 @@ $('btn-join').addEventListener('click', () => {
 });
 $('btn-host').addEventListener('click', () => {
   startRoom(genCode(), ensureName(), true);
-  setTimeout(askMode, 400);
 });
 // a name nobody had to type — southern, friendly, never blocking the door
 const NAME_POOL = ['junebug', 'firefly', 'possum', 'magnolia', 'catfish',
@@ -2666,7 +2651,6 @@ $('btn-solo').addEventListener('click', () => {
   }
   ensureName();
   dismissOverlay();
-  setTimeout(askMode, 400);
 });
 // the artist's door feeds the waiting list for now — self-serve pasting
 // returns when artist features launch (?suno= demo links still work)
