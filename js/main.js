@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=330';
-import { drawQR } from './lib/qr.js?v=330';
-import { WORLDS } from './worlds/registry.js?v=330';
-import { Net, PALETTE } from './net.js?v=330';
-import { Presence } from './lib/presence.js?v=330';
-import { Pulses } from './lib/pulse.js?v=330';
-import { BeatClock } from './lib/beatclock.js?v=330';
-import { BeatCue } from './lib/beatcue.js?v=330';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=330';
-import { Race, placeOf, standings } from './lib/race.js?v=330';
-import { Signals } from './lib/signals.js?v=330';
-import { pickShareLine } from './lib/lines.js?v=330';
-import { RouteMap } from './lib/map.js?v=330';
-import * as sfx from './lib/sfx.js?v=330';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=330';
-import { glowTexture } from './lib/glow.js?v=330';
+import { AudioEngine } from './audio-engine.js?v=331';
+import { drawQR } from './lib/qr.js?v=331';
+import { WORLDS } from './worlds/registry.js?v=331';
+import { Net, PALETTE } from './net.js?v=331';
+import { Presence } from './lib/presence.js?v=331';
+import { Pulses } from './lib/pulse.js?v=331';
+import { BeatClock } from './lib/beatclock.js?v=331';
+import { BeatCue } from './lib/beatcue.js?v=331';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=331';
+import { Race, placeOf, standings } from './lib/race.js?v=331';
+import { Signals } from './lib/signals.js?v=331';
+import { pickShareLine } from './lib/lines.js?v=331';
+import { RouteMap } from './lib/map.js?v=331';
+import * as sfx from './lib/sfx.js?v=331';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=331';
+import { glowTexture } from './lib/glow.js?v=331';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3079,10 +3079,11 @@ $('room-badge').addEventListener('click', () => {
 });
 $('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
+let nameDeck = [];
 $('name-dice').addEventListener('click', () => {
-  const cur = $('join-name').value;
-  let pick;
-  do { pick = NAME_POOL[(Math.random() * NAME_POOL.length) | 0]; } while (pick === cur && NAME_POOL.length > 1);
+  // a shuffled deck, dealt one at a time — no repeats till the well runs dry
+  if (!nameDeck.length) nameDeck = shuffled(NAME_POOL);
+  const pick = nameDeck.pop();
   $('join-name').value = pick;
   localStorage.setItem('fp_name', pick);
 });
@@ -3099,20 +3100,57 @@ $('btn-host').addEventListener('click', () => {
 // the name well — deep enough that the dice stay fun. Southern nouns,
 // porch critters, diner food, and things your memaw would holler.
 const NAME_POOL = [
-  'junebug', 'firefly', 'possum', 'magnolia', 'catfish', 'sugarplum',
-  'clover', 'biscuit', 'dixie', 'banjo', 'peaches', 'dumplin', 'crawdad',
-  'hushpuppy', 'cornbread', 'sweettea', 'moonpie', 'buttercup', 'doodlebug',
-  'skeeter', 'tadpole', 'bullfrog', 'mudbug', 'goober', 'critter', 'varmint',
-  'rascal', 'sugarfoot', 'puddin', 'fritter', 'flapjack', 'shortcake',
-  'okra', 'pecan', 'gumbo', 'grits', 'chicory', 'sassafras', 'persimmon',
-  'muscadine', 'honeysuckle', 'bluebell', 'hollyhock', 'wisteria', 'catbird',
-  'bluejay', 'whippoorwill', 'mockingbird', 'ladybird', 'gator', 'sawgrass',
-  'cattail', 'porchlight', 'lightninbug', 'firecracker', 'sparkplug',
-  'scalawag', 'hotrod', 'jalopy', 'rooster', 'banty', 'heifer', 'muleskin',
-  'cooter', 'yonder', 'hollerin', 'smokehouse', 'tacklebox', 'bobber',
-  'nightcrawler', 'catalpa', 'kudzu', 'brambleberry', 'cobbler', 'julep',
-  'praline', 'beignet', 'boudin', 'etouffee', 'jamboree', 'hoedown',
-  'shindig', 'sockhop', 'twostep', 'dosido', 'hootenanny',
+  // critters
+  'junebug', 'firefly', 'possum', 'catfish', 'crawdad', 'skeeter', 'tadpole',
+  'bullfrog', 'mudbug', 'goober', 'critter', 'varmint', 'gator', 'catbird',
+  'bluejay', 'whippoorwill', 'mockingbird', 'ladybird', 'doodlebug', 'rooster',
+  'banty', 'heifer', 'cooter', 'nightcrawler', 'bobcat', 'armadillo',
+  'chickadee', 'bobwhite', 'killdeer', 'dragonfly', 'lightninbug', 'polecat',
+  'groundhog', 'chipmunk', 'bream', 'crappie', 'mudcat', 'hounddog',
+  'bluetick', 'redbone', 'beagle', 'tomcat', 'barncat', 'billygoat',
+  'nannygoat', 'muskrat', 'terrapin', 'wasper', 'dirtdauber', 'katydid',
+  'cicada', 'cricket', 'peeper', 'minnow', 'shiner', 'whistlepig',
+  'grasshopper', 'inchworm', 'bollweevil', 'honeybee', 'bumblebee',
+  'wiggleworm', 'ringtail', 'wildcat', 'muleskin',
+  // vittles
+  'biscuit', 'peaches', 'dumplin', 'hushpuppy', 'cornbread', 'sweettea',
+  'moonpie', 'okra', 'pecan', 'gumbo', 'grits', 'chicory', 'cobbler',
+  'julep', 'praline', 'beignet', 'boudin', 'etouffee', 'fritter', 'flapjack',
+  'shortcake', 'puddin', 'sugarplum', 'cayenne', 'jambalaya', 'succotash',
+  'chowchow', 'gherkin', 'sorghum', 'molasses', 'honeybun', 'sweetpea',
+  'snapbean', 'butterbean', 'collard', 'turnip', 'rutabaga', 'kumquat',
+  'mayhaw', 'muscadine', 'peanut', 'buttermilk', 'clabber', 'gravyboat',
+  'hominy', 'hoecake', 'johnnycake', 'cracklin', 'chitlin', 'fatback',
+  // flora
+  'magnolia', 'clover', 'sassafras', 'persimmon', 'honeysuckle', 'bluebell',
+  'hollyhock', 'wisteria', 'sawgrass', 'cattail', 'catalpa', 'kudzu',
+  'brambleberry', 'dogwood', 'redbud', 'sweetgum', 'sycamore', 'loblolly',
+  'palmetto', 'cottonwood', 'tumbleweed', 'zinnia', 'marigold', 'petunia',
+  'camellia', 'azalea', 'gardenia', 'tigerlily', 'blackberry', 'dewberry',
+  'mulberry', 'pawpaw', 'hickory', 'buckeye', 'chinaberry', 'gourd',
+  // the porch
+  'porchlight', 'smokehouse', 'tacklebox', 'bobber', 'clothesline',
+  'screendoor', 'porchswing', 'washboard', 'moonshine', 'masonjar',
+  'strawhat', 'overalls', 'washtub', 'woodstove', 'cellardoor', 'stovepipe',
+  'fiddle', 'washpot', 'dinnerbell', 'johnboat', 'airboat', 'skiff',
+  'pontoon', 'flatbed', 'tailgate', 'mudflap', 'backroad', 'buckboard',
+  'haywagon', 'hotrod', 'jalopy', 'sparkplug', 'crankshaft',
+  // the land
+  'yonder', 'sundog', 'redclay', 'bayou', 'thicket', 'brierpatch',
+  'creekbed', 'sandbar', 'levee', 'delta', 'holler', 'gullywasher',
+  // the dance
+  'banjo', 'hoedown', 'shindig', 'sockhop', 'twostep', 'dosido',
+  'hootenanny', 'jamboree', 'dulcimer', 'jugband', 'harmonica', 'zydeco',
+  'cakewalk', 'clogger', 'flatfoot', 'yodel', 'dixie',
+  // kinfolk & mischief
+  'meemaw', 'bubba', 'darlin', 'sugarbritches', 'fancybritches', 'britches',
+  'youngin', 'rapscallion', 'sassypants', 'lambchop', 'snickerdoodle',
+  'whippersnapper', 'ragamuffin', 'knucklehead', 'stinker', 'scamp',
+  'galoot', 'cattywampus', 'lollygag', 'skedaddle', 'hornswoggle',
+  'doohickey', 'thingamajig', 'whatnot', 'dagnabbit', 'dadgum', 'hogwash',
+  'malarkey', 'tomfoolery', 'shenanigan', 'caboodle', 'humdinger', 'dilly',
+  'stemwinder', 'pistol', 'spitfire', 'firecracker', 'sugarfoot',
+  'buttercup', 'scalawag', 'rascal', 'hollerin', 'sweetroll',
 ];
 function ensureName() {
   let n = $('join-name').value.trim();
