@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=306';
-import { drawQR } from './lib/qr.js?v=306';
-import { WORLDS } from './worlds/registry.js?v=306';
-import { Net, PALETTE } from './net.js?v=306';
-import { Presence } from './lib/presence.js?v=306';
-import { Pulses } from './lib/pulse.js?v=306';
-import { BeatClock } from './lib/beatclock.js?v=306';
-import { BeatCue } from './lib/beatcue.js?v=306';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=306';
-import { Race, placeOf, standings } from './lib/race.js?v=306';
-import { Signals } from './lib/signals.js?v=306';
-import { RouteMap } from './lib/map.js?v=306';
-import * as sfx from './lib/sfx.js?v=306';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=306';
-import { glowTexture } from './lib/glow.js?v=306';
+import { AudioEngine } from './audio-engine.js?v=307';
+import { drawQR } from './lib/qr.js?v=307';
+import { WORLDS } from './worlds/registry.js?v=307';
+import { Net, PALETTE } from './net.js?v=307';
+import { Presence } from './lib/presence.js?v=307';
+import { Pulses } from './lib/pulse.js?v=307';
+import { BeatClock } from './lib/beatclock.js?v=307';
+import { BeatCue } from './lib/beatcue.js?v=307';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=307';
+import { Race, placeOf, standings } from './lib/race.js?v=307';
+import { Signals } from './lib/signals.js?v=307';
+import { RouteMap } from './lib/map.js?v=307';
+import * as sfx from './lib/sfx.js?v=307';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=307';
+import { glowTexture } from './lib/glow.js?v=307';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -287,6 +287,9 @@ function _switchWorldNow(key) {
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
   if (window.__sig) window.__sig.enterWorld(key);
+  const qr = $('qb-round');
+  if (qr) qr.style.display = (WORLDS[key] && WORLDS[key].rhythm) ? 'none' : '';
+  toyRound = null;   // switching worlds mid-song cancels a toy round quietly
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
   pan.x = pan.y = 0;
@@ -629,6 +632,7 @@ function replayRound() {
 }
 $('rb-again').addEventListener('click', () => {
   if ($('rb-again').dataset.mode === 'set') { hideResults(); lastSetStart(); }
+  else if (toyLast) { hideResults(); startToyRound(); }
   else replayRound();
 });
 $('rb-next').addEventListener('click', () => {
@@ -668,6 +672,7 @@ function countUp(el, target, ms = 900) {
 }
 
 function showResults(reason) {
+  toyLast = false;
   clipBufStop(true);   // freeze the reel on the run that just ended
   statsRoundDone();
   ghostRoundDone();
@@ -826,8 +831,52 @@ window.__startRace = startRaceIfReady;
 // quietly disagree for the rest of the track
 audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 
-// when a track runs out, roll straight into the next one
-audio.el.addEventListener('ended', () => { if (!setList) playAuto(true); });
+// when a track runs out, roll straight into the next one — unless a toy
+// round is on: those END, with a tally and a share moment, like a real round
+audio.el.addEventListener('ended', () => {
+  if (toyRound) { showToyResults(); return; }
+  if (!setList) playAuto(true);
+});
+
+// ── toy rounds ── the wandering worlds (no race chart) get an ending too:
+// ONE SONG starts the current track over as a round of its own; when the
+// song ends, the tally card comes up and share/clip are right there.
+let toyRound = null, toyLast = false;
+function startToyRound() {
+  if (toyRound || document.body.classList.contains('guest')) return;
+  hideResults();
+  toyRound = { score0: score };
+  audio.el.currentTime = 0;
+  audio.play().catch(() => {});
+  clipBufStart();
+  const el = $('pass-flash');
+  el.textContent = 'ONE SONG \u2014 MAKE IT COUNT';
+  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2000);
+}
+function showToyResults() {
+  clipBufStop(true);
+  const gained = Math.max(0, score - toyRound.score0);
+  toyRound = null;
+  toyLast = true;
+  resultsShown = true;
+  $('awards').innerHTML = '';
+  $('results-place').textContent = gained > 0 ? '+' + gained.toLocaleString() : 'THAT\u2019S THE SONG';
+  const subs = ["the song's done \u2014 look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
+  $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
+  $('results-board').innerHTML = '';
+  $('rs-acc').textContent = '\u2014'; $('rs-streak').textContent = '\u2014'; $('rs-notes').textContent = '\u2014';
+  $('rs-pts').textContent = gained > 0 ? '+' + gained : '';
+  $('rb-again').textContent = 'ONE MORE';
+  $('rb-next').textContent = 'NEXT WORLD';
+  delete $('rb-again').dataset.mode;
+  delete $('rb-next').dataset.mode;
+  $('results').classList.add('show');
+  $('results-actions').classList.add('show');
+  clearTimeout(resultsTimer);
+  impact(0.7);
+}
+$('qb-round').addEventListener('click', startToyRound);
 
 $('track-select').addEventListener('change', e => {
   if (!e.target.value) return;
