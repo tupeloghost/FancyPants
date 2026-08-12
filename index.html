@@ -253,6 +253,7 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
+  #qb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
 
   /* ── Round intro ── the route between rounds, and where charting hides ── */
@@ -1873,6 +1874,7 @@
   <button class="qb" id="qb-mute" title="silence your speakers — the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
   <span class="qsep"></span>
   <button class="qb" id="qb-share" title="share this song &amp; world"><i>&#8599;</i><em>share</em></button>
+  <button class="qb" id="qb-clip" title="record 15 seconds &mdash; song name &amp; QR baked in"><i>&#9678;</i><em>clip</em></button>
 </div>
 
 <div id="panel">
@@ -1999,7 +2001,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 292</div>
+      <div id="build-stamp">build 293</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2041,6 +2043,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=292"></script>
+<script type="module" src="js/main.js?v=293"></script>
 </body>
 </html>

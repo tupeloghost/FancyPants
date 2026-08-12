@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=292';
-import { drawQR } from './lib/qr.js?v=292';
-import { WORLDS } from './worlds/registry.js?v=292';
-import { Net, PALETTE } from './net.js?v=292';
-import { Presence } from './lib/presence.js?v=292';
-import { Pulses } from './lib/pulse.js?v=292';
-import { BeatClock } from './lib/beatclock.js?v=292';
-import { BeatCue } from './lib/beatcue.js?v=292';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=292';
-import { Race, placeOf, standings } from './lib/race.js?v=292';
-import { RouteMap } from './lib/map.js?v=292';
-import * as sfx from './lib/sfx.js?v=292';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=292';
-import { glowTexture } from './lib/glow.js?v=292';
+import { AudioEngine } from './audio-engine.js?v=293';
+import { drawQR } from './lib/qr.js?v=293';
+import { WORLDS } from './worlds/registry.js?v=293';
+import { Net, PALETTE } from './net.js?v=293';
+import { Presence } from './lib/presence.js?v=293';
+import { Pulses } from './lib/pulse.js?v=293';
+import { BeatClock } from './lib/beatclock.js?v=293';
+import { BeatCue } from './lib/beatcue.js?v=293';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=293';
+import { Race, placeOf, standings } from './lib/race.js?v=293';
+import { RouteMap } from './lib/map.js?v=293';
+import * as sfx from './lib/sfx.js?v=293';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=293';
+import { glowTexture } from './lib/glow.js?v=293';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2516,6 +2516,115 @@ function shareThis() {
 }
 $('qb-share').addEventListener('click', shareThis);
 $('rb-share').addEventListener('click', shareThis);
+
+// ── CLIP: fifteen seconds of the run with the song's name and a scannable
+// QR baked into the frame — the post IS the ad, the link rides inside it.
+// Clips follow the share rule: house songs clip anywhere; an artist's song
+// clips only where its share link works (the trio + the world of the week).
+let clipRec = null, clipTimer = 0, clipTick = 0;
+function clipURL() {
+  if (window.__sunoShare) return SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
+  const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
+  return SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
+}
+function stopClip() {
+  if (clipRec && clipRec.state !== 'inactive') clipRec.stop();
+  clearTimeout(clipTimer); clearInterval(clipTick);
+  $('qb-clip').querySelector('em').textContent = 'clip';
+  $('qb-clip').classList.remove('rec');
+}
+function startClip() {
+  if (clipRec && clipRec.state === 'recording') { stopClip(); return; }
+  if (window.__sunoShare && !shareableFree(currentWorldKey)) {
+    // same rope as sharing — the clip is a share in video form
+    if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
+    else {
+      const el = $('pass-flash');
+      el.textContent = 'CLIPS RIDE WHERE SHARES RIDE \u2014 TUNNEL \u00b7 RIVER \u00b7 COMETS, OR ' + WORLDS[WEEK_WORLD].label;
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+    return;
+  }
+  const game = document.getElementById('canvas');
+  const W = 1280, H = Math.round(1280 * game.height / Math.max(1, game.width));
+  const comp = document.createElement('canvas');
+  comp.width = W; comp.height = H;
+  const ctx2 = comp.getContext('2d');
+  // the QR renders once, small and quiet in the corner
+  const qrc = document.createElement('canvas');
+  const hasQR = drawQR(qrc, clipURL(), 3);
+  const title = (window.__sunoShare ? (sunoTrack || 'my song')
+    : prettyTrack(($('track-select').value || audio.el.currentSrc || 'this song'))).toUpperCase();
+  const wlabel = WORLDS[currentWorldKey] ? WORLDS[currentWorldKey].label : '';
+  let drawing = true;
+  (function frame() {
+    if (!drawing) return;
+    ctx2.drawImage(game, 0, 0, W, H);
+    const bh = Math.round(H * 0.09);
+    ctx2.fillStyle = 'rgba(4,4,10,0.62)';
+    ctx2.fillRect(0, H - bh, W, bh);
+    ctx2.fillStyle = 'rgba(240,238,255,0.92)';
+    ctx2.font = '400 ' + Math.round(bh * 0.42) + 'px Didot, "Bodoni 72", Georgia, serif';
+    ctx2.textBaseline = 'middle';
+    ctx2.fillText(title + '  \u00b7  ' + wlabel + '  \u2014  FANCY BRITCHES', Math.round(bh * 0.5), H - bh / 2);
+    if (hasQR) {
+      const q = bh * 1.6, m = Math.round(bh * 0.25);
+      ctx2.drawImage(qrc, W - q - m, H - q - m, q, q);
+    }
+    requestAnimationFrame(frame);
+  })();
+  const stream = comp.captureStream(30);
+  // audio taps the analyser (pre-mute), so a muted room still clips with sound
+  try {
+    audio.ensureContext();
+    if (audio.ctx && audio.analyser) {
+      if (!audio._recDest) { audio._recDest = audio.ctx.createMediaStreamDestination(); audio.analyser.connect(audio._recDest); }
+      audio._recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    }
+  } catch (e) { /* silent clip beats no clip */ }
+  const mime = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+    .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+  let chunks = [];
+  try {
+    clipRec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 5_000_000 } : undefined);
+  } catch (e) {
+    const el = $('pass-flash');
+    el.textContent = 'THIS BROWSER CANNOT CLIP \u2014 TRY CHROME OR SAFARI';
+    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show', 'bad'), 2400);
+    return;
+  }
+  clipRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  clipRec.onstop = () => {
+    drawing = false;
+    const type = mime || 'video/webm';
+    const blob = new Blob(chunks, { type });
+    const ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const fname = 'fancy-britches-clip.' + ext;
+    const file = new File([blob], fname, { type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Fancy Britches' }).catch(() => {});
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = fname;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+    }
+    const el = $('pass-flash');
+    el.textContent = 'CLIP SAVED \u2014 POST IT, SUGAR';
+    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+  };
+  clipRec.start(500);
+  let left = 15;
+  const em = $('qb-clip').querySelector('em');
+  em.textContent = '0:15';
+  $('qb-clip').classList.add('rec');
+  clipTick = setInterval(() => { left--; em.textContent = '0:' + String(Math.max(0, left)).padStart(2, '0'); }, 1000);
+  clipTimer = setTimeout(stopClip, 15000);
+}
+$('qb-clip').addEventListener('click', startClip);
 
 function prettyTrack(url) {
   return decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, '')).replace(/_/g, ' ');
