@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=327';
-import { drawQR } from './lib/qr.js?v=327';
-import { WORLDS } from './worlds/registry.js?v=327';
-import { Net, PALETTE } from './net.js?v=327';
-import { Presence } from './lib/presence.js?v=327';
-import { Pulses } from './lib/pulse.js?v=327';
-import { BeatClock } from './lib/beatclock.js?v=327';
-import { BeatCue } from './lib/beatcue.js?v=327';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=327';
-import { Race, placeOf, standings } from './lib/race.js?v=327';
-import { Signals } from './lib/signals.js?v=327';
-import { pickShareLine } from './lib/lines.js?v=327';
-import { RouteMap } from './lib/map.js?v=327';
-import * as sfx from './lib/sfx.js?v=327';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=327';
-import { glowTexture } from './lib/glow.js?v=327';
+import { AudioEngine } from './audio-engine.js?v=328';
+import { drawQR } from './lib/qr.js?v=328';
+import { WORLDS } from './worlds/registry.js?v=328';
+import { Net, PALETTE } from './net.js?v=328';
+import { Presence } from './lib/presence.js?v=328';
+import { Pulses } from './lib/pulse.js?v=328';
+import { BeatClock } from './lib/beatclock.js?v=328';
+import { BeatCue } from './lib/beatcue.js?v=328';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=328';
+import { Race, placeOf, standings } from './lib/race.js?v=328';
+import { Signals } from './lib/signals.js?v=328';
+import { pickShareLine } from './lib/lines.js?v=328';
+import { RouteMap } from './lib/map.js?v=328';
+import * as sfx from './lib/sfx.js?v=328';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=328';
+import { glowTexture } from './lib/glow.js?v=328';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2171,7 +2171,7 @@ const ROOM_CHARS = 'ACDEFGHJKMNPQRTUVWXYZ2346789'; // no O/0, I/1, ambiguous gly
 const genCode = () => Array.from({ length: 4 }, () => ROOM_CHARS[Math.floor(Math.random() * ROOM_CHARS.length)]).join('');
 const validName = n => /^[a-zA-Z0-9_]{3,14}$/.test(n);
 
-$('join-name').value = net.local.name === 'you' ? '' : net.local.name;
+// (no prefill — the blank field lets the placeholder sell the dice)
 
 
 // The same rule, phrased for the device in hand: a phone player has no
