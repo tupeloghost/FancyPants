@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=314';
-import { drawQR } from './lib/qr.js?v=314';
-import { WORLDS } from './worlds/registry.js?v=314';
-import { Net, PALETTE } from './net.js?v=314';
-import { Presence } from './lib/presence.js?v=314';
-import { Pulses } from './lib/pulse.js?v=314';
-import { BeatClock } from './lib/beatclock.js?v=314';
-import { BeatCue } from './lib/beatcue.js?v=314';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=314';
-import { Race, placeOf, standings } from './lib/race.js?v=314';
-import { Signals } from './lib/signals.js?v=314';
-import { pickShareLine } from './lib/lines.js?v=314';
-import { RouteMap } from './lib/map.js?v=314';
-import * as sfx from './lib/sfx.js?v=314';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=314';
-import { glowTexture } from './lib/glow.js?v=314';
+import { AudioEngine } from './audio-engine.js?v=315';
+import { drawQR } from './lib/qr.js?v=315';
+import { WORLDS } from './worlds/registry.js?v=315';
+import { Net, PALETTE } from './net.js?v=315';
+import { Presence } from './lib/presence.js?v=315';
+import { Pulses } from './lib/pulse.js?v=315';
+import { BeatClock } from './lib/beatclock.js?v=315';
+import { BeatCue } from './lib/beatcue.js?v=315';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=315';
+import { Race, placeOf, standings } from './lib/race.js?v=315';
+import { Signals } from './lib/signals.js?v=315';
+import { pickShareLine } from './lib/lines.js?v=315';
+import { RouteMap } from './lib/map.js?v=315';
+import * as sfx from './lib/sfx.js?v=315';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=315';
+import { glowTexture } from './lib/glow.js?v=315';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1527,6 +1527,14 @@ function pickPass(pool, who) {
 }
 
 let passT = 0;
+// one flash pipe for every announcement — good news plain, bad news red
+function flash(msg, ms = 2200, bad = false) {
+  const el = $('pass-flash');
+  el.textContent = msg;
+  el.classList.toggle('bad', bad);
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show', 'bad'), ms);
+}
 function flashPass(p, youWent) {
   if (youWent) myStats.passes++; else myStats.passed++;
   statsPush();
@@ -2024,19 +2032,13 @@ function openRivalsPick() {
     b.addEventListener('click', () => {
       if (score < t.cost) {
         sfx.thud();
-        const el = $('pass-flash');
-        el.textContent = "YOU'LL NEED " + t.cost + ' PTS FOR THAT, SUGAR';
-        el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-        clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+        flash("YOU'LL NEED " + t.cost + ' PTS FOR THAT, SUGAR', 1600, true);
         return;
       }
       addScore(-t.cost, undefined, undefined, true);
       myStats.bombs++; statsPush();
       net.sendEmote(t.i, name, t.e);
-      const el = $('pass-flash');
-      el.textContent = t.e + ' \u2192 ' + name.toUpperCase();
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+      flash(t.e + ' \u2192 ' + name.toUpperCase(), 1600);
       rivalsTarget = null; openRivalsPick(); renderRivals();
     });
     pick.appendChild(b);
@@ -2373,6 +2375,14 @@ $('pl-go').addEventListener('click', () => {
     })
     .catch(() => { $('pl-msg').textContent = 'could not reach that playlist \u2014 try again in a spell'; });
 });
+// the artist door, one doorway: open the paste slot (optionally pre-filled
+// and pre-loaded), used by the landing button, the set-list card, and links
+function openArtistDoor(raw) {
+  document.body.classList.add('suno-live');
+  panel.classList.remove('hidden', 'collapsed');
+  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+  if (raw) { $('suno-input').value = raw; loadSuno(); }
+}
 $('pl-world-go').addEventListener('click', () => {
   const raw = $('pl-input').value.trim();
   const key = $('pl-world').value;
@@ -2380,11 +2390,7 @@ $('pl-world-go').addEventListener('click', () => {
   $('pl-pick').classList.add('hidden');
   $('pl-row').classList.add('hidden');
   $('pl-msg').textContent = '';
-  document.body.classList.add('suno-live');
-  panel.classList.remove('hidden', 'collapsed');
-  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
-  $('suno-input').value = raw;
-  loadSuno();
+  openArtistDoor(raw);
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
 });
 
@@ -2627,18 +2633,9 @@ function shareThis() {
     }).catch(() => {});
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
-    // their song outside the trio: the rope, once as the full card, then a
-    // flash — and no link goes out, so the choice stays theirs
-    if (!ropeShown) {
-      ropeShown = true;
-      $('taste-card').classList.remove('hidden');
-    } else {
-      const el = $('pass-flash');
-      el.textContent = 'YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-        + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2800);
-    }
+    // their song outside the free three: the rope — and no link goes out
+    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
+      + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
@@ -2650,13 +2647,10 @@ function shareThis() {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text + '\n' + url).then(() => {
-      const el = $('pass-flash');
-      el.textContent = shareThis._home
+      flash(shareThis._home
         ? 'LINK COPIED \u2014 ' + shareThis._home + ' IS YOUR SONG\u2019S HOME NOW'
-        : 'LINK COPIED, SUGAR';
+        : 'LINK COPIED, SUGAR', 1600);
       shareThis._home = null;
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
     }).catch(() => {});
   }
 }
@@ -2776,27 +2770,15 @@ function deliverClip() {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
-  const el = $('pass-flash');
-  el.textContent = 'CLIP SAVED \u2014 POST IT, SUGAR';
-  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+  flash('CLIP SAVED \u2014 POST IT, SUGAR', 2200);
 }
 $('rb-clip').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
-    else {
-      const el = $('pass-flash');
-      el.textContent = 'CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
-      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
-    }
+    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   }
   if (!clipSaved) {
-    const el = $('pass-flash');
-    el.textContent = 'NOTHING ON THE REEL YET \u2014 PLAY A ROUND FIRST';
-    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+    flash('NOTHING ON THE REEL YET \u2014 PLAY A ROUND FIRST', 2200);
     return;
   }
   deliverClip();
@@ -3036,10 +3018,7 @@ function ensureName() {
       const bonus = Math.min(50, streak * 5);
       setTimeout(() => {
         addScore(bonus, undefined, undefined, true);
-        const el = $('pass-flash');
-        el.textContent = 'DAY ' + streak + ' IN A ROW \u00b7 +' + bonus + ', SUGAR';
-        el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-        clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
+        flash('DAY ' + streak + ' IN A ROW \u00b7 +' + bonus + ', SUGAR', 2600);
       }, 2500);
     }
   }
@@ -3079,13 +3058,16 @@ window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
 window.__pickerInit();
 let ropeShown = false;   // the explainer card appears once per session
+// the rope: the full card once per session, a quick flash after
+function ropeGate(msg) {
+  if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
+  else flash(msg, 2800);
+}
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
-  document.body.classList.add('suno-live');
   ensureName();
   dismissOverlay();
-  panel.classList.remove('hidden', 'collapsed');
-  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+  openArtistDoor();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
   $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s ' + WORLDS[WEEK_WORLD].label;
 });
@@ -3162,10 +3144,7 @@ function emojiRain(char, fromName) {
     box.appendChild(sp);
   }
   if (fromName) {
-    const el = $('pass-flash');
-    el.textContent = fromName.toUpperCase() + ' SENT ' + char;
-    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2200);
+    flash(fromName.toUpperCase() + ' SENT ' + char, 2200);
   }
   sfx.fanfare();
   impact(0.5);
@@ -3176,19 +3155,13 @@ function sendBomb(toName, idx) {
     const b = $('score-badge');
     b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
     sfx.thud();
-    const el = $('pass-flash');
-    el.textContent = "YOU'LL NEED " + BOMB_COST + ' PTS FOR THAT, SUGAR';
-    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+    flash("YOU'LL NEED " + BOMB_COST + ' PTS FOR THAT, SUGAR', 1600, true);
     return;
   }
   addScore(-BOMB_COST, undefined, undefined, true);
   myStats.bombs++; statsPush();
   net.sendEmote(idx, toName, EMOJIS[idx]);
-  const el = $('pass-flash');
-  el.textContent = EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase();
-  el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+  flash(EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase(), 1600);
   sfx.hit(6, true);
 }
 
@@ -3199,19 +3172,13 @@ net.onEmote = (p, i, to, e) => {
     if (i === 100) debuff.fogUntil = now + 4000;
     if (i === 101) debuff.swayUntil = now + 4000;
     debuff.from = p.name || '?';
-    const el = $('pass-flash');
-    el.textContent = debuff.from.toUpperCase() + ' ' + (i === 100 ? '\u{1F32B}\uFE0F FOGGED YOU' : '\u{1F4AB} SWAYED YOU');
-    el.classList.add('bad'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2000);
+    flash(debuff.from.toUpperCase() + ' ' + (i === 100 ? '\u{1F32B}\uFE0F FOGGED YOU' : '\u{1F4AB} SWAYED YOU'), 2000, true);
     sfx.thud();
     return;
   }
   if (to && to === net.local.name) emojiRain(e || EMOJIS[i] || EMOJIS[0], p.name);
   else if (to) {
-    const el = $('pass-flash');
-    el.textContent = (p.name || '?').toUpperCase() + ' ' + (EMOJIS[i] || '') + ' ' + to.toUpperCase();
-    el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1400);
+    flash((p.name || '?').toUpperCase() + ' ' + (EMOJIS[i] || '') + ' ' + to.toUpperCase(), 1400);
   }
 };
 
@@ -3253,10 +3220,7 @@ function renderPlist() {
           addScore(-t.cost, undefined, undefined, true);
           myStats.bombs++; statsPush();
           net.sendEmote(t.i, p.name, t.e);
-          const el = $('pass-flash');
-          el.textContent = t.e + ' \u2192 ' + p.name.toUpperCase();
-          el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
-          clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
+          flash(t.e + ' \u2192 ' + p.name.toUpperCase(), 1600);
           sfx.hit(9, true);
           pick.remove(); trickRow.remove();
         });
