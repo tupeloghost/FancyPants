@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=311';
-import { drawQR } from './lib/qr.js?v=311';
-import { WORLDS } from './worlds/registry.js?v=311';
-import { Net, PALETTE } from './net.js?v=311';
-import { Presence } from './lib/presence.js?v=311';
-import { Pulses } from './lib/pulse.js?v=311';
-import { BeatClock } from './lib/beatclock.js?v=311';
-import { BeatCue } from './lib/beatcue.js?v=311';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=311';
-import { Race, placeOf, standings } from './lib/race.js?v=311';
-import { Signals } from './lib/signals.js?v=311';
-import { RouteMap } from './lib/map.js?v=311';
-import * as sfx from './lib/sfx.js?v=311';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=311';
-import { glowTexture } from './lib/glow.js?v=311';
+import { AudioEngine } from './audio-engine.js?v=312';
+import { drawQR } from './lib/qr.js?v=312';
+import { WORLDS } from './worlds/registry.js?v=312';
+import { Net, PALETTE } from './net.js?v=312';
+import { Presence } from './lib/presence.js?v=312';
+import { Pulses } from './lib/pulse.js?v=312';
+import { BeatClock } from './lib/beatclock.js?v=312';
+import { BeatCue } from './lib/beatcue.js?v=312';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=312';
+import { Race, placeOf, standings } from './lib/race.js?v=312';
+import { Signals } from './lib/signals.js?v=312';
+import { RouteMap } from './lib/map.js?v=312';
+import * as sfx from './lib/sfx.js?v=312';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=312';
+import { glowTexture } from './lib/glow.js?v=312';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -803,6 +803,26 @@ function startRaceIfReady() {
   if (!setList) {
     const key = $('world-select').value;
     race.reset();
+    // Some worlds explain themselves: dodging a solar flare needs no rules
+    // card. autoRound worlds skip the intro — the round starts by itself the
+    // moment the chart is ready (guests still start on the host's gun).
+    if (WORLDS[key].autoRound) {
+      hideResults();
+      $('pass-flash').classList.remove('show');
+      setPhase = 'intro';
+      if (document.body.classList.contains('guest')) {
+        playArm++;
+        guestArmed = true;
+        return;
+      }
+      const mine = ++playArm;
+      (function waitAuto() {
+        if (mine !== playArm) return;
+        if (!(chartProgress < 0 && beatCue.chart)) { setTimeout(waitAuto, 200); return; }
+        beginFreeRound();
+      })();
+      return;
+    }
     // One screen at a time. Arriving here with the previous round's results
     // (or its PLAY AGAIN question) still up layered two cards on top of each
     // other — title over stats over demo, all fighting. The intro owns the
