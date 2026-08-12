@@ -8,20 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=296';
-import { drawQR } from './lib/qr.js?v=296';
-import { WORLDS } from './worlds/registry.js?v=296';
-import { Net, PALETTE } from './net.js?v=296';
-import { Presence } from './lib/presence.js?v=296';
-import { Pulses } from './lib/pulse.js?v=296';
-import { BeatClock } from './lib/beatclock.js?v=296';
-import { BeatCue } from './lib/beatcue.js?v=296';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=296';
-import { Race, placeOf, standings } from './lib/race.js?v=296';
-import { RouteMap } from './lib/map.js?v=296';
-import * as sfx from './lib/sfx.js?v=296';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=296';
-import { glowTexture } from './lib/glow.js?v=296';
+import { AudioEngine } from './audio-engine.js?v=298';
+import { drawQR } from './lib/qr.js?v=298';
+import { WORLDS } from './worlds/registry.js?v=298';
+import { Net, PALETTE } from './net.js?v=298';
+import { Presence } from './lib/presence.js?v=298';
+import { Pulses } from './lib/pulse.js?v=298';
+import { BeatClock } from './lib/beatclock.js?v=298';
+import { BeatCue } from './lib/beatcue.js?v=298';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=298';
+import { Race, placeOf, standings } from './lib/race.js?v=298';
+import { Signals } from './lib/signals.js?v=298';
+import { RouteMap } from './lib/map.js?v=298';
+import * as sfx from './lib/sfx.js?v=298';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=298';
+import { glowTexture } from './lib/glow.js?v=298';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -90,6 +91,11 @@ const audio = new AudioEngine();
 
 // ── Net + presence: participants come from the net layer ──
 const net = new Net();
+
+// ── session signals: what this body did tonight, world-agnostic ──
+const sig = new Signals(() => [net.local.x || 0, net.local.y || 0, net.local.z || 0, net.local.heading || 0]);
+window.__sig = sig;
+window.__declareSignals = o => sig.declare(o);   // worlds MAY volunteer extras
 const participants = net.participants;
 if (!net.local.name) net.local.name = 'you';
 const presence = new Presence();
@@ -280,6 +286,7 @@ function _switchWorldNow(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
+  if (window.__sig) window.__sig.enterWorld(key);
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
   pan.x = pan.y = 0;
@@ -2085,6 +2092,14 @@ function dismissOverlay() {
 if (IS_MOBILE) panel.classList.add('hidden'); // hidden behind the join card
 function startRoom(code, name, asOwner) {
   if (!validName(name)) { $('join-msg').textContent = 'name: 3-14 letters, numbers, _'; return; }
+  // signals: was this a return trip? (same room seen before on this device)
+  try {
+    const hist = JSON.parse(localStorage.getItem('fp_room_hist') || '[]');
+    const back = hist.includes(code);
+    if (!back) { hist.push(code); localStorage.setItem('fp_room_hist', JSON.stringify(hist.slice(-20))); }
+    // room size settles once presence syncs — read it after the dust
+    setTimeout(() => sig.room(net.participants.length, back), 4000);
+  } catch (e) { /* private mode: signals lose nothing vital */ }
   net.local.name = name;
   localStorage.setItem('fp_name', name);
   $('room-badge').textContent = code;
@@ -2746,6 +2761,25 @@ $('balls-quick-range').addEventListener('input', e => {
   $('balls-quick-val').textContent = v;
   $('balls').value = v;
   const bv = $('balls-val'); if (bv) bv.textContent = v;
+});
+
+// ── signals wiring: songs, tweaks, room, snapshot ──
+audio.el.addEventListener('playing', () => {
+  const src = audio.el.currentSrc || audio.el.src || '';
+  if (src) sig.songStarted(decodeURIComponent(src.split('/').pop()));
+});
+{
+  const looks = document.getElementById('page-looks');
+  if (looks) {
+    looks.addEventListener('click', e => { if (e.target.closest('button, .chip, .wchip, .qb, select, [role="button"]')) sig.tweak(); });
+    looks.addEventListener('input', () => sig.tweak());
+  }
+}
+window.__signals = () => sig.snapshot({
+  worldId: currentWorldKey,
+  lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,
+  songTitle: window.__sunoShare ? (sunoTrack.split(' \u2014 ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
+  artistName: window.__sunoShare ? (sunoTrack.split(' \u2014 ')[1] || '') : 'Tupelo Ghost',
 });
 
 $('custom-open').addEventListener('click', e => {
