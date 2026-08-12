@@ -4,8 +4,8 @@
 // deadly from both sides, so every flare demands a real decision.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=312';
-import { themePaint } from '../lib/themes.js?v=312';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=313';
+import { themePaint } from '../lib/themes.js?v=313';
 
 
 const SHAPE_POOL = 24;
@@ -205,14 +205,16 @@ export function createOrbit() {
             const w = flare.t / 1.2;
             color.setHSL(0.06, 0.95, 0.4);
             mesh.material.color.copy(color);
-            mesh.material.opacity = (0.1 + w * 0.15) * (0.7 + Math.sin(time * (6 + w * 10)) * 0.3);
+            // a slow breath that quickens a little — urgent, never a strobe
+            mesh.material.opacity = (0.1 + w * 0.15) * (0.85 + Math.sin(time * (2.5 + w * 3)) * 0.15);
             if (flare.t > 1.2) { flare.phase = 'fire'; flare.t = 0; corePulse = 1; }
           } else {
             // FIRE: white-hot for a heartbeat — the middle is deadly below
             // 14, the sky deadly above 12; the fence sits in the flame
             color.setHSL(0.08, 0.6, 0.85);
             mesh.material.color.copy(color);
-            mesh.material.opacity = 0.75 * (1 - flare.t / 0.5);
+            // swells in over the first tenth, then dies — a wave, not a strobe
+            mesh.material.opacity = 0.6 * Math.min(1, flare.t / 0.1) * (1 - flare.t / 0.5);
             const deadly = flare.kind === 'in' ? radius < 14 : radius > 12;
             if (deadly && !flare.hit) {
               flare.hit = true;
