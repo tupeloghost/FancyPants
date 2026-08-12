@@ -8,29 +8,31 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=321';
-import { drawQR } from './lib/qr.js?v=321';
-import { WORLDS } from './worlds/registry.js?v=321';
-import { Net, PALETTE } from './net.js?v=321';
-import { Presence } from './lib/presence.js?v=321';
-import { Pulses } from './lib/pulse.js?v=321';
-import { BeatClock } from './lib/beatclock.js?v=321';
-import { BeatCue } from './lib/beatcue.js?v=321';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=321';
-import { Race, placeOf, standings } from './lib/race.js?v=321';
-import { Signals } from './lib/signals.js?v=321';
-import { pickShareLine } from './lib/lines.js?v=321';
-import { RouteMap } from './lib/map.js?v=321';
-import * as sfx from './lib/sfx.js?v=321';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=321';
-import { glowTexture } from './lib/glow.js?v=321';
+import { AudioEngine } from './audio-engine.js?v=323';
+import { drawQR } from './lib/qr.js?v=323';
+import { WORLDS } from './worlds/registry.js?v=323';
+import { Net, PALETTE } from './net.js?v=323';
+import { Presence } from './lib/presence.js?v=323';
+import { Pulses } from './lib/pulse.js?v=323';
+import { BeatClock } from './lib/beatclock.js?v=323';
+import { BeatCue } from './lib/beatcue.js?v=323';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=323';
+import { Race, placeOf, standings } from './lib/race.js?v=323';
+import { Signals } from './lib/signals.js?v=323';
+import { pickShareLine } from './lib/lines.js?v=323';
+import { RouteMap } from './lib/map.js?v=323';
+import * as sfx from './lib/sfx.js?v=323';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=323';
+import { glowTexture } from './lib/glow.js?v=323';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
 window.__booted = true;   // the watchdog stands down; the module runs
 const IS_MOBILE = matchMedia('(pointer: coarse)').matches;
 window.__LITE = IS_MOBILE;   // worlds thin their heaviest layers when set
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance' });
+// preserveDrawingBuffer keeps the last frame readable — the clip reel and
+// world previews draw from the canvas, and without it they read black
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance', preserveDrawingBuffer: true });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -3107,8 +3109,9 @@ $('btn-own').addEventListener('click', () => {
       const b = document.createElement('button');
       b.className = 'pr-opt';
       b.dataset.key = k;
-      b.innerHTML = '<b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 WORLD OF THE WEEK' : '') + '</b>'
-        + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em>';
+      b.innerHTML = '<img class="pr-thumb" src="previews/' + k + '.jpg" alt="">'
+        + '<span><b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 WORLD OF THE WEEK' : '') + '</b>'
+        + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em></span>';
       b.addEventListener('click', () => {
         prWorldPick = k;
         [...box.children].forEach(x => x.classList.toggle('on', x === b));

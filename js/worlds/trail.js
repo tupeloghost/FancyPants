@@ -3,8 +3,8 @@
 // hue from the dominant band) that never fades. PNG export: press S.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=321';
-import { themePaint } from '../lib/themes.js?v=321';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=323';
+import { themePaint } from '../lib/themes.js?v=323';
 
 
 const MAX_POINTS = 14000;   // capped total segment count
