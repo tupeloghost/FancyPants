@@ -389,6 +389,46 @@ export default {
       return json({ id, title, artist });
     }
 
+    // a playlist link becomes an ordered song list — one fetch, every id and
+    // title paired from the rendered song rows (og:audio is the fallback,
+    // order-true but nameless)
+    const plist = url.pathname.match(/^\/suno-list\/([0-9a-fA-F-]{36})$/);
+    if (plist) {
+      const json = (o, status = 200) => new Response(JSON.stringify(o), {
+        status, headers: { 'Access-Control-Allow-Origin': '*', 'content-type': 'application/json' },
+      });
+      let html = '';
+      try {
+        const r = await fetch(`https://suno.com/playlist/${plist[1]}`, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' },
+        });
+        html = await r.text();
+      } catch {
+        return json({ error: 'unreachable' }, 502);
+      }
+      const songs = [];
+      const seen = new Set();
+      const rowRe = /href="\/song\/([0-9a-fA-F-]{36})"><span[^>]*>([^<]+)<\/span>/g;
+      for (let m; (m = rowRe.exec(html)); ) {
+        if (seen.has(m[1])) continue;
+        seen.add(m[1]);
+        songs.push({ id: m[1], title: m[2] });
+      }
+      if (!songs.length) {
+        // fallback: og:audio metas carry the ids in playlist order, untitled
+        const ogRe = /og:audio"\s+content="https:\/\/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})\.mp3"/g;
+        for (let m; (m = ogRe.exec(html)); ) {
+          if (seen.has(m[1])) continue;
+          seen.add(m[1]);
+          songs.push({ id: m[1], title: '' });
+        }
+      }
+      if (!songs.length) return json({ error: 'not a playlist link' }, 404);
+      const pt = html.match(/<title>([^<]*)<\/title>/)?.[1]?.replace(/\s*\|\s*Suno.*$/i, '') || '';
+      return json({ title: pt, songs: songs.slice(0, 20) });
+    }
+
     // share links (suno.com/s/CODE) don't carry the song id — resolve them
     const short = url.pathname.match(/^\/suno-s\/([A-Za-z0-9_-]{4,40})\.mp3$/);
     if (short) {

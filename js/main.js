@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=286';
-import { drawQR } from './lib/qr.js?v=286';
-import { WORLDS } from './worlds/registry.js?v=286';
-import { Net, PALETTE } from './net.js?v=286';
-import { Presence } from './lib/presence.js?v=286';
-import { Pulses } from './lib/pulse.js?v=286';
-import { BeatClock } from './lib/beatclock.js?v=286';
-import { BeatCue } from './lib/beatcue.js?v=286';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=286';
-import { Race, placeOf, standings } from './lib/race.js?v=286';
-import { RouteMap } from './lib/map.js?v=286';
-import * as sfx from './lib/sfx.js?v=286';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=286';
-import { glowTexture } from './lib/glow.js?v=286';
+import { AudioEngine } from './audio-engine.js?v=287';
+import { drawQR } from './lib/qr.js?v=287';
+import { WORLDS } from './worlds/registry.js?v=287';
+import { Net, PALETTE } from './net.js?v=287';
+import { Presence } from './lib/presence.js?v=287';
+import { Pulses } from './lib/pulse.js?v=287';
+import { BeatClock } from './lib/beatclock.js?v=287';
+import { BeatCue } from './lib/beatcue.js?v=287';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=287';
+import { Race, placeOf, standings } from './lib/race.js?v=287';
+import { RouteMap } from './lib/map.js?v=287';
+import * as sfx from './lib/sfx.js?v=287';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=287';
+import { glowTexture } from './lib/glow.js?v=287';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -619,7 +619,7 @@ function replayRound() {
   audio.play().catch(() => {});
 }
 $('rb-again').addEventListener('click', () => {
-  if ($('rb-again').dataset.mode === 'set') { hideResults(); startSet(4); }
+  if ($('rb-again').dataset.mode === 'set') { hideResults(); lastSetStart(); }
   else replayRound();
 });
 $('rb-next').addEventListener('click', () => {
@@ -2203,12 +2203,81 @@ window.__map = routeMap;
 let setScores = new Map();
 let roundTimer = 0;
 
-// The VIBE/PLAY question was retired: free rounds live inside vibe (the
-// in-world PLAY button), so the up-front card only added a decision. The
-// set runner below stays intact for when sets earn their way back.
-function askMode() {}
+// The card asks ONE question now: whose music tonight? The house set is the
+// default wander; a suno playlist becomes a playset — one round per song,
+// each song dealt its own racing world.
+function askMode() {
+  if (!trackList.length) {
+    // manifest still in flight (slow network): ask again when it lands
+    clearTimeout(askMode._t);
+    askMode._t = setTimeout(askMode, 500);
+    return;
+  }
+  $('mode-card').classList.add('show');
+}
+$('opt-vibe').addEventListener('click', () => {
+  $('mode-card').classList.remove('show');
+  $('pl-row').classList.add('hidden');
+  endSet();
+});
+$('opt-play').addEventListener('click', () => {
+  $('pl-row').classList.remove('hidden');
+  $('pl-input').focus();
+});
+$('pl-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('pl-go').click(); });
+$('pl-go').addEventListener('click', () => {
+  const raw = $('pl-input').value.trim();
+  const pl = raw.match(/playlist\/([0-9a-fA-F-]{36})/);
+  if (!pl) {
+    // a single song link pasted here still deserves to work — hand it to
+    // the artist door, which knows the deal
+    if (/suno\.com\/(song|s)\//.test(raw)) {
+      $('mode-card').classList.remove('show');
+      document.body.classList.add('suno-live');
+      panel.classList.remove('hidden', 'collapsed');
+      document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+      $('suno-input').value = raw;
+      loadSuno();
+      return;
+    }
+    $('pl-msg').textContent = "that link doesn't look like a suno playlist, hon";
+    return;
+  }
+  $('pl-msg').textContent = 'reading the playlist\u2026';
+  fetch(`${SUNO_PROXY}suno-list/${pl[1]}`)
+    .then(r => r.json())
+    .then(info => {
+      if (!info.songs || !info.songs.length) { $('pl-msg').textContent = 'no songs found on that playlist'; return; }
+      $('mode-card').classList.remove('show');
+      $('pl-row').classList.add('hidden');
+      $('pl-msg').textContent = '';
+      startPlaylistSet(info.songs.slice(0, 8));
+    })
+    .catch(() => { $('pl-msg').textContent = 'could not reach that playlist \u2014 try again in a spell'; });
+});
+
+// a playlist becomes a route: one round per song, worlds dealt from the
+// racing deck, the route map named by the songs (the thing that varies)
+function startPlaylistSet(songs) {
+  statsReset();
+  const deck = shuffled(RHYTHM_WORLDS);
+  setList = songs.map((s, i) => ({
+    world: deck[i % deck.length],
+    track: `${SUNO_PROXY}suno/${s.id}.mp3`,
+    label: (s.title || 'track ' + (i + 1)).toUpperCase(),
+  }));
+  routeMap.setRoute(setList.map(r => ({ label: r.label })));
+  setAt = -1;
+  setScores = new Map();
+  nodeReached.clear();
+  document.body.classList.add('play');
+  lastSetStart = () => startPlaylistSet(songs);
+  nextRound();
+}
+let lastSetStart = () => startSet(4);
 
 function startSet(rounds) {
+  lastSetStart = () => startSet(rounds);
   statsReset();
   const worldsPick = shuffled(RHYTHM_WORLDS).slice(0, Math.max(1, rounds));
   const spare = shuffled(trackList);
@@ -2254,7 +2323,7 @@ function nextRound() {
   // appears where tapping is actually the verb
   $('ri-demo').style.display =
     (WORLDS[r.world].mode === 'RACE' && WORLDS[r.world].cue !== 'world') ? '' : 'none';
-  $('ri-track').textContent = prettyTrack(r.track);
+  $('ri-track').textContent = r.label || prettyTrack(r.track);
   $('ri-state').textContent = "fixin' to start";
   $('round-intro').classList.add('show');
 
@@ -2606,6 +2675,7 @@ $('btn-join').addEventListener('click', () => {
 });
 $('btn-host').addEventListener('click', () => {
   startRoom(genCode(), ensureName(), true);
+  setTimeout(askMode, 400);
 });
 // a name nobody had to type — southern, friendly, never blocking the door
 const NAME_POOL = ['junebug', 'firefly', 'possum', 'magnolia', 'catfish',
@@ -2651,6 +2721,7 @@ $('btn-solo').addEventListener('click', () => {
   }
   ensureName();
   dismissOverlay();
+  setTimeout(askMode, 400);
 });
 // the artist's door feeds the waiting list for now — self-serve pasting
 // returns when artist features launch (?suno= demo links still work)

@@ -237,6 +237,23 @@
     display: block; margin-top: 7px; font-style: normal;
     font: 13px/1.55 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
   }
+  #pl-row { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  #pl-row.hidden { display: none; }
+  #pl-input {
+    flex: 1 1 240px; padding: 11px 14px; border-radius: 11px;
+    border: 1px solid var(--accent-line); background: var(--glass);
+    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace;
+    outline: none;
+  }
+  #pl-input:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
+  #pl-go {
+    padding: 11px 18px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.14), var(--glass));
+    color: hsl(var(--accent-h), 55%, 93%);
+    font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
+  }
+  #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
 
   /* ── Round intro ── the route between rounds, and where charting hides ── */
   #round-inner { text-align: center; width: min(940px, 94vw); }
@@ -1758,11 +1775,16 @@
 
 <div id="mode-card">
   <div id="mode-inner">
-    <h2>HOW WE PLAYIN&rsquo; TONIGHT</h2>
-    <p>you&rsquo;re welcome to change your mind between rounds</p>
+    <h2>WHOSE MUSIC TONIGHT</h2>
+    <p>the house set is always one click away</p>
     <div id="mode-opts">
-      <div class="mode-opt" id="opt-vibe"><b>VIBE</b><em>wander every world, every song. nothin&rsquo; to win but the evenin&rsquo;.</em></div>
-      <div class="mode-opt" id="opt-play"><b>PLAY</b><em>four rounds, one song apiece. race the room for braggin&rsquo; rights.</em></div>
+      <div class="mode-opt" id="opt-vibe"><b>THE HOUSE SET</b><em>seventeen worlds, each tuned to its own song. just wander.</em></div>
+      <div class="mode-opt" id="opt-play"><b>YOUR PLAYLIST</b><em>paste a suno playlist &mdash; every song gets its own world.</em></div>
+    </div>
+    <div id="pl-row" class="hidden">
+      <input id="pl-input" type="url" placeholder="https://suno.com/playlist/&hellip;" autocomplete="off" spellcheck="false">
+      <button id="pl-go">BUILD THE NIGHT</button>
+      <div id="pl-msg"></div>
     </div>
   </div>
 </div>
@@ -1977,7 +1999,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 286</div>
+      <div id="build-stamp">build 287</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2019,6 +2041,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=286"></script>
+<script type="module" src="js/main.js?v=287"></script>
 </body>
 </html>
