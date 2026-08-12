@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=319';
-import { drawQR } from './lib/qr.js?v=319';
-import { WORLDS } from './worlds/registry.js?v=319';
-import { Net, PALETTE } from './net.js?v=319';
-import { Presence } from './lib/presence.js?v=319';
-import { Pulses } from './lib/pulse.js?v=319';
-import { BeatClock } from './lib/beatclock.js?v=319';
-import { BeatCue } from './lib/beatcue.js?v=319';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=319';
-import { Race, placeOf, standings } from './lib/race.js?v=319';
-import { Signals } from './lib/signals.js?v=319';
-import { pickShareLine } from './lib/lines.js?v=319';
-import { RouteMap } from './lib/map.js?v=319';
-import * as sfx from './lib/sfx.js?v=319';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=319';
-import { glowTexture } from './lib/glow.js?v=319';
+import { AudioEngine } from './audio-engine.js?v=320';
+import { drawQR } from './lib/qr.js?v=320';
+import { WORLDS } from './worlds/registry.js?v=320';
+import { Net, PALETTE } from './net.js?v=320';
+import { Presence } from './lib/presence.js?v=320';
+import { Pulses } from './lib/pulse.js?v=320';
+import { BeatClock } from './lib/beatclock.js?v=320';
+import { BeatCue } from './lib/beatcue.js?v=320';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=320';
+import { Race, placeOf, standings } from './lib/race.js?v=320';
+import { Signals } from './lib/signals.js?v=320';
+import { pickShareLine } from './lib/lines.js?v=320';
+import { RouteMap } from './lib/map.js?v=320';
+import * as sfx from './lib/sfx.js?v=320';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=320';
+import { glowTexture } from './lib/glow.js?v=320';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3093,7 +3093,7 @@ let promoteWorld = null;   // remembered for the mp3 route
 const WORLD_BLURBS = {
   tunnel: 'drift through a tunnel of light \u2014 every click sends a shockwave through your song',
   surfer: 'jump and hang \u2014 air time pays, and the jumps land on your song\u2019s beat',
-  slide: 'fly down a neon flume \u2014 hold the throttle, thread the hoops your song lays out',
+  slide: 'fly down a neon waterslide \u2014 steer through glowing rings to the beat of your song',
 };
 let prWorldPick = null;
 $('btn-own').addEventListener('click', () => {

@@ -3,8 +3,8 @@
 // mirrors them like wet ground. Fog, mood, no enemies, no timer.
 
 import * as THREE from 'three';
-import { glowPoints, skyDome } from '../lib/glow.js?v=319';
-import { themePaint } from '../lib/themes.js?v=319';
+import { glowPoints, skyDome } from '../lib/glow.js?v=320';
+import { themePaint } from '../lib/themes.js?v=320';
 
 
 const COUNT = 340;
