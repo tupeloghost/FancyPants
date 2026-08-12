@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=323';
-import { drawQR } from './lib/qr.js?v=323';
-import { WORLDS } from './worlds/registry.js?v=323';
-import { Net, PALETTE } from './net.js?v=323';
-import { Presence } from './lib/presence.js?v=323';
-import { Pulses } from './lib/pulse.js?v=323';
-import { BeatClock } from './lib/beatclock.js?v=323';
-import { BeatCue } from './lib/beatcue.js?v=323';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=323';
-import { Race, placeOf, standings } from './lib/race.js?v=323';
-import { Signals } from './lib/signals.js?v=323';
-import { pickShareLine } from './lib/lines.js?v=323';
-import { RouteMap } from './lib/map.js?v=323';
-import * as sfx from './lib/sfx.js?v=323';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=323';
-import { glowTexture } from './lib/glow.js?v=323';
+import { AudioEngine } from './audio-engine.js?v=324';
+import { drawQR } from './lib/qr.js?v=324';
+import { WORLDS } from './worlds/registry.js?v=324';
+import { Net, PALETTE } from './net.js?v=324';
+import { Presence } from './lib/presence.js?v=324';
+import { Pulses } from './lib/pulse.js?v=324';
+import { BeatClock } from './lib/beatclock.js?v=324';
+import { BeatCue } from './lib/beatcue.js?v=324';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=324';
+import { Race, placeOf, standings } from './lib/race.js?v=324';
+import { Signals } from './lib/signals.js?v=324';
+import { pickShareLine } from './lib/lines.js?v=324';
+import { RouteMap } from './lib/map.js?v=324';
+import * as sfx from './lib/sfx.js?v=324';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=324';
+import { glowTexture } from './lib/glow.js?v=324';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -388,14 +388,14 @@ window.__pickerInit = () => {
     b.className = 'wchip' + (extra ? ' ' + extra : '');
     b.dataset.key = key;
     b.textContent = WORLDS[key].label + (key === window.__WEEK_KEY ? ' \u2605' : '');
-    if (key === window.__WEEK_KEY) b.title = 'world of the week';
+    if (key === window.__WEEK_KEY) b.title = 'this week\u2019s special';
     b.addEventListener('click', () => { $('world-select').value = key; switchWorld(key); });
     chips.appendChild(b);
   };
   front.forEach(k => mk(k));
   const cap = document.createElement('div');
   cap.id = 'wchip-cap';
-  cap.textContent = '\u2605 world of the week \u2014 a new guest world every monday';
+  cap.textContent = '\u2605 this week\u2019s special \u2014 a new world on the menu every monday';
   chips.parentElement.insertBefore(cap, chips.nextSibling);
   const more = document.createElement('button');
   more.className = 'wchip'; more.id = 'wchip-more'; more.textContent = 'SEE ALL \u2026';
@@ -433,11 +433,11 @@ fetch('audio/manifest.json?t=' + Date.now())
       const el = $('today');
       if (el) {
         el.textContent = "today\u2019s song: " + prettyTrack(file)
-          + (wkey && WORLDS[wkey] ? ' \u2014 tap to play it in ' + WORLDS[wkey].label : ' \u2014 tap to play it');
+          + ' \u2014 tap to play it in this week\u2019s special, ' + WORLDS[window.__WEEK_KEY].label;
         el.classList.remove('hidden');
         el.onclick = () => {
           window.__shareTrack = file;
-          if (wkey) window.__shareWorld = wkey;
+          window.__shareWorld = window.__WEEK_KEY;
           $('btn-solo').click();
         };
       }
@@ -2653,7 +2653,7 @@ function shareThis() {
   } else if (window.__sunoShare) {
     // their song outside the free three: the rope — and no link goes out
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+      + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
@@ -2672,7 +2672,79 @@ function shareThis() {
     }).catch(() => {});
   }
 }
-$('rb-share').addEventListener('click', shareThis);
+$('rb-share').addEventListener('click', () => {
+  if (window.__sunoShare && !shareableFree(currentWorldKey)) {
+    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
+      + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+    return;
+  }
+  openShareCard();
+});
+
+// ── the player share card ── pre-built from the run that just ended: the
+// archetype's verdict big, their own clip beneath it, the CTA extending the
+// joke, and the song + QR small below. NEW LINE rerolls the verdict.
+function openShareCard() {
+  const l = window.__shareLine;
+  const run = sig.lastRun || {};
+  $('shc-line').textContent = l ? l.text : 'that was a whole thing.';
+  $('shc-cta').textContent = l ? l.cta : 'go on then \u2192';
+  $('shc-song').textContent = (run.songTitle ? '\u266a ' + run.songTitle : '')
+    + (run.artistName ? '\u000a' + run.artistName : '')
+    + (run.worldId && WORLDS[run.worldId] ? '\u000a' + WORLDS[run.worldId].label : '');
+  drawQR($('shc-qr'), clipURL(), 2);
+  const v = $('shc-video');
+  if (v.dataset.url) { URL.revokeObjectURL(v.dataset.url); delete v.dataset.url; }
+  if (clipSaved) {
+    v.dataset.url = URL.createObjectURL(clipSaved.blob);
+    v.src = v.dataset.url;
+    v.classList.remove('hidden');
+    v.play().catch(() => {});
+  } else {
+    v.classList.add('hidden');
+  }
+  $('share-card').classList.remove('hidden');
+}
+$('shc-close').addEventListener('click', () => $('share-card').classList.add('hidden'));
+$('shc-reroll').addEventListener('click', () => {
+  const cur = window.__shareLine && window.__shareLine.text;
+  const spin = tries => pickShareLine(sig.lastRun || {}, '', window.__forceArchetype).then(l => {
+    if (l.text === cur && tries > 0) return spin(tries - 1);
+    window.__shareLine = l;
+    $('shc-line').textContent = l.text;
+    $('shc-cta').textContent = l.cta;
+  });
+  spin(4);
+});
+$('shc-share').addEventListener('click', () => {
+  const l = window.__shareLine;
+  const url = clipURL();
+  const caption = (l ? l.text + ' ' + l.cta : 'come play') + '\n' + url;
+  // the artist's song claims its home world when a link goes out from here
+  if (window.__sunoShare && shareableFree(currentWorldKey)) {
+    fetch(`${SUNO_PROXY}share-home`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
+    }).catch(() => {});
+  }
+  if (clipSaved) {
+    const ext = clipSaved.type.includes('mp4') ? 'mp4' : 'webm';
+    const file = new File([clipSaved.blob], 'fancy-britches-clip.' + ext, { type: clipSaved.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], text: caption }).catch(() => {});
+      return;
+    }
+    // no share sheet: the clip downloads, the caption rides the clipboard
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(clipSaved.blob); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+    navigator.clipboard.writeText(caption).then(() => flash('CLIP SAVED \u2014 CAPTION COPIED, PASTE IT WITH THE VIDEO', 2600)).catch(() => {});
+    return;
+  }
+  if (navigator.share) { navigator.share({ text: caption }).catch(() => {}); return; }
+  navigator.clipboard.writeText(caption).then(() => flash('CAPTION + LINK COPIED, SUGAR', 2000)).catch(() => {});
+});
 
 // ── CLIP: fifteen seconds of the run with the song's name and a scannable
 // QR baked into the frame — the post IS the ad, the link rides inside it.
@@ -2792,7 +2864,7 @@ function deliverClip() {
 }
 $('rb-clip').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   }
   if (!clipSaved) {
@@ -3110,7 +3182,7 @@ $('btn-own').addEventListener('click', () => {
       b.className = 'pr-opt';
       b.dataset.key = k;
       b.innerHTML = '<img class="pr-thumb" src="previews/' + k + '.jpg" alt="">'
-        + '<span><b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 WORLD OF THE WEEK' : '') + '</b>'
+        + '<span><b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 THIS WEEK\u2019S SPECIAL' : '') + '</b>'
         + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em></span>';
       b.addEventListener('click', () => {
         prWorldPick = k;
@@ -3137,7 +3209,7 @@ $('pr-go').addEventListener('click', () => {
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
   openArtistDoor(raw);
   $('promote-form').classList.add('hidden');
-  $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
