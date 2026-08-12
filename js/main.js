@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=283';
-import { drawQR } from './lib/qr.js?v=283';
-import { WORLDS } from './worlds/registry.js?v=283';
-import { Net, PALETTE } from './net.js?v=283';
-import { Presence } from './lib/presence.js?v=283';
-import { Pulses } from './lib/pulse.js?v=283';
-import { BeatClock } from './lib/beatclock.js?v=283';
-import { BeatCue } from './lib/beatcue.js?v=283';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=283';
-import { Race, placeOf, standings } from './lib/race.js?v=283';
-import { RouteMap } from './lib/map.js?v=283';
-import * as sfx from './lib/sfx.js?v=283';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=283';
-import { glowTexture } from './lib/glow.js?v=283';
+import { AudioEngine } from './audio-engine.js?v=284';
+import { drawQR } from './lib/qr.js?v=284';
+import { WORLDS } from './worlds/registry.js?v=284';
+import { Net, PALETTE } from './net.js?v=284';
+import { Presence } from './lib/presence.js?v=284';
+import { Pulses } from './lib/pulse.js?v=284';
+import { BeatClock } from './lib/beatclock.js?v=284';
+import { BeatCue } from './lib/beatcue.js?v=284';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=284';
+import { Race, placeOf, standings } from './lib/race.js?v=284';
+import { RouteMap } from './lib/map.js?v=284';
+import * as sfx from './lib/sfx.js?v=284';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=284';
+import { glowTexture } from './lib/glow.js?v=284';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -862,6 +862,10 @@ function loadSuno() {
     el.classList.add('bad');
     setTimeout(() => el.classList.remove('bad'), 1400);
     sunoSay("that doesn't look like a suno link", 'err');
+    return;
+  }
+  if (tasteMode && localStorage.getItem('fp_taste_used')) {
+    sunoSay('one taste per visit \u2014 the list gets the whole meal', 'err');
     return;
   }
   if (sunoLoading === path) return;      // don't re-fire on the same link
@@ -2646,14 +2650,68 @@ $('btn-solo').addEventListener('click', () => {
 });
 // the artist's door feeds the waiting list for now — self-serve pasting
 // returns when artist features launch (?suno= demo links still work)
+// ── the taste: one song, 45 seconds, then the rope ──
+const TASTE_SECONDS = 45;
+let tasteMode = false, tasteEnding = false;
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
-  const form = $('waitlist-form');
-  form.classList.toggle('hidden');
-  if (!form.classList.contains('hidden')) {
-    $('wl-email').focus();
-    $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (localStorage.getItem('fp_taste_used')) {
+    // the taste is spent — the list is the door now
+    const form = $('waitlist-form');
+    form.classList.toggle('hidden');
+    if (!form.classList.contains('hidden')) {
+      $('wl-email').focus();
+      $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    return;
   }
+  // first time: straight to the paste slot, taste armed
+  tasteMode = true;
+  document.body.classList.add('suno-live');
+  ensureName();
+  dismissOverlay();
+  panel.classList.remove('hidden', 'collapsed');
+  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+  setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
+  $('suno-rights').textContent = 'one of YOUR songs \u2014 45 seconds on the house, sugar';
+});
+
+// the countdown: when a tasted song crosses the line, the rope appears
+audio.el.addEventListener('timeupdate', () => {
+  if (!tasteMode || tasteEnding) return;
+  if (!window.__sunoShare) return;                 // only tasted suno songs count
+  if (audio.currentTime < TASTE_SECONDS) return;
+  tasteEnding = true;
+  localStorage.setItem('fp_taste_used', '1');
+  // fade out over two seconds, then ask
+  const fade = setInterval(() => {
+    audio.el.volume = Math.max(0, audio.el.volume - 0.08);
+    if (audio.el.volume <= 0) {
+      clearInterval(fade);
+      audio.el.pause();
+      audio.el.volume = 1;
+      document.body.classList.remove('suno-live');
+      $('taste-card').classList.remove('hidden');
+      $('taste-email').focus();
+    }
+  }, 160);
+});
+$('taste-join').addEventListener('click', () => {
+  const email = $('taste-email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('taste-msg').textContent = "that email doesn't look right, hon"; return; }
+  $('taste-msg').textContent = 'signing you up\u2026';
+  fetch('https://' + window.FANCYPANTS_HOST + '/waitlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, note: 'post-taste' }),
+  }).then(r => {
+    $('taste-msg').textContent = r.ok ? "you're on the list, sugar \u2014 we'll holler" : 'that did not take \u2014 try again?';
+    if (r.ok) setTimeout(() => { $('taste-card').classList.add('hidden'); playAuto(false); }, 2000);
+  }).catch(() => { $('taste-msg').textContent = 'no connection \u2014 try again in a spell'; });
+});
+$('taste-close').addEventListener('click', () => {
+  $('taste-card').classList.add('hidden');
+  playAuto(false);   // back to the library, no hard feelings
 });
 // The door only opens when a button is pressed. The old click-anywhere
 // fallback predates the real buttons and turned every stray tap into an

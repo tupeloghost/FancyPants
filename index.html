@@ -1332,6 +1332,37 @@
   #standings .st.me .nm { color: var(--accent); }
   #standings .st.me .pt { color: var(--accent); }
 
+  /* the after-taste card: the moment the sample ends is the moment to ask */
+  #taste-card {
+    position: fixed; z-index: 210; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(400px, 88vw);
+    display: flex; flex-direction: column; gap: 10px; text-align: center;
+    padding: 26px 26px 18px; border-radius: 18px;
+    background: hsla(var(--accent-h), 30%, 7%, 0.92);
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.4);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+  #taste-card.hidden { display: none; }
+  #taste-lead { font: 400 24px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2px; color: hsl(var(--accent-h), 55%, 94%); }
+  #taste-sub { font: italic 400 14px/1.65 'Didot', 'Bodoni 72', Georgia, serif; color: var(--ink-dim); }
+  #taste-card input {
+    padding: 11px 12px; border-radius: 10px; text-align: center;
+    background: rgba(10, 16, 30, 0.85); color: var(--ink);
+    border: 1px solid var(--accent-line); font: 13px 'SF Mono', Menlo, monospace; outline: none;
+  }
+  #taste-join {
+    padding: 12px 0; border-radius: 999px; cursor: pointer;
+    font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 3px;
+    color: hsl(var(--accent-h), 55%, 95%);
+    background: linear-gradient(175deg, hsla(var(--accent-h),75%,62%,0.3), hsla(var(--accent-h),55%,35%,0.2));
+    border: 1px solid hsla(var(--accent-h), 85%, 72%, 0.6);
+  }
+  #taste-msg { font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 13px; }
+  #taste-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #taste-close:hover { color: var(--ink-dim); }
+
   /* the burn, felt at the edges: while the throttle is held the frame
      itself ignites — the speedometer thumbs can see without looking away */
   #burn-glow {
@@ -1653,7 +1684,7 @@
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
   </div>
   <div id="waitlist-form" class="hidden">
-    <div id="wl-lead">soon, artists can turn their own songs into playable, shareable worlds &mdash; leave your email and you&rsquo;re first in line.</div>
+    <div id="wl-lead">soon, artists can turn their own songs into playable, shareable worlds &mdash; leave your email and you&rsquo;re first in line. <b>or try it first:</b> paste one of your songs and play 45 seconds on the house.</div>
     <input id="wl-email" type="email" placeholder="your email, sugar" autocomplete="email">
     <button id="wl-join">JOIN</button>
     <div id="wl-msg"></div>
@@ -1703,6 +1734,14 @@
 
 <div id="promo-pill" class="hidden"><i>&#9834;</i><span id="promo-pill-text"></span></div>
 <div id="burn-glow"></div>
+<div id="taste-card" class="hidden">
+  <div id="taste-lead">that&rsquo;s the taste, sugar.</div>
+  <div id="taste-sub">imagine your whole catalog playable &mdash; every song a world, every listener a player. leave your email and you&rsquo;re first in line.</div>
+  <input id="taste-email" type="email" placeholder="your email" autocomplete="email">
+  <button id="taste-join">JOIN THE WAITING LIST</button>
+  <div id="taste-msg"></div>
+  <button id="taste-close">keep listening to the library instead</button>
+</div>
 <div id="balls-quick" class="hidden">
   <span>balls</span>
   <input id="balls-quick-range" type="range" min="400" max="8000" step="100" value="4500">
@@ -1938,7 +1977,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 283</div>
+      <div id="build-stamp">build 284</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1980,6 +2019,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=283"></script>
+<script type="module" src="js/main.js?v=284"></script>
 </body>
 </html>
