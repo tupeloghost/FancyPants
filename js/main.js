@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=317';
-import { drawQR } from './lib/qr.js?v=317';
-import { WORLDS } from './worlds/registry.js?v=317';
-import { Net, PALETTE } from './net.js?v=317';
-import { Presence } from './lib/presence.js?v=317';
-import { Pulses } from './lib/pulse.js?v=317';
-import { BeatClock } from './lib/beatclock.js?v=317';
-import { BeatCue } from './lib/beatcue.js?v=317';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=317';
-import { Race, placeOf, standings } from './lib/race.js?v=317';
-import { Signals } from './lib/signals.js?v=317';
-import { pickShareLine } from './lib/lines.js?v=317';
-import { RouteMap } from './lib/map.js?v=317';
-import * as sfx from './lib/sfx.js?v=317';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=317';
-import { glowTexture } from './lib/glow.js?v=317';
+import { AudioEngine } from './audio-engine.js?v=318';
+import { drawQR } from './lib/qr.js?v=318';
+import { WORLDS } from './worlds/registry.js?v=318';
+import { Net, PALETTE } from './net.js?v=318';
+import { Presence } from './lib/presence.js?v=318';
+import { Pulses } from './lib/pulse.js?v=318';
+import { BeatClock } from './lib/beatclock.js?v=318';
+import { BeatCue } from './lib/beatcue.js?v=318';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=318';
+import { Race, placeOf, standings } from './lib/race.js?v=318';
+import { Signals } from './lib/signals.js?v=318';
+import { pickShareLine } from './lib/lines.js?v=318';
+import { RouteMap } from './lib/map.js?v=318';
+import * as sfx from './lib/sfx.js?v=318';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=318';
+import { glowTexture } from './lib/glow.js?v=318';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -916,7 +916,7 @@ function showToyResults() {
   $('results-board').innerHTML = '';
   $('rs-acc').textContent = '\u2014'; $('rs-streak').textContent = '\u2014'; $('rs-notes').textContent = '\u2014';
   $('rs-pts').textContent = gained > 0 ? '+' + gained : '';
-  $('rb-again').textContent = 'ONE MORE';
+  $('rb-again').textContent = 'PLAY AGAIN';
   $('rb-next').textContent = 'NEXT WORLD';
   delete $('rb-again').dataset.mode;
   delete $('rb-next').dataset.mode;
@@ -2832,8 +2832,8 @@ function showSetResults() {
   [...$('results-board').children].slice(0, 3).forEach((row, k) =>
     row.classList.add('m' + (k + 1)));
   celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], rows[0][0] === (net.local.name || 'you'));
-  $('rb-again').textContent = 'RUN IT BACK';
-  $('rb-next').textContent = 'BACK TO VIBE';
+  $('rb-again').textContent = 'PLAY THE SET AGAIN';
+  $('rb-next').textContent = 'FREE PLAY';
   $('rb-again').dataset.mode = 'set';
   $('rb-next').dataset.mode = 'set';
   $('results-actions').classList.add('show');
