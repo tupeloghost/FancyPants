@@ -255,6 +255,8 @@
   }
   #qb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
+  #pl-file:hover { color: var(--ink-dim); text-decoration: underline; }
 
   /* ── Round intro ── the route between rounds, and where charting hides ── */
   #round-inner { text-align: center; width: min(940px, 94vw); }
@@ -1770,14 +1772,15 @@
 <div id="mode-card">
   <div id="mode-inner">
     <h2>WHOSE MUSIC TONIGHT</h2>
-    <p>the house set is always one click away</p>
+    <p>either way, you can change your mind any time</p>
     <div id="mode-opts">
-      <div class="mode-opt" id="opt-vibe"><b>THE HOUSE SET</b><em>seventeen worlds, each tuned to its own song. just wander.</em></div>
-      <div class="mode-opt" id="opt-play"><b>YOUR PLAYLIST</b><em>paste a suno playlist &mdash; every song gets its own world.</em></div>
+      <div class="mode-opt" id="opt-vibe"><b>OURS</b><em>the house band&rsquo;s warmed up. just play.</em></div>
+      <div class="mode-opt" id="opt-play"><b>MINE</b><em>bring a suno song or playlist &mdash; or an mp3 from your pocket.</em></div>
     </div>
     <div id="pl-row" class="hidden">
-      <input id="pl-input" type="url" placeholder="https://suno.com/playlist/&hellip;" autocomplete="off" spellcheck="false">
+      <input id="pl-input" type="url" placeholder="paste a suno link &mdash; song or playlist" autocomplete="off" spellcheck="false">
       <button id="pl-go">BUILD THE NIGHT</button>
+      <label id="pl-file" for="file-input">or load an mp3 you keep in your pocket</label>
       <div id="pl-msg"></div>
     </div>
   </div>
@@ -1891,7 +1894,6 @@
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
       <div class="row host-only">
-        <label id="file-label" for="file-input">&#11014; load local file</label>
         <input type="file" id="file-input" accept="audio/*">
       </div>
       <div class="row host-only">
@@ -1994,7 +1996,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 298</div>
+      <div id="build-stamp">build 299</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2036,6 +2038,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=298"></script>
+<script type="module" src="js/main.js?v=299"></script>
 </body>
 </html>
