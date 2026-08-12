@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=284';
-import { drawQR } from './lib/qr.js?v=284';
-import { WORLDS } from './worlds/registry.js?v=284';
-import { Net, PALETTE } from './net.js?v=284';
-import { Presence } from './lib/presence.js?v=284';
-import { Pulses } from './lib/pulse.js?v=284';
-import { BeatClock } from './lib/beatclock.js?v=284';
-import { BeatCue } from './lib/beatcue.js?v=284';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=284';
-import { Race, placeOf, standings } from './lib/race.js?v=284';
-import { RouteMap } from './lib/map.js?v=284';
-import * as sfx from './lib/sfx.js?v=284';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=284';
-import { glowTexture } from './lib/glow.js?v=284';
+import { AudioEngine } from './audio-engine.js?v=285';
+import { drawQR } from './lib/qr.js?v=285';
+import { WORLDS } from './worlds/registry.js?v=285';
+import { Net, PALETTE } from './net.js?v=285';
+import { Presence } from './lib/presence.js?v=285';
+import { Pulses } from './lib/pulse.js?v=285';
+import { BeatClock } from './lib/beatclock.js?v=285';
+import { BeatCue } from './lib/beatcue.js?v=285';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=285';
+import { Race, placeOf, standings } from './lib/race.js?v=285';
+import { RouteMap } from './lib/map.js?v=285';
+import * as sfx from './lib/sfx.js?v=285';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=285';
+import { glowTexture } from './lib/glow.js?v=285';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -864,10 +864,6 @@ function loadSuno() {
     sunoSay("that doesn't look like a suno link", 'err');
     return;
   }
-  if (tasteMode && localStorage.getItem('fp_taste_used')) {
-    sunoSay('one taste per visit \u2014 the list gets the whole meal', 'err');
-    return;
-  }
   if (sunoLoading === path) return;      // don't re-fire on the same link
   sunoLoading = path;
   el.classList.remove('bad');
@@ -881,6 +877,7 @@ function loadSuno() {
       if (!info.id) throw new Error('no song');
       sunoTrack = [info.title, info.artist].filter(Boolean).join(' — ') || 'a suno track';
       window.__sunoShare = path.startsWith('suno-s') ? 's_' + token : info.id;
+      window.__sunoUrl = `${SUNO_PROXY}suno/${info.id}.mp3`;
       sunoSay(sunoTrack, 'ok');
       audio.loadURL(`${SUNO_PROXY}suno/${info.id}.mp3`);
       $('track-select').value = '';
@@ -2163,11 +2160,34 @@ function signatureFor(key) {
   const f = WORLD_TRACKS[key];
   return f && trackList.includes('audio/' + f) ? 'audio/' + f : null;
 }
-// entering a world brings its song along — unless someone's own music is
-// playing (artist mode), a set owns the order, or we're a guest riding along
+// entering a world brings its song along. An artist's own song rides the
+// three free worlds; everywhere else the house catalog is the demo — and
+// the first locked door explains the deal once, politely.
 function playSignature(key) {
   if (document.body.classList.contains('guest')) return;
-  if (setList || window.__sunoShare) return;
+  if (setList) return;
+  if (window.__sunoShare) {
+    if (ARTIST_FREE.has(key)) {
+      // their song belongs here — bring it back if a signature displaced it
+      if (window.__sunoUrl && !(audio.el.src || '').startsWith(window.__sunoUrl)) {
+        audio.loadURL(window.__sunoUrl);
+        $('track-select').value = '';
+        audio.play().catch(() => {});
+        updatePlayBtn();
+      }
+      return;
+    }
+    // a locked-for-your-song world: the house catalog demos it
+    if (!ropeShown) {
+      ropeShown = true;
+      $('taste-card').classList.remove('hidden');
+    } else {
+      const el = $('pass-flash');
+      el.textContent = 'ARTIST ACCESS PUTS YOUR SONG HERE \u2014 ENJOY THE HOUSE BAND';
+      el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
+      clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+  }
   const sig = signatureFor(key);
   if (!sig) return;
   if ((audio.el.currentSrc || '').endsWith(sig.split('/').pop())) return;
@@ -2650,51 +2670,20 @@ $('btn-solo').addEventListener('click', () => {
 });
 // the artist's door feeds the waiting list for now — self-serve pasting
 // returns when artist features launch (?suno= demo links still work)
-// ── the taste: one song, 45 seconds, then the rope ──
-const TASTE_SECONDS = 45;
-let tasteMode = false, tasteEnding = false;
+// ── the artist door: paste and share all you want. Your song rides
+// three worlds free; the other fourteen play the house catalog — the
+// demo IS her music, and every share is marketing ──
+const ARTIST_FREE = new Set(['tunnel', 'river', 'comets']);
+let ropeShown = false;   // the explainer card appears once per session
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
-  if (localStorage.getItem('fp_taste_used')) {
-    // the taste is spent — the list is the door now
-    const form = $('waitlist-form');
-    form.classList.toggle('hidden');
-    if (!form.classList.contains('hidden')) {
-      $('wl-email').focus();
-      $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-    return;
-  }
-  // first time: straight to the paste slot, taste armed
-  tasteMode = true;
   document.body.classList.add('suno-live');
   ensureName();
   dismissOverlay();
   panel.classList.remove('hidden', 'collapsed');
   document.querySelector('#tabs .tab[data-tab="music"]')?.click();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
-  $('suno-rights').textContent = 'one of YOUR songs \u2014 45 seconds on the house, sugar';
-});
-
-// the countdown: when a tasted song crosses the line, the rope appears
-audio.el.addEventListener('timeupdate', () => {
-  if (!tasteMode || tasteEnding) return;
-  if (!window.__sunoShare) return;                 // only tasted suno songs count
-  if (audio.currentTime < TASTE_SECONDS) return;
-  tasteEnding = true;
-  localStorage.setItem('fp_taste_used', '1');
-  // fade out over two seconds, then ask
-  const fade = setInterval(() => {
-    audio.el.volume = Math.max(0, audio.el.volume - 0.08);
-    if (audio.el.volume <= 0) {
-      clearInterval(fade);
-      audio.el.pause();
-      audio.el.volume = 1;
-      document.body.classList.remove('suno-live');
-      $('taste-card').classList.remove('hidden');
-      $('taste-email').focus();
-    }
-  }, 160);
+  $('suno-rights').textContent = 'your song rides TUNNEL, RIVER & COMETS free \u2014 the rest open with artist access';
 });
 $('taste-join').addEventListener('click', () => {
   const email = $('taste-email').value.trim();
@@ -2703,15 +2692,14 @@ $('taste-join').addEventListener('click', () => {
   fetch('https://' + window.FANCYPANTS_HOST + '/waitlist', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, note: 'post-taste' }),
+    body: JSON.stringify({ email, note: 'artist-access' }),
   }).then(r => {
     $('taste-msg').textContent = r.ok ? "you're on the list, sugar \u2014 we'll holler" : 'that did not take \u2014 try again?';
-    if (r.ok) setTimeout(() => { $('taste-card').classList.add('hidden'); playAuto(false); }, 2000);
+    if (r.ok) setTimeout(() => { $('taste-card').classList.add('hidden'); }, 2000);
   }).catch(() => { $('taste-msg').textContent = 'no connection \u2014 try again in a spell'; });
 });
 $('taste-close').addEventListener('click', () => {
   $('taste-card').classList.add('hidden');
-  playAuto(false);   // back to the library, no hard feelings
 });
 // The door only opens when a button is pressed. The old click-anywhere
 // fallback predates the real buttons and turned every stray tap into an
