@@ -262,6 +262,24 @@
     font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
   }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
+  #promote-form.hidden { display: none; }
+  #pr-world, #pr-url {
+    padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
+    background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
+    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+  }
+  #pr-url:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
+  #pr-go {
+    padding: 12px 18px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.16), var(--glass));
+    color: hsl(var(--accent-h), 55%, 93%);
+    font: 400 14px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.6px;
+  }
+  #pr-file { text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
+  #pr-file:hover { color: var(--ink-dim); text-decoration: underline; }
+  #pr-msg { min-height: 13px; text-align: center; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
   #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
   #pl-pick { width: 100%; display: flex; gap: 8px; justify-content: center; }
   #pl-pick.hidden { display: none; }
@@ -1698,7 +1716,14 @@
   <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
   <div id="join-card">
     <button id="btn-solo" class="cta">COME ON IN</button>
-    <button id="btn-own" class="cta-soft">&#9834; TURN YOUR SONG INTO A WORLD &mdash; FREE</button>
+    <button id="btn-own" class="cta-soft">&#9834; PROMOTE A SONG &mdash; IT BECOMES A WORLD, FREE</button>
+    <div id="promote-form" class="hidden">
+      <select id="pr-world"></select>
+      <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
+      <button id="pr-go">PUT IT IN THE WORLD</button>
+      <label id="pr-file" for="file-input">or load the mp3 instead</label>
+      <div id="pr-msg"></div>
+    </div>
     <input id="join-name" maxlength="14" placeholder="your name (or we'll pick one)" autocomplete="off">
     <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
     <div id="join-msg"></div>
@@ -2014,7 +2039,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 315</div>
+      <div id="build-stamp">build 316</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2056,6 +2081,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=315"></script>
+<script type="module" src="js/main.js?v=316"></script>
 </body>
 </html>

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=315';
-import { drawQR } from './lib/qr.js?v=315';
-import { WORLDS } from './worlds/registry.js?v=315';
-import { Net, PALETTE } from './net.js?v=315';
-import { Presence } from './lib/presence.js?v=315';
-import { Pulses } from './lib/pulse.js?v=315';
-import { BeatClock } from './lib/beatclock.js?v=315';
-import { BeatCue } from './lib/beatcue.js?v=315';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=315';
-import { Race, placeOf, standings } from './lib/race.js?v=315';
-import { Signals } from './lib/signals.js?v=315';
-import { pickShareLine } from './lib/lines.js?v=315';
-import { RouteMap } from './lib/map.js?v=315';
-import * as sfx from './lib/sfx.js?v=315';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=315';
-import { glowTexture } from './lib/glow.js?v=315';
+import { AudioEngine } from './audio-engine.js?v=316';
+import { drawQR } from './lib/qr.js?v=316';
+import { WORLDS } from './worlds/registry.js?v=316';
+import { Net, PALETTE } from './net.js?v=316';
+import { Presence } from './lib/presence.js?v=316';
+import { Pulses } from './lib/pulse.js?v=316';
+import { BeatClock } from './lib/beatclock.js?v=316';
+import { BeatCue } from './lib/beatcue.js?v=316';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=316';
+import { Race, placeOf, standings } from './lib/race.js?v=316';
+import { Signals } from './lib/signals.js?v=316';
+import { pickShareLine } from './lib/lines.js?v=316';
+import { RouteMap } from './lib/map.js?v=316';
+import * as sfx from './lib/sfx.js?v=316';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=316';
+import { glowTexture } from './lib/glow.js?v=316';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -936,6 +936,14 @@ $('track-select').addEventListener('change', e => {
 $('file-input').addEventListener('change', () => {
   $('mode-card').classList.remove('show');
   $('pl-row').classList.add('hidden');
+  $('promote-form').classList.add('hidden');
+  if (promoteWorld && WORLDS[promoteWorld]) {
+    dismissOverlay();
+    switchWorld(promoteWorld);
+    $('world-select').value = promoteWorld;
+    document.body.classList.add('suno-live');
+    promoteWorld = null;
+  }
 });
 $('file-input').addEventListener('change', e => {
   const f = e.target.files[0];
@@ -3063,13 +3071,47 @@ function ropeGate(msg) {
   if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
   else flash(msg, 2800);
 }
+// ── PROMOTE A SONG ── the artist path in one small form: pick the world
+// (the three a free song can share from), hand over the song, go. The
+// player path shares too; this one exists to make the SONG the point.
+let promoteWorld = null;   // remembered for the mp3 route
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
+  const f = $('promote-form');
+  f.classList.toggle('hidden');
+  if (f.classList.contains('hidden')) return;
+  const sel = $('pr-world');
+  if (!sel.options.length) {
+    for (const k of [...FEATURED, WEEK_WORLD]) {
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 this week' : '');
+      sel.appendChild(o);
+    }
+  }
+  $('pr-url').focus();
+});
+$('pr-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('pr-go').click(); });
+$('pr-go').addEventListener('click', () => {
+  const raw = $('pr-url').value.trim();
+  if (!/suno\.com\/(song|s|playlist)\//.test(raw)) {
+    $('pr-msg').textContent = raw && /spotify|youtu/i.test(raw)
+      ? 'we can only play suno links or mp3s for now'
+      : 'paste a suno link, or load the mp3 below';
+    return;
+  }
+  const key = $('pr-world').value;
   ensureName();
   dismissOverlay();
-  openArtistDoor();
-  setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
+  if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
+  openArtistDoor(raw);
+  $('promote-form').classList.add('hidden');
   $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s ' + WORLDS[WEEK_WORLD].label;
+});
+// the mp3 route remembers the chosen world and rides the same file input
+$('pr-file').addEventListener('click', () => {
+  promoteWorld = $('pr-world').value;
+  ensureName();
 });
 $('taste-join').addEventListener('click', () => {
   const email = $('taste-email').value.trim();
