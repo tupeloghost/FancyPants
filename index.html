@@ -256,6 +256,20 @@
   #qb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
   #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
+  #pl-pick { width: 100%; display: flex; gap: 8px; justify-content: center; }
+  #pl-pick.hidden { display: none; }
+  #pl-world {
+    flex: 1 1 200px; padding: 11px 14px; border-radius: 11px;
+    border: 1px solid var(--accent-line); background: var(--glass);
+    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace;
+  }
+  #pl-world-go {
+    padding: 11px 18px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.14), var(--glass));
+    color: hsl(var(--accent-h), 55%, 93%);
+    font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
+  }
   #pl-file:hover { color: var(--ink-dim); text-decoration: underline; }
 
   /* ── Round intro ── the route between rounds, and where charting hides ── */
@@ -1781,6 +1795,10 @@
       <input id="pl-input" type="url" placeholder="paste a suno link &mdash; song or playlist" autocomplete="off" spellcheck="false">
       <button id="pl-go">BUILD THE NIGHT</button>
       <label id="pl-file" for="file-input">or load an mp3 you keep in your pocket</label>
+      <div id="pl-pick" class="hidden">
+        <select id="pl-world"></select>
+        <button id="pl-world-go">PLAY IT THERE</button>
+      </div>
       <div id="pl-msg"></div>
     </div>
   </div>
@@ -1996,7 +2014,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 302</div>
+      <div id="build-stamp">build 303</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2038,6 +2056,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=302"></script>
+<script type="module" src="js/main.js?v=303"></script>
 </body>
 </html>

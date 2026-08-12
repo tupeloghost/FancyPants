@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=302';
-import { drawQR } from './lib/qr.js?v=302';
-import { WORLDS } from './worlds/registry.js?v=302';
-import { Net, PALETTE } from './net.js?v=302';
-import { Presence } from './lib/presence.js?v=302';
-import { Pulses } from './lib/pulse.js?v=302';
-import { BeatClock } from './lib/beatclock.js?v=302';
-import { BeatCue } from './lib/beatcue.js?v=302';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=302';
-import { Race, placeOf, standings } from './lib/race.js?v=302';
-import { Signals } from './lib/signals.js?v=302';
-import { RouteMap } from './lib/map.js?v=302';
-import * as sfx from './lib/sfx.js?v=302';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=302';
-import { glowTexture } from './lib/glow.js?v=302';
+import { AudioEngine } from './audio-engine.js?v=303';
+import { drawQR } from './lib/qr.js?v=303';
+import { WORLDS } from './worlds/registry.js?v=303';
+import { Net, PALETTE } from './net.js?v=303';
+import { Presence } from './lib/presence.js?v=303';
+import { Pulses } from './lib/pulse.js?v=303';
+import { BeatClock } from './lib/beatclock.js?v=303';
+import { BeatCue } from './lib/beatcue.js?v=303';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=303';
+import { Race, placeOf, standings } from './lib/race.js?v=303';
+import { Signals } from './lib/signals.js?v=303';
+import { RouteMap } from './lib/map.js?v=303';
+import * as sfx from './lib/sfx.js?v=303';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=303';
+import { glowTexture } from './lib/glow.js?v=303';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2240,15 +2240,18 @@ $('pl-go').addEventListener('click', () => {
   }
   const pl = raw.match(/playlist\/([0-9a-fA-F-]{36})/);
   if (!pl) {
-    // a single song link pasted here still deserves to work — hand it to
-    // the artist door, which knows the deal
+    // one song: they pick its world, then it plays there
     if (/suno\.com\/(song|s)\//.test(raw)) {
-      $('mode-card').classList.remove('show');
-      document.body.classList.add('suno-live');
-      panel.classList.remove('hidden', 'collapsed');
-      document.querySelector('#tabs .tab[data-tab="music"]')?.click();
-      $('suno-input').value = raw;
-      loadSuno();
+      const wsel = $('pl-world');
+      if (!wsel.options.length) {
+        for (const k of Object.keys(WORLDS)) {
+          const o = document.createElement('option');
+          o.value = k; o.textContent = WORLDS[k].label;
+          wsel.appendChild(o);
+        }
+      }
+      $('pl-pick').classList.remove('hidden');
+      $('pl-msg').textContent = 'one song \u2014 now where\u2019s it playin\u2019?';
       return;
     }
     $('pl-msg').textContent = 'we can only play suno links or mp3s for now';
@@ -2262,9 +2265,24 @@ $('pl-go').addEventListener('click', () => {
       $('mode-card').classList.remove('show');
       $('pl-row').classList.add('hidden');
       $('pl-msg').textContent = '';
-      startPlaylistSet(info.songs.slice(0, 8));
+      // the night is exactly as long as the playlist: one world per song
+      startPlaylistSet(info.songs);
     })
     .catch(() => { $('pl-msg').textContent = 'could not reach that playlist \u2014 try again in a spell'; });
+});
+$('pl-world-go').addEventListener('click', () => {
+  const raw = $('pl-input').value.trim();
+  const key = $('pl-world').value;
+  $('mode-card').classList.remove('show');
+  $('pl-pick').classList.add('hidden');
+  $('pl-row').classList.add('hidden');
+  $('pl-msg').textContent = '';
+  document.body.classList.add('suno-live');
+  panel.classList.remove('hidden', 'collapsed');
+  document.querySelector('#tabs .tab[data-tab="music"]')?.click();
+  $('suno-input').value = raw;
+  loadSuno();
+  if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
 });
 
 // a playlist becomes a route: one round per song, worlds dealt from the
