@@ -1163,6 +1163,7 @@
   #maker-line a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 60%, 70%, 0.35); }
   #maker-line a:hover { color: var(--ink); }
   #waitlist-form { margin-top: 12px; display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  #wl-lead { width: 100%; text-align: center; font: italic 400 13px/1.6 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: var(--ink-dim); }
   #waitlist-form.hidden { display: none; }
   #wl-email {
     padding: 10px 12px; border-radius: 10px; width: 220px;
@@ -1636,7 +1637,7 @@
   <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
   <div id="join-card">
     <button id="btn-solo" class="cta">COME ON IN</button>
-    <button id="btn-own" class="cta-soft">&#9834; WANT YOUR MUSIC IN HERE? JOIN THE LIST</button>
+    <button id="btn-own" class="cta-soft">&#9834; ARTISTS: MAKE YOUR SONGS PLAYABLE</button>
     <input id="join-name" maxlength="14" placeholder="your name (or we'll pick one)" autocomplete="off">
     <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
     <div id="join-msg"></div>
@@ -1652,6 +1653,7 @@
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
   </div>
   <div id="waitlist-form" class="hidden">
+    <div id="wl-lead">soon, artists can turn their own songs into playable, shareable worlds &mdash; leave your email and you&rsquo;re first in line.</div>
     <input id="wl-email" type="email" placeholder="your email, sugar" autocomplete="email">
     <button id="wl-join">JOIN</button>
     <div id="wl-msg"></div>
@@ -1936,7 +1938,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 282</div>
+      <div id="build-stamp">build 283</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -1978,6 +1980,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=282"></script>
+<script type="module" src="js/main.js?v=283"></script>
 </body>
 </html>
