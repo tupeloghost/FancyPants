@@ -65,6 +65,8 @@ export class FancyPantsRoom {
         email,
         occasion: String((body && body.occasion) || '').slice(0, 60),
         vision: String((body && body.vision) || '').slice(0, 1200),
+        timeline: String((body && body.timeline) || '').slice(0, 80),
+        budget: String((body && body.budget) || '').slice(0, 40),
         at: Date.now(),
       });
       return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });

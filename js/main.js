@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=280';
-import { drawQR } from './lib/qr.js?v=280';
-import { WORLDS } from './worlds/registry.js?v=280';
-import { Net, PALETTE } from './net.js?v=280';
-import { Presence } from './lib/presence.js?v=280';
-import { Pulses } from './lib/pulse.js?v=280';
-import { BeatClock } from './lib/beatclock.js?v=280';
-import { BeatCue } from './lib/beatcue.js?v=280';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=280';
-import { Race, placeOf, standings } from './lib/race.js?v=280';
-import { RouteMap } from './lib/map.js?v=280';
-import * as sfx from './lib/sfx.js?v=280';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=280';
-import { glowTexture } from './lib/glow.js?v=280';
+import { AudioEngine } from './audio-engine.js?v=281';
+import { drawQR } from './lib/qr.js?v=281';
+import { WORLDS } from './worlds/registry.js?v=281';
+import { Net, PALETTE } from './net.js?v=281';
+import { Presence } from './lib/presence.js?v=281';
+import { Pulses } from './lib/pulse.js?v=281';
+import { BeatClock } from './lib/beatclock.js?v=281';
+import { BeatCue } from './lib/beatcue.js?v=281';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=281';
+import { Race, placeOf, standings } from './lib/race.js?v=281';
+import { RouteMap } from './lib/map.js?v=281';
+import * as sfx from './lib/sfx.js?v=281';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=281';
+import { glowTexture } from './lib/glow.js?v=281';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2569,7 +2569,8 @@ $('cw-send').addEventListener('click', () => {
   fetch('https://' + window.FANCYPANTS_HOST + '/custom', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, occasion, vision }),
+    body: JSON.stringify({ email, occasion, vision,
+      timeline: $('cw-timeline').value.trim(), budget: $('cw-budget').value }),
   }).then(r => {
     $('cw-msg').textContent = r.ok ? "got it, sugar \u2014 we'll be in touch soon" : 'that did not take \u2014 try again?';
     if (r.ok) setTimeout(() => $('custom-form').classList.add('hidden'), 2600);
