@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=288';
-import { drawQR } from './lib/qr.js?v=288';
-import { WORLDS } from './worlds/registry.js?v=288';
-import { Net, PALETTE } from './net.js?v=288';
-import { Presence } from './lib/presence.js?v=288';
-import { Pulses } from './lib/pulse.js?v=288';
-import { BeatClock } from './lib/beatclock.js?v=288';
-import { BeatCue } from './lib/beatcue.js?v=288';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=288';
-import { Race, placeOf, standings } from './lib/race.js?v=288';
-import { RouteMap } from './lib/map.js?v=288';
-import * as sfx from './lib/sfx.js?v=288';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=288';
-import { glowTexture } from './lib/glow.js?v=288';
+import { AudioEngine } from './audio-engine.js?v=291';
+import { drawQR } from './lib/qr.js?v=291';
+import { WORLDS } from './worlds/registry.js?v=291';
+import { Net, PALETTE } from './net.js?v=291';
+import { Presence } from './lib/presence.js?v=291';
+import { Pulses } from './lib/pulse.js?v=291';
+import { BeatClock } from './lib/beatclock.js?v=291';
+import { BeatCue } from './lib/beatcue.js?v=291';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=291';
+import { Race, placeOf, standings } from './lib/race.js?v=291';
+import { RouteMap } from './lib/map.js?v=291';
+import * as sfx from './lib/sfx.js?v=291';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=291';
+import { glowTexture } from './lib/glow.js?v=291';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -279,6 +279,7 @@ function switchWorld(key) {
 function _switchWorldNow(key) {
   if (world) world.dispose();
   currentWorldKey = key;
+  window.__worldKey = key;   // read-only debug handle for tests
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
   pan.x = pan.y = 0;
@@ -2055,6 +2056,14 @@ function dismissOverlay() {
       ? 'https://suno.com/s/' + t.slice(2)
       : 'https://suno.com/song/' + t;
     setTimeout(() => loadSuno(), 300);
+    // the song has ONE home world at a time; if it moved since this link was
+    // sent, follow it there
+    fetch(`${SUNO_PROXY}share-home?song=${encodeURIComponent(t)}`)
+      .then(r => r.json())
+      .then(h => {
+        if (h && h.world && WORLDS[h.world] && h.world !== currentWorldKey) switchWorld(h.world);
+      })
+      .catch(() => {});
     autoWanted = false;   // their song is the show; don't start ours under it
   }
   // start the music by itself — unless we're a guest, who follows the host
@@ -2461,9 +2470,16 @@ function shareThis() {
   const w = WORLDS[currentWorldKey];
   let url, text;
   if (window.__sunoShare && ARTIST_FREE.has(currentWorldKey)) {
-    // an artist's own song in a showcase world: the link carries THEIR track
+    // an artist's own song in a showcase world: the link carries THEIR track.
+    // One home at a time — this share claims it, and every link ever sent
+    // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
     text = "come play '" + (sunoTrack || 'my song') + "' in " + (w ? w.label : '') + ' \u2014 on Fancy Britches';
+    fetch(`${SUNO_PROXY}share-home`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
+    }).catch(() => {});
+    shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
     // their song outside the trio: the rope, once as the full card, then a
     // flash — and no link goes out, so the choice stays theirs
@@ -2488,7 +2504,10 @@ function shareThis() {
   } else {
     navigator.clipboard.writeText(text + '\n' + url).then(() => {
       const el = $('pass-flash');
-      el.textContent = 'LINK COPIED, SUGAR';
+      el.textContent = shareThis._home
+        ? 'LINK COPIED \u2014 ' + shareThis._home + ' IS YOUR SONG\u2019S HOME NOW'
+        : 'LINK COPIED, SUGAR';
+      shareThis._home = null;
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
       clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 1600);
     }).catch(() => {});

@@ -76,6 +76,23 @@ export class FancyPantsRoom {
       const all = await this.state.storage.list({ prefix: 'cw:' });
       return new Response(JSON.stringify([...all.values()], null, 2), { headers: { 'Content-Type': 'application/json' } });
     }
+    // ── a shared song lives in ONE world at a time: sharing claims the home,
+    // moving it re-points every link ever sent (links look up the home) ──
+    if (url.pathname === '/share-home' && request.method === 'POST') {
+      const body = await request.json().catch(() => null);
+      const song = body && String(body.song || '').trim().slice(0, 64);
+      const world = body && String(body.world || '').trim().slice(0, 24);
+      if (!song || !world || !/^[A-Za-z0-9_s-]+$/.test(song)) {
+        return new Response('bad claim', { status: 400 });
+      }
+      await this.state.storage.put('sh:' + song, { world, at: Date.now() });
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/share-home' && request.method === 'GET') {
+      const song = String(url.searchParams.get('song') || '').slice(0, 64);
+      const row = song ? await this.state.storage.get('sh:' + song) : null;
+      return new Response(JSON.stringify(row || {}), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
     if (url.pathname === '/waitlist-list') {
       if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
       const all = await this.state.storage.list({ prefix: 'wl:' });
@@ -305,7 +322,7 @@ export default {
     const url = new URL(request.url);
 
     // browsers preflight cross-origin JSON POSTs — answer politely
-    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom')) {
+    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom' || url.pathname === '/share-home')) {
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -323,7 +340,8 @@ export default {
 
     // the waiting list rides one well-known DO instance
     if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list' ||
-        url.pathname === '/custom' || url.pathname === '/custom-list') {
+        url.pathname === '/custom' || url.pathname === '/custom-list' ||
+        url.pathname === '/share-home') {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       return env.ROOMS.get(id).fetch(request);
     }
