@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=325';
-import { drawQR } from './lib/qr.js?v=325';
-import { WORLDS } from './worlds/registry.js?v=325';
-import { Net, PALETTE } from './net.js?v=325';
-import { Presence } from './lib/presence.js?v=325';
-import { Pulses } from './lib/pulse.js?v=325';
-import { BeatClock } from './lib/beatclock.js?v=325';
-import { BeatCue } from './lib/beatcue.js?v=325';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=325';
-import { Race, placeOf, standings } from './lib/race.js?v=325';
-import { Signals } from './lib/signals.js?v=325';
-import { pickShareLine } from './lib/lines.js?v=325';
-import { RouteMap } from './lib/map.js?v=325';
-import * as sfx from './lib/sfx.js?v=325';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=325';
-import { glowTexture } from './lib/glow.js?v=325';
+import { AudioEngine } from './audio-engine.js?v=326';
+import { drawQR } from './lib/qr.js?v=326';
+import { WORLDS } from './worlds/registry.js?v=326';
+import { Net, PALETTE } from './net.js?v=326';
+import { Presence } from './lib/presence.js?v=326';
+import { Pulses } from './lib/pulse.js?v=326';
+import { BeatClock } from './lib/beatclock.js?v=326';
+import { BeatCue } from './lib/beatcue.js?v=326';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=326';
+import { Race, placeOf, standings } from './lib/race.js?v=326';
+import { Signals } from './lib/signals.js?v=326';
+import { pickShareLine } from './lib/lines.js?v=326';
+import { RouteMap } from './lib/map.js?v=326';
+import * as sfx from './lib/sfx.js?v=326';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=326';
+import { glowTexture } from './lib/glow.js?v=326';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3077,6 +3077,13 @@ $('room-badge').addEventListener('click', () => {
 });
 $('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
+$('name-dice').addEventListener('click', () => {
+  const cur = $('join-name').value;
+  let pick;
+  do { pick = NAME_POOL[(Math.random() * NAME_POOL.length) | 0]; } while (pick === cur && NAME_POOL.length > 1);
+  $('join-name').value = pick;
+  localStorage.setItem('fp_name', pick);
+});
 $('btn-join').addEventListener('click', () => {
   const code = $('join-room').value.trim().toUpperCase();
   if (code.length < 4) { $('join-msg').textContent = "we'll need that room code, sugar"; return; }
@@ -3087,8 +3094,24 @@ $('btn-host').addEventListener('click', () => {
   setTimeout(askMode, 400);
 });
 // a name nobody had to type — southern, friendly, never blocking the door
-const NAME_POOL = ['junebug', 'firefly', 'possum', 'magnolia', 'catfish',
-                   'sugarplum', 'clover', 'biscuit', 'dixie', 'banjo'];
+// the name well — deep enough that the dice stay fun. Southern nouns,
+// porch critters, diner food, and things your memaw would holler.
+const NAME_POOL = [
+  'junebug', 'firefly', 'possum', 'magnolia', 'catfish', 'sugarplum',
+  'clover', 'biscuit', 'dixie', 'banjo', 'peaches', 'dumplin', 'crawdad',
+  'hushpuppy', 'cornbread', 'sweettea', 'moonpie', 'buttercup', 'doodlebug',
+  'skeeter', 'tadpole', 'bullfrog', 'mudbug', 'goober', 'critter', 'varmint',
+  'rascal', 'sugarfoot', 'puddin', 'fritter', 'flapjack', 'shortcake',
+  'okra', 'pecan', 'gumbo', 'grits', 'chicory', 'sassafras', 'persimmon',
+  'muscadine', 'honeysuckle', 'bluebell', 'hollyhock', 'wisteria', 'catbird',
+  'bluejay', 'whippoorwill', 'mockingbird', 'ladybird', 'gator', 'sawgrass',
+  'cattail', 'porchlight', 'lightninbug', 'firecracker', 'sparkplug',
+  'scalawag', 'hotrod', 'jalopy', 'rooster', 'banty', 'heifer', 'muleskin',
+  'cooter', 'yonder', 'hollerin', 'smokehouse', 'tacklebox', 'bobber',
+  'nightcrawler', 'catalpa', 'kudzu', 'brambleberry', 'cobbler', 'julep',
+  'praline', 'beignet', 'boudin', 'etouffee', 'jamboree', 'hoedown',
+  'shindig', 'sockhop', 'twostep', 'dosido', 'hootenanny',
+];
 function ensureName() {
   let n = $('join-name').value.trim();
   if (!validName(n)) {

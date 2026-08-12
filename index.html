@@ -262,6 +262,14 @@
     font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
   }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  #name-row { display: flex; gap: 8px; }
+  #name-row input { flex: 1; min-width: 0; }
+  #name-dice {
+    flex: none; width: 46px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line); background: var(--glass);
+    font-size: 18px; line-height: 1;
+  }
+  #name-dice:hover { border-color: hsla(var(--accent-h),80%,70%,0.6); background: var(--accent-soft); }
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
   #pr-url {
@@ -1778,7 +1786,10 @@
       <label id="pr-file" for="file-input">or load the mp3 instead</label>
       <div id="pr-msg"></div>
     </div>
-    <input id="join-name" maxlength="14" placeholder="your name (or we'll pick one)" autocomplete="off">
+    <div id="name-row">
+      <input id="join-name" maxlength="14" placeholder="your name (or roll the dice)" autocomplete="off">
+      <button id="name-dice" title="pick a name for me">&#127922;</button>
+    </div>
     <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
     <div id="join-msg"></div>
     <div class="join-row">
@@ -2110,7 +2121,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 325</div>
+      <div id="build-stamp">build 326</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2152,6 +2163,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=325"></script>
+<script type="module" src="js/main.js?v=326"></script>
 </body>
 </html>
