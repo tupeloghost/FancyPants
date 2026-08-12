@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=326';
-import { drawQR } from './lib/qr.js?v=326';
-import { WORLDS } from './worlds/registry.js?v=326';
-import { Net, PALETTE } from './net.js?v=326';
-import { Presence } from './lib/presence.js?v=326';
-import { Pulses } from './lib/pulse.js?v=326';
-import { BeatClock } from './lib/beatclock.js?v=326';
-import { BeatCue } from './lib/beatcue.js?v=326';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=326';
-import { Race, placeOf, standings } from './lib/race.js?v=326';
-import { Signals } from './lib/signals.js?v=326';
-import { pickShareLine } from './lib/lines.js?v=326';
-import { RouteMap } from './lib/map.js?v=326';
-import * as sfx from './lib/sfx.js?v=326';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=326';
-import { glowTexture } from './lib/glow.js?v=326';
+import { AudioEngine } from './audio-engine.js?v=327';
+import { drawQR } from './lib/qr.js?v=327';
+import { WORLDS } from './worlds/registry.js?v=327';
+import { Net, PALETTE } from './net.js?v=327';
+import { Presence } from './lib/presence.js?v=327';
+import { Pulses } from './lib/pulse.js?v=327';
+import { BeatClock } from './lib/beatclock.js?v=327';
+import { BeatCue } from './lib/beatcue.js?v=327';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=327';
+import { Race, placeOf, standings } from './lib/race.js?v=327';
+import { Signals } from './lib/signals.js?v=327';
+import { pickShareLine } from './lib/lines.js?v=327';
+import { RouteMap } from './lib/map.js?v=327';
+import * as sfx from './lib/sfx.js?v=327';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=327';
+import { glowTexture } from './lib/glow.js?v=327';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2958,7 +2958,9 @@ function showSetResults() {
   if (shown) setTimeout(() => sfx.fanfare(), 1200 + shown * 1400);
 }
 
-$('join-name').value = localStorage.getItem('fp_name') || '';
+// the field starts BLANK on purpose — the placeholder sells the dice.
+// A returning player's saved name still comes back if they join empty
+// (ensureName falls back to fp_name before rolling fresh).
 $('sc-hide').addEventListener('click', () => $('stream-card').classList.add('hidden'));
 
 // ── promo: the host's shout-out, shown to the whole room ──
@@ -3114,10 +3116,11 @@ const NAME_POOL = [
 ];
 function ensureName() {
   let n = $('join-name').value.trim();
+  if (!validName(n)) n = localStorage.getItem('fp_name') || '';
   if (!validName(n)) {
     n = NAME_POOL[(Math.random() * NAME_POOL.length) | 0] + (10 + (Math.random() * 90 | 0));
-    $('join-name').value = n;
   }
+  $('join-name').value = n;
   net.local.name = n;
   localStorage.setItem('fp_name', n);
   // the ladder remembers this name's points from every visit before
