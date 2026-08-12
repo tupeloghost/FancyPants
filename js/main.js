@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=318';
-import { drawQR } from './lib/qr.js?v=318';
-import { WORLDS } from './worlds/registry.js?v=318';
-import { Net, PALETTE } from './net.js?v=318';
-import { Presence } from './lib/presence.js?v=318';
-import { Pulses } from './lib/pulse.js?v=318';
-import { BeatClock } from './lib/beatclock.js?v=318';
-import { BeatCue } from './lib/beatcue.js?v=318';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=318';
-import { Race, placeOf, standings } from './lib/race.js?v=318';
-import { Signals } from './lib/signals.js?v=318';
-import { pickShareLine } from './lib/lines.js?v=318';
-import { RouteMap } from './lib/map.js?v=318';
-import * as sfx from './lib/sfx.js?v=318';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=318';
-import { glowTexture } from './lib/glow.js?v=318';
+import { AudioEngine } from './audio-engine.js?v=319';
+import { drawQR } from './lib/qr.js?v=319';
+import { WORLDS } from './worlds/registry.js?v=319';
+import { Net, PALETTE } from './net.js?v=319';
+import { Presence } from './lib/presence.js?v=319';
+import { Pulses } from './lib/pulse.js?v=319';
+import { BeatClock } from './lib/beatclock.js?v=319';
+import { BeatCue } from './lib/beatcue.js?v=319';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=319';
+import { Race, placeOf, standings } from './lib/race.js?v=319';
+import { Signals } from './lib/signals.js?v=319';
+import { pickShareLine } from './lib/lines.js?v=319';
+import { RouteMap } from './lib/map.js?v=319';
+import * as sfx from './lib/sfx.js?v=319';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=319';
+import { glowTexture } from './lib/glow.js?v=319';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -391,6 +391,10 @@ window.__pickerInit = () => {
     chips.appendChild(b);
   };
   front.forEach(k => mk(k));
+  const cap = document.createElement('div');
+  cap.id = 'wchip-cap';
+  cap.textContent = '\u2605 world of the week \u2014 a new guest world every monday';
+  chips.parentElement.insertBefore(cap, chips.nextSibling);
   const more = document.createElement('button');
   more.className = 'wchip'; more.id = 'wchip-more'; more.textContent = 'SEE ALL \u2026';
   more.addEventListener('click', () => {
@@ -3087,9 +3091,9 @@ let promoteWorld = null;   // remembered for the mp3 route
 // each open world gets one honest sentence, so an artist knows what
 // they're putting their song inside before they commit
 const WORLD_BLURBS = {
-  tunnel: 'float through a tunnel of light \u2014 calm, hypnotic, your song is the whole sky',
-  surfer: 'ride a neon river \u2014 ramps, airtime, your song sets the current',
-  slide: 'race a glowing waterslide \u2014 speed and hoops on your song\u2019s beat',
+  tunnel: 'drift through a tunnel of light \u2014 every click sends a shockwave through your song',
+  surfer: 'jump and hang \u2014 air time pays, and the jumps land on your song\u2019s beat',
+  slide: 'fly down a neon flume \u2014 hold the throttle, thread the hoops your song lays out',
 };
 let prWorldPick = null;
 $('btn-own').addEventListener('click', () => {
@@ -3103,7 +3107,7 @@ $('btn-own').addEventListener('click', () => {
       const b = document.createElement('button');
       b.className = 'pr-opt';
       b.dataset.key = k;
-      b.innerHTML = '<b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 this week' : '') + '</b>'
+      b.innerHTML = '<b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 WORLD OF THE WEEK' : '') + '</b>'
         + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em>';
       b.addEventListener('click', () => {
         prWorldPick = k;
