@@ -3,9 +3,9 @@
 // off the pool, and split like real wax. Bass = heat. Tap pokes a blob.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=310';
-import { themePaint } from '../lib/themes.js?v=310';
-import { PALETTE } from '../net.js?v=310';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=311';
+import { themePaint } from '../lib/themes.js?v=311';
+import { PALETTE } from '../net.js?v=311';
 
 const BLOBS = 9;            // moving blobs (+1 pool blob in the field)
 const H = 34;

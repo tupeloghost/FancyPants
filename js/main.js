@@ -8,21 +8,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=310';
-import { drawQR } from './lib/qr.js?v=310';
-import { WORLDS } from './worlds/registry.js?v=310';
-import { Net, PALETTE } from './net.js?v=310';
-import { Presence } from './lib/presence.js?v=310';
-import { Pulses } from './lib/pulse.js?v=310';
-import { BeatClock } from './lib/beatclock.js?v=310';
-import { BeatCue } from './lib/beatcue.js?v=310';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=310';
-import { Race, placeOf, standings } from './lib/race.js?v=310';
-import { Signals } from './lib/signals.js?v=310';
-import { RouteMap } from './lib/map.js?v=310';
-import * as sfx from './lib/sfx.js?v=310';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=310';
-import { glowTexture } from './lib/glow.js?v=310';
+import { AudioEngine } from './audio-engine.js?v=311';
+import { drawQR } from './lib/qr.js?v=311';
+import { WORLDS } from './worlds/registry.js?v=311';
+import { Net, PALETTE } from './net.js?v=311';
+import { Presence } from './lib/presence.js?v=311';
+import { Pulses } from './lib/pulse.js?v=311';
+import { BeatClock } from './lib/beatclock.js?v=311';
+import { BeatCue } from './lib/beatcue.js?v=311';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=311';
+import { Race, placeOf, standings } from './lib/race.js?v=311';
+import { Signals } from './lib/signals.js?v=311';
+import { RouteMap } from './lib/map.js?v=311';
+import * as sfx from './lib/sfx.js?v=311';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=311';
+import { glowTexture } from './lib/glow.js?v=311';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2613,8 +2613,8 @@ function shareThis() {
       $('taste-card').classList.remove('hidden');
     } else {
       const el = $('pass-flash');
-      el.textContent = 'THIS WEEK YOUR SONG SHARES FROM ' + WORLDS[WEEK_WORLD].label
-        + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
+      el.textContent = 'YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
+        + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
       clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2800);
     }
@@ -2765,7 +2765,7 @@ $('rb-clip').addEventListener('click', () => {
     if (!ropeShown) { ropeShown = true; $('taste-card').classList.remove('hidden'); }
     else {
       const el = $('pass-flash');
-      el.textContent = 'CLIPS RIDE THE WORLD OF THE WEEK \u2014 ' + WORLDS[WEEK_WORLD].label + ' \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
+      el.textContent = 'CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' THIS WEEK \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN';
       el.classList.remove('bad', 'show'); void el.offsetWidth; el.classList.add('show');
       clearTimeout(passT); passT = setTimeout(() => el.classList.remove('show'), 2600);
     }
@@ -3042,7 +3042,9 @@ const WEEK_WORLD = (() => {
   const anchor = pool.indexOf('slide') - 2953;
   return pool[((week + anchor) % pool.length + pool.length) % pool.length];
 })();
-const shareableFree = k => k === WEEK_WORLD;
+// free share worlds = the showcase pair + this week's guest — exactly the
+// three the picker leads with. Artist access opens the other fourteen.
+const shareableFree = k => FEATURED.includes(k) || k === WEEK_WORLD;
 window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
 window.__pickerInit();
@@ -3055,7 +3057,7 @@ $('btn-own').addEventListener('click', () => {
   panel.classList.remove('hidden', 'collapsed');
   document.querySelector('#tabs .tab[data-tab="music"]')?.click();
   setTimeout(() => { $('suno-input').focus(); $('suno-input').scrollIntoView({ block: 'center' }); }, 350);
-  $('suno-rights').textContent = 'play your song in every world, free \u2014 share it from this week\u2019s world: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s ' + WORLDS[WEEK_WORLD].label;
 });
 $('taste-join').addEventListener('click', () => {
   const email = $('taste-email').value.trim();
