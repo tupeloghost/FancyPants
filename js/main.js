@@ -8,20 +8,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=281';
-import { drawQR } from './lib/qr.js?v=281';
-import { WORLDS } from './worlds/registry.js?v=281';
-import { Net, PALETTE } from './net.js?v=281';
-import { Presence } from './lib/presence.js?v=281';
-import { Pulses } from './lib/pulse.js?v=281';
-import { BeatClock } from './lib/beatclock.js?v=281';
-import { BeatCue } from './lib/beatcue.js?v=281';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=281';
-import { Race, placeOf, standings } from './lib/race.js?v=281';
-import { RouteMap } from './lib/map.js?v=281';
-import * as sfx from './lib/sfx.js?v=281';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=281';
-import { glowTexture } from './lib/glow.js?v=281';
+import { AudioEngine } from './audio-engine.js?v=282';
+import { drawQR } from './lib/qr.js?v=282';
+import { WORLDS } from './worlds/registry.js?v=282';
+import { Net, PALETTE } from './net.js?v=282';
+import { Presence } from './lib/presence.js?v=282';
+import { Pulses } from './lib/pulse.js?v=282';
+import { BeatClock } from './lib/beatclock.js?v=282';
+import { BeatCue } from './lib/beatcue.js?v=282';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=282';
+import { Race, placeOf, standings } from './lib/race.js?v=282';
+import { RouteMap } from './lib/map.js?v=282';
+import * as sfx from './lib/sfx.js?v=282';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=282';
+import { glowTexture } from './lib/glow.js?v=282';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2548,12 +2548,7 @@ $('balls-quick-range').addEventListener('input', e => {
   $('balls').value = v;
   const bv = $('balls-val'); if (bv) bv.textContent = v;
 });
-$('waitlist-open').addEventListener('click', e => {
-  e.preventDefault();
-  $('custom-form').classList.add('hidden');
-  $('waitlist-form').classList.toggle('hidden');
-  $('wl-email').focus();
-});
+
 $('custom-open').addEventListener('click', e => {
   e.preventDefault();
   $('waitlist-form').classList.add('hidden');
@@ -2653,9 +2648,12 @@ $('btn-solo').addEventListener('click', () => {
 // returns when artist features launch (?suno= demo links still work)
 $('btn-own').addEventListener('click', () => {
   $('custom-form').classList.add('hidden');
-  $('waitlist-form').classList.remove('hidden');
-  $('wl-email').focus();
-  $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  const form = $('waitlist-form');
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden')) {
+    $('wl-email').focus();
+    $('wl-email').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
 });
 // The door only opens when a button is pressed. The old click-anywhere
 // fallback predates the real buttons and turned every stray tap into an
