@@ -1423,6 +1423,9 @@
   #shc-song { font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); text-align: left; }
   #shc-qr { width: 52px; height: 52px; border-radius: 6px; background: #fff; flex: none; }
   #shc-actions { display: flex; gap: 8px; }
+  #shc-actions #shc-reroll { flex: 0 0 52px; font-size: 17px; letter-spacing: 0; }
+  #shc-scan { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: none; }
+  #shc-scan em { font: italic 9.5px 'Didot', 'Bodoni 72', Georgia, serif; color: var(--ink-dim); line-height: 1.3; }
   #shc-actions button {
     flex: 1; padding: 12px; border-radius: 11px; cursor: pointer;
     border: 1px solid var(--accent-line);
@@ -1846,13 +1849,13 @@
     <div id="shc-cta"></div>
     <div id="shc-meta">
       <span id="shc-song"></span>
-      <canvas id="shc-qr"></canvas>
+      <span id="shc-scan"><canvas id="shc-qr"></canvas><em>scan to play it<br>free, no app</em></span>
     </div>
     <div id="shc-actions">
       <button id="shc-share">SHARE</button>
-      <button id="shc-reroll">NEW LINE</button>
+      <button id="shc-reroll" title="new line">&#8635;</button>
     </div>
-    <button id="shc-close">back to the tally</button>
+    <button id="shc-close">close</button>
   </div>
 </div>
 
@@ -2107,7 +2110,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 324</div>
+      <div id="build-stamp">build 325</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2149,6 +2152,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=324"></script>
+<script type="module" src="js/main.js?v=325"></script>
 </body>
 </html>
