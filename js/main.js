@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=344';
-import { drawQR } from './lib/qr.js?v=344';
-import { WORLDS } from './worlds/registry.js?v=344';
-import { Net, PALETTE } from './net.js?v=344';
-import { Presence } from './lib/presence.js?v=344';
-import { Pulses } from './lib/pulse.js?v=344';
-import { BeatClock } from './lib/beatclock.js?v=344';
-import { BeatCue } from './lib/beatcue.js?v=344';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=344';
-import { Race, placeOf, standings } from './lib/race.js?v=344';
-import { Signals } from './lib/signals.js?v=344';
-import { pickShareLine } from './lib/lines.js?v=344';
-import { RouteMap } from './lib/map.js?v=344';
-import * as sfx from './lib/sfx.js?v=344';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=344';
-import { glowTexture } from './lib/glow.js?v=344';
+import { AudioEngine } from './audio-engine.js?v=346';
+import { drawQR } from './lib/qr.js?v=346';
+import { WORLDS } from './worlds/registry.js?v=346';
+import { Net, PALETTE } from './net.js?v=346';
+import { Presence } from './lib/presence.js?v=346';
+import { Pulses } from './lib/pulse.js?v=346';
+import { BeatClock } from './lib/beatclock.js?v=346';
+import { BeatCue } from './lib/beatcue.js?v=346';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=346';
+import { Race, placeOf, standings } from './lib/race.js?v=346';
+import { Signals } from './lib/signals.js?v=346';
+import { pickShareLine } from './lib/lines.js?v=346';
+import { RouteMap } from './lib/map.js?v=346';
+import * as sfx from './lib/sfx.js?v=346';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=346';
+import { glowTexture } from './lib/glow.js?v=346';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1011,6 +1011,9 @@ function loadSuno() {
       $('mq-title').value = info.title || '';
       $('mq-artist').value = info.artist || '';
       $('marquee-edit').classList.remove('hidden');
+      // pre-mint the permanent address while they're still listening — the
+      // first share button they press already knows /w/{artist}/{song}
+      if (shareableFree(currentWorldKey)) setTimeout(claimHome, 400);
       window.__sunoShare = path.startsWith('suno-s') ? 's_' + token : info.id;
       window.__sunoUrl = `${SUNO_PROXY}suno/${info.id}.mp3`;
       sunoSay(sunoTrack, 'ok');
@@ -2675,10 +2678,7 @@ function shareThis() {
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
     text = "come play '" + (sunoTrack || 'my song') + "' in " + (w ? w.label : '') + ' \u2014 on Fancy Britches';
-    fetch(`${SUNO_PROXY}share-home`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
-    }).catch(() => {});
+    claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
     // their song outside the free three: the rope — and no link goes out
@@ -2752,10 +2752,7 @@ $('shc-share').addEventListener('click', () => {
   const caption = (l ? l.text + ' ' + l.cta : 'come play') + '\n' + url;
   // the artist's song claims its home world when a link goes out from here
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
-    fetch(`${SUNO_PROXY}share-home`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
-    }).catch(() => {});
+    claimHome();
   }
   if (clipSaved) {
     const ext = clipSaved.type.includes('mp4') ? 'mp4' : 'webm';
@@ -2781,7 +2778,19 @@ $('shc-share').addEventListener('click', () => {
 // Clips follow the share rule: house songs clip anywhere; an artist's song
 // clips only where its share link works (the trio + the world of the week).
 let clipDraw = false, clipRecs = [], clipRot = 0, clipStag = 0, clipSaved = null, clipMime = '';
+// one claim function for every share surface: stores the home world AND
+// mints the permanent /w/{artist}/{song} address (same names, same link)
+function claimHome() {
+  fetch(`${SUNO_PROXY}share-home`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      song: window.__sunoShare, world: currentWorldKey,
+      artist: $('mq-artist').value.trim(), title: $('mq-title').value.trim(),
+    }),
+  }).then(r => r.json()).then(r => { if (r.url) window.__permUrl = r.url; }).catch(() => {});
+}
 function clipURL() {
+  if (window.__sunoShare && window.__permUrl) return window.__permUrl;
   if (window.__sunoShare) return SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
   const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
   return SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
@@ -3331,10 +3340,7 @@ $('ac-close').addEventListener('click', () => { stopArtistRec(); $('artist-card'
 $('ac-share').addEventListener('click', () => {
   if (!acSaved) { flash('STILL RECORDING \u2014 GIVE IT A BREATH', 1800); return; }
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
-    fetch(`${SUNO_PROXY}share-home`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
-    }).catch(() => {});
+    claimHome();
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
@@ -3569,7 +3575,9 @@ $('btn-solo').addEventListener('click', () => {
 const FEATURED = ['tunnel', 'surfer'];
 const WEEK_WORLD = (() => {
   const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k)).sort();
-  const week = Math.floor(Date.now() / 604800000);
+  // weeks turn on MONDAYS (epoch shifted 4 days — raw epoch weeks flip on
+  // thursdays, which is nobody's menu day). Anchored: monday-week 2953 = slide.
+  const week = Math.floor((Date.now() - 4 * 86400000) / 604800000);
   const anchor = pool.indexOf('slide') - 2953;
   return pool[((week + anchor) % pool.length + pool.length) % pool.length];
 })();

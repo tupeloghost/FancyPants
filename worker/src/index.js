@@ -86,7 +86,35 @@ export class FancyPantsRoom {
         return new Response('bad claim', { status: 400 });
       }
       await this.state.storage.put('sh:' + song, { world, at: Date.now() });
-      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      // a named claim also mints the permanent address: /w/{artist}/{song} —
+      // same names in, same link out, every single time
+      const slug = t => String(t || '').toLowerCase().normalize('NFKD')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+      let permUrl = null;
+      const sa = slug(body.artist), st = slug(body.title);
+      if (sa && st) {
+        await this.state.storage.put('w:' + sa + '/' + st, { song, at: Date.now() });
+        permUrl = 'https://fancy-pants.tupeloghost.workers.dev/w/' + sa + '/' + st;
+      }
+      return new Response(JSON.stringify({ ok: true, url: permUrl }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    // resolve a permanent slug: the song id + its CURRENT home world, and
+    // count the visit (private to the creator)
+    if (url.pathname.startsWith('/w-get/')) {
+      const slugPath = decodeURIComponent(url.pathname.slice(7)).slice(0, 90);
+      const row = await this.state.storage.get('w:' + slugPath);
+      if (!row) return new Response('{}', { headers: { 'Content-Type': 'application/json' } });
+      const home = await this.state.storage.get('sh:' + row.song);
+      const visits = ((await this.state.storage.get('wv:' + slugPath)) || 0) + 1;
+      await this.state.storage.put('wv:' + slugPath, visits);
+      return new Response(JSON.stringify({ song: row.song, world: home ? home.world : null }), { headers: { 'Content-Type': 'application/json' } });
+    }
+    if (url.pathname === '/w-stats') {
+      if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
+      const all = await this.state.storage.list({ prefix: 'wv:' });
+      const out = {};
+      for (const [k, v] of all) out[k.slice(3)] = v;
+      return new Response(JSON.stringify(out, null, 2), { headers: { 'Content-Type': 'application/json' } });
     }
     if (url.pathname === '/share-home' && request.method === 'GET') {
       const song = String(url.searchParams.get('song') || '').slice(0, 64);
@@ -338,10 +366,37 @@ export default {
       return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
+    // /w/{artist}/{song} — the permanent front door for a promoted song.
+    // Resolves through the song's current home world, so links never stale.
+    const SITE_URL = 'https://tupeloghost.github.io/FancyPants/';
+    const wslug = url.pathname.match(/^\/w\/([a-z0-9-]{1,40})\/([a-z0-9-]{1,40})$/);
+    if (wslug) {
+      const id = env.ROOMS.idFromName('THE-WAITING-LIST');
+      const r = await env.ROOMS.get(id).fetch(new Request('https://do/w-get/' + wslug[1] + '/' + wslug[2]));
+      const row = await r.json().catch(() => ({}));
+      const dest = row.song
+        ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
+        : SITE_URL;
+      return Response.redirect(dest, 302);
+    }
+    // /thisweek — wherever the special is right now
+    if (url.pathname === '/thisweek') {
+      const FEATURED = ['tunnel', 'surfer'];
+      const ALL = ['blacktop', 'bloom', 'cherry', 'comets', 'funhouse', 'garden', 'lava',
+                   'orbit', 'paint', 'plasma', 'river', 'signal', 'slide', 'slinky',
+                   'surfer', 'trail', 'tunnel'];
+      const pool = ALL.filter(k => !FEATURED.includes(k)).sort();
+      // monday-aligned weeks, anchored: monday-week 2953 = slide (matches client)
+      const week = Math.floor((Date.now() - 4 * 86400000) / 604800000);
+      const anchor = pool.indexOf('slide') - 2953;
+      const wk = pool[((week + anchor) % pool.length + pool.length) % pool.length];
+      return Response.redirect(SITE_URL + '?world=' + wk, 302);
+    }
+
     // the waiting list rides one well-known DO instance
     if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list' ||
         url.pathname === '/custom' || url.pathname === '/custom-list' ||
-        url.pathname === '/share-home') {
+        url.pathname === '/share-home' || url.pathname === '/w-stats') {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       return env.ROOMS.get(id).fetch(request);
     }
