@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=337';
-import { drawQR } from './lib/qr.js?v=337';
-import { WORLDS } from './worlds/registry.js?v=337';
-import { Net, PALETTE } from './net.js?v=337';
-import { Presence } from './lib/presence.js?v=337';
-import { Pulses } from './lib/pulse.js?v=337';
-import { BeatClock } from './lib/beatclock.js?v=337';
-import { BeatCue } from './lib/beatcue.js?v=337';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=337';
-import { Race, placeOf, standings } from './lib/race.js?v=337';
-import { Signals } from './lib/signals.js?v=337';
-import { pickShareLine } from './lib/lines.js?v=337';
-import { RouteMap } from './lib/map.js?v=337';
-import * as sfx from './lib/sfx.js?v=337';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=337';
-import { glowTexture } from './lib/glow.js?v=337';
+import { AudioEngine } from './audio-engine.js?v=339';
+import { drawQR } from './lib/qr.js?v=339';
+import { WORLDS } from './worlds/registry.js?v=339';
+import { Net, PALETTE } from './net.js?v=339';
+import { Presence } from './lib/presence.js?v=339';
+import { Pulses } from './lib/pulse.js?v=339';
+import { BeatClock } from './lib/beatclock.js?v=339';
+import { BeatCue } from './lib/beatcue.js?v=339';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=339';
+import { Race, placeOf, standings } from './lib/race.js?v=339';
+import { Signals } from './lib/signals.js?v=339';
+import { pickShareLine } from './lib/lines.js?v=339';
+import { RouteMap } from './lib/map.js?v=339';
+import * as sfx from './lib/sfx.js?v=339';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=339';
+import { glowTexture } from './lib/glow.js?v=339';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2976,6 +2976,11 @@ function drawRecap(data, handle) {
   x.fillStyle = 'rgba(215,211,240,0.85)';
   x.fillText('hosted a room on fancy britches \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's')
     + ' \u00b7 ' + (lastSetLen || '?') + ' round' + (lastSetLen === 1 ? '' : 's'), 64, 188);
+  if (data.nextStream) {
+    x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = GOLD;
+    x.fillText('next stream \u2014 ' + data.nextStream, 64, 620);
+  }
   // winner, said plainly, dressed in gold
   const wtxt = '\u2605  WINNER \u2014 ' + data.winner.toUpperCase();
   x.font = '400 30px Didot, "Bodoni 72", Georgia, serif';
@@ -3055,6 +3060,7 @@ function recapText(data, handle) {
   lines.push('\u2605 winner \u2014 ' + data.winner);
   for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
+  if (data.nextStream) lines.push('next stream \u2014 ' + data.nextStream);
   lines.push('start your own \u2014 free, in the browser: ' + SITE);
   return lines.join('\n');
 }
@@ -3063,6 +3069,9 @@ function openRecapCard() {
   const data = buildRecapData();
   const handle = $('rc-handle').value.trim() || localStorage.getItem('fp_handle') || '';
   $('rc-handle').value = handle;
+  const next = $('rc-next').value.trim() || localStorage.getItem('fp_next_stream') || '';
+  $('rc-next').value = next;
+  data.nextStream = next;
   const img = drawRecap(data, handle);
   const prev = $('rc-preview');
   prev.width = img.width; prev.height = img.height;
@@ -3072,13 +3081,20 @@ function openRecapCard() {
 }
 $('rb-recap').addEventListener('click', openRecapCard);
 window.__openRecap = openRecapCard;   // dev: preview the recap without a set
+function recapRedraw() {
+  const d = $('recap-card')._data;
+  if (!d) return;
+  d.nextStream = $('rc-next').value.trim();
+  const img = drawRecap(d, $('rc-handle').value.trim());
+  $('rc-preview').getContext('2d').drawImage(img, 0, 0);
+}
 $('rc-handle').addEventListener('input', () => {
   localStorage.setItem('fp_handle', $('rc-handle').value.trim());
-  const d = $('recap-card')._data;
-  if (d) {
-    const img = drawRecap(d, $('rc-handle').value.trim());
-    $('rc-preview').getContext('2d').drawImage(img, 0, 0);
-  }
+  recapRedraw();
+});
+$('rc-next').addEventListener('input', () => {
+  localStorage.setItem('fp_next_stream', $('rc-next').value.trim());
+  recapRedraw();
 });
 $('rc-close').addEventListener('click', () => $('recap-card').classList.add('hidden'));
 $('rc-copy').addEventListener('click', () => {

@@ -1424,7 +1424,7 @@
     background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.16), rgba(6,6,14,0.92));
   }
   #rc-preview { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
-  #rc-handle {
+  #rc-handle, #rc-next {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
     font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
@@ -1886,6 +1886,7 @@
   <div id="rc-inner">
     <canvas id="rc-preview"></canvas>
     <input id="rc-handle" maxlength="40" placeholder="your handle &mdash; @twitch, @tiktok, whoever you are" autocomplete="off">
+    <input id="rc-next" maxlength="80" placeholder="next stream (optional) &mdash; e.g. fridays 8pm &middot; twitch.tv/you" autocomplete="off">
     <div id="rc-actions">
       <button id="rc-share">SHARE IMAGE</button>
       <button id="rc-copy">COPY AS TEXT</button>
@@ -2163,7 +2164,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 337</div>
+      <div id="build-stamp">build 339</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2205,6 +2206,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=337"></script>
+<script type="module" src="js/main.js?v=339"></script>
 </body>
 </html>
