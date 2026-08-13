@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=340';
-import { drawQR } from './lib/qr.js?v=340';
-import { WORLDS } from './worlds/registry.js?v=340';
-import { Net, PALETTE } from './net.js?v=340';
-import { Presence } from './lib/presence.js?v=340';
-import { Pulses } from './lib/pulse.js?v=340';
-import { BeatClock } from './lib/beatclock.js?v=340';
-import { BeatCue } from './lib/beatcue.js?v=340';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=340';
-import { Race, placeOf, standings } from './lib/race.js?v=340';
-import { Signals } from './lib/signals.js?v=340';
-import { pickShareLine } from './lib/lines.js?v=340';
-import { RouteMap } from './lib/map.js?v=340';
-import * as sfx from './lib/sfx.js?v=340';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=340';
-import { glowTexture } from './lib/glow.js?v=340';
+import { AudioEngine } from './audio-engine.js?v=342';
+import { drawQR } from './lib/qr.js?v=342';
+import { WORLDS } from './worlds/registry.js?v=342';
+import { Net, PALETTE } from './net.js?v=342';
+import { Presence } from './lib/presence.js?v=342';
+import { Pulses } from './lib/pulse.js?v=342';
+import { BeatClock } from './lib/beatclock.js?v=342';
+import { BeatCue } from './lib/beatcue.js?v=342';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=342';
+import { Race, placeOf, standings } from './lib/race.js?v=342';
+import { Signals } from './lib/signals.js?v=342';
+import { pickShareLine } from './lib/lines.js?v=342';
+import { RouteMap } from './lib/map.js?v=342';
+import * as sfx from './lib/sfx.js?v=342';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=342';
+import { glowTexture } from './lib/glow.js?v=342';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3219,6 +3219,102 @@ function marqueeApply() {
 }
 $('mq-title').addEventListener('input', marqueeApply);
 $('mq-artist').addEventListener('input', marqueeApply);
+
+// ── the artist card ── the quiet one: mostly the world itself, wearing the
+// artist's chosen look, with the song and the name in serif and a QR that
+// opens this exact song in this exact world. No stats — the world is the ad.
+const AC_DIMS = { v: [1080, 1920], s: [1080, 1080], l: [1600, 900] };
+let acFmt = 'v';
+function drawArtistCard(fmt) {
+  const [W, H] = AC_DIMS[fmt];
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  // the world, cover-fit — their colors, their look, this exact moment
+  const g = document.getElementById('canvas');
+  const sc = Math.max(W / g.width, H / g.height);
+  x.drawImage(g, (W - g.width * sc) / 2, (H - g.height * sc) / 2, g.width * sc, g.height * sc);
+  // a breath of dark at the foot so the type sits quiet
+  const grad = x.createLinearGradient(0, H * 0.55, 0, H);
+  grad.addColorStop(0, 'rgba(3,3,10,0)');
+  grad.addColorStop(1, 'rgba(3,3,10,0.88)');
+  x.fillStyle = grad; x.fillRect(0, 0, W, H);
+  const title = ($('mq-title').value.trim() || sunoTrack.split(' \u2014 ')[0] || 'a song').toLowerCase();
+  const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u2014 ')[1] || '').toLowerCase();
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  const base = fmt === 'l' ? H - 150 : H - 300;
+  x.fillStyle = 'rgba(250,248,255,0.97)';
+  x.font = '400 ' + Math.round(W * (fmt === 'l' ? 0.045 : 0.075)) + 'px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText(title, W / 2, base, W - 120);
+  if (artist) {
+    x.font = 'italic 400 ' + Math.round(W * (fmt === 'l' ? 0.024 : 0.036)) + 'px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = 'rgba(226,222,245,0.85)';
+    x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.042 : 0.062)), W - 160);
+  }
+  x.font = Math.round(W * 0.016) + 'px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'rgba(205,200,230,0.7)';
+  x.fillText('now a playable world \u2014 free, in the browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.075 : 0.115)));
+  const qrc = document.createElement('canvas');
+  if (drawQR(qrc, clipURL(), 3)) {
+    const q = Math.round(W * 0.085), m = Math.round(W * 0.035);
+    x.fillStyle = '#fff';
+    x.beginPath(); x.roundRect(W - q - m - 8, H - q - m - 8, q + 16, q + 16, 10); x.fill();
+    x.drawImage(qrc, W - q - m, H - q - m, q, q);
+  }
+  x.textAlign = 'left';
+  return c;
+}
+function acRender() {
+  const img = drawArtistCard(acFmt);
+  const prev = $('ac-preview');
+  prev.width = img.width; prev.height = img.height;
+  prev.getContext('2d').drawImage(img, 0, 0);
+}
+$('mq-card').addEventListener('click', () => {
+  panel.classList.add('collapsed');
+  // catch the world mid-flourish: wait (up to 2s) for a beat to land, then
+  // one more frame so the world has drawn its reaction to it
+  const t0 = performance.now();
+  (function waitBeat() {
+    if (audio.beatIntensity > 0.5 || performance.now() - t0 > 2000) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        acRender();
+        $('artist-card').classList.remove('hidden');
+      }));
+      return;
+    }
+    requestAnimationFrame(waitBeat);
+  })();
+});
+document.querySelectorAll('.ac-fmt').forEach(b => b.addEventListener('click', () => {
+  acFmt = b.dataset.fmt;
+  document.querySelectorAll('.ac-fmt').forEach(o => o.classList.toggle('on', o === b));
+  acRender();
+}));
+$('ac-close').addEventListener('click', () => $('artist-card').classList.add('hidden'));
+$('ac-share').addEventListener('click', () => {
+  // sharing the card claims the song's home too — same rule as links
+  if (window.__sunoShare && shareableFree(currentWorldKey)) {
+    fetch(`${SUNO_PROXY}share-home`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
+    }).catch(() => {});
+  }
+  drawArtistCard(acFmt).toBlob(blob => {
+    const file = new File([blob], 'fancy-britches-artist-card.jpg', { type: 'image/jpeg' });
+    const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now \u2014 ' + clipURL();
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], text: caption }).catch(() => {});
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+      navigator.clipboard.writeText(caption).catch(() => {});
+      flash('CARD SAVED \u2014 CAPTION COPIED TOO', 2200);
+    }
+  }, 'image/jpeg', 0.88);
+});
 
 $('balls-quick-range').addEventListener('input', e => {
   const v = +e.target.value;
