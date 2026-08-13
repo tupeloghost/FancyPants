@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=348';
-import { drawQR } from './lib/qr.js?v=348';
-import { WORLDS } from './worlds/registry.js?v=348';
-import { Net, PALETTE } from './net.js?v=348';
-import { Presence } from './lib/presence.js?v=348';
-import { Pulses } from './lib/pulse.js?v=348';
-import { BeatClock } from './lib/beatclock.js?v=348';
-import { BeatCue } from './lib/beatcue.js?v=348';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=348';
-import { Race, placeOf, standings } from './lib/race.js?v=348';
-import { Signals } from './lib/signals.js?v=348';
-import { pickShareLine } from './lib/lines.js?v=348';
-import { RouteMap } from './lib/map.js?v=348';
-import * as sfx from './lib/sfx.js?v=348';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=348';
-import { glowTexture } from './lib/glow.js?v=348';
+import { AudioEngine } from './audio-engine.js?v=349';
+import { drawQR } from './lib/qr.js?v=349';
+import { WORLDS } from './worlds/registry.js?v=349';
+import { Net, PALETTE } from './net.js?v=349';
+import { Presence } from './lib/presence.js?v=349';
+import { Pulses } from './lib/pulse.js?v=349';
+import { BeatClock } from './lib/beatclock.js?v=349';
+import { BeatCue } from './lib/beatcue.js?v=349';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=349';
+import { Race, placeOf, standings } from './lib/race.js?v=349';
+import { Signals } from './lib/signals.js?v=349';
+import { pickShareLine } from './lib/lines.js?v=349';
+import { RouteMap } from './lib/map.js?v=349';
+import * as sfx from './lib/sfx.js?v=349';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=349';
+import { glowTexture } from './lib/glow.js?v=349';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2677,7 +2677,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "come play '" + (sunoTrack || 'my song') + "' in " + (w ? w.label : '') + ' \u2014 on Fancy Britches';
+    text = "'" + (sunoTrack || 'my song') + "' is a playable world now \u2014 free, no app, right in the browser";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -2688,8 +2688,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "come play '" + prettyTrack(file) + "' in " + (w ? w.label : '') + ' \u2014 Fancy Britches, by Tupelo Ghost'
-      : 'come play Fancy Britches, by Tupelo Ghost';
+      ? "i was just inside '" + prettyTrack(file) + "' \u2014 songs are playable worlds here. free, no app"
+      : 'songs are playable worlds here \u2014 free, no app, in the browser';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -2837,7 +2837,7 @@ function clipBufStart() {
     ctx2.fillStyle = 'rgba(240,238,255,0.92)';
     ctx2.font = '400 ' + Math.round(bh * 0.42) + 'px Didot, "Bodoni 72", Georgia, serif';
     ctx2.textBaseline = 'middle';
-    ctx2.fillText(title + '  \u00b7  ' + wlabel + '  \u2014  FANCY BRITCHES', Math.round(bh * 0.5), H - bh / 2);
+    ctx2.fillText(title + '  \u00b7  ' + wlabel + '  \u2014  PLAY IT FREE, IN THE BROWSER', Math.round(bh * 0.5), H - bh / 2);
     if (hasQR) {
       const q = bh * 1.6, m = Math.round(bh * 0.25);
       ctx2.drawImage(qrc, W - q - m, H - q - m, q, q);

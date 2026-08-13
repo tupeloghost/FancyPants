@@ -9,11 +9,11 @@
 // much of the world you have brought to life.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=348';
-import { themePaint } from '../lib/themes.js?v=348';
-import { PALETTE } from '../net.js?v=348';
-import { TUNE } from '../lib/tune.js?v=348';
-import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=348';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=349';
+import { themePaint } from '../lib/themes.js?v=349';
+import { PALETTE } from '../net.js?v=349';
+import { TUNE } from '../lib/tune.js?v=349';
+import { clear as sfxClear, fanfare as sfxFanfare, thud as sfxThud } from '../lib/sfx.js?v=349';
 
 const SEGS = 14;            // panels around the ring
 const RINGS = 42;           // rings alive at once
