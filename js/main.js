@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=346';
-import { drawQR } from './lib/qr.js?v=346';
-import { WORLDS } from './worlds/registry.js?v=346';
-import { Net, PALETTE } from './net.js?v=346';
-import { Presence } from './lib/presence.js?v=346';
-import { Pulses } from './lib/pulse.js?v=346';
-import { BeatClock } from './lib/beatclock.js?v=346';
-import { BeatCue } from './lib/beatcue.js?v=346';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=346';
-import { Race, placeOf, standings } from './lib/race.js?v=346';
-import { Signals } from './lib/signals.js?v=346';
-import { pickShareLine } from './lib/lines.js?v=346';
-import { RouteMap } from './lib/map.js?v=346';
-import * as sfx from './lib/sfx.js?v=346';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=346';
-import { glowTexture } from './lib/glow.js?v=346';
+import { AudioEngine } from './audio-engine.js?v=347';
+import { drawQR } from './lib/qr.js?v=347';
+import { WORLDS } from './worlds/registry.js?v=347';
+import { Net, PALETTE } from './net.js?v=347';
+import { Presence } from './lib/presence.js?v=347';
+import { Pulses } from './lib/pulse.js?v=347';
+import { BeatClock } from './lib/beatclock.js?v=347';
+import { BeatCue } from './lib/beatcue.js?v=347';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=347';
+import { Race, placeOf, standings } from './lib/race.js?v=347';
+import { Signals } from './lib/signals.js?v=347';
+import { pickShareLine } from './lib/lines.js?v=347';
+import { RouteMap } from './lib/map.js?v=347';
+import * as sfx from './lib/sfx.js?v=347';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=347';
+import { glowTexture } from './lib/glow.js?v=347';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2717,8 +2717,9 @@ $('rb-share').addEventListener('click', () => {
 function openShareCard() {
   const l = window.__shareLine;
   const run = sig.lastRun || {};
-  $('shc-line').textContent = l ? l.text : 'that was a whole thing.';
-  $('shc-cta').textContent = l ? l.cta : 'go on then \u2192';
+  $('shc-line').textContent = l ? l.text
+    : 'one song down in ' + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'the world') + '.';
+  $('shc-cta').textContent = l ? l.cta : 'your turn \u2192';
   $('shc-song').innerHTML = (run.songTitle ? 'song&nbsp;&nbsp;<b>' + run.songTitle.replace(/[<>&]/g, '') + '</b><br>' : '')
     + (run.artistName ? 'artist&nbsp;&nbsp;<b>' + run.artistName.replace(/[<>&]/g, '') + '</b><br>' : '')
     + (run.worldId && WORLDS[run.worldId] ? 'world&nbsp;&nbsp;<b>' + WORLDS[run.worldId].label + '</b>' : '');
@@ -2749,7 +2750,9 @@ $('shc-reroll').addEventListener('click', () => {
 $('shc-share').addEventListener('click', () => {
   const l = window.__shareLine;
   const url = clipURL();
-  const caption = (l ? l.text + ' ' + l.cta : 'come play') + '\n' + url;
+  const run2 = sig.lastRun || {};
+  const caption = (l ? l.text + ' ' + l.cta
+    : 'come play ' + (run2.songTitle ? '\u2018' + run2.songTitle + '\u2019' : 'this') + ' \u2014 free, in the browser') + '\n' + url;
   // the artist's song claims its home world when a link goes out from here
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();
