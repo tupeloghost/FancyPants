@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=342';
-import { drawQR } from './lib/qr.js?v=342';
-import { WORLDS } from './worlds/registry.js?v=342';
-import { Net, PALETTE } from './net.js?v=342';
-import { Presence } from './lib/presence.js?v=342';
-import { Pulses } from './lib/pulse.js?v=342';
-import { BeatClock } from './lib/beatclock.js?v=342';
-import { BeatCue } from './lib/beatcue.js?v=342';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=342';
-import { Race, placeOf, standings } from './lib/race.js?v=342';
-import { Signals } from './lib/signals.js?v=342';
-import { pickShareLine } from './lib/lines.js?v=342';
-import { RouteMap } from './lib/map.js?v=342';
-import * as sfx from './lib/sfx.js?v=342';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=342';
-import { glowTexture } from './lib/glow.js?v=342';
+import { AudioEngine } from './audio-engine.js?v=344';
+import { drawQR } from './lib/qr.js?v=344';
+import { WORLDS } from './worlds/registry.js?v=344';
+import { Net, PALETTE } from './net.js?v=344';
+import { Presence } from './lib/presence.js?v=344';
+import { Pulses } from './lib/pulse.js?v=344';
+import { BeatClock } from './lib/beatclock.js?v=344';
+import { BeatCue } from './lib/beatcue.js?v=344';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=344';
+import { Race, placeOf, standings } from './lib/race.js?v=344';
+import { Signals } from './lib/signals.js?v=344';
+import { pickShareLine } from './lib/lines.js?v=344';
+import { RouteMap } from './lib/map.js?v=344';
+import * as sfx from './lib/sfx.js?v=344';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=344';
+import { glowTexture } from './lib/glow.js?v=344';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3220,21 +3220,12 @@ function marqueeApply() {
 $('mq-title').addEventListener('input', marqueeApply);
 $('mq-artist').addEventListener('input', marqueeApply);
 
-// ── the artist card ── the quiet one: mostly the world itself, wearing the
-// artist's chosen look, with the song and the name in serif and a QR that
-// opens this exact song in this exact world. No stats — the world is the ad.
-const AC_DIMS = { v: [1080, 1920], s: [1080, 1080], l: [1600, 900] };
-let acFmt = 'v';
-function drawArtistCard(fmt) {
-  const [W, H] = AC_DIMS[fmt];
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const x = c.getContext('2d');
-  // the world, cover-fit — their colors, their look, this exact moment
-  const g = document.getElementById('canvas');
-  const sc = Math.max(W / g.width, H / g.height);
-  x.drawImage(g, (W - g.width * sc) / 2, (H - g.height * sc) / 2, g.width * sc, g.height * sc);
-  // a breath of dark at the foot so the type sits quiet
+// ── the artist card ── the quiet one, in motion: twelve seconds of the
+// world wearing the artist's look, song + name in serif, QR burned into
+// every frame. No stats — the world moving IS the ad.
+const AC_DIMS = { v: [540, 960], s: [720, 720], l: [960, 540] };
+let acFmt = 'v', acRec = null, acSaved = null, acStop = 0, acTick = 0, acDraw = false;
+function drawArtistType(x, W, H, fmt) {
   const grad = x.createLinearGradient(0, H * 0.55, 0, H);
   grad.addColorStop(0, 'rgba(3,3,10,0)');
   grad.addColorStop(1, 'rgba(3,3,10,0.88)');
@@ -3242,78 +3233,122 @@ function drawArtistCard(fmt) {
   const title = ($('mq-title').value.trim() || sunoTrack.split(' \u2014 ')[0] || 'a song').toLowerCase();
   const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u2014 ')[1] || '').toLowerCase();
   x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-  const base = fmt === 'l' ? H - 150 : H - 300;
+  const base = fmt === 'l' ? H - 84 : H - 150;
   x.fillStyle = 'rgba(250,248,255,0.97)';
   x.font = '400 ' + Math.round(W * (fmt === 'l' ? 0.045 : 0.075)) + 'px Didot, "Bodoni 72", Georgia, serif';
-  x.fillText(title, W / 2, base, W - 120);
+  x.fillText(title, W / 2, base, W - 60);
   if (artist) {
     x.font = 'italic 400 ' + Math.round(W * (fmt === 'l' ? 0.024 : 0.036)) + 'px Didot, "Bodoni 72", Georgia, serif';
     x.fillStyle = 'rgba(226,222,245,0.85)';
-    x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.042 : 0.062)), W - 160);
+    x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.042 : 0.062)), W - 80);
   }
-  x.font = Math.round(W * 0.016) + 'px "SF Mono", Menlo, monospace';
+  x.font = Math.round(W * 0.02) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(205,200,230,0.7)';
   x.fillText('now a playable world \u2014 free, in the browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.075 : 0.115)));
-  const qrc = document.createElement('canvas');
-  if (drawQR(qrc, clipURL(), 3)) {
-    const q = Math.round(W * 0.085), m = Math.round(W * 0.035);
-    x.fillStyle = '#fff';
-    x.beginPath(); x.roundRect(W - q - m - 8, H - q - m - 8, q + 16, q + 16, 10); x.fill();
-    x.drawImage(qrc, W - q - m, H - q - m, q, q);
-  }
   x.textAlign = 'left';
-  return c;
 }
-function acRender() {
-  const img = drawArtistCard(acFmt);
-  const prev = $('ac-preview');
-  prev.width = img.width; prev.height = img.height;
-  prev.getContext('2d').drawImage(img, 0, 0);
+function acQR(fmt) {
+  const qrc = document.createElement('canvas');
+  return drawQR(qrc, clipURL(), 2) ? qrc : null;
+}
+function stopArtistRec() {
+  clearTimeout(acStop); clearInterval(acTick);
+  acDraw = false;
+  if (acRec && acRec.state !== 'inactive') { try { acRec.stop(); } catch (e) {} }
+}
+function startArtistRec(fmt) {
+  stopArtistRec();
+  acSaved = null;
+  $('ac-video').classList.add('hidden');
+  const [W, H] = AC_DIMS[fmt];
+  const comp = document.createElement('canvas');
+  comp.width = W; comp.height = H;
+  const x = comp.getContext('2d');
+  const g = document.getElementById('canvas');
+  const qrc = acQR(fmt);
+  acDraw = true;
+  (function frame() {
+    if (!acDraw) return;
+    const sc = Math.max(W / g.width, H / g.height);
+    x.drawImage(g, (W - g.width * sc) / 2, (H - g.height * sc) / 2, g.width * sc, g.height * sc);
+    drawArtistType(x, W, H, fmt);
+    if (qrc) {
+      const q = Math.round(W * 0.11), m = Math.round(W * 0.04);
+      x.fillStyle = '#fff';
+      x.beginPath(); x.roundRect(W - q - m - 6, H - q - m - 6, q + 12, q + 12, 8); x.fill();
+      x.drawImage(qrc, W - q - m, H - q - m, q, q);
+    }
+    requestAnimationFrame(frame);
+  })();
+  const stream = comp.captureStream(30);
+  try {
+    audio.ensureContext();
+    if (audio.ctx && audio.analyser) {
+      if (!audio._recDest) { audio._recDest = audio.ctx.createMediaStreamDestination(); audio.analyser.connect(audio._recDest); }
+      audio._recDest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    }
+  } catch (e) { /* silent card beats no card */ }
+  const mime = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm']
+    .find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+  let chunks = [];
+  try {
+    acRec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined);
+  } catch (e) {
+    $('ac-status').textContent = 'this browser can\u2019t record video \u2014 try chrome or safari';
+    acDraw = false;
+    return;
+  }
+  acRec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  acRec.onstop = () => {
+    acDraw = false;
+    const type = mime || 'video/webm';
+    acSaved = { blob: new Blob(chunks, { type }), type };
+    const v = $('ac-video');
+    if (v.dataset.url) URL.revokeObjectURL(v.dataset.url);
+    v.dataset.url = URL.createObjectURL(acSaved.blob);
+    v.src = v.dataset.url;
+    v.classList.remove('hidden');
+    v.play().catch(() => {});
+    $('ac-status').textContent = 'twelve seconds of your world \u2014 ready to post';
+  };
+  acRec.start(500);
+  let left = 12;
+  $('ac-status').textContent = 'recording your world \u2026 0:12';
+  acTick = setInterval(() => { left--; $('ac-status').textContent = 'recording your world \u2026 0:' + String(Math.max(0, left)).padStart(2, '0'); }, 1000);
+  acStop = setTimeout(stopArtistRec, 12000);
 }
 $('mq-card').addEventListener('click', () => {
   panel.classList.add('collapsed');
-  // catch the world mid-flourish: wait (up to 2s) for a beat to land, then
-  // one more frame so the world has drawn its reaction to it
-  const t0 = performance.now();
-  (function waitBeat() {
-    if (audio.beatIntensity > 0.5 || performance.now() - t0 > 2000) {
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        acRender();
-        $('artist-card').classList.remove('hidden');
-      }));
-      return;
-    }
-    requestAnimationFrame(waitBeat);
-  })();
+  $('artist-card').classList.remove('hidden');
+  startArtistRec(acFmt);
 });
 document.querySelectorAll('.ac-fmt').forEach(b => b.addEventListener('click', () => {
   acFmt = b.dataset.fmt;
   document.querySelectorAll('.ac-fmt').forEach(o => o.classList.toggle('on', o === b));
-  acRender();
+  startArtistRec(acFmt);
 }));
-$('ac-close').addEventListener('click', () => $('artist-card').classList.add('hidden'));
+$('ac-close').addEventListener('click', () => { stopArtistRec(); $('artist-card').classList.add('hidden'); });
 $('ac-share').addEventListener('click', () => {
-  // sharing the card claims the song's home too — same rule as links
+  if (!acSaved) { flash('STILL RECORDING \u2014 GIVE IT A BREATH', 1800); return; }
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     fetch(`${SUNO_PROXY}share-home`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ song: window.__sunoShare, world: currentWorldKey }),
     }).catch(() => {});
   }
-  drawArtistCard(acFmt).toBlob(blob => {
-    const file = new File([blob], 'fancy-britches-artist-card.jpg', { type: 'image/jpeg' });
-    const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now \u2014 ' + clipURL();
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], text: caption }).catch(() => {});
-    } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = file.name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-      navigator.clipboard.writeText(caption).catch(() => {});
-      flash('CARD SAVED \u2014 CAPTION COPIED TOO', 2200);
-    }
-  }, 'image/jpeg', 0.88);
+  const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
+  const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
+  const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now \u2014 ' + clipURL();
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], text: caption }).catch(() => {});
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(acSaved.blob); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+    navigator.clipboard.writeText(caption).catch(() => {});
+    flash('CARD SAVED \u2014 CAPTION COPIED TOO', 2200);
+  }
 });
 
 $('balls-quick-range').addEventListener('input', e => {

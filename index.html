@@ -1423,7 +1423,9 @@
     border: 1px solid var(--accent-line);
     background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.16), rgba(6,6,14,0.92));
   }
-  #ac-preview { width: 100%; max-height: 64vh; object-fit: contain; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  #ac-video { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  #ac-video.hidden { display: none; }
+  #ac-status { min-height: 14px; text-align: center; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
   #ac-formats { display: flex; gap: 8px; justify-content: center; }
   .ac-fmt {
     padding: 8px 18px; border-radius: 10px; cursor: pointer;
@@ -1920,14 +1922,15 @@
 <div id="burn-glow"></div>
 <div id="artist-card" class="hidden">
   <div id="ac-inner">
-    <canvas id="ac-preview"></canvas>
+    <video id="ac-video" playsinline muted loop class="hidden"></video>
+    <div id="ac-status"></div>
     <div id="ac-formats">
       <button class="ac-fmt on" data-fmt="v">9:16</button>
       <button class="ac-fmt" data-fmt="s">1:1</button>
       <button class="ac-fmt" data-fmt="l">16:9</button>
     </div>
     <div id="ac-actions">
-      <button id="ac-share">SHARE IMAGE</button>
+      <button id="ac-share">SHARE VIDEO</button>
     </div>
     <button id="ac-close">close</button>
   </div>
@@ -2216,7 +2219,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 342</div>
+      <div id="build-stamp">build 344</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2258,6 +2261,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=342"></script>
+<script type="module" src="js/main.js?v=344"></script>
 </body>
 </html>
