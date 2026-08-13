@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=350';
-import { drawQR } from './lib/qr.js?v=350';
-import { WORLDS } from './worlds/registry.js?v=350';
-import { Net, PALETTE } from './net.js?v=350';
-import { Presence } from './lib/presence.js?v=350';
-import { Pulses } from './lib/pulse.js?v=350';
-import { BeatClock } from './lib/beatclock.js?v=350';
-import { BeatCue } from './lib/beatcue.js?v=350';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=350';
-import { Race, placeOf, standings } from './lib/race.js?v=350';
-import { Signals } from './lib/signals.js?v=350';
-import { pickShareLine, loadLines } from './lib/lines.js?v=350';
-import { RouteMap } from './lib/map.js?v=350';
-import * as sfx from './lib/sfx.js?v=350';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=350';
-import { glowTexture } from './lib/glow.js?v=350';
+import { AudioEngine } from './audio-engine.js?v=351';
+import { drawQR } from './lib/qr.js?v=351';
+import { WORLDS } from './worlds/registry.js?v=351';
+import { Net, PALETTE } from './net.js?v=351';
+import { Presence } from './lib/presence.js?v=351';
+import { Pulses } from './lib/pulse.js?v=351';
+import { BeatClock } from './lib/beatclock.js?v=351';
+import { BeatCue } from './lib/beatcue.js?v=351';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=351';
+import { Race, placeOf, standings } from './lib/race.js?v=351';
+import { Signals } from './lib/signals.js?v=351';
+import { pickShareLine, loadLines } from './lib/lines.js?v=351';
+import { RouteMap } from './lib/map.js?v=351';
+import * as sfx from './lib/sfx.js?v=351';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=351';
+import { glowTexture } from './lib/glow.js?v=351';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3694,91 +3694,116 @@ const params = new URLSearchParams(location.search);
 // rounds: force archetypes, preview lines, open all three cards on fake
 // signals, skip to the end of a run, toggle the paid gate.
 if (params.get('dev') === '1') (function devPanel() {
+  // friendly names for the numbers behind a joke
+  const FIELD_WORDS = {
+    movementRatio: 'movement', runSeconds: 'seconds in the world', tweakCount: 'look changes',
+    worldsVisited: 'worlds visited', songsPlayed: 'songs played', roomSize: 'people in the room',
+    wasAlone: 'was alone', rejoined: 'came back', bailedEarly: 'left early',
+    sessionSeconds: 'seconds this session', pointsGained: 'points', feet: 'feet',
+    accuracy: 'accuracy', bestStreak: 'streak', finished: 'finished the song',
+  };
+  const plainWhy = why => {
+    if (!why || typeof why !== 'object') return '';
+    return Object.entries(why).map(([f, [op, v]]) =>
+      (FIELD_WORDS[f] || f) + ' ' + op + ' ' + v).join(', ');
+  };
   const el = document.createElement('div');
   el.id = 'dev-panel';
-  el.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:400;width:250px;'
-    + 'background:rgba(8,8,18,0.94);border:1px solid rgba(255,80,80,0.4);border-radius:12px;'
-    + 'padding:10px;font:11px "SF Mono",Menlo,monospace;color:#cfc9ee;display:flex;'
-    + 'flex-direction:column;gap:6px;';
-  const btn = (label, fn) => {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.style.cssText = 'padding:7px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);'
-      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10.5px "SF Mono",Menlo,monospace;';
+  el.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:400;width:270px;'
+    + 'background:rgba(8,8,18,0.95);border:1px solid rgba(255,80,80,0.4);border-radius:12px;'
+    + 'padding:12px;font:11px "SF Mono",Menlo,monospace;color:#cfc9ee;display:flex;'
+    + 'flex-direction:column;gap:8px;';
+  const mk = (tag, css, text) => {
+    const n = document.createElement(tag);
+    if (css) n.style.cssText = css;
+    if (text) n.textContent = text;
+    return n;
+  };
+  const H = t => mk('div', 'color:#ff8f8f;letter-spacing:1px;margin-top:4px;', t);
+  const NOTE = t => mk('div', 'color:#7f79a8;line-height:1.4;', t);
+  const BTN = (label, fn) => {
+    const b = mk('button', 'padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);'
+      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10.5px "SF Mono",Menlo,monospace;text-align:left;', label);
     b.addEventListener('click', fn);
-    el.appendChild(b);
     return b;
   };
-  const head = document.createElement('div');
-  head.textContent = 'DEV \u2014 tap to hide';
-  head.style.cssText = 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;';
+
+  const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;', 'TESTING PANEL \u2014 tap here to hide');
+  const body = mk('div', 'display:flex;flex-direction:column;gap:8px;');
   head.addEventListener('click', () => { body.style.display = body.style.display === 'none' ? '' : 'none'; });
   el.appendChild(head);
-  const body = document.createElement('div');
-  body.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
   el.appendChild(body);
-  const bBtn = (l, f) => { const b = btn(l, f); body.appendChild(b); return b; };
+  body.appendChild(NOTE('only you see this (the ?dev=1 in the address turns it on)'));
 
-  // archetype forcing for the current world
-  const sel = document.createElement('select');
-  sel.style.cssText = 'padding:6px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;';
+  // ── the jokes ──
+  body.appendChild(H('TEST THE JOKES'));
+  body.appendChild(NOTE('pick a player type, then keep tapping the button to read its jokes. works in tunnel, surfer & slide.'));
+  const sel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   body.appendChild(sel);
   async function fillArchetypes() {
-    sel.innerHTML = '<option value="">force archetype: off</option>';
+    sel.innerHTML = '<option value="">player type: whatever fits the run</option>';
     const spec = await loadLines(currentWorldKey);
-    if (spec && spec.archetypes) for (const a of spec.archetypes) {
+    if (spec && spec.archetypes) for (const a2 of spec.archetypes) {
       const o = document.createElement('option');
-      o.value = a.id; o.textContent = 'force: ' + a.id;
+      o.value = a2.id;
+      o.textContent = 'player type: ' + a2.id.replace(/-/g, ' ');
       sel.appendChild(o);
     }
   }
   fillArchetypes();
   sel.addEventListener('change', () => { window.__forceArchetype = sel.value || null; });
-  const why = document.createElement('div');
-  why.style.cssText = 'min-height:26px;color:#9d97c2;line-height:1.4;';
-  bBtn('PREVIEW LINE', async () => {
+  const jokeOut = mk('div', 'min-height:30px;color:#e8e4fa;line-height:1.45;background:rgba(255,255,255,0.04);border-radius:8px;padding:7px;');
+  body.appendChild(BTN('\u25b6 show me a joke from this type', async () => {
     const run = sig.lastRun || { worldId: currentWorldKey, runSeconds: 47, movementRatio: 0.1, songTitle: 'holographic', artistName: 'Tupelo Ghost' };
     run.worldId = run.worldId || currentWorldKey;
     const l = await pickShareLine(run, '', window.__forceArchetype);
-    why.textContent = '[' + l.archetype + '] ' + l.text + ' \u2014 ' + l.cta;
-  });
-  body.appendChild(why);
+    jokeOut.textContent = l.text + '  ' + l.cta;
+  }));
+  body.appendChild(jokeOut);
 
-  bBtn('SKIP TO END OF RUN', () => {
-    if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
-  });
-  bBtn('PLAYER CARD (fake run)', async () => {
+  // ── the cards ──
+  body.appendChild(H('TEST THE SHARE CARDS'));
+  body.appendChild(NOTE('opens each card filled with pretend data \u2014 nothing is posted anywhere.'));
+  body.appendChild(BTN('\u25b6 player card (joke + clip)', async () => {
     if (!sig.lastRun) sig.endRun(runMeta('toy', { pointsGained: 230 }));
     window.__shareLine = await pickShareLine(sig.lastRun, '', window.__forceArchetype);
     openShareCard();
-  });
-  bBtn('RECAP CARD (fake room)', () => {
+  }));
+  body.appendChild(BTN('\u25b6 streamer recap (fake room of 4)', () => {
     window.__fakeRoom = [
       { name: 'possum49', st: [7, 12, 3, 23, 94] }, { name: 'meemaw', st: [2, 4, 9, 11, 71] },
       { name: 'crawdad', st: [0, 2, 12, 8, 55] }, { name: 'doodlebug', st: [4, 9, 5, 31, 88] },
     ];
     window.__openRecap();
-  });
-  bBtn('ARTIST CARD', () => {
+  }));
+  body.appendChild(BTN('\u25b6 artist video (records 12s)', () => {
     if (!$('mq-title').value) { $('mq-title').value = 'holographic'; $('mq-artist').value = 'tupelo ghost'; }
     $('mq-card').click();
-  });
-  const paid = bBtn('PAID GATE: free tier', () => {
-    window.__devPaid = !window.__devPaid;
-    paid.textContent = 'PAID GATE: ' + (window.__devPaid ? 'ARTIST ACCESS' : 'free tier');
-  });
-  bBtn('SHOW ALL WORLDS', () => { $('wchip-more') && $('wchip-more').click(); });
+  }));
 
-  // which archetype fired last, and why — updates as runs end
-  const fired = document.createElement('div');
-  fired.style.cssText = 'color:#9d97c2;line-height:1.4;border-top:1px solid rgba(255,255,255,0.1);padding-top:6px;';
-  fired.textContent = 'last fired: \u2014';
+  // ── shortcuts ──
+  body.appendChild(H('SHORTCUTS'));
+  body.appendChild(BTN('\u23e9 skip to the end of this song', () => {
+    if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
+  }));
+  const paid = BTN('\u2b50 pretend i paid for artist access: NO', () => {
+    window.__devPaid = !window.__devPaid;
+    paid.textContent = '\u2b50 pretend i paid for artist access: ' + (window.__devPaid ? 'YES' : 'NO');
+  });
+  body.appendChild(paid);
+  body.appendChild(BTN('\u25a4 unlock the full world list', () => { $('wchip-more') && $('wchip-more').click(); }));
+
+  // ── what fired ──
+  const fired = mk('div', 'color:#9d97c2;line-height:1.45;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
+  fired.textContent = 'last joke came from: \u2014';
   body.appendChild(fired);
   setInterval(() => {
     const l = window.__shareLine;
-    if (l) fired.textContent = 'last fired: ' + l.archetype + (l.why && typeof l.why === 'object' ? ' \u2014 ' + JSON.stringify(l.why) : '');
+    if (l) {
+      const w = plainWhy(l.why);
+      fired.textContent = 'last joke came from: ' + l.archetype.replace(/-/g, ' ') + (w ? ' (' + w + ')' : '');
+    }
   }, 1500);
-  // refresh archetype list when the world changes
   let lastW = currentWorldKey;
   setInterval(() => { if (currentWorldKey !== lastW) { lastW = currentWorldKey; fillArchetypes(); } }, 1500);
   document.body.appendChild(el);
