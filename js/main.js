@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=335';
-import { drawQR } from './lib/qr.js?v=335';
-import { WORLDS } from './worlds/registry.js?v=335';
-import { Net, PALETTE } from './net.js?v=335';
-import { Presence } from './lib/presence.js?v=335';
-import { Pulses } from './lib/pulse.js?v=335';
-import { BeatClock } from './lib/beatclock.js?v=335';
-import { BeatCue } from './lib/beatcue.js?v=335';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=335';
-import { Race, placeOf, standings } from './lib/race.js?v=335';
-import { Signals } from './lib/signals.js?v=335';
-import { pickShareLine } from './lib/lines.js?v=335';
-import { RouteMap } from './lib/map.js?v=335';
-import * as sfx from './lib/sfx.js?v=335';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=335';
-import { glowTexture } from './lib/glow.js?v=335';
+import { AudioEngine } from './audio-engine.js?v=337';
+import { drawQR } from './lib/qr.js?v=337';
+import { WORLDS } from './worlds/registry.js?v=337';
+import { Net, PALETTE } from './net.js?v=337';
+import { Presence } from './lib/presence.js?v=337';
+import { Pulses } from './lib/pulse.js?v=337';
+import { BeatClock } from './lib/beatclock.js?v=337';
+import { BeatCue } from './lib/beatcue.js?v=337';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=337';
+import { Race, placeOf, standings } from './lib/race.js?v=337';
+import { Signals } from './lib/signals.js?v=337';
+import { pickShareLine } from './lib/lines.js?v=337';
+import { RouteMap } from './lib/map.js?v=337';
+import * as sfx from './lib/sfx.js?v=337';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=337';
+import { glowTexture } from './lib/glow.js?v=337';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2934,7 +2934,7 @@ function recapEntrants() {
 const RECAP_CATS = [
   { i: 0, label: 'most trouble', unit: 'bombs thrown' },
   { i: 1, label: "'scuse me", unit: 'passes made' },
-  { i: 2, label: 'bless your heart', unit: 'times passed (bless it)' },
+  { i: 2, label: 'bless your heart', unit: 'times passed' },
   { i: 3, label: 'steadiest hand', unit: 'note streak' },
   { i: 4, label: 'cleanest run', unit: '% on the beat' },
 ];
@@ -2959,16 +2959,14 @@ function drawRecap(data, handle) {
   if (peakEnergy >= 0) x.drawImage(peakFrame, 0, 0);
   else { x.fillStyle = '#0a0716'; x.fillRect(0, 0, 1280, 720); }
   const vg = x.createRadialGradient(640, 300, 200, 640, 360, 900);
-  vg.addColorStop(0, 'rgba(4,3,12,0.55)');
-  vg.addColorStop(1, 'rgba(3,2,10,0.94)');
+  vg.addColorStop(0, 'rgba(4,3,12,0.6)');
+  vg.addColorStop(1, 'rgba(3,2,10,0.95)');
   x.fillStyle = vg; x.fillRect(0, 0, 1280, 720);
   const GOLD = 'rgba(238,206,120,1)', GOLD_DIM = 'rgba(238,206,120,0.55)';
   x.textBaseline = 'top';
-  // eyebrow
   x.font = '600 15px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(200,196,225,0.55)';
   x.fillText('F A N C Y   B R I T C H E S   \u00b7   R O O M   R E C A P', 64, 46);
-  // the streamer, headline size, gold rule beneath
   x.fillStyle = 'rgba(248,246,255,0.98)';
   x.font = '400 78px Didot, "Bodoni 72", Georgia, serif';
   x.fillText(handle || 'tonight\u2019s room', 60, 76);
@@ -2976,49 +2974,53 @@ function drawRecap(data, handle) {
   x.fillRect(64, 172, 380, 2);
   x.font = 'italic 400 23px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(215,211,240,0.85)';
-  x.fillText('ran a rowdy room \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's') + ', '
-    + (lastSetLen || '?') + ' round' + (lastSetLen === 1 ? '' : 's') + ', no casualties reported', 64, 188);
-  // the winner banner: a gold pill with glow
-  const wtxt = '\u2605  ' + data.winner.toUpperCase() + ' TOOK THE NIGHT  \u2605';
+  x.fillText('hosted a room on fancy britches \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's')
+    + ' \u00b7 ' + (lastSetLen || '?') + ' round' + (lastSetLen === 1 ? '' : 's'), 64, 188);
+  // winner, said plainly, dressed in gold
+  const wtxt = '\u2605  WINNER \u2014 ' + data.winner.toUpperCase();
   x.font = '400 30px Didot, "Bodoni 72", Georgia, serif';
   const ww = x.measureText(wtxt).width;
   x.save();
-  x.shadowColor = 'rgba(238,206,120,0.55)'; x.shadowBlur = 26;
+  x.shadowColor = 'rgba(238,206,120,0.5)'; x.shadowBlur = 24;
   x.fillStyle = 'rgba(56,44,16,0.85)';
-  const bx = 64, by = 246, bh = 56;
-  x.beginPath(); x.roundRect(bx, by, ww + 56, bh, 28); x.fill();
+  x.beginPath(); x.roundRect(64, 240, ww + 56, 56, 28); x.fill();
   x.restore();
   x.strokeStyle = GOLD_DIM; x.lineWidth = 1.5;
-  x.beginPath(); x.roundRect(bx, by, ww + 56, bh, 28); x.stroke();
+  x.beginPath(); x.roundRect(64, 240, ww + 56, 56, 28); x.stroke();
   x.fillStyle = GOLD;
-  x.fillText(wtxt, bx + 28, by + 11);
-  // superlatives: the roast column — big gold number, name bold, quip after
-  const ROASTS = {
-    'most trouble': n => 'chucked ' + n + ' bombs at folks',
-    "'scuse me": n => 'blew past ' + n + ' souls',
-    'bless your heart': n => 'got passed ' + n + ' times (bless it)',
-    'steadiest hand': n => n + ' notes without blinkin\u2019',
-    'cleanest run': n => n + '% on the beat \u2014 a metronome in boots',
-  };
-  let y = 330;
-  for (const sv of data.sups.slice(0, 5)) {
+  x.fillText(wtxt, 92, 251);
+  // stat tiles: label carries the charm, the line is plain fact
+  const tiles = data.sups.slice(0, 5);
+  const tw = 250, th = 122, gap = 16;
+  tiles.forEach((sv, i) => {
+    const col = i % 3, row = (i / 3) | 0;
+    const tx = 64 + col * (tw + gap), ty = 340 + row * (th + gap);
+    x.fillStyle = 'rgba(255,255,255,0.055)';
+    x.beginPath(); x.roundRect(tx, ty, tw, th, 14); x.fill();
+    x.strokeStyle = 'rgba(190,180,230,0.22)'; x.lineWidth = 1;
+    x.beginPath(); x.roundRect(tx, ty, tw, th, 14); x.stroke();
     x.font = '600 12px "SF Mono", Menlo, monospace';
     x.fillStyle = GOLD_DIM;
-    x.fillText(sv.label.toUpperCase(), 64, y);
-    x.font = '400 25px Didot, "Bodoni 72", Georgia, serif';
+    x.fillText(sv.label.toUpperCase(), tx + 18, ty + 14);
+    x.font = '400 44px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = GOLD;
+    x.fillText(String(sv.num), tx + 18, ty + 32);
+    const nw = x.measureText(String(sv.num)).width;
+    x.font = '13px "SF Mono", Menlo, monospace';
+    x.fillStyle = 'rgba(200,196,225,0.65)';
+    x.fillText(sv.unit, tx + 24 + nw, ty + 58);
+    x.font = '400 21px Didot, "Bodoni 72", Georgia, serif';
     x.fillStyle = 'rgba(246,244,255,0.95)';
-    const quip = (ROASTS[sv.label] || (n => n + ' ' + sv.unit))(sv.num);
-    x.fillText(sv.name + ' \u2014 ' + quip, 64, y + 16);
-    y += 58;
-  }
-  // the roster: colored dots, everyone who came
-  const rx = 880;
+    x.fillText(sv.name, tx + 18, ty + 86);
+  });
+  // the roster, colored dots, winner starred
+  const rx = 940;
   x.font = '600 13px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(200,196,225,0.55)';
   x.fillText('T H E   R O O M', rx, 246);
   let ry = 276;
   const dots = ['#7cc4ff', '#ffb86b', '#8affc1', '#ff9de2', '#fff59b', '#c6a8ff', '#7dfff4', '#ff8f8f'];
-  data.everyone.slice(0, 10).forEach((nm, i) => {
+  data.everyone.slice(0, 8).forEach((nm, i) => {
     x.fillStyle = dots[i % dots.length];
     x.beginPath(); x.arc(rx + 8, ry + 12, 6, 0, 7); x.fill();
     x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
@@ -3026,19 +3028,19 @@ function drawRecap(data, handle) {
     x.fillText(nm + (nm === data.winner ? ' \u2605' : ''), rx + 26, ry);
     ry += 36;
   });
-  if (data.everyone.length > 10) {
+  if (data.everyone.length > 8) {
     x.font = 'italic 400 19px Didot, "Bodoni 72", Georgia, serif';
     x.fillStyle = 'rgba(200,196,225,0.6)';
-    x.fillText('\u2026and ' + (data.everyone.length - 10) + ' more rascals', rx + 26, ry);
+    x.fillText('\u2026and ' + (data.everyone.length - 8) + ' more', rx + 26, ry);
   }
-  // footer: song, the invite, QR on a white chip
+  // footer
   x.fillStyle = 'rgba(238,206,120,0.35)';
-  x.fillRect(64, 636, 1152, 1);
+  x.fillRect(64, 640, 1152, 1);
   const run = sig.lastRun || {};
   x.font = '400 20px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(215,211,240,0.85)';
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u2014 ' + run.artistName : '') + '     ' : '')
-    + 'scan to start your own room \u2014 free, in the browser', 64, 656);
+    + 'scan to start your own room \u2014 free, in the browser', 64, 660);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -3048,16 +3050,10 @@ function drawRecap(data, handle) {
   return c;
 }
 function recapText(data, handle) {
-  const ROASTS = {
-    'most trouble': n => 'chucked ' + n + ' bombs at folks',
-    "'scuse me": n => 'blew past ' + n + ' souls',
-    'bless your heart': n => 'got passed ' + n + ' times (bless it)',
-    'steadiest hand': n => n + ' notes without blinkin\u2019',
-    'cleanest run': n => n + '% on the beat \u2014 a metronome in boots',
-  };
-  const lines = [(handle || 'tonight\u2019s room') + ' ran a rowdy room on fancy britches \u2014 no casualties reported'];
-  lines.push('\u2605 ' + data.winner + ' took the night');
-  for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' \u2014 ' + (ROASTS[sv.label] || (n => n + ' ' + sv.unit))(sv.num));
+  const lines = [(handle || 'tonight\u2019s room') + ' hosted a room on fancy britches \u2014 '
+    + data.everyone.length + ' players, ' + (lastSetLen || '?') + ' rounds'];
+  lines.push('\u2605 winner \u2014 ' + data.winner);
+  for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
   lines.push('start your own \u2014 free, in the browser: ' + SITE);
   return lines.join('\n');
