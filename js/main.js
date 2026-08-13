@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=333';
-import { drawQR } from './lib/qr.js?v=333';
-import { WORLDS } from './worlds/registry.js?v=333';
-import { Net, PALETTE } from './net.js?v=333';
-import { Presence } from './lib/presence.js?v=333';
-import { Pulses } from './lib/pulse.js?v=333';
-import { BeatClock } from './lib/beatclock.js?v=333';
-import { BeatCue } from './lib/beatcue.js?v=333';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=333';
-import { Race, placeOf, standings } from './lib/race.js?v=333';
-import { Signals } from './lib/signals.js?v=333';
-import { pickShareLine } from './lib/lines.js?v=333';
-import { RouteMap } from './lib/map.js?v=333';
-import * as sfx from './lib/sfx.js?v=333';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=333';
-import { glowTexture } from './lib/glow.js?v=333';
+import { AudioEngine } from './audio-engine.js?v=335';
+import { drawQR } from './lib/qr.js?v=335';
+import { WORLDS } from './worlds/registry.js?v=335';
+import { Net, PALETTE } from './net.js?v=335';
+import { Presence } from './lib/presence.js?v=335';
+import { Pulses } from './lib/pulse.js?v=335';
+import { BeatClock } from './lib/beatclock.js?v=335';
+import { BeatCue } from './lib/beatcue.js?v=335';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=335';
+import { Race, placeOf, standings } from './lib/race.js?v=335';
+import { Signals } from './lib/signals.js?v=335';
+import { pickShareLine } from './lib/lines.js?v=335';
+import { RouteMap } from './lib/map.js?v=335';
+import * as sfx from './lib/sfx.js?v=335';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=335';
+import { glowTexture } from './lib/glow.js?v=335';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2955,42 +2955,111 @@ function drawRecap(data, handle) {
   const c = document.createElement('canvas');
   c.width = 1280; c.height = 720;
   const x = c.getContext('2d');
+  // backdrop: the room's wildest moment, vignetted so the type owns the frame
   if (peakEnergy >= 0) x.drawImage(peakFrame, 0, 0);
-  else { x.fillStyle = '#07070f'; x.fillRect(0, 0, 1280, 720); }
-  x.fillStyle = 'rgba(3,3,10,0.72)';
-  x.fillRect(0, 0, 1280, 720);
+  else { x.fillStyle = '#0a0716'; x.fillRect(0, 0, 1280, 720); }
+  const vg = x.createRadialGradient(640, 300, 200, 640, 360, 900);
+  vg.addColorStop(0, 'rgba(4,3,12,0.55)');
+  vg.addColorStop(1, 'rgba(3,2,10,0.94)');
+  x.fillStyle = vg; x.fillRect(0, 0, 1280, 720);
+  const GOLD = 'rgba(238,206,120,1)', GOLD_DIM = 'rgba(238,206,120,0.55)';
   x.textBaseline = 'top';
-  x.fillStyle = 'rgba(244,242,255,0.96)';
-  x.font = '400 64px Didot, "Bodoni 72", Georgia, serif';
-  x.fillText(handle || 'tonight\u2019s room', 64, 52);
-  x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
-  x.fillStyle = 'rgba(210,206,235,0.75)';
-  x.fillText('ran a room on fancy britches \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's') + ', ' + lastSetLen + ' round' + (lastSetLen === 1 ? '' : 's'), 64, 132);
-  x.font = '400 26px Didot, "Bodoni 72", Georgia, serif';
-  let y = 200;
-  x.fillStyle = 'rgba(244,242,255,0.92)';
-  x.fillText('\u2605 ' + data.winner + ' took the night', 64, y); y += 46;
+  // eyebrow
+  x.font = '600 15px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'rgba(200,196,225,0.55)';
+  x.fillText('F A N C Y   B R I T C H E S   \u00b7   R O O M   R E C A P', 64, 46);
+  // the streamer, headline size, gold rule beneath
+  x.fillStyle = 'rgba(248,246,255,0.98)';
+  x.font = '400 78px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText(handle || 'tonight\u2019s room', 60, 76);
+  x.fillStyle = GOLD_DIM;
+  x.fillRect(64, 172, 380, 2);
+  x.font = 'italic 400 23px Didot, "Bodoni 72", Georgia, serif';
+  x.fillStyle = 'rgba(215,211,240,0.85)';
+  x.fillText('ran a rowdy room \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's') + ', '
+    + (lastSetLen || '?') + ' round' + (lastSetLen === 1 ? '' : 's') + ', no casualties reported', 64, 188);
+  // the winner banner: a gold pill with glow
+  const wtxt = '\u2605  ' + data.winner.toUpperCase() + ' TOOK THE NIGHT  \u2605';
+  x.font = '400 30px Didot, "Bodoni 72", Georgia, serif';
+  const ww = x.measureText(wtxt).width;
+  x.save();
+  x.shadowColor = 'rgba(238,206,120,0.55)'; x.shadowBlur = 26;
+  x.fillStyle = 'rgba(56,44,16,0.85)';
+  const bx = 64, by = 246, bh = 56;
+  x.beginPath(); x.roundRect(bx, by, ww + 56, bh, 28); x.fill();
+  x.restore();
+  x.strokeStyle = GOLD_DIM; x.lineWidth = 1.5;
+  x.beginPath(); x.roundRect(bx, by, ww + 56, bh, 28); x.stroke();
+  x.fillStyle = GOLD;
+  x.fillText(wtxt, bx + 28, by + 11);
+  // superlatives: the roast column — big gold number, name bold, quip after
+  const ROASTS = {
+    'most trouble': n => 'chucked ' + n + ' bombs at folks',
+    "'scuse me": n => 'blew past ' + n + ' souls',
+    'bless your heart': n => 'got passed ' + n + ' times (bless it)',
+    'steadiest hand': n => n + ' notes without blinkin\u2019',
+    'cleanest run': n => n + '% on the beat \u2014 a metronome in boots',
+  };
+  let y = 330;
   for (const sv of data.sups.slice(0, 5)) {
-    x.fillStyle = 'rgba(210,206,235,0.9)';
-    x.fillText(sv.label + ' \u2014 ' + sv.name + ', ' + sv.num + ' ' + sv.unit, 64, y);
-    y += 40;
+    x.font = '600 12px "SF Mono", Menlo, monospace';
+    x.fillStyle = GOLD_DIM;
+    x.fillText(sv.label.toUpperCase(), 64, y);
+    x.font = '400 25px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = 'rgba(246,244,255,0.95)';
+    const quip = (ROASTS[sv.label] || (n => n + ' ' + sv.unit))(sv.num);
+    x.fillText(sv.name + ' \u2014 ' + quip, 64, y + 16);
+    y += 58;
   }
-  x.font = '18px "SF Mono", Menlo, monospace';
-  x.fillStyle = 'rgba(190,186,215,0.8)';
-  const names = data.everyone.join(' \u00b7 ');
-  x.fillText('in the room: ' + names.slice(0, 110) + (names.length > 110 ? '\u2026' : ''), 64, 620);
+  // the roster: colored dots, everyone who came
+  const rx = 880;
+  x.font = '600 13px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'rgba(200,196,225,0.55)';
+  x.fillText('T H E   R O O M', rx, 246);
+  let ry = 276;
+  const dots = ['#7cc4ff', '#ffb86b', '#8affc1', '#ff9de2', '#fff59b', '#c6a8ff', '#7dfff4', '#ff8f8f'];
+  data.everyone.slice(0, 10).forEach((nm, i) => {
+    x.fillStyle = dots[i % dots.length];
+    x.beginPath(); x.arc(rx + 8, ry + 12, 6, 0, 7); x.fill();
+    x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = nm === data.winner ? GOLD : 'rgba(232,229,250,0.92)';
+    x.fillText(nm + (nm === data.winner ? ' \u2605' : ''), rx + 26, ry);
+    ry += 36;
+  });
+  if (data.everyone.length > 10) {
+    x.font = 'italic 400 19px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = 'rgba(200,196,225,0.6)';
+    x.fillText('\u2026and ' + (data.everyone.length - 10) + ' more rascals', rx + 26, ry);
+  }
+  // footer: song, the invite, QR on a white chip
+  x.fillStyle = 'rgba(238,206,120,0.35)';
+  x.fillRect(64, 636, 1152, 1);
   const run = sig.lastRun || {};
-  x.fillText((run.songTitle ? '\u266a ' + run.songTitle + (run.artistName ? ' \u2014 ' + run.artistName : '') + '   \u00b7   ' : '') + 'fancy britches \u2014 play free, in the browser', 64, 656);
+  x.font = '400 20px Didot, "Bodoni 72", Georgia, serif';
+  x.fillStyle = 'rgba(215,211,240,0.85)';
+  x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u2014 ' + run.artistName : '') + '     ' : '')
+    + 'scan to start your own room \u2014 free, in the browser', 64, 656);
   const qrc = document.createElement('canvas');
-  if (drawQR(qrc, SITE, 3)) x.drawImage(qrc, 1280 - qrc.width - 40, 720 - qrc.height - 40);
+  if (drawQR(qrc, SITE, 3)) {
+    x.fillStyle = '#fff';
+    x.beginPath(); x.roundRect(1280 - qrc.width - 44, 720 - qrc.height - 44, qrc.width + 16, qrc.height + 16, 10); x.fill();
+    x.drawImage(qrc, 1280 - qrc.width - 36, 720 - qrc.height - 36);
+  }
   return c;
 }
 function recapText(data, handle) {
-  const lines = [(handle || 'tonight\u2019s room') + ' ran a room on fancy britches'];
+  const ROASTS = {
+    'most trouble': n => 'chucked ' + n + ' bombs at folks',
+    "'scuse me": n => 'blew past ' + n + ' souls',
+    'bless your heart': n => 'got passed ' + n + ' times (bless it)',
+    'steadiest hand': n => n + ' notes without blinkin\u2019',
+    'cleanest run': n => n + '% on the beat \u2014 a metronome in boots',
+  };
+  const lines = [(handle || 'tonight\u2019s room') + ' ran a rowdy room on fancy britches \u2014 no casualties reported'];
   lines.push('\u2605 ' + data.winner + ' took the night');
-  for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ', ' + sv.num + ' ' + sv.unit);
+  for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' \u2014 ' + (ROASTS[sv.label] || (n => n + ' ' + sv.unit))(sv.num));
   lines.push('in the room: ' + data.everyone.join(', '));
-  lines.push('come play: ' + SITE);
+  lines.push('start your own \u2014 free, in the browser: ' + SITE);
   return lines.join('\n');
 }
 let lastSetLen = 0;
