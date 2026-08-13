@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=349';
-import { drawQR } from './lib/qr.js?v=349';
-import { WORLDS } from './worlds/registry.js?v=349';
-import { Net, PALETTE } from './net.js?v=349';
-import { Presence } from './lib/presence.js?v=349';
-import { Pulses } from './lib/pulse.js?v=349';
-import { BeatClock } from './lib/beatclock.js?v=349';
-import { BeatCue } from './lib/beatcue.js?v=349';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=349';
-import { Race, placeOf, standings } from './lib/race.js?v=349';
-import { Signals } from './lib/signals.js?v=349';
-import { pickShareLine } from './lib/lines.js?v=349';
-import { RouteMap } from './lib/map.js?v=349';
-import * as sfx from './lib/sfx.js?v=349';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=349';
-import { glowTexture } from './lib/glow.js?v=349';
+import { AudioEngine } from './audio-engine.js?v=350';
+import { drawQR } from './lib/qr.js?v=350';
+import { WORLDS } from './worlds/registry.js?v=350';
+import { Net, PALETTE } from './net.js?v=350';
+import { Presence } from './lib/presence.js?v=350';
+import { Pulses } from './lib/pulse.js?v=350';
+import { BeatClock } from './lib/beatclock.js?v=350';
+import { BeatCue } from './lib/beatcue.js?v=350';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=350';
+import { Race, placeOf, standings } from './lib/race.js?v=350';
+import { Signals } from './lib/signals.js?v=350';
+import { pickShareLine, loadLines } from './lib/lines.js?v=350';
+import { RouteMap } from './lib/map.js?v=350';
+import * as sfx from './lib/sfx.js?v=350';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=350';
+import { glowTexture } from './lib/glow.js?v=350';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3596,7 +3596,7 @@ const WEEK_WORLD = (() => {
 })();
 // free share worlds = the showcase pair + this week's guest — exactly the
 // three the picker leads with. Artist access opens the other fourteen.
-const shareableFree = k => FEATURED.includes(k) || k === WEEK_WORLD;
+const shareableFree = k => window.__devPaid || FEATURED.includes(k) || k === WEEK_WORLD;
 window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
 window.__pickerInit();
@@ -3689,6 +3689,100 @@ $('taste-close').addEventListener('click', () => {
 
 // URL params (?world=tunnel supported now; room/names reserved for later phases)
 const params = new URLSearchParams(location.search);
+
+// ── DEV MODE (?dev=1) ── audition the whole share system without grinding
+// rounds: force archetypes, preview lines, open all three cards on fake
+// signals, skip to the end of a run, toggle the paid gate.
+if (params.get('dev') === '1') (function devPanel() {
+  const el = document.createElement('div');
+  el.id = 'dev-panel';
+  el.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:400;width:250px;'
+    + 'background:rgba(8,8,18,0.94);border:1px solid rgba(255,80,80,0.4);border-radius:12px;'
+    + 'padding:10px;font:11px "SF Mono",Menlo,monospace;color:#cfc9ee;display:flex;'
+    + 'flex-direction:column;gap:6px;';
+  const btn = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'padding:7px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);'
+      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10.5px "SF Mono",Menlo,monospace;';
+    b.addEventListener('click', fn);
+    el.appendChild(b);
+    return b;
+  };
+  const head = document.createElement('div');
+  head.textContent = 'DEV \u2014 tap to hide';
+  head.style.cssText = 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;';
+  head.addEventListener('click', () => { body.style.display = body.style.display === 'none' ? '' : 'none'; });
+  el.appendChild(head);
+  const body = document.createElement('div');
+  body.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  el.appendChild(body);
+  const bBtn = (l, f) => { const b = btn(l, f); body.appendChild(b); return b; };
+
+  // archetype forcing for the current world
+  const sel = document.createElement('select');
+  sel.style.cssText = 'padding:6px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;';
+  body.appendChild(sel);
+  async function fillArchetypes() {
+    sel.innerHTML = '<option value="">force archetype: off</option>';
+    const spec = await loadLines(currentWorldKey);
+    if (spec && spec.archetypes) for (const a of spec.archetypes) {
+      const o = document.createElement('option');
+      o.value = a.id; o.textContent = 'force: ' + a.id;
+      sel.appendChild(o);
+    }
+  }
+  fillArchetypes();
+  sel.addEventListener('change', () => { window.__forceArchetype = sel.value || null; });
+  const why = document.createElement('div');
+  why.style.cssText = 'min-height:26px;color:#9d97c2;line-height:1.4;';
+  bBtn('PREVIEW LINE', async () => {
+    const run = sig.lastRun || { worldId: currentWorldKey, runSeconds: 47, movementRatio: 0.1, songTitle: 'holographic', artistName: 'Tupelo Ghost' };
+    run.worldId = run.worldId || currentWorldKey;
+    const l = await pickShareLine(run, '', window.__forceArchetype);
+    why.textContent = '[' + l.archetype + '] ' + l.text + ' \u2014 ' + l.cta;
+  });
+  body.appendChild(why);
+
+  bBtn('SKIP TO END OF RUN', () => {
+    if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
+  });
+  bBtn('PLAYER CARD (fake run)', async () => {
+    if (!sig.lastRun) sig.endRun(runMeta('toy', { pointsGained: 230 }));
+    window.__shareLine = await pickShareLine(sig.lastRun, '', window.__forceArchetype);
+    openShareCard();
+  });
+  bBtn('RECAP CARD (fake room)', () => {
+    window.__fakeRoom = [
+      { name: 'possum49', st: [7, 12, 3, 23, 94] }, { name: 'meemaw', st: [2, 4, 9, 11, 71] },
+      { name: 'crawdad', st: [0, 2, 12, 8, 55] }, { name: 'doodlebug', st: [4, 9, 5, 31, 88] },
+    ];
+    window.__openRecap();
+  });
+  bBtn('ARTIST CARD', () => {
+    if (!$('mq-title').value) { $('mq-title').value = 'holographic'; $('mq-artist').value = 'tupelo ghost'; }
+    $('mq-card').click();
+  });
+  const paid = bBtn('PAID GATE: free tier', () => {
+    window.__devPaid = !window.__devPaid;
+    paid.textContent = 'PAID GATE: ' + (window.__devPaid ? 'ARTIST ACCESS' : 'free tier');
+  });
+  bBtn('SHOW ALL WORLDS', () => { $('wchip-more') && $('wchip-more').click(); });
+
+  // which archetype fired last, and why — updates as runs end
+  const fired = document.createElement('div');
+  fired.style.cssText = 'color:#9d97c2;line-height:1.4;border-top:1px solid rgba(255,255,255,0.1);padding-top:6px;';
+  fired.textContent = 'last fired: \u2014';
+  body.appendChild(fired);
+  setInterval(() => {
+    const l = window.__shareLine;
+    if (l) fired.textContent = 'last fired: ' + l.archetype + (l.why && typeof l.why === 'object' ? ' \u2014 ' + JSON.stringify(l.why) : '');
+  }, 1500);
+  // refresh archetype list when the world changes
+  let lastW = currentWorldKey;
+  setInterval(() => { if (currentWorldKey !== lastW) { lastW = currentWorldKey; fillArchetypes(); } }, 1500);
+  document.body.appendChild(el);
+})();
 const startWorld = WORLDS[params.get('world')] ? params.get('world') : 'tunnel';
 $('world-select').value = startWorld;
 switchWorld(startWorld);
