@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=339';
-import { drawQR } from './lib/qr.js?v=339';
-import { WORLDS } from './worlds/registry.js?v=339';
-import { Net, PALETTE } from './net.js?v=339';
-import { Presence } from './lib/presence.js?v=339';
-import { Pulses } from './lib/pulse.js?v=339';
-import { BeatClock } from './lib/beatclock.js?v=339';
-import { BeatCue } from './lib/beatcue.js?v=339';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=339';
-import { Race, placeOf, standings } from './lib/race.js?v=339';
-import { Signals } from './lib/signals.js?v=339';
-import { pickShareLine } from './lib/lines.js?v=339';
-import { RouteMap } from './lib/map.js?v=339';
-import * as sfx from './lib/sfx.js?v=339';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=339';
-import { glowTexture } from './lib/glow.js?v=339';
+import { AudioEngine } from './audio-engine.js?v=340';
+import { drawQR } from './lib/qr.js?v=340';
+import { WORLDS } from './worlds/registry.js?v=340';
+import { Net, PALETTE } from './net.js?v=340';
+import { Presence } from './lib/presence.js?v=340';
+import { Pulses } from './lib/pulse.js?v=340';
+import { BeatClock } from './lib/beatclock.js?v=340';
+import { BeatCue } from './lib/beatcue.js?v=340';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=340';
+import { Race, placeOf, standings } from './lib/race.js?v=340';
+import { Signals } from './lib/signals.js?v=340';
+import { pickShareLine } from './lib/lines.js?v=340';
+import { RouteMap } from './lib/map.js?v=340';
+import * as sfx from './lib/sfx.js?v=340';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=340';
+import { glowTexture } from './lib/glow.js?v=340';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2979,7 +2979,7 @@ function drawRecap(data, handle) {
   if (data.nextStream) {
     x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
     x.fillStyle = GOLD;
-    x.fillText('next stream \u2014 ' + data.nextStream, 64, 620);
+    x.fillText(data.nextStream, 64, 620);
   }
   // winner, said plainly, dressed in gold
   const wtxt = '\u2605  WINNER \u2014 ' + data.winner.toUpperCase();
@@ -3060,7 +3060,7 @@ function recapText(data, handle) {
   lines.push('\u2605 winner \u2014 ' + data.winner);
   for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
-  if (data.nextStream) lines.push('next stream \u2014 ' + data.nextStream);
+  if (data.nextStream) lines.push(data.nextStream);
   lines.push('start your own \u2014 free, in the browser: ' + SITE);
   return lines.join('\n');
 }
