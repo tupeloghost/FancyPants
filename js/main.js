@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=331';
-import { drawQR } from './lib/qr.js?v=331';
-import { WORLDS } from './worlds/registry.js?v=331';
-import { Net, PALETTE } from './net.js?v=331';
-import { Presence } from './lib/presence.js?v=331';
-import { Pulses } from './lib/pulse.js?v=331';
-import { BeatClock } from './lib/beatclock.js?v=331';
-import { BeatCue } from './lib/beatcue.js?v=331';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=331';
-import { Race, placeOf, standings } from './lib/race.js?v=331';
-import { Signals } from './lib/signals.js?v=331';
-import { pickShareLine } from './lib/lines.js?v=331';
-import { RouteMap } from './lib/map.js?v=331';
-import * as sfx from './lib/sfx.js?v=331';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=331';
-import { glowTexture } from './lib/glow.js?v=331';
+import { AudioEngine } from './audio-engine.js?v=333';
+import { drawQR } from './lib/qr.js?v=333';
+import { WORLDS } from './worlds/registry.js?v=333';
+import { Net, PALETTE } from './net.js?v=333';
+import { Presence } from './lib/presence.js?v=333';
+import { Pulses } from './lib/pulse.js?v=333';
+import { BeatClock } from './lib/beatclock.js?v=333';
+import { BeatCue } from './lib/beatcue.js?v=333';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=333';
+import { Race, placeOf, standings } from './lib/race.js?v=333';
+import { Signals } from './lib/signals.js?v=333';
+import { pickShareLine } from './lib/lines.js?v=333';
+import { RouteMap } from './lib/map.js?v=333';
+import * as sfx from './lib/sfx.js?v=333';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=333';
+import { glowTexture } from './lib/glow.js?v=333';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -784,6 +784,7 @@ function showResults(reason) {
     $('rb-next').textContent = 'NEXT WORLD';
     delete $('rb-again').dataset.mode;
     delete $('rb-next').dataset.mode;
+    $('rb-recap').classList.add('hidden');
     $('results-actions').classList.add('show');
     clearTimeout(resultsTimer);
   } else {
@@ -926,6 +927,7 @@ function showToyResults() {
   $('rb-next').textContent = 'NEXT WORLD';
   delete $('rb-again').dataset.mode;
   delete $('rb-next').dataset.mode;
+  $('rb-recap').classList.add('hidden');
   $('results').classList.add('show');
   $('results-actions').classList.add('show');
   clearTimeout(resultsTimer);   // the card waits — leaving is the player's call
@@ -1065,6 +1067,34 @@ function hostSong() {
   net.sendSong(share, audio.currentTime, audio.playing, sunoTrack);
 }
 setInterval(() => { hostSong(); net.sendWorld(currentWorldKey); }, 4000);
+
+// during a set, watch the whole room's motion and keep the wildest frame —
+// that's the recap card's backdrop
+const peakFrame = document.createElement('canvas');
+peakFrame.width = 1280; peakFrame.height = 720;
+let peakEnergy = -1, peakPrev = null;
+setInterval(() => {
+  if (!setList || setPhase !== 'racing') { peakPrev = null; return; }
+  const now = {};
+  let energy = 0;
+  for (const pl of net.participants) {
+    const k = pl.id || pl.name;
+    now[k] = [pl.x || 0, pl.y || 0, pl.z || 0];
+    const q = peakPrev && peakPrev[k];
+    if (q) energy += Math.abs(now[k][0] - q[0]) + Math.abs(now[k][1] - q[1]) + Math.abs(now[k][2] - q[2]);
+  }
+  const me = [net.local.x || 0, net.local.y || 0, net.local.z || 0];
+  if (peakPrev && peakPrev.__me) energy += Math.abs(me[0] - peakPrev.__me[0]) + Math.abs(me[1] - peakPrev.__me[1]) + Math.abs(me[2] - peakPrev.__me[2]);
+  now.__me = me;
+  peakPrev = now;
+  if (energy > peakEnergy) {
+    peakEnergy = energy;
+    const g = document.getElementById('canvas');
+    const x = peakFrame.getContext('2d');
+    const sc = Math.max(1280 / g.width, 720 / g.height);
+    x.drawImage(g, (1280 - g.width * sc) / 2, (720 - g.height * sc) / 2, g.width * sc, g.height * sc);
+  }
+}, 2000);
 audio.el.addEventListener('play', hostSong);
 audio.el.addEventListener('pause', hostSong);
 audio.el.addEventListener('seeked', hostSong);
@@ -2890,8 +2920,128 @@ function scoreRound() {
   });
 }
 
+// ── the streamer recap ── data, drawing, and text — the card is about the
+// HOST: their handle headlines, the room's superlatives carry real names
+// and real numbers, everyone who joined appears, the peak frame sits behind
+function recapEntrants() {
+  if (window.__fakeRoom) return window.__fakeRoom;   // dev: preview with a fake room
+  return [
+    { name: net.local.name || 'you', st: net.local.st || [0, 0, 0, 0, 0] },
+    ...net.participants.filter(p => !p.local && p.id !== 'ghost')
+      .map(p => ({ name: p.name || 'guest', st: p.st || [0, 0, 0, 0, 0] })),
+  ];
+}
+const RECAP_CATS = [
+  { i: 0, label: 'most trouble', unit: 'bombs thrown' },
+  { i: 1, label: "'scuse me", unit: 'passes made' },
+  { i: 2, label: 'bless your heart', unit: 'times passed (bless it)' },
+  { i: 3, label: 'steadiest hand', unit: 'note streak' },
+  { i: 4, label: 'cleanest run', unit: '% on the beat' },
+];
+function buildRecapData() {
+  const entrants = recapEntrants();
+  const board = [...setScores.entries()].sort((a, b) => b[1] - a[1]);
+  const sups = [];
+  for (const cat of RECAP_CATS) {
+    const ranked = entrants.filter(e => (e.st[cat.i] || 0) > 0)
+      .sort((a, b) => (b.st[cat.i] - a.st[cat.i]) || a.name.localeCompare(b.name));
+    if (ranked.length) sups.push({ label: cat.label, name: ranked[0].name, num: ranked[0].st[cat.i], unit: cat.unit });
+  }
+  const everyone = entrants.map(e => e.name);
+  const winner = board.length ? board[0][0] : (everyone[0] || 'somebody');
+  return { sups, everyone, winner, board };
+}
+function drawRecap(data, handle) {
+  const c = document.createElement('canvas');
+  c.width = 1280; c.height = 720;
+  const x = c.getContext('2d');
+  if (peakEnergy >= 0) x.drawImage(peakFrame, 0, 0);
+  else { x.fillStyle = '#07070f'; x.fillRect(0, 0, 1280, 720); }
+  x.fillStyle = 'rgba(3,3,10,0.72)';
+  x.fillRect(0, 0, 1280, 720);
+  x.textBaseline = 'top';
+  x.fillStyle = 'rgba(244,242,255,0.96)';
+  x.font = '400 64px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText(handle || 'tonight\u2019s room', 64, 52);
+  x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
+  x.fillStyle = 'rgba(210,206,235,0.75)';
+  x.fillText('ran a room on fancy britches \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's') + ', ' + lastSetLen + ' round' + (lastSetLen === 1 ? '' : 's'), 64, 132);
+  x.font = '400 26px Didot, "Bodoni 72", Georgia, serif';
+  let y = 200;
+  x.fillStyle = 'rgba(244,242,255,0.92)';
+  x.fillText('\u2605 ' + data.winner + ' took the night', 64, y); y += 46;
+  for (const sv of data.sups.slice(0, 5)) {
+    x.fillStyle = 'rgba(210,206,235,0.9)';
+    x.fillText(sv.label + ' \u2014 ' + sv.name + ', ' + sv.num + ' ' + sv.unit, 64, y);
+    y += 40;
+  }
+  x.font = '18px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'rgba(190,186,215,0.8)';
+  const names = data.everyone.join(' \u00b7 ');
+  x.fillText('in the room: ' + names.slice(0, 110) + (names.length > 110 ? '\u2026' : ''), 64, 620);
+  const run = sig.lastRun || {};
+  x.fillText((run.songTitle ? '\u266a ' + run.songTitle + (run.artistName ? ' \u2014 ' + run.artistName : '') + '   \u00b7   ' : '') + 'fancy britches \u2014 play free, in the browser', 64, 656);
+  const qrc = document.createElement('canvas');
+  if (drawQR(qrc, SITE, 3)) x.drawImage(qrc, 1280 - qrc.width - 40, 720 - qrc.height - 40);
+  return c;
+}
+function recapText(data, handle) {
+  const lines = [(handle || 'tonight\u2019s room') + ' ran a room on fancy britches'];
+  lines.push('\u2605 ' + data.winner + ' took the night');
+  for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ', ' + sv.num + ' ' + sv.unit);
+  lines.push('in the room: ' + data.everyone.join(', '));
+  lines.push('come play: ' + SITE);
+  return lines.join('\n');
+}
+let lastSetLen = 0;
+function openRecapCard() {
+  const data = buildRecapData();
+  const handle = $('rc-handle').value.trim() || localStorage.getItem('fp_handle') || '';
+  $('rc-handle').value = handle;
+  const img = drawRecap(data, handle);
+  const prev = $('rc-preview');
+  prev.width = img.width; prev.height = img.height;
+  prev.getContext('2d').drawImage(img, 0, 0);
+  $('recap-card')._data = data;
+  $('recap-card').classList.remove('hidden');
+}
+$('rb-recap').addEventListener('click', openRecapCard);
+window.__openRecap = openRecapCard;   // dev: preview the recap without a set
+$('rc-handle').addEventListener('input', () => {
+  localStorage.setItem('fp_handle', $('rc-handle').value.trim());
+  const d = $('recap-card')._data;
+  if (d) {
+    const img = drawRecap(d, $('rc-handle').value.trim());
+    $('rc-preview').getContext('2d').drawImage(img, 0, 0);
+  }
+});
+$('rc-close').addEventListener('click', () => $('recap-card').classList.add('hidden'));
+$('rc-copy').addEventListener('click', () => {
+  const d = $('recap-card')._data;
+  navigator.clipboard.writeText(recapText(d, $('rc-handle').value.trim()))
+    .then(() => flash('RECAP COPIED \u2014 PASTE IT IN THE CHAT', 2200)).catch(() => {});
+});
+$('rc-share').addEventListener('click', () => {
+  const d = $('recap-card')._data;
+  const handle = $('rc-handle').value.trim();
+  drawRecap(d, handle).toBlob(blob => {
+    const file = new File([blob], 'fancy-britches-recap.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], text: recapText(d, handle) }).catch(() => {});
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+      navigator.clipboard.writeText(recapText(d, handle)).catch(() => {});
+      flash('RECAP SAVED \u2014 TEXT COPIED TOO', 2200);
+    }
+  }, 'image/jpeg', 0.85);
+});
+
 function showSetResults() {
   clipBufStop(true);
+  lastSetLen = setList ? setList.length : 0;
   recordRun(runMeta('set', { rounds: setList ? setList.length : 0 }));
   document.body.classList.remove('play');
   setPhase = 'idle';
@@ -2912,6 +3062,7 @@ function showSetResults() {
   celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], rows[0][0] === (net.local.name || 'you'));
   $('rb-again').textContent = 'PLAY THE SET AGAIN';
   $('rb-next').textContent = 'FREE PLAY';
+  $('rb-recap').classList.toggle('hidden', document.body.classList.contains('guest'));
   $('rb-again').dataset.mode = 'set';
   $('rb-next').dataset.mode = 'set';
   $('results-actions').classList.add('show');

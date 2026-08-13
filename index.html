@@ -1410,6 +1410,35 @@
   #standings .st.me .pt { color: var(--accent); }
 
   /* the after-taste card: the moment the sample ends is the moment to ask */
+  #recap-card {
+    position: fixed; inset: 0; z-index: 215; display: flex;
+    align-items: center; justify-content: center;
+    background: rgba(2,2,8,0.78); backdrop-filter: blur(10px);
+  }
+  #recap-card.hidden { display: none; }
+  #rc-inner {
+    width: min(640px, 94vw); max-height: 94vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 18px; border-radius: 18px;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.16), rgba(6,6,14,0.92));
+  }
+  #rc-preview { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  #rc-handle {
+    padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
+    background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
+    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+  }
+  #rc-actions { display: flex; gap: 8px; }
+  #rc-actions button {
+    flex: 1; padding: 12px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.16), var(--glass));
+    color: hsl(var(--accent-h), 55%, 93%);
+    font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
+  }
+  #rc-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #rb-recap.hidden { display: none; }
   #share-card {
     position: fixed; inset: 0; z-index: 215; display: flex;
     align-items: center; justify-content: center;
@@ -1853,6 +1882,18 @@
 
 <div id="promo-pill" class="hidden"><i>&#9834;</i><span id="promo-pill-text"></span></div>
 <div id="burn-glow"></div>
+<div id="recap-card" class="hidden">
+  <div id="rc-inner">
+    <canvas id="rc-preview"></canvas>
+    <input id="rc-handle" maxlength="40" placeholder="your handle &mdash; @twitch, @tiktok, whoever you are" autocomplete="off">
+    <div id="rc-actions">
+      <button id="rc-share">SHARE IMAGE</button>
+      <button id="rc-copy">COPY AS TEXT</button>
+    </div>
+    <button id="rc-close">close</button>
+  </div>
+</div>
+
 <div id="share-card" class="hidden">
   <div id="shc-inner">
     <div id="shc-line"></div>
@@ -1965,6 +2006,7 @@
     <button class="rbtn" id="rb-next">NEXT WORLD</button>
     <button class="rbtn" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
+    <button class="rbtn hidden" id="rb-recap">RECAP CARD</button>
   </div>
   <div id="results-stats">
     <div><b id="rs-acc">0%</b><em>accuracy</em></div>
@@ -2121,7 +2163,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 331</div>
+      <div id="build-stamp">build 333</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2163,6 +2205,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=331"></script>
+<script type="module" src="js/main.js?v=333"></script>
 </body>
 </html>
