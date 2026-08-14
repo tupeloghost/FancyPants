@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=370';
-import { drawQR } from './lib/qr.js?v=370';
-import { WORLDS } from './worlds/registry.js?v=370';
-import { Net, PALETTE } from './net.js?v=370';
-import { Presence } from './lib/presence.js?v=370';
-import { Pulses } from './lib/pulse.js?v=370';
-import { BeatClock } from './lib/beatclock.js?v=370';
-import { BeatCue } from './lib/beatcue.js?v=370';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=370';
-import { Race, placeOf, standings } from './lib/race.js?v=370';
-import { Signals } from './lib/signals.js?v=370';
-import { pickShareLine, loadLines } from './lib/lines.js?v=370';
-import { RouteMap } from './lib/map.js?v=370';
-import * as sfx from './lib/sfx.js?v=370';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=370';
-import { glowTexture } from './lib/glow.js?v=370';
+import { AudioEngine } from './audio-engine.js?v=371';
+import { drawQR } from './lib/qr.js?v=371';
+import { WORLDS } from './worlds/registry.js?v=371';
+import { Net, PALETTE } from './net.js?v=371';
+import { Presence } from './lib/presence.js?v=371';
+import { Pulses } from './lib/pulse.js?v=371';
+import { BeatClock } from './lib/beatclock.js?v=371';
+import { BeatCue } from './lib/beatcue.js?v=371';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=371';
+import { Race, placeOf, standings } from './lib/race.js?v=371';
+import { Signals } from './lib/signals.js?v=371';
+import { pickShareLine, loadLines } from './lib/lines.js?v=371';
+import { RouteMap } from './lib/map.js?v=371';
+import * as sfx from './lib/sfx.js?v=371';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=371';
+import { glowTexture } from './lib/glow.js?v=371';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2744,17 +2744,58 @@ function shareCaption() {
   const cta = l ? l.cta : pf.c;
   return line + ' ' + cta + '\n' + clipURL();
 }
+function shareStill() {
+  // a burned-credit still of the world, matching the clip's framing
+  const g = document.getElementById('canvas');
+  const W = 1280, H = Math.round(1280 * g.height / Math.max(1, g.width));
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.drawImage(g, 0, 0, W, H);
+  const bh = Math.round(H * 0.09);
+  x.fillStyle = 'rgba(4,4,10,0.62)';
+  x.fillRect(0, H - bh, W, bh);
+  x.fillStyle = 'rgba(240,238,255,0.92)';
+  x.textBaseline = 'middle';
+  const run = sig.lastRun || {};
+  const barText = ((run.songTitle || 'this song') + '  \u00b7  '
+    + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : '')
+    + '  \u2014  PLAY IT FREE, IN THE BROWSER').toUpperCase();
+  let fs = Math.round(bh * 0.42);
+  x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
+  while (fs > 9 && x.measureText(barText).width > W - bh) {
+    fs -= 1;
+    x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
+  }
+  x.fillText(barText, Math.round(bh * 0.5), H - bh / 2);
+  const qrc = document.createElement('canvas');
+  if (drawQR(qrc, clipURL(), 2)) {
+    const q = bh * 1.5, m = Math.round(bh * 0.25);
+    x.fillStyle = '#fff';
+    x.fillRect(W - q - m - 4, H - bh - q - m - 4, q + 8, q + 8);
+    x.drawImage(qrc, W - q - m, H - bh - q - m, q, q);
+  }
+  return c;
+}
+let shareStillBlob = null;
 function openShareCard() {
   $('shc-cap').textContent = shareCaption();
   const v = $('shc-video');
+  const im = $('shc-still');
+  shareStillBlob = null;
   if (v.dataset.url) { URL.revokeObjectURL(v.dataset.url); delete v.dataset.url; }
   if (clipSaved) {
     v.dataset.url = URL.createObjectURL(clipSaved.blob);
     v.src = v.dataset.url;
     v.classList.remove('hidden');
+    im.classList.add('hidden');
     v.play().catch(() => {});
   } else {
     v.classList.add('hidden');
+    const still = shareStill();
+    im.src = still.toDataURL('image/jpeg', 0.85);
+    im.classList.remove('hidden');
+    still.toBlob(b => { shareStillBlob = b; }, 'image/jpeg', 0.88);
   }
   $('share-card').classList.remove('hidden');
 }
@@ -2774,19 +2815,21 @@ $('shc-share').addEventListener('click', () => {
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();
   }
-  if (clipSaved) {
-    const ext = clipSaved.type.includes('mp4') ? 'mp4' : 'webm';
-    const file = new File([clipSaved.blob], 'fancy-britches-clip.' + ext, { type: clipSaved.type });
+  const media = clipSaved
+    ? { blob: clipSaved.blob, name: 'fancy-britches-clip.' + (clipSaved.type.includes('mp4') ? 'mp4' : 'webm'), type: clipSaved.type }
+    : (shareStillBlob ? { blob: shareStillBlob, name: 'fancy-britches.jpg', type: 'image/jpeg' } : null);
+  if (media) {
+    const file = new File([media.blob], media.name, { type: media.type });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file], text: caption }).catch(() => {});
       return;
     }
-    // no share sheet: the clip downloads, the caption rides the clipboard
+    // no share sheet: the media downloads, the caption rides the clipboard
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(clipSaved.blob); a.download = file.name;
+    a.href = URL.createObjectURL(media.blob); a.download = file.name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-    navigator.clipboard.writeText(caption).then(() => flash('CLIP SAVED \u2014 CAPTION COPIED, PASTE IT WITH THE VIDEO', 2600)).catch(() => {});
+    navigator.clipboard.writeText(caption).then(() => flash('SAVED \u2014 CAPTION COPIED, PASTE THEM TOGETHER', 2600)).catch(() => {});
     return;
   }
   if (navigator.share) { navigator.share({ text: caption }).catch(() => {}); return; }
@@ -3885,13 +3928,41 @@ if (params.get('dev') === '1') (function devPanel() {
   body.appendChild(saveBtn);
   // screenshot + note in one tap: the picture uploads itself and its link
   // rides the note — copy EVERYTHING hands claude the images too
-  body.appendChild(BTN('\ud83d\udcf8 screenshot + note', () => {
+  let screenVideo = null;
+  async function grabFrame() {
+    // full-tab capture where supported (one-time permission, stream reused);
+    // game-canvas-only everywhere else
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+      try {
+        if (!screenVideo || !screenVideo.srcObject || !screenVideo.srcObject.active) {
+          const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { displaySurface: 'browser' }, audio: false, preferCurrentTab: true,
+          });
+          screenVideo = document.createElement('video');
+          screenVideo.srcObject = stream;
+          screenVideo.muted = true;
+          await screenVideo.play();
+          await new Promise(r => setTimeout(r, 250));   // let the first frame land
+        }
+        const sc2 = document.createElement('canvas');
+        const vw = screenVideo.videoWidth, vh = screenVideo.videoHeight;
+        const w = Math.min(1100, vw), h = Math.round(w * vh / vw);
+        sc2.width = w; sc2.height = h;
+        sc2.getContext('2d').drawImage(screenVideo, 0, 0, w, h);
+        return sc2;
+      } catch (e) { /* declined or unsupported — fall through to the canvas */ }
+    }
     const g = document.getElementById('canvas');
-    if (!g || !g.width) return;
+    if (!g || !g.width) return null;
     const sc2 = document.createElement('canvas');
     const w = 900, h = Math.round(900 * g.height / g.width);
     sc2.width = w; sc2.height = h;
     sc2.getContext('2d').drawImage(g, 0, 0, w, h);
+    return sc2;
+  }
+  body.appendChild(BTN('\ud83d\udcf8 screenshot + note', async () => {
+    const sc2 = await grabFrame();
+    if (!sc2) return;
     // squeeze under the storage ceiling — context beats fidelity here
     let q = 0.62, b64 = '';
     do { b64 = sc2.toDataURL('image/jpeg', q).split(',')[1]; q -= 0.12; } while (b64.length > 250000 && q > 0.2);
@@ -3909,7 +3980,7 @@ if (params.get('dev') === '1') (function devPanel() {
       flash('SHOT UPLOADED \u2014 NOW TELL IT WHAT IT MEANS', 2400);
     }).catch(() => flash('UPLOAD DIDN\u2019T TAKE \u2014 TRY AGAIN', 2000, true));
   }));
-  body.appendChild(NOTE('\ud83d\udcf8 captures the game world only \u2014 for menu/card problems use your phone\u2019s own screenshot.'));
+  body.appendChild(NOTE('\ud83d\udcf8 first tap asks to share this tab \u2014 say yes and every shot captures EVERYTHING on screen, cards and menus included. (if the ask never appears, shots cover the game world only.)'));
   const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
     const notes = savedNotes();
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');

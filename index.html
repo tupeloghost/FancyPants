@@ -1501,10 +1501,11 @@
     background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.2), rgba(6,6,14,0.94));
     box-shadow: 0 0 60px hsla(var(--accent-h), 80%, 60%, 0.22), 0 24px 60px rgba(0,0,0,0.5);
   }
-  #shc-video {
+  #shc-video, #shc-still {
     width: 100%; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
     box-shadow: 0 10px 34px rgba(0,0,0,0.55);
   }
+  #shc-still.hidden { display: none; }
   #shc-cap {
     text-align: left; font: 13px/1.55 -apple-system, 'Helvetica Neue', sans-serif;
     color: rgba(238,236,250,0.94); background: rgba(255,255,255,0.05);
@@ -1967,6 +1968,7 @@
 <div id="share-card" class="hidden">
   <div id="shc-inner">
     <video id="shc-video" playsinline muted loop class="hidden"></video>
+    <img id="shc-still" class="hidden" alt="">
     <div id="shc-cap"></div>
     <div id="shc-actions">
       <button id="shc-share">SHARE THIS POST</button>
@@ -2229,7 +2231,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 370</div>
+      <div id="build-stamp">build 371</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2271,6 +2273,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=370"></script>
+<script type="module" src="js/main.js?v=371"></script>
 </body>
 </html>
