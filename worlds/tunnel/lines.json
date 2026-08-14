@@ -3,129 +3,369 @@
   "note": "register: real number + plain relatable observation + a dare. no absurd props, no surreal detours. order matters: first archetype whose conditions all hold wins. w = weight (big common, small rare).",
   "archetypes": [
     {
-      "id": "gremlin",
-      "when": { "tweakCount": [">=", 10], "movementRatio": ["<=", 0.25] },
-      "lines": [
-        { "t": "you changed the look {tweaks} times and moved {move}%. decorator, not a player.", "c": "go on and play one →", "w": 10 },
-        { "t": "{tweaks} color changes, {move}% movement. the tunnel looked amazing for nobody.", "c": "style it in motion →", "w": 8 },
-        { "t": "you spent the whole song in the settings. it was a good-lookin’ song.", "c": "hear the next one →", "w": 6 },
-        { "t": "{tweaks} tweaks deep and still not playin’. the tunnel can wait.", "c": "it’s waitin’ now →", "w": 3 },
-        { "t": "all dressed up and nowhere flown.", "c": "fly it this time →", "w": 1 }
-      ]
-    },
-    {
       "id": "lurker",
-      "when": { "roomSize": [">=", 4], "pointsGained": ["<=", 5] },
+      "when": {
+        "roomSize": [
+          ">=",
+          4
+        ],
+        "pointsGained": [
+          "<=",
+          5
+        ]
+      },
       "lines": [
-        { "t": "{room} people played. you watched. that’s a choice.", "c": "make a different one →", "w": 10 },
-        { "t": "you scored {points} points in a full room. everybody noticed.", "c": "score somethin’ →", "w": 8 },
-        { "t": "a whole room playin’ and you stood real still. bless it.", "c": "jump in next round →", "w": 6 },
-        { "t": "{points} points. the room carried you tonight.", "c": "return the favor →", "w": 3 },
-        { "t": "you were technically there.", "c": "be actually there →", "w": 1 }
+        {
+          "t": "{room} people played. you watched. that’s a choice.",
+          "c": "make a different one →",
+          "w": 10
+        },
+        {
+          "t": "you scored {points} points in a full room. everybody noticed.",
+          "c": "score somethin’ →",
+          "w": 8
+        },
+        {
+          "t": "a whole room playin’ and you stood real still. bless it.",
+          "c": "jump in next round →",
+          "w": 6
+        },
+        {
+          "t": "{points} points. the room carried you tonight.",
+          "c": "return the favor →",
+          "w": 3
+        },
+        {
+          "t": "you were technically there.",
+          "c": "be actually there →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "boomerang",
-      "when": { "rejoined": ["==", true] },
+      "when": {
+        "rejoined": [
+          "==",
+          true
+        ]
+      },
       "lines": [
-        { "t": "you left and came back. the tunnel knew you would.", "c": "stay a while →", "w": 10 },
-        { "t": "back already? it’s been twenty minutes.", "c": "make it count →", "w": 8 },
-        { "t": "second visit tonight. this is how it starts.", "c": "let it start →", "w": 4 },
-        { "t": "you came back. nobody comes back for nothin’.", "c": "admit you like it →", "w": 1 }
+        {
+          "t": "you came back for more. smart.",
+          "c": "settle in →",
+          "w": 10
+        },
+        {
+          "t": "second visit tonight. the tunnel’s glad to see you.",
+          "c": "stay a while →",
+          "w": 8
+        },
+        {
+          "t": "back again — this round’s on the house.",
+          "c": "come on in →",
+          "w": 4
+        },
+        {
+          "t": "you found your way back. they always do.",
+          "c": "make it a habit →",
+          "w": 1
+        }
       ]
     },
     {
-      "id": "haint",
-      "when": { "movementRatio": ["<=", 0.18] },
+      "id": "wallflower",
+      "when": {
+        "movementRatio": [
+          "<=",
+          0.18
+        ]
+      },
       "lines": [
-        { "t": "you moved {move}% of the whole song. it’s a music game, sugar.", "c": "move a little →", "w": 10 },
-        { "t": "{move}% movement. the song did all the work.", "c": "help it out →", "w": 8 },
-        { "t": "you held still for {seconds} seconds straight. impressive. wrong game though.", "c": "play the right one →", "w": 6 },
-        { "t": "the tunnel moved more than you did. the tunnel is a hallway.", "c": "out-move a hallway →", "w": 3 },
-        { "t": "{seconds} seconds of beautiful nothing.", "c": "make somethin’ →", "w": 1 }
+        {
+          "t": "you moved {move}% of the whole song. it’s a music game, sugar.",
+          "c": "move a little →",
+          "w": 10
+        },
+        {
+          "t": "{move}% movement. the song did all the work.",
+          "c": "help it out →",
+          "w": 8
+        },
+        {
+          "t": "you held still for {seconds} seconds straight. impressive. wrong game though.",
+          "c": "play the right one →",
+          "w": 6
+        },
+        {
+          "t": "the lights danced all around you and you just watched.",
+          "c": "dance back →",
+          "w": 3
+        },
+        {
+          "t": "{seconds} seconds of beautiful nothing.",
+          "c": "make somethin’ →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "june-bug",
-      "when": { "movementRatio": [">=", 0.8] },
+      "when": {
+        "movementRatio": [
+          ">=",
+          0.8
+        ]
+      },
       "lines": [
-        { "t": "you moved {move}% of the song. you never once stopped.", "c": "keep it up →", "w": 10 },
-        { "t": "{move}% motion, start to finish. the tunnel’s still spinnin’.", "c": "spin it again →", "w": 8 },
-        { "t": "you didn’t play the song. you chased it.", "c": "catch the next one →", "w": 4 },
-        { "t": "not one still second in {seconds}. respect.", "c": "do it twice →", "w": 1 }
+        {
+          "t": "you moved {move}% of the song. you never once stopped.",
+          "c": "keep it up →",
+          "w": 10
+        },
+        {
+          "t": "{move}% motion, start to finish. the tunnel’s still spinnin’.",
+          "c": "spin it again →",
+          "w": 8
+        },
+        {
+          "t": "you didn’t play the song. you chased it.",
+          "c": "catch the next one →",
+          "w": 4
+        },
+        {
+          "t": "not one still second in {seconds}. respect.",
+          "c": "do it twice →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "firecracker",
-      "when": { "pointsGained": [">=", 120] },
+      "when": {
+        "pointsGained": [
+          ">=",
+          120
+        ]
+      },
       "lines": [
-        { "t": "{points} points in one song. you found every last one.", "c": "find more →", "w": 10 },
-        { "t": "you rang up {points} points like the song owed you money.", "c": "collect again →", "w": 8 },
-        { "t": "{points} points. the tunnel’s still lit from it.", "c": "light it again →", "w": 4 },
-        { "t": "one song, {points} points. show-off.", "c": "show off again →", "w": 1 }
+        {
+          "t": "{points} points in one song. you found every last one.",
+          "c": "find more →",
+          "w": 10
+        },
+        {
+          "t": "you rang up {points} points like the song owed you money.",
+          "c": "collect again →",
+          "w": 8
+        },
+        {
+          "t": "{points} points. the tunnel’s still lit from it.",
+          "c": "light it again →",
+          "w": 4
+        },
+        {
+          "t": "one song, {points} points. show-off.",
+          "c": "show off again →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "porch-peeker",
-      "when": { "bailedEarly": ["==", true] },
+      "when": {
+        "bailedEarly": [
+          "==",
+          true
+        ]
+      },
       "lines": [
-        { "t": "{seconds} seconds. you barely got in the door.", "c": "come all the way in →", "w": 10 },
-        { "t": "in and out in {seconds} seconds. it gets good after that, for the record.", "c": "see the good part →", "w": 8 },
-        { "t": "you gave it {seconds} seconds. the song was three minutes.", "c": "give it the rest →", "w": 6 },
-        { "t": "{seconds} seconds is a peek, not a play.", "c": "play it proper →", "w": 1 }
+        {
+          "t": "{seconds} seconds. you barely got in the door.",
+          "c": "come all the way in →",
+          "w": 10
+        },
+        {
+          "t": "in and out in {seconds} seconds. it gets good after that, for the record.",
+          "c": "see the good part →",
+          "w": 8
+        },
+        {
+          "t": "you gave it {seconds} seconds. the song was three minutes.",
+          "c": "give it the rest →",
+          "w": 6
+        },
+        {
+          "t": "{seconds} seconds is a peek, not a play.",
+          "c": "play it proper →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "homesteader",
-      "when": { "runSeconds": [">=", 200] },
+      "when": {
+        "runSeconds": [
+          ">=",
+          200
+        ]
+      },
       "lines": [
-        { "t": "{seconds} seconds in one tunnel. you live here now.", "c": "pay rent in points →", "w": 10 },
-        { "t": "you stayed past the whole song and kept goin’.", "c": "stay longer →", "w": 8 },
-        { "t": "{seconds} seconds. the tunnel knows your name at this point.", "c": "learn its tricks →", "w": 4 },
-        { "t": "most folks visit. you moved in.", "c": "host a housewarmin’ →", "w": 1 }
+        {
+          "t": "{seconds} seconds in one tunnel. you live here now.",
+          "c": "pay rent in points →",
+          "w": 10
+        },
+        {
+          "t": "you stayed past the whole song and kept goin’.",
+          "c": "stay longer →",
+          "w": 8
+        },
+        {
+          "t": "{seconds} seconds. the tunnel knows your name at this point.",
+          "c": "learn its tricks →",
+          "w": 4
+        },
+        {
+          "t": "most folks visit. you moved in.",
+          "c": "host a housewarmin’ →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "wallpaper-committee",
-      "when": { "tweakCount": [">=", 6] },
+      "when": {
+        "tweakCount": [
+          ">=",
+          6
+        ]
+      },
       "lines": [
-        { "t": "{tweaks} look changes in one song. it never looked wrong, sugar.", "c": "let one look breathe →", "w": 10 },
-        { "t": "you redecorated {tweaks} times mid-song. commitment issues, gorgeous results.", "c": "commit to one →", "w": 6 },
-        { "t": "{tweaks} tweaks. somewhere in there was a perfect one.", "c": "find it again →", "w": 1 }
+        {
+          "t": "{tweaks} look changes in one song. it never looked wrong, sugar.",
+          "c": "let one look breathe →",
+          "w": 10
+        },
+        {
+          "t": "you redecorated {tweaks} times mid-song. commitment issues, gorgeous results.",
+          "c": "commit to one →",
+          "w": 6
+        },
+        {
+          "t": "{tweaks} tweaks. somewhere in there was a perfect one.",
+          "c": "find it again →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "flipper",
-      "when": { "worldsVisited": [">=", 5] },
+      "when": {
+        "worldsVisited": [
+          ">=",
+          5
+        ]
+      },
       "lines": [
-        { "t": "{worlds} worlds in one sittin’. pick a favorite, sugar.", "c": "this one’s a contender →", "w": 10 },
-        { "t": "you’ve seen {worlds} worlds tonight and settled in none.", "c": "settle somewhere →", "w": 6 },
-        { "t": "{worlds} worlds deep. the tour is not the show.", "c": "stay for the show →", "w": 1 }
+        {
+          "t": "{worlds} worlds in one sittin’. pick a favorite, sugar.",
+          "c": "this one’s a contender →",
+          "w": 10
+        },
+        {
+          "t": "you’ve seen {worlds} worlds tonight and settled in none.",
+          "c": "settle somewhere →",
+          "w": 6
+        },
+        {
+          "t": "{worlds} worlds deep. the tour is not the show.",
+          "c": "stay for the show →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "midnight-drifter",
-      "when": { "wasAlone": ["==", true], "sessionSeconds": [">=", 420] },
+      "when": {
+        "wasAlone": [
+          "==",
+          true
+        ],
+        "sessionSeconds": [
+          ">=",
+          420
+        ]
+      },
       "lines": [
-        { "t": "{minutes} minutes, just you and the lights. honestly? sounds nice.", "c": "bring a friend anyway →", "w": 10 },
-        { "t": "you’ve floated alone for {minutes} minutes. the tunnel’s good company.", "c": "float another one →", "w": 6 },
-        { "t": "{minutes} minutes solo. some songs are better alone.", "c": "prove it again →", "w": 1 }
+        {
+          "t": "{minutes} minutes, just you and the lights. honestly? sounds nice.",
+          "c": "bring a friend anyway →",
+          "w": 10
+        },
+        {
+          "t": "you’ve floated alone for {minutes} minutes. the tunnel’s good company.",
+          "c": "float another one →",
+          "w": 6
+        },
+        {
+          "t": "{minutes} minutes solo. some songs are better alone.",
+          "c": "prove it again →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "sworn-in",
-      "when": { "worldsVisited": ["==", 1], "sessionSeconds": [">=", 300] },
+      "when": {
+        "worldsVisited": [
+          "==",
+          1
+        ],
+        "sessionSeconds": [
+          ">=",
+          300
+        ]
+      },
       "lines": [
-        { "t": "{minutes} minutes, one world. sixteen others are curious about you.", "c": "break their hearts →", "w": 10 },
-        { "t": "you found your world and stayed. can’t argue with that.", "c": "defend the title →", "w": 6 },
-        { "t": "one world, all night. loyalty looks good on you.", "c": "stay loyal →", "w": 1 }
+        {
+          "t": "{minutes} minutes, one world. sixteen others are curious about you.",
+          "c": "break their hearts →",
+          "w": 10
+        },
+        {
+          "t": "you found your world and stayed. can’t argue with that.",
+          "c": "defend the title →",
+          "w": 6
+        },
+        {
+          "t": "one world, all night. loyalty looks good on you.",
+          "c": "stay loyal →",
+          "w": 1
+        }
       ]
     }
   ],
   "fallback": [
-    { "t": "one song down in the tunnel. it went how it went.", "c": "make the next one count →", "w": 10 },
-    { "t": "you and ‘{song}’ spent three minutes together. no regrets.", "c": "spend three more →", "w": 8 },
-    { "t": "somewhere between sittin’ still and showin’ off.", "c": "pick a side →", "w": 4 },
-    { "t": "a perfectly decent run. decent’s a start.", "c": "beat decent →", "w": 2 }
+    {
+      "t": "one song down in the tunnel. it went how it went.",
+      "c": "make the next one count →",
+      "w": 10
+    },
+    {
+      "t": "you and ‘{song}’ spent three minutes together. no regrets.",
+      "c": "spend three more →",
+      "w": 8
+    },
+    {
+      "t": "somewhere between sittin’ still and showin’ off.",
+      "c": "pick a side →",
+      "w": 4
+    },
+    {
+      "t": "a perfectly decent run. decent’s a start.",
+      "c": "beat decent →",
+      "w": 2
+    }
   ]
 }
