@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=369';
-import { drawQR } from './lib/qr.js?v=369';
-import { WORLDS } from './worlds/registry.js?v=369';
-import { Net, PALETTE } from './net.js?v=369';
-import { Presence } from './lib/presence.js?v=369';
-import { Pulses } from './lib/pulse.js?v=369';
-import { BeatClock } from './lib/beatclock.js?v=369';
-import { BeatCue } from './lib/beatcue.js?v=369';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=369';
-import { Race, placeOf, standings } from './lib/race.js?v=369';
-import { Signals } from './lib/signals.js?v=369';
-import { pickShareLine, loadLines } from './lib/lines.js?v=369';
-import { RouteMap } from './lib/map.js?v=369';
-import * as sfx from './lib/sfx.js?v=369';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=369';
-import { glowTexture } from './lib/glow.js?v=369';
+import { AudioEngine } from './audio-engine.js?v=370';
+import { drawQR } from './lib/qr.js?v=370';
+import { WORLDS } from './worlds/registry.js?v=370';
+import { Net, PALETTE } from './net.js?v=370';
+import { Presence } from './lib/presence.js?v=370';
+import { Pulses } from './lib/pulse.js?v=370';
+import { BeatClock } from './lib/beatclock.js?v=370';
+import { BeatCue } from './lib/beatcue.js?v=370';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=370';
+import { Race, placeOf, standings } from './lib/race.js?v=370';
+import { Signals } from './lib/signals.js?v=370';
+import { pickShareLine, loadLines } from './lib/lines.js?v=370';
+import { RouteMap } from './lib/map.js?v=370';
+import * as sfx from './lib/sfx.js?v=370';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=370';
+import { glowTexture } from './lib/glow.js?v=370';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1579,7 +1579,13 @@ function pickPass(pool, who) {
 }
 
 let passT = 0;
-document.addEventListener('fp-swallowed', () => flash('SWALLOWED \u2014 THE VOID KEPT YOUR RINGS', 2200, true));
+document.addEventListener('fp-swallowed', e => {
+  const n = (e.detail && e.detail.n) || 2;
+  flash('BLACK HOLE! \u2014 ' + n + ' RINGS GONE', 2200, true);
+  document.body.classList.remove('swallowed'); void document.body.offsetWidth;
+  document.body.classList.add('swallowed');
+  setTimeout(() => document.body.classList.remove('swallowed'), 750);
+});
 // one flash pipe for every announcement — good news plain, bad news red
 function flash(msg, ms = 2200, bad = false) {
   const el = $('pass-flash');
@@ -2836,12 +2842,21 @@ function clipBufStart() {
     ctx2.fillStyle = 'rgba(4,4,10,0.62)';
     ctx2.fillRect(0, H - bh, W, bh);
     ctx2.fillStyle = 'rgba(240,238,255,0.92)';
-    ctx2.font = '400 ' + Math.round(bh * 0.42) + 'px Didot, "Bodoni 72", Georgia, serif';
     ctx2.textBaseline = 'middle';
-    ctx2.fillText(title + '  \u00b7  ' + wlabel + '  \u2014  PLAY IT FREE, IN THE BROWSER', Math.round(bh * 0.5), H - bh / 2);
+    // the QR floats ABOVE the bar; the words size themselves to fit the bar
+    const q = bh * 1.5, m = Math.round(bh * 0.25);
+    const barText = title + '  \u00b7  ' + wlabel + '  \u2014  PLAY IT FREE, IN THE BROWSER';
+    let fs = Math.round(bh * 0.42);
+    ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
+    while (fs > 9 && ctx2.measureText(barText).width > W - bh) {
+      fs -= 1;
+      ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
+    }
+    ctx2.fillText(barText, Math.round(bh * 0.5), H - bh / 2);
     if (hasQR) {
-      const q = bh * 1.6, m = Math.round(bh * 0.25);
-      ctx2.drawImage(qrc, W - q - m, H - q - m, q, q);
+      ctx2.fillStyle = '#fff';
+      ctx2.fillRect(W - q - m - 4, H - bh - q - m - 4, q + 8, q + 8);
+      ctx2.drawImage(qrc, W - q - m, H - bh - q - m, q, q);
     }
     requestAnimationFrame(frame);
   })();

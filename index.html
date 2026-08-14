@@ -262,6 +262,16 @@
     font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
   }
   #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  /* the black hole got you: the whole frame lurches and darkens for a beat */
+  @keyframes swallow-shake {
+    0% { transform: translate(0,0); filter: brightness(1); }
+    15% { transform: translate(-14px,8px) rotate(-0.7deg); filter: brightness(0.35) saturate(1.6); }
+    35% { transform: translate(11px,-6px) rotate(0.5deg); filter: brightness(0.5); }
+    55% { transform: translate(-7px,4px); filter: brightness(0.7); }
+    75% { transform: translate(4px,-2px); filter: brightness(0.85); }
+    100% { transform: translate(0,0); filter: brightness(1); }
+  }
+  body.swallowed #canvas { animation: swallow-shake 0.75s ease-out; }
   #name-row { display: flex; gap: 8px; }
   #name-row input { flex: 1; min-width: 0; }
   #name-dice {
@@ -2219,7 +2229,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 369</div>
+      <div id="build-stamp">build 370</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2261,6 +2271,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=369"></script>
+<script type="module" src="js/main.js?v=370"></script>
 </body>
 </html>

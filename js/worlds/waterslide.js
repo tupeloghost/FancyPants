@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=369';
-import { themePaint } from '../lib/themes.js?v=369';
-import { TUNE } from '../lib/tune.js?v=369';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=370';
+import { themePaint } from '../lib/themes.js?v=370';
+import { TUNE } from '../lib/tune.js?v=370';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -264,7 +264,7 @@ export function createWaterslide() {
               hoopBoost = 0;
               wStun = flooring ? 1.2 : 0.5; wThrottle *= 0.2;
               if (opts.impact) opts.impact(1.0);
-              document.dispatchEvent(new CustomEvent('fp-swallowed'));
+              document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: flooring ? 3 : 2 } }));
               // shockrings collapse INTO the hole — violet, staggered
               let bi = 0;
               for (const b of bursts) {
