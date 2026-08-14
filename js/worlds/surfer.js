@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=379';
-import { themePaint } from '../lib/themes.js?v=379';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=380';
+import { themePaint } from '../lib/themes.js?v=380';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -18,6 +18,10 @@ export function createSurfer() {
   // ── airtime is the verb's paycheck: hang time counts, beats crossed
   // mid-air multiply, and the landing announces what you earned ──
   let airT = 0, airBeats = 0, airCombo = 0, comboT = 0;
+  // ── sparks ── the reason to steer: they ride the flow toward you on the
+  // beat. Low ones you carve into; high ones demand a jump. Catch mid-air
+  // and they pay double. A chain builds while you keep catching.
+  let sparks = [], sparkTimer = 0, sparkChain = 0, sparkDry = 0, sparkN = 0;
   let rowTimer = 0, scrollOff = 0;
   let waveR = -1;             // tap shockwave position in row units (-1 = off)
   const history = [];       // ring of Float32Array(COLS), newest first
@@ -51,6 +55,16 @@ export function createSurfer() {
       ceiling.scale.y = -1;
       ceiling.position.y = 30;
       group.add(ceiling);
+
+      // the spark pool
+      sparks = [];
+      for (let i = 0; i < 20; i++) {
+        const sp = glowSprite(7);
+        sp.visible = false;
+        group.add(sp);
+        sparks.push({ m: sp, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
+      }
+      sparkTimer = 0; sparkChain = 0; sparkDry = 0; sparkN = 0;
 
       // synthwave sun on the horizon — blooms hard, pulses with bass
       sun = new THREE.Mesh(
@@ -130,6 +144,61 @@ export function createSurfer() {
       // steering / attract drift
       if (attract) steerTarget = Math.sin(time * 0.25) * 0.5;
       steer += (steerTarget - steer) * Math.min(1, dt * 3);
+
+      // ── sparks: spawn on the beat, flow with the terrain, get caught ──
+      const flow = 77 * (0.6 + audio.volume * 1.2);
+      sparkTimer -= dt;
+      if (audio.beat && sparkTimer <= 0 && !attract) {
+        sparkTimer = 0.38;
+        const sp = sparks.find(x => !x.alive);
+        if (sp) {
+          sparkN++;
+          sp.alive = true;
+          sp.high = (sparkN % 3) === 0;              // every third asks for air
+          sp.x = (Math.random() * 2 - 1) * 55;
+          sp.y = sp.high ? 21 + Math.random() * 6 : 8 + Math.random() * 3;
+          sp.z = -235;
+          sp.pop = 0;
+          sp.m.visible = true;
+        }
+      }
+      for (const sp of sparks) {
+        if (!sp.alive) continue;
+        if (sp.pop > 0) {
+          // caught: a quick bloom, then gone
+          sp.pop -= dt * 4;
+          sp.m.scale.setScalar(14 * (1.6 - sp.pop));
+          sp.m.material.opacity = sp.pop;
+          if (sp.pop <= 0) { sp.alive = false; sp.m.visible = false; }
+          continue;
+        }
+        sp.z += flow * dt;
+        sp.m.position.set(sp.x, sp.y + Math.sin(time * 5 + sp.x) * 0.8, sp.z);
+        color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.65);
+        sp.m.material.color.copy(color);
+        sp.m.material.opacity = 0.85;
+        sp.m.scale.setScalar(sp.high ? 11 : 9);
+        // the catch plane rides with the surfer
+        if (sp.z > 30 && sp.z < 48) {
+          const dx = Math.abs(sp.x - steer * 40);
+          const boardY = 9 + jumpY;
+          const dy = Math.abs(sp.y - boardY);
+          if (dx < 12 && dy < 8) {
+            const midair = jumpY > 3;
+            sparkChain++;
+            sparkDry = 0;
+            if (opts.addScore) opts.addScore((sp.high ? 3 : 2) * (midair ? 2 : 1) + (sparkChain >= 5 ? 2 : 0));
+            if (opts.impact) opts.impact(midair ? 0.5 : 0.3);
+            if (window.__setFigure && sparkChain >= 3) window.__setFigure('SPARKS \u00d7' + sparkChain + (midair ? ' \u00b7 MID-AIR' : ''), 0, 0);
+            sp.pop = 1;
+            continue;
+          }
+        }
+        if (sp.z > 60) { sp.alive = false; sp.m.visible = false; }
+      }
+      // the chain fades if the catching stops
+      sparkDry += dt;
+      if (sparkDry > 5 && sparkChain) { sparkChain = 0; if (window.__setFigure) window.__setFigure(null); }
 
       // jump physics — and the airtime meter that makes it a game
       const wasAir = jumpY > 0.01;
