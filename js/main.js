@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=356';
-import { drawQR } from './lib/qr.js?v=356';
-import { WORLDS } from './worlds/registry.js?v=356';
-import { Net, PALETTE } from './net.js?v=356';
-import { Presence } from './lib/presence.js?v=356';
-import { Pulses } from './lib/pulse.js?v=356';
-import { BeatClock } from './lib/beatclock.js?v=356';
-import { BeatCue } from './lib/beatcue.js?v=356';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=356';
-import { Race, placeOf, standings } from './lib/race.js?v=356';
-import { Signals } from './lib/signals.js?v=356';
-import { pickShareLine, loadLines } from './lib/lines.js?v=356';
-import { RouteMap } from './lib/map.js?v=356';
-import * as sfx from './lib/sfx.js?v=356';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=356';
-import { glowTexture } from './lib/glow.js?v=356';
+import { AudioEngine } from './audio-engine.js?v=357';
+import { drawQR } from './lib/qr.js?v=357';
+import { WORLDS } from './worlds/registry.js?v=357';
+import { Net, PALETTE } from './net.js?v=357';
+import { Presence } from './lib/presence.js?v=357';
+import { Pulses } from './lib/pulse.js?v=357';
+import { BeatClock } from './lib/beatclock.js?v=357';
+import { BeatCue } from './lib/beatcue.js?v=357';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=357';
+import { Race, placeOf, standings } from './lib/race.js?v=357';
+import { Signals } from './lib/signals.js?v=357';
+import { pickShareLine, loadLines } from './lib/lines.js?v=357';
+import { RouteMap } from './lib/map.js?v=357';
+import * as sfx from './lib/sfx.js?v=357';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=357';
+import { glowTexture } from './lib/glow.js?v=357';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3710,6 +3710,8 @@ if (params.get('dev') === '1') (function devPanel() {
   const el = document.createElement('div');
   el.id = 'dev-panel';
   el.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:400;width:270px;'
+    + 'max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);overflow-y:auto;'
+    + '-webkit-overflow-scrolling:touch;overscroll-behavior:contain;'
     + 'background:rgba(8,8,18,0.95);border:1px solid rgba(255,80,80,0.4);border-radius:12px;'
     + 'padding:12px;font:11px "SF Mono",Menlo,monospace;color:#cfc9ee;display:flex;'
     + 'flex-direction:column;gap:8px;';
