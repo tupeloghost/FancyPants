@@ -91,6 +91,7 @@ export class BeatCue {
   // track loses its weakest filler, and both land somewhere playable.
   setChart(chart, target = 2.2) {
     if (!chart) { this.chart = null; this.reset(); return; }
+    if (!chart) { this.chart = null; return; }
     this.chart = { ...chart, notes: thin(chart.notes, chart.duration, target) };
     this.reset();
   }

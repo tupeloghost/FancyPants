@@ -120,18 +120,13 @@
       },
       "lines": [
         {
-          "t": "{points} points. the tunnel’s still lit from it.",
-          "c": "light it again →",
-          "w": 4
-        },
-        {
           "t": "you lit that tunnel up like a storm rollin’ through.",
           "c": "roll through again →",
           "w": 3
         },
         {
-          "t": "{points} points in one song. the tunnel don’t see that every night.",
-          "c": "make it twice →",
+          "t": "all them sparks tonight were yours.",
+          "c": "spark it again →",
           "w": 6
         }
       ]

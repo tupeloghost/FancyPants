@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=363';
-import { drawQR } from './lib/qr.js?v=363';
-import { WORLDS } from './worlds/registry.js?v=363';
-import { Net, PALETTE } from './net.js?v=363';
-import { Presence } from './lib/presence.js?v=363';
-import { Pulses } from './lib/pulse.js?v=363';
-import { BeatClock } from './lib/beatclock.js?v=363';
-import { BeatCue } from './lib/beatcue.js?v=363';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=363';
-import { Race, placeOf, standings } from './lib/race.js?v=363';
-import { Signals } from './lib/signals.js?v=363';
-import { pickShareLine, loadLines } from './lib/lines.js?v=363';
-import { RouteMap } from './lib/map.js?v=363';
-import * as sfx from './lib/sfx.js?v=363';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=363';
-import { glowTexture } from './lib/glow.js?v=363';
+import { AudioEngine } from './audio-engine.js?v=364';
+import { drawQR } from './lib/qr.js?v=364';
+import { WORLDS } from './worlds/registry.js?v=364';
+import { Net, PALETTE } from './net.js?v=364';
+import { Presence } from './lib/presence.js?v=364';
+import { Pulses } from './lib/pulse.js?v=364';
+import { BeatClock } from './lib/beatclock.js?v=364';
+import { BeatCue } from './lib/beatcue.js?v=364';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=364';
+import { Race, placeOf, standings } from './lib/race.js?v=364';
+import { Signals } from './lib/signals.js?v=364';
+import { pickShareLine, loadLines } from './lib/lines.js?v=364';
+import { RouteMap } from './lib/map.js?v=364';
+import * as sfx from './lib/sfx.js?v=364';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=364';
+import { glowTexture } from './lib/glow.js?v=364';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -647,7 +647,7 @@ function replayRound() {
   beatCue.setChart(c);
   audio.el.currentTime = 0;
   beatCue.seek(0);
-  race.start(beatCue.chart.duration, beatCue.chart.notes.length);
+  race.start(c.duration, c.notes.length);
   clipBufStart();   // the reel rolls with the round
   armGhost();
   hostGo();
@@ -2125,7 +2125,10 @@ function showWorldIntro(key) {
   el.classList.toggle('long', (w.label || '').length > 10);
   el.classList.remove('gone');
   clearTimeout(introTimer);
-  introTimer = setTimeout(() => el.classList.add('gone'), 4200);
+  // hold time scales with how much there is to read (~65ms a character,
+  // never less than 5s, never past 10)
+  const hold = Math.min(10000, Math.max(5000, 2600 + (w.goal || '').length * 65));
+  introTimer = setTimeout(() => el.classList.add('gone'), hold);
 }
 
 // someone else tapped: their click lands in OUR world too, in their color
