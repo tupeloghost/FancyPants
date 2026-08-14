@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=383';
-import { drawQR } from './lib/qr.js?v=383';
-import { WORLDS } from './worlds/registry.js?v=383';
-import { Net, PALETTE } from './net.js?v=383';
-import { Presence } from './lib/presence.js?v=383';
-import { Pulses } from './lib/pulse.js?v=383';
-import { BeatClock } from './lib/beatclock.js?v=383';
-import { BeatCue } from './lib/beatcue.js?v=383';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=383';
-import { Race, placeOf, standings } from './lib/race.js?v=383';
-import { Signals } from './lib/signals.js?v=383';
-import { pickShareLine, loadLines } from './lib/lines.js?v=383';
-import { RouteMap } from './lib/map.js?v=383';
-import * as sfx from './lib/sfx.js?v=383';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=383';
-import { glowTexture } from './lib/glow.js?v=383';
+import { AudioEngine } from './audio-engine.js?v=385';
+import { drawQR } from './lib/qr.js?v=385';
+import { WORLDS } from './worlds/registry.js?v=385';
+import { Net, PALETTE } from './net.js?v=385';
+import { Presence } from './lib/presence.js?v=385';
+import { Pulses } from './lib/pulse.js?v=385';
+import { BeatClock } from './lib/beatclock.js?v=385';
+import { BeatCue } from './lib/beatcue.js?v=385';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=385';
+import { Race, placeOf, standings } from './lib/race.js?v=385';
+import { Signals } from './lib/signals.js?v=385';
+import { pickShareLine, loadLines } from './lib/lines.js?v=385';
+import { RouteMap } from './lib/map.js?v=385';
+import * as sfx from './lib/sfx.js?v=385';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=385';
+import { glowTexture } from './lib/glow.js?v=385';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2915,6 +2915,21 @@ function shareStill() {
   return c;
 }
 let shareStillBlob = null;
+let cardHushed = false;
+function hushForCard() {
+  if (!audio.el.paused) { audio.el.pause(); cardHushed = true; }
+}
+function unhushAfterCard() {
+  // resume only a song that was mid-flight; an ended one stays ended (the
+  // tally owns that silence — PLAY AGAIN / NEXT WORLD restart the music)
+  if (cardHushed && !audio.el.ended) audio.play().catch(() => {});
+  cardHushed = false;
+}
+function playCardVideo(v) {
+  v.muted = false;
+  v.volume = 1;
+  v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+}
 function openShareCard() {
   $('shc-cap').textContent = shareCaption();
   const v = $('shc-video');
@@ -2926,7 +2941,8 @@ function openShareCard() {
     v.src = v.dataset.url;
     v.classList.remove('hidden');
     im.classList.add('hidden');
-    v.play().catch(() => {});
+    hushForCard();
+    playCardVideo(v);
   } else {
     v.classList.add('hidden');
     const still = shareStill();
@@ -2936,7 +2952,11 @@ function openShareCard() {
   }
   $('share-card').classList.remove('hidden');
 }
-$('shc-close').addEventListener('click', () => $('share-card').classList.add('hidden'));
+$('shc-close').addEventListener('click', () => {
+  $('share-card').classList.add('hidden');
+  $('shc-video').pause();
+  unhushAfterCard();
+});
 $('shc-reroll').addEventListener('click', () => {
   const cur = window.__shareLine && window.__shareLine.text;
   const spin = tries => pickShareLine(sig.lastRun || {}, '', window.__forceArchetype).then(l => {
@@ -3544,7 +3564,8 @@ function startArtistRec(fmt) {
     v.dataset.url = URL.createObjectURL(acSaved.blob);
     v.src = v.dataset.url;
     v.classList.remove('hidden');
-    v.play().catch(() => {});
+    hushForCard();
+    playCardVideo(v);
     $('ac-status').textContent = 'twelve seconds of your world \u2014 ready to post';
   };
   acRec.start(500);
@@ -3563,7 +3584,12 @@ document.querySelectorAll('.ac-fmt').forEach(b => b.addEventListener('click', ()
   document.querySelectorAll('.ac-fmt').forEach(o => o.classList.toggle('on', o === b));
   startArtistRec(acFmt);
 }));
-$('ac-close').addEventListener('click', () => { stopArtistRec(); $('artist-card').classList.add('hidden'); });
+$('ac-close').addEventListener('click', () => {
+  stopArtistRec();
+  $('artist-card').classList.add('hidden');
+  $('ac-video').pause();
+  unhushAfterCard();
+});
 $('ac-share').addEventListener('click', () => {
   if (!acSaved) { flash('STILL RECORDING \u2014 GIVE IT A BREATH', 1800); return; }
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
