@@ -19,6 +19,16 @@
           "t": "a whole room playin’ and you stood real still. bless it.",
           "c": "jump in next round →",
           "w": 6
+        },
+        {
+          "t": "you watched the whole party from the doorway. it’s warmer inside.",
+          "c": "step on in →",
+          "w": 8
+        },
+        {
+          "t": "{room} people in there and not a peep out of you.",
+          "c": "make some noise →",
+          "w": 3
         }
       ]
     },
@@ -118,6 +128,11 @@
           "t": "you lit that tunnel up like a storm rollin’ through.",
           "c": "roll through again →",
           "w": 3
+        },
+        {
+          "t": "{points} points in one song. the tunnel don’t see that every night.",
+          "c": "make it twice →",
+          "w": 6
         }
       ]
     },
@@ -134,6 +149,16 @@
           "t": "{seconds} seconds. the tunnel knows your name at this point.",
           "c": "learn its tricks →",
           "w": 4
+        },
+        {
+          "t": "most folks move on when the song ends. not you.",
+          "c": "stay for one more →",
+          "w": 8
+        },
+        {
+          "t": "{seconds} seconds and still here. the tunnel’s startin’ to think it’s special.",
+          "c": "it is — tell it so →",
+          "w": 3
         }
       ]
     },
