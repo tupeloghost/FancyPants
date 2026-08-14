@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=377';
-import { drawQR } from './lib/qr.js?v=377';
-import { WORLDS } from './worlds/registry.js?v=377';
-import { Net, PALETTE } from './net.js?v=377';
-import { Presence } from './lib/presence.js?v=377';
-import { Pulses } from './lib/pulse.js?v=377';
-import { BeatClock } from './lib/beatclock.js?v=377';
-import { BeatCue } from './lib/beatcue.js?v=377';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=377';
-import { Race, placeOf, standings } from './lib/race.js?v=377';
-import { Signals } from './lib/signals.js?v=377';
-import { pickShareLine, loadLines } from './lib/lines.js?v=377';
-import { RouteMap } from './lib/map.js?v=377';
-import * as sfx from './lib/sfx.js?v=377';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=377';
-import { glowTexture } from './lib/glow.js?v=377';
+import { AudioEngine } from './audio-engine.js?v=378';
+import { drawQR } from './lib/qr.js?v=378';
+import { WORLDS } from './worlds/registry.js?v=378';
+import { Net, PALETTE } from './net.js?v=378';
+import { Presence } from './lib/presence.js?v=378';
+import { Pulses } from './lib/pulse.js?v=378';
+import { BeatClock } from './lib/beatclock.js?v=378';
+import { BeatCue } from './lib/beatcue.js?v=378';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=378';
+import { Race, placeOf, standings } from './lib/race.js?v=378';
+import { Signals } from './lib/signals.js?v=378';
+import { pickShareLine, loadLines } from './lib/lines.js?v=378';
+import { RouteMap } from './lib/map.js?v=378';
+import * as sfx from './lib/sfx.js?v=378';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=378';
+import { glowTexture } from './lib/glow.js?v=378';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -397,13 +397,6 @@ window.__pickerInit = () => {
   cap.id = 'wchip-cap';
   cap.textContent = '\u2605 this week\u2019s special \u2014 a new world on the menu every monday';
   chips.parentElement.insertBefore(cap, chips.nextSibling);
-  const more = document.createElement('button');
-  more.className = 'wchip'; more.id = 'wchip-more'; more.textContent = 'SEE ALL \u2026';
-  more.addEventListener('click', () => {
-    more.remove();
-    rest.forEach(k => mk(k));
-  }, { once: true });
-  chips.appendChild(more);
 };
 for (const [key, w] of Object.entries(WORLDS)) {
   const opt = document.createElement('option');
@@ -2129,6 +2122,8 @@ function showWorldIntro(key) {
   if ($('round-intro').classList.contains('show') ||
       $('mode-card').classList.contains('show') ||
       $('results').classList.contains('show')) return;
+  // the landing screen owns its moment — the greeting waits for entry
+  if (!$('tap-to-start').classList.contains('gone')) return;
   const el = $('world-intro');
   $('intro-name').textContent = w.label;
   $('intro-goal').textContent = w.goal || '';
@@ -3939,8 +3934,13 @@ if (params.get('dev') === '1') (function devPanel() {
   const H = (t, c) => {
     curColor = c || curColor;
     const h = mk('div', 'color:' + curColor + ';letter-spacing:1.4px;margin-top:10px;font-weight:700;'
-      + 'padding:7px 9px;border-radius:9px;background:' + curColor + '1e;'
-      + 'border:1px solid ' + curColor + '4d;', t);
+      + 'padding:8px 10px;border-radius:9px;background:' + curColor + '1e;'
+      + 'border:1px solid ' + curColor + '4d;cursor:pointer;display:flex;justify-content:space-between;', '');
+    h.dataset.hdr = t;
+    const lab = mk('span', '', t);
+    const arrow = mk('span', 'opacity:0.7;', '\u25be');
+    h.appendChild(lab); h.appendChild(arrow);
+    h._arrow = arrow;
     return h;
   };
   const NOTE = t => mk('div', 'color:#8d87b5;line-height:1.45;padding:0 2px;', t);
@@ -3955,17 +3955,24 @@ if (params.get('dev') === '1') (function devPanel() {
 
   const headRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;gap:6px;');
   const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;flex:1;', 'TESTING PANEL \u2014 tap to hide');
-  const SIZES = [220, 270, 340, 420];
-  let sizeAt = parseInt(localStorage.getItem('fp_dev_size') || '1', 10);
-  const sizeBtn = mk('button', 'padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);'
-    + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10px "SF Mono",Menlo,monospace;', '\u2922 size');
-  sizeBtn.title = 'cycle panel size';
-  const applySize = () => { el.style.width = SIZES[sizeAt % SIZES.length] + 'px'; };
-  sizeBtn.addEventListener('click', () => {
-    sizeAt = (sizeAt + 1) % SIZES.length;
-    localStorage.setItem('fp_dev_size', String(sizeAt));
-    applySize();
-  });
+  const SIZES = { S: 210, M: 280, L: 380 };
+  let sizeKey = localStorage.getItem('fp_dev_sizekey') || 'M';
+  const sizeBtn = mk('div', 'display:flex;gap:3px;');
+  const applySize = () => { el.style.width = (SIZES[sizeKey] || 280) + 'px'; };
+  for (const k of ['S', 'M', 'L']) {
+    const b = mk('button', 'padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);'
+      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10px "SF Mono",Menlo,monospace;', k);
+    const paint = () => { b.style.background = sizeKey === k ? 'rgba(255,143,143,0.35)' : 'rgba(255,255,255,0.06)'; };
+    b.addEventListener('click', () => {
+      sizeKey = k;
+      localStorage.setItem('fp_dev_sizekey', k);
+      applySize();
+      [...sizeBtn.children].forEach(x => x.dispatchEvent(new Event('paintme')));
+    });
+    b.addEventListener('paintme', paint);
+    paint();
+    sizeBtn.appendChild(b);
+  }
   const body = mk('div', 'display:flex;flex-direction:column;gap:8px;');
   head.addEventListener('click', () => { body.style.display = body.style.display === 'none' ? '' : 'none'; });
   headRow.appendChild(head);
@@ -4078,14 +4085,6 @@ if (params.get('dev') === '1') (function devPanel() {
     wsel.value = '';
   });
   body.appendChild(wsel);
-  // scrub the song in quarters — audition lyrics, endings, drops
-  const seekRow = mk('div', 'display:flex;gap:5px;');
-  [['\u25b8 \u00bc', 0.25], ['\u25b8 \u00bd', 0.5], ['\u25b8 \u00be', 0.75], ['\u25b8 end', 0.985]].forEach(([lab, f]) => {
-    const b = BTN(lab, () => { if (audio.el.duration) { audio.el.currentTime = audio.el.duration * f; audio.play().catch(() => {}); } });
-    b.style.flex = '1'; b.style.textAlign = 'center';
-    seekRow.appendChild(b);
-  });
-  body.appendChild(seekRow);
   body.appendChild(BTN('\u23e9 skip to the end of this song', () => {
     if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
   }));
@@ -4094,7 +4093,7 @@ if (params.get('dev') === '1') (function devPanel() {
     paid.textContent = '\u2b50 pretend i paid for artist access: ' + (window.__devPaid ? 'YES' : 'NO');
   });
   body.appendChild(paid);
-  body.appendChild(BTN('\u25a4 unlock the full world list', () => { $('wchip-more') && $('wchip-more').click(); }));
+
 
   // ── the notebook: anything she notices becomes a note that knows where
   // it happened; one button copies the whole session's feedback for claude ──
@@ -4231,6 +4230,26 @@ if (params.get('dev') === '1') (function devPanel() {
   }, 1500);
   let lastW = currentWorldKey;
   setInterval(() => { if (currentWorldKey !== lastW) { lastW = currentWorldKey; fillArchetypes(); } }, 1500);
+  // fold-up drawers: each colored header tucks its own section away —
+  // open what you need, the rest stays out of the way (remembered)
+  {
+    const kids = [...body.children];
+    let cur = null, sections = [];
+    for (const k of kids) {
+      if (k.dataset && k.dataset.hdr) { cur = { hdr: k, items: [] }; sections.push(cur); }
+      else if (cur) cur.items.push(k);
+    }
+    for (const sec of sections) {
+      const key2 = 'fp_dev_open_' + sec.hdr.dataset.hdr.slice(0, 12);
+      const setOpen = open => {
+        sec.items.forEach(it => { it.style.display = open ? '' : 'none'; });
+        sec.hdr._arrow.textContent = open ? '\u25be' : '\u25b8';
+        localStorage.setItem(key2, open ? '1' : '0');
+      };
+      setOpen(localStorage.getItem(key2) !== '0');
+      sec.hdr.addEventListener('click', () => setOpen(sec.items[0] && sec.items[0].style.display === 'none'));
+    }
+  }
   document.body.appendChild(el);
 })();
 const startWorld = WORLDS[params.get('world')] ? params.get('world') : 'tunnel';
