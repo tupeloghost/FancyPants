@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=359';
-import { drawQR } from './lib/qr.js?v=359';
-import { WORLDS } from './worlds/registry.js?v=359';
-import { Net, PALETTE } from './net.js?v=359';
-import { Presence } from './lib/presence.js?v=359';
-import { Pulses } from './lib/pulse.js?v=359';
-import { BeatClock } from './lib/beatclock.js?v=359';
-import { BeatCue } from './lib/beatcue.js?v=359';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=359';
-import { Race, placeOf, standings } from './lib/race.js?v=359';
-import { Signals } from './lib/signals.js?v=359';
-import { pickShareLine, loadLines } from './lib/lines.js?v=359';
-import { RouteMap } from './lib/map.js?v=359';
-import * as sfx from './lib/sfx.js?v=359';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=359';
-import { glowTexture } from './lib/glow.js?v=359';
+import { AudioEngine } from './audio-engine.js?v=360';
+import { drawQR } from './lib/qr.js?v=360';
+import { WORLDS } from './worlds/registry.js?v=360';
+import { Net, PALETTE } from './net.js?v=360';
+import { Presence } from './lib/presence.js?v=360';
+import { Pulses } from './lib/pulse.js?v=360';
+import { BeatClock } from './lib/beatclock.js?v=360';
+import { BeatCue } from './lib/beatcue.js?v=360';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=360';
+import { Race, placeOf, standings } from './lib/race.js?v=360';
+import { Signals } from './lib/signals.js?v=360';
+import { pickShareLine, loadLines } from './lib/lines.js?v=360';
+import { RouteMap } from './lib/map.js?v=360';
+import * as sfx from './lib/sfx.js?v=360';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=360';
+import { glowTexture } from './lib/glow.js?v=360';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3767,7 +3767,7 @@ if (params.get('dev') === '1') (function devPanel() {
     window.__forceArchetype = id || null;
   }
   async function fillArchetypes() {
-    sel.innerHTML = '<option value="">player type: (the everyday fallbacks)</option>';
+    sel.innerHTML = '<option value="">backup jokes \u2014 for runs that match no type</option>';
     const spec = await loadLines(currentWorldKey);
     if (spec && spec.archetypes) for (const a2 of spec.archetypes) {
       const o = document.createElement('option');
