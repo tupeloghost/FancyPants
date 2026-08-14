@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=366';
-import { themePaint } from '../lib/themes.js?v=366';
-import { TUNE } from '../lib/tune.js?v=366';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=368';
+import { themePaint } from '../lib/themes.js?v=368';
+import { TUNE } from '../lib/tune.js?v=368';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -130,10 +130,17 @@ export function createWaterslide() {
           })
         );
         const gl = glowSprite(7);
-        grp.add(ring, gl);
+        // the void core: a black disc that eats the tube behind it — only
+        // shown on hazard rings, where the torus becomes the accretion rim
+        const core = new THREE.Mesh(
+          new THREE.CircleGeometry(2.3, 28),
+          new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.94, side: THREE.DoubleSide })
+        );
+        core.visible = false;
+        grp.add(ring, gl, core);
         grp.visible = false;
         group.add(grp);
-        hoops.push({ mesh: grp, ring, gl, alive: false, t: 0, side: 0, red: false });
+        hoops.push({ mesh: grp, ring, gl, core, alive: false, t: 0, side: 0, red: false });
       }
       // catch-bursts: a golden ring blooms where you threaded a hoop
       bursts = [];
@@ -227,12 +234,20 @@ export function createWaterslide() {
           const hx = curveX(t) + h.side * (R * 0.55);
           h.mesh.position.set(hx, dropY(t) + 2.6, -t);
           h.mesh.rotation.y = Math.atan2(curveX(t - 6) - curveX(t + 6), 12);
-          // green = through, red = never — the game's one colour promise
-          color.setHSL(h.red ? 0.01 : 0.36, 0.95,
-            0.5 + Math.sin(time * (h.red ? 8 : 5) + t) * 0.08 + audio.volume * 0.12);
+          // green means through; a BLACK HOLE means around — dark core,
+          // white-violet rim, slowly turning. unmistakable at speed
+          if (h.red) {
+            color.setHSL(0.72, 0.35, 0.72 + Math.sin(time * 2.2 + t) * 0.1);
+            h.core.visible = true;
+            h.mesh.rotation.z = time * 0.8;
+            h.gl.material.opacity = 0.12;
+          } else {
+            color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + t) * 0.08 + audio.volume * 0.12);
+            h.core.visible = false;
+            h.gl.material.opacity = 0.3 + audio.volume * 0.25;
+          }
           h.ring.material.color.copy(color);
           h.gl.material.color.copy(color);
-          h.gl.material.opacity = 0.3 + audio.volume * 0.25;
 
           const ahead = t - travel;
           if (ahead < 4) {
@@ -276,7 +291,7 @@ export function createWaterslide() {
       }
 
       if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
-      steer += (steerTarget - steer) * Math.min(1, dt * 4);
+      steer += (steerTarget - steer) * Math.min(1, dt * 9);   // snappy — the tube answers the hand
       if (participants && participants[0]) {
         participants[0].x = steer;
         participants[0].y = 0;

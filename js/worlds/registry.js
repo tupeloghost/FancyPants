@@ -11,23 +11,23 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=366';
-import { createSurfer } from './surfer.js?v=366';
-import { createOrbit } from './orbit.js?v=366';
-import { createBloom } from './bloom.js?v=366';
-import { createTrail } from './trail.js?v=366';
-import { createSignal } from './signal.js?v=366';
-import { createRiver } from './river.js?v=366';
-import { createFunhouse } from './funhouse.js?v=366';
-import { createLavaLamp } from './lavalamp.js?v=366';
-import { createPlasma } from './plasma.js?v=366';
-import { createCherryLand } from './cherryland.js?v=366';
-import { createSlinky } from './slinky.js?v=366';
-import { createBlacktop } from './blacktop.js?v=366';
-import { createWaterslide } from './waterslide.js?v=366';
-import { createGarden } from './garden.js?v=366';
-import { createPaint } from './paint.js?v=366';
-import { createComets } from './comets.js?v=366';
+import { createTunnel } from './tunnel.js?v=368';
+import { createSurfer } from './surfer.js?v=368';
+import { createOrbit } from './orbit.js?v=368';
+import { createBloom } from './bloom.js?v=368';
+import { createTrail } from './trail.js?v=368';
+import { createSignal } from './signal.js?v=368';
+import { createRiver } from './river.js?v=368';
+import { createFunhouse } from './funhouse.js?v=368';
+import { createLavaLamp } from './lavalamp.js?v=368';
+import { createPlasma } from './plasma.js?v=368';
+import { createCherryLand } from './cherryland.js?v=368';
+import { createSlinky } from './slinky.js?v=368';
+import { createBlacktop } from './blacktop.js?v=368';
+import { createWaterslide } from './waterslide.js?v=368';
+import { createGarden } from './garden.js?v=368';
+import { createPaint } from './paint.js?v=368';
+import { createComets } from './comets.js?v=368';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
@@ -52,8 +52,8 @@ export const WORLDS = {
   comets: { pulse: 0.9, rhythm: true, mode: 'DODGE', unit: 'STARS',
             rules: 'Steer with the mouse or arrows. Press and HOLD to fly faster. Fly through the silver stars — each one’s a point, and five in a row makes a constellation worth extra. Stay away from the big red stars — they’re not the friendly kind. Whoever has the most stars when the song ends wins.',
             goal: 'chase the comets — hold to burn', label: 'COMETS', create: createComets },
-  slide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'HOOPS',
-            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Lean through the green hoops — each one’s a point, worth double at full speed. The red hoops take points away — pretty, but so is poison ivy. Whoever has the most hoops when the song ends wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
+  slide: { pulse: 0.8, rhythm: true, feetPerStep: 20, mode: 'DODGE', unit: 'RINGS',
+            rules: 'Steer with the mouse or arrows. Press and HOLD to speed up. Lean through the green rings — each one’s a point, worth double at full speed. Steer AROUND the black holes — they swallow points whole. Whoever has the most rings when the song ends wins.', goal: 'ride the flume — hold to open the throttle', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'dead neon flickers on the walls — spray the signs alight before they go dark', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'sweep up the runes — three alike fuse. Light the whole picture', label: 'LUMEN', create: createGarden },
 };
