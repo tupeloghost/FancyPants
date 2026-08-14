@@ -109,6 +109,24 @@ export class FancyPantsRoom {
       await this.state.storage.put('wv:' + slugPath, visits);
       return new Response(JSON.stringify({ song: row.song, world: home ? home.world : null }), { headers: { 'Content-Type': 'application/json' } });
     }
+    // ── test screenshots: the dev panel posts a jpeg, gets back a URL that
+    // rides the note — so feedback carries its own pictures, no dragging ──
+    if (url.pathname === '/shot' && request.method === 'POST') {
+      const body = await request.json().catch(() => null);
+      const img = body && String(body.img || '');
+      if (!img || img.length > 260000 || !/^[A-Za-z0-9+/=]+$/.test(img)) {
+        return new Response('bad shot', { status: 400 });
+      }
+      const id = Math.random().toString(36).slice(2, 10);
+      await this.state.storage.put('shot:' + id, { img, at: Date.now(), note: String(body.note || '').slice(0, 300) });
+      return new Response(JSON.stringify({ url: 'https://fancy-pants.tupeloghost.workers.dev/shot/' + id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname.startsWith('/shot/')) {
+      const row = await this.state.storage.get('shot:' + url.pathname.slice(6).replace(/[^a-z0-9]/g, ''));
+      if (!row) return new Response('gone', { status: 404 });
+      const bin = Uint8Array.from(atob(row.img), c => c.charCodeAt(0));
+      return new Response(bin, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800' } });
+    }
     if (url.pathname === '/w-stats') {
       if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
       const all = await this.state.storage.list({ prefix: 'wv:' });
@@ -350,7 +368,7 @@ export default {
     const url = new URL(request.url);
 
     // browsers preflight cross-origin JSON POSTs — answer politely
-    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom' || url.pathname === '/share-home')) {
+    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom' || url.pathname === '/share-home' || url.pathname === '/shot')) {
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -396,7 +414,8 @@ export default {
     // the waiting list rides one well-known DO instance
     if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list' ||
         url.pathname === '/custom' || url.pathname === '/custom-list' ||
-        url.pathname === '/share-home' || url.pathname === '/w-stats') {
+        url.pathname === '/share-home' || url.pathname === '/w-stats' ||
+        url.pathname === '/shot' || url.pathname.startsWith('/shot/')) {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       return env.ROOMS.get(id).fetch(request);
     }

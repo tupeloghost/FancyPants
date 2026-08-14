@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=362';
-import { drawQR } from './lib/qr.js?v=362';
-import { WORLDS } from './worlds/registry.js?v=362';
-import { Net, PALETTE } from './net.js?v=362';
-import { Presence } from './lib/presence.js?v=362';
-import { Pulses } from './lib/pulse.js?v=362';
-import { BeatClock } from './lib/beatclock.js?v=362';
-import { BeatCue } from './lib/beatcue.js?v=362';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=362';
-import { Race, placeOf, standings } from './lib/race.js?v=362';
-import { Signals } from './lib/signals.js?v=362';
-import { pickShareLine, loadLines } from './lib/lines.js?v=362';
-import { RouteMap } from './lib/map.js?v=362';
-import * as sfx from './lib/sfx.js?v=362';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=362';
-import { glowTexture } from './lib/glow.js?v=362';
+import { AudioEngine } from './audio-engine.js?v=363';
+import { drawQR } from './lib/qr.js?v=363';
+import { WORLDS } from './worlds/registry.js?v=363';
+import { Net, PALETTE } from './net.js?v=363';
+import { Presence } from './lib/presence.js?v=363';
+import { Pulses } from './lib/pulse.js?v=363';
+import { BeatClock } from './lib/beatclock.js?v=363';
+import { BeatCue } from './lib/beatcue.js?v=363';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=363';
+import { Race, placeOf, standings } from './lib/race.js?v=363';
+import { Signals } from './lib/signals.js?v=363';
+import { pickShareLine, loadLines } from './lib/lines.js?v=363';
+import { RouteMap } from './lib/map.js?v=363';
+import * as sfx from './lib/sfx.js?v=363';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=363';
+import { glowTexture } from './lib/glow.js?v=363';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3863,27 +3863,31 @@ if (params.get('dev') === '1') (function devPanel() {
   saveBtn.textContent = '\u2795 save note (' + savedNotes().length + ')';
   noteIn.addEventListener('keydown', e => { if (e.key === 'Enter') saveBtn.click(); });
   body.appendChild(saveBtn);
-  // screenshot + note in one tap: saves the picture to your device and adds
-  // a note carrying the filename, so the paste tells claude which image is which
-  let shotN = 0;
+  // screenshot + note in one tap: the picture uploads itself and its link
+  // rides the note — copy EVERYTHING hands claude the images too
   body.appendChild(BTN('\ud83d\udcf8 screenshot + note', () => {
     const g = document.getElementById('canvas');
     if (!g || !g.width) return;
     const sc2 = document.createElement('canvas');
-    const w = 1280, h = Math.round(1280 * g.height / g.width);
+    const w = 900, h = Math.round(900 * g.height / g.width);
     sc2.width = w; sc2.height = h;
     sc2.getContext('2d').drawImage(g, 0, 0, w, h);
-    shotN++;
-    const name = 'fp-shot-' + currentWorldKey + '-' + shotN + '.jpg';
-    const a2 = document.createElement('a');
-    a2.href = sc2.toDataURL('image/jpeg', 0.85); a2.download = name;
-    document.body.appendChild(a2); a2.click(); a2.remove();
-    const notes = savedNotes();
-    notes.push(noteCtx() + ' \ud83d\udcf8 ' + name + (noteIn.value.trim() ? ' \u2014 ' + noteIn.value.trim() : ''));
-    localStorage.setItem('fp_notes', JSON.stringify(notes));
-    noteIn.value = '';
-    saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
-    flash('SAVED ' + name.toUpperCase() + ' \u2014 DRAG IT INTO OUR CHAT WITH YOUR NOTES', 2600);
+    // squeeze under the storage ceiling — context beats fidelity here
+    let q = 0.62, b64 = '';
+    do { b64 = sc2.toDataURL('image/jpeg', q).split(',')[1]; q -= 0.12; } while (b64.length > 250000 && q > 0.2);
+    const text = noteIn.value.trim();
+    flash('\ud83d\udcf8 UPLOADIN\u2019 THE SHOT\u2026', 1400);
+    fetch(`${SUNO_PROXY}shot`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ img: b64, note: text }),
+    }).then(r => r.json()).then(r => {
+      const notes = savedNotes();
+      notes.push(noteCtx() + ' \ud83d\udcf8 ' + r.url + (text ? ' \u2014 ' + text : ''));
+      localStorage.setItem('fp_notes', JSON.stringify(notes));
+      noteIn.value = '';
+      saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
+      flash('SHOT UPLOADED + NOTED \u2014 NOTHIN\u2019 TO DRAG', 2200);
+    }).catch(() => flash('UPLOAD DIDN\u2019T TAKE \u2014 TRY AGAIN', 2000, true));
   }));
   const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
     const notes = savedNotes();
