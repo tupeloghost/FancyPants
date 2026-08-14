@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=372';
-import { themePaint } from '../lib/themes.js?v=372';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=373';
+import { themePaint } from '../lib/themes.js?v=373';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -96,12 +96,15 @@ export function createSurfer() {
     },
 
     onTap() {
-      if (jumpY <= 0.01) jumpVel = 22; // one-button jump
+      // the wave does the throwing: jump ON a bass swell and it launches you
+      // half again higher — the music is the trampoline, and you can feel it
+      if (jumpY <= 0.01) jumpVel = 17 + this._lastBass * 14;
       waveR = 0;                        // + a shockwave ridge racing to the horizon
     },
 
     update(dt, audio, participants, opts) {
       const { reactivity, hue, attract, time, colorMode = 'rainbow' } = opts;
+      this._lastBass = audio.bass;
       const tp = this._tp || (this._tp = [0, 0, 0]);
 
       // push a new spectrum row at a fixed cadence; terrain scrolls between rows

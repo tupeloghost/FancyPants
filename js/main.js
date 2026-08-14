@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=372';
-import { drawQR } from './lib/qr.js?v=372';
-import { WORLDS } from './worlds/registry.js?v=372';
-import { Net, PALETTE } from './net.js?v=372';
-import { Presence } from './lib/presence.js?v=372';
-import { Pulses } from './lib/pulse.js?v=372';
-import { BeatClock } from './lib/beatclock.js?v=372';
-import { BeatCue } from './lib/beatcue.js?v=372';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=372';
-import { Race, placeOf, standings } from './lib/race.js?v=372';
-import { Signals } from './lib/signals.js?v=372';
-import { pickShareLine, loadLines } from './lib/lines.js?v=372';
-import { RouteMap } from './lib/map.js?v=372';
-import * as sfx from './lib/sfx.js?v=372';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=372';
-import { glowTexture } from './lib/glow.js?v=372';
+import { AudioEngine } from './audio-engine.js?v=373';
+import { drawQR } from './lib/qr.js?v=373';
+import { WORLDS } from './worlds/registry.js?v=373';
+import { Net, PALETTE } from './net.js?v=373';
+import { Presence } from './lib/presence.js?v=373';
+import { Pulses } from './lib/pulse.js?v=373';
+import { BeatClock } from './lib/beatclock.js?v=373';
+import { BeatCue } from './lib/beatcue.js?v=373';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=373';
+import { Race, placeOf, standings } from './lib/race.js?v=373';
+import { Signals } from './lib/signals.js?v=373';
+import { pickShareLine, loadLines } from './lib/lines.js?v=373';
+import { RouteMap } from './lib/map.js?v=373';
+import * as sfx from './lib/sfx.js?v=373';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=373';
+import { glowTexture } from './lib/glow.js?v=373';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3807,11 +3807,26 @@ if (params.get('dev') === '1') (function devPanel() {
     return b;
   };
 
-  const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;', 'TESTING PANEL \u2014 tap here to hide');
+  const headRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;gap:6px;');
+  const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;flex:1;', 'TESTING PANEL \u2014 tap to hide');
+  const SIZES = [220, 270, 340, 420];
+  let sizeAt = parseInt(localStorage.getItem('fp_dev_size') || '1', 10);
+  const sizeBtn = mk('button', 'padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);'
+    + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10px "SF Mono",Menlo,monospace;', '\u2922 size');
+  sizeBtn.title = 'cycle panel size';
+  const applySize = () => { el.style.width = SIZES[sizeAt % SIZES.length] + 'px'; };
+  sizeBtn.addEventListener('click', () => {
+    sizeAt = (sizeAt + 1) % SIZES.length;
+    localStorage.setItem('fp_dev_size', String(sizeAt));
+    applySize();
+  });
   const body = mk('div', 'display:flex;flex-direction:column;gap:8px;');
   head.addEventListener('click', () => { body.style.display = body.style.display === 'none' ? '' : 'none'; });
-  el.appendChild(head);
+  headRow.appendChild(head);
+  headRow.appendChild(sizeBtn);
+  el.appendChild(headRow);
   el.appendChild(body);
+  applySize();
   body.appendChild(NOTE('only you see this (the ?dev=1 in the address turns it on)'));
 
   // ── the jokes: walk each pool in order, thumb down the misses ──
