@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=386';
-import { drawQR } from './lib/qr.js?v=386';
-import { WORLDS } from './worlds/registry.js?v=386';
-import { Net, PALETTE } from './net.js?v=386';
-import { Presence } from './lib/presence.js?v=386';
-import { Pulses } from './lib/pulse.js?v=386';
-import { BeatClock } from './lib/beatclock.js?v=386';
-import { BeatCue } from './lib/beatcue.js?v=386';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=386';
-import { Race, placeOf, standings } from './lib/race.js?v=386';
-import { Signals } from './lib/signals.js?v=386';
-import { pickShareLine, loadLines } from './lib/lines.js?v=386';
-import { RouteMap } from './lib/map.js?v=386';
-import * as sfx from './lib/sfx.js?v=386';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=386';
-import { glowTexture } from './lib/glow.js?v=386';
+import { AudioEngine } from './audio-engine.js?v=387';
+import { drawQR } from './lib/qr.js?v=387';
+import { WORLDS } from './worlds/registry.js?v=387';
+import { Net, PALETTE } from './net.js?v=387';
+import { Presence } from './lib/presence.js?v=387';
+import { Pulses } from './lib/pulse.js?v=387';
+import { BeatClock } from './lib/beatclock.js?v=387';
+import { BeatCue } from './lib/beatcue.js?v=387';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=387';
+import { Race, placeOf, standings } from './lib/race.js?v=387';
+import { Signals } from './lib/signals.js?v=387';
+import { pickShareLine, loadLines } from './lib/lines.js?v=387';
+import { RouteMap } from './lib/map.js?v=387';
+import * as sfx from './lib/sfx.js?v=387';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=387';
+import { glowTexture } from './lib/glow.js?v=387';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2350,7 +2350,7 @@ const WORLD_TRACKS = {
   lava: 'liquid_light.mp3',
   plasma: 'black_light_special.mp3',
   cherry: 'purple_cherries.mp3',
-  slinky: 'let_em_look.mp3',
+  slinky: 'heavy_silver.mp3',
   blacktop: 'fly_by_night.mp3',
   comets: 'chasing_the_comets.mp3',
   slide: 'zoomin.mp3',
