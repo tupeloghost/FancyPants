@@ -213,56 +213,6 @@
           "w": 3
         }
       ]
-    },
-    {
-      "id": "midnight-drifter",
-      "when": {
-        "wasAlone": [
-          "==",
-          true
-        ],
-        "sessionSeconds": [
-          ">=",
-          420
-        ]
-      },
-      "lines": [
-        {
-          "t": "{minutes} minutes of glow and drift. that’s self-care, sugar.",
-          "c": "keep glowin’ →",
-          "w": 10
-        },
-        {
-          "t": "{minutes} minutes deep in the lights.",
-          "c": "sink deeper →",
-          "w": 3
-        }
-      ]
-    },
-    {
-      "id": "sworn-in",
-      "when": {
-        "worldsVisited": [
-          "==",
-          1
-        ],
-        "sessionSeconds": [
-          ">=",
-          300
-        ]
-      },
-      "lines": [
-        {
-          "t": "you found your world and stayed. can’t argue with that.",
-          "c": "defend the title →",
-          "w": 6
-        },
-        {
-          "t": "one world, all night. loyalty looks good on you.",
-          "c": "stay loyal →",
-          "w": 1
-        }
-      ]
     }
   ],
   "fallback": [

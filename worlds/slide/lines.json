@@ -4,113 +4,232 @@
   "archetypes": [
     {
       "id": "ghost-rider",
-      "when": { "roomSize": [">=", 4], "feet": ["<=", 50] },
+      "when": {
+        "roomSize": [
+          ">=",
+          4
+        ],
+        "feet": [
+          "<=",
+          50
+        ]
+      },
       "lines": [
-        { "t": "{room} people raced. you idled at the start line.", "c": "turn the key →", "w": 10 },
-        { "t": "a full room and {feet} feet. the slide barely felt you.", "c": "make it feel you →", "w": 6 },
-        { "t": "everyone finished. you’re still up top, sugar.", "c": "come on down →", "w": 1 }
+        {
+          "t": "{room} people raced. you idled at the start line.",
+          "c": "turn the key →",
+          "w": 10
+        },
+        {
+          "t": "a full room and {feet} feet. the slide barely felt you.",
+          "c": "make it feel you →",
+          "w": 6
+        },
+        {
+          "t": "everyone finished. you’re still up top, sugar.",
+          "c": "come on down →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "hoop-earring",
-      "when": { "bestStreak": [">=", 10] },
+      "when": {
+        "bestStreak": [
+          ">=",
+          10
+        ]
+      },
       "lines": [
-        { "t": "{streak} rings threaded clean, no misses. surgical.", "c": "thread more →", "w": 10 },
-        { "t": "a {streak}-ring streak. the slide noticed.", "c": "make it stare →", "w": 6 },
-        { "t": "{streak} in a row. carnival games fear you.", "c": "stay feared →", "w": 1 }
+        {
+          "t": "{streak} rings threaded clean, no misses. surgical.",
+          "c": "thread more →",
+          "w": 10
+        },
+        {
+          "t": "a {streak}-ring streak. the slide noticed.",
+          "c": "make it stare →",
+          "w": 6
+        },
+        {
+          "t": "{streak} in a row. carnival games fear you.",
+          "c": "stay feared →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "leadfoot",
-      "when": { "feet": [">=", 1500] },
+      "when": {
+        "feet": [
+          ">=",
+          1500
+        ]
+      },
       "lines": [
-        { "t": "{feet} feet of slide in one song. the neon blurred.", "c": "blur it again →", "w": 10 },
-        { "t": "{feet} feet. you didn’t ride the slide, you passed it.", "c": "lap it →", "w": 6 },
-        { "t": "top speed the whole way down. {feet} feet.", "c": "find a faster gear →", "w": 1 }
+        {
+          "t": "{feet} feet of slide in one song. the neon blurred.",
+          "c": "blur it again →",
+          "w": 10
+        },
+        {
+          "t": "{feet} feet. you didn’t ride the slide, you passed it.",
+          "c": "lap it →",
+          "w": 6
+        },
+        {
+          "t": "top speed the whole way down. {feet} feet.",
+          "c": "find a faster gear →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "parked",
-      "when": { "movementRatio": ["<=", 0.18] },
+      "when": {
+        "movementRatio": [
+          "<=",
+          0.18
+        ]
+      },
       "lines": [
-        { "t": "you moved {move}% of the song. on a waterslide.", "c": "let gravity in →", "w": 10 },
-        { "t": "{move}% movement. gravity offered and you said no thanks.", "c": "say yes →", "w": 6 },
-        { "t": "you parked on the fastest ride in the buildin’.", "c": "un-park →", "w": 1 }
+        {
+          "t": "you moved {move}% of the song. on a waterslide.",
+          "c": "let gravity in →",
+          "w": 10
+        },
+        {
+          "t": "{move}% movement. gravity offered and you said no thanks.",
+          "c": "say yes →",
+          "w": 6
+        },
+        {
+          "t": "you parked on the fastest ride in the buildin’.",
+          "c": "un-park →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "pinball",
-      "when": { "accuracy": ["<=", 0.3] },
+      "when": {
+        "accuracy": [
+          "<=",
+          0.3
+        ]
+      },
       "lines": [
-        { "t": "{pct}% of the rings, 100% of the walls.", "c": "aim for the glow →", "w": 10 },
-        { "t": "you found every wall in that tube. the rings felt left out.", "c": "include a ring →", "w": 6 },
-        { "t": "{pct}% accuracy. the bumpers know you personally now.", "c": "forget their names →", "w": 1 }
-      ]
-    },
-    {
-      "id": "sunday-driver",
-      "when": { "feet": ["<=", 300], "runSeconds": [">=", 90] },
-      "lines": [
-        { "t": "{feet} feet in {seconds} seconds. it’s a slide, sugar, not a stroll.", "c": "let it slide →", "w": 10 },
-        { "t": "you cruised a waterslide at walkin’ speed.", "c": "try slide speed →", "w": 6 },
-        { "t": "{seconds} seconds for {feet} feet. the rings aged waitin’.", "c": "catch ’em young →", "w": 1 }
+        {
+          "t": "{pct}% of the rings, 100% of the walls.",
+          "c": "aim for the glow →",
+          "w": 10
+        },
+        {
+          "t": "you found every wall in that tube. the rings felt left out.",
+          "c": "include a ring →",
+          "w": 6
+        },
+        {
+          "t": "{pct}% accuracy. the bumpers know you personally now.",
+          "c": "forget their names →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "drive-thru",
-      "when": { "bailedEarly": ["==", true] },
+      "when": {
+        "bailedEarly": [
+          "==",
+          true
+        ]
+      },
       "lines": [
-        { "t": "{seconds} seconds in the tube. you ordered it to go.", "c": "dine in →", "w": 10 },
-        { "t": "you left before the first real drop. it drops good.", "c": "feel the drop →", "w": 6 },
-        { "t": "{seconds} seconds is a peek. the slide does plunges.", "c": "take the plunge →", "w": 1 }
+        {
+          "t": "{seconds} seconds in the tube. you ordered it to go.",
+          "c": "dine in →",
+          "w": 10
+        },
+        {
+          "t": "you left before the first real drop. it drops good.",
+          "c": "feel the drop →",
+          "w": 6
+        },
+        {
+          "t": "{seconds} seconds is a peek. the slide does plunges.",
+          "c": "take the plunge →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "all-gas",
-      "when": { "movementRatio": [">=", 0.85] },
+      "when": {
+        "movementRatio": [
+          ">=",
+          0.85
+        ]
+      },
       "lines": [
-        { "t": "throttle down {move}% of the song. no coastin’, no mercy.", "c": "no mercy again →", "w": 10 },
-        { "t": "you steered every second of that run.", "c": "steer the next →", "w": 6 },
-        { "t": "full send, the whole song.", "c": "send it again →", "w": 1 }
+        {
+          "t": "throttle down {move}% of the song. no coastin’, no mercy.",
+          "c": "no mercy again →",
+          "w": 10
+        },
+        {
+          "t": "you steered every second of that run.",
+          "c": "steer the next →",
+          "w": 6
+        },
+        {
+          "t": "full send, the whole song.",
+          "c": "send it again →",
+          "w": 1
+        }
       ]
     },
     {
       "id": "finisher",
-      "when": { "finished": ["==", true] },
+      "when": {
+        "finished": [
+          "==",
+          true
+        ]
+      },
       "lines": [
-        { "t": "top to bottom, whole song, still upright.", "c": "back to the top →", "w": 10 },
-        { "t": "you finished the run with the last note. clean.", "c": "twice is proof →", "w": 6 },
-        { "t": "every foot of the slide, every beat of the song.", "c": "again →", "w": 1 }
-      ]
-    },
-    {
-      "id": "flipper",
-      "when": { "worldsVisited": [">=", 5] },
-      "lines": [
-        { "t": "{worlds} worlds tonight and now the slide. good taste, finally.", "c": "reward yourself, stay →", "w": 10 },
-        { "t": "world {worlds} of the evenin’. this one’s the fast one.", "c": "go fast twice →", "w": 3 }
-      ]
-    },
-    {
-      "id": "regular",
-      "when": { "rejoined": ["==", true] },
-      "lines": [
-        { "t": "back in the tube already. it missed you too.", "c": "make it official →", "w": 10 },
-        { "t": "you came back. the slide kept your line warm.", "c": "use it →", "w": 3 }
-      ]
-    },
-    {
-      "id": "night-shift",
-      "when": { "sessionSeconds": [">=", 900] },
-      "lines": [
-        { "t": "{minutes} minutes tonight and still slidin’.", "c": "one more run →", "w": 10 },
-        { "t": "{minutes} minutes deep. your evenin’ has a theme.", "c": "commit to it →", "w": 3 }
+        {
+          "t": "top to bottom, whole song, still upright.",
+          "c": "back to the top →",
+          "w": 10
+        },
+        {
+          "t": "you finished the run with the last note. clean.",
+          "c": "twice is proof →",
+          "w": 6
+        },
+        {
+          "t": "every foot of the slide, every beat of the song.",
+          "c": "again →",
+          "w": 1
+        }
       ]
     }
   ],
   "fallback": [
-    { "t": "{feet} feet, {streak} rings at best. fixable.", "c": "fix it →", "w": 10 },
-    { "t": "some rings, some walls, one song.", "c": "more rings this time →", "w": 6 },
-    { "t": "a middlin’ run down a maximal slide.", "c": "un-middle it →", "w": 3 }
+    {
+      "t": "{feet} feet, {streak} rings at best. fixable.",
+      "c": "fix it →",
+      "w": 10
+    },
+    {
+      "t": "some rings, some walls, one song.",
+      "c": "more rings this time →",
+      "w": 6
+    },
+    {
+      "t": "a middlin’ run down a maximal slide.",
+      "c": "un-middle it →",
+      "w": 3
+    }
   ]
 }
