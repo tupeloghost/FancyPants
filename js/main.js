@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=380';
-import { drawQR } from './lib/qr.js?v=380';
-import { WORLDS } from './worlds/registry.js?v=380';
-import { Net, PALETTE } from './net.js?v=380';
-import { Presence } from './lib/presence.js?v=380';
-import { Pulses } from './lib/pulse.js?v=380';
-import { BeatClock } from './lib/beatclock.js?v=380';
-import { BeatCue } from './lib/beatcue.js?v=380';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=380';
-import { Race, placeOf, standings } from './lib/race.js?v=380';
-import { Signals } from './lib/signals.js?v=380';
-import { pickShareLine, loadLines } from './lib/lines.js?v=380';
-import { RouteMap } from './lib/map.js?v=380';
-import * as sfx from './lib/sfx.js?v=380';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=380';
-import { glowTexture } from './lib/glow.js?v=380';
+import { AudioEngine } from './audio-engine.js?v=383';
+import { drawQR } from './lib/qr.js?v=383';
+import { WORLDS } from './worlds/registry.js?v=383';
+import { Net, PALETTE } from './net.js?v=383';
+import { Presence } from './lib/presence.js?v=383';
+import { Pulses } from './lib/pulse.js?v=383';
+import { BeatClock } from './lib/beatclock.js?v=383';
+import { BeatCue } from './lib/beatcue.js?v=383';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=383';
+import { Race, placeOf, standings } from './lib/race.js?v=383';
+import { Signals } from './lib/signals.js?v=383';
+import { pickShareLine, loadLines } from './lib/lines.js?v=383';
+import { RouteMap } from './lib/map.js?v=383';
+import * as sfx from './lib/sfx.js?v=383';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=383';
+import { glowTexture } from './lib/glow.js?v=383';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2513,11 +2513,18 @@ let roundTimer = 0;
 // each song dealt its own racing world.
 function askMode() {
   if (!trackList.length) {
-    // manifest still in flight (slow network): ask again when it lands
-    clearTimeout(askMode._t);
-    askMode._t = setTimeout(askMode, 500);
-    return;
+    // manifest still in flight (slow network): ask again when it lands —
+    // but never forever. If the music can't load, say so and open the door
+    // anyway rather than stranding a first-timer at a silent screen.
+    askMode._tries = (askMode._tries || 0) + 1;
+    if (askMode._tries < 14) {
+      clearTimeout(askMode._t);
+      askMode._t = setTimeout(askMode, 500);
+      return;
+    }
+    flash('THE MUSIC DIDN\u2019T LOAD \u2014 CHECK YOUR CONNECTION & REFRESH', 4000, true);
   }
+  askMode._tries = 0;
   $('mode-card').classList.add('show');
 }
 $('opt-vibe').addEventListener('click', () => {
@@ -2882,7 +2889,7 @@ function shareStill() {
   c.width = W; c.height = H;
   const x = c.getContext('2d');
   x.drawImage(g, 0, 0, W, H);
-  const bh = Math.round(H * 0.09);
+  const bh = Math.round(Math.min(W, H) * 0.09);
   x.fillStyle = 'rgba(4,4,10,0.62)';
   x.fillRect(0, H - bh, W, bh);
   x.fillStyle = 'rgba(240,238,255,0.92)';
@@ -3011,7 +3018,7 @@ function clipBufStart() {
   (function frame() {
     if (!clipDraw) return;
     ctx2.drawImage(game, 0, 0, W, H);
-    const bh = Math.round(H * 0.09);
+    const bh = Math.round(Math.min(W, H) * 0.09);
     ctx2.fillStyle = 'rgba(4,4,10,0.62)';
     ctx2.fillRect(0, H - bh, W, bh);
     ctx2.fillStyle = 'rgba(240,238,255,0.92)';
