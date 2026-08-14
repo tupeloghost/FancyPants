@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=352';
-import { drawQR } from './lib/qr.js?v=352';
-import { WORLDS } from './worlds/registry.js?v=352';
-import { Net, PALETTE } from './net.js?v=352';
-import { Presence } from './lib/presence.js?v=352';
-import { Pulses } from './lib/pulse.js?v=352';
-import { BeatClock } from './lib/beatclock.js?v=352';
-import { BeatCue } from './lib/beatcue.js?v=352';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=352';
-import { Race, placeOf, standings } from './lib/race.js?v=352';
-import { Signals } from './lib/signals.js?v=352';
-import { pickShareLine, loadLines } from './lib/lines.js?v=352';
-import { RouteMap } from './lib/map.js?v=352';
-import * as sfx from './lib/sfx.js?v=352';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=352';
-import { glowTexture } from './lib/glow.js?v=352';
+import { AudioEngine } from './audio-engine.js?v=353';
+import { drawQR } from './lib/qr.js?v=353';
+import { WORLDS } from './worlds/registry.js?v=353';
+import { Net, PALETTE } from './net.js?v=353';
+import { Presence } from './lib/presence.js?v=353';
+import { Pulses } from './lib/pulse.js?v=353';
+import { BeatClock } from './lib/beatclock.js?v=353';
+import { BeatCue } from './lib/beatcue.js?v=353';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=353';
+import { Race, placeOf, standings } from './lib/race.js?v=353';
+import { Signals } from './lib/signals.js?v=353';
+import { pickShareLine, loadLines } from './lib/lines.js?v=353';
+import { RouteMap } from './lib/map.js?v=353';
+import * as sfx from './lib/sfx.js?v=353';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=353';
+import { glowTexture } from './lib/glow.js?v=353';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3830,6 +3830,53 @@ if (params.get('dev') === '1') (function devPanel() {
   });
   body.appendChild(paid);
   body.appendChild(BTN('\u25a4 unlock the full world list', () => { $('wchip-more') && $('wchip-more').click(); }));
+
+  // ── the notebook: anything she notices becomes a note that knows where
+  // it happened; one button copies the whole session's feedback for claude ──
+  body.appendChild(H('NOTES FOR CLAUDE'));
+  body.appendChild(NOTE('type what you noticed \u2014 the note remembers the world, song & version by itself.'));
+  const noteIn = mk('input', 'padding:8px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
+  noteIn.placeholder = 'e.g. the hoops feel too fast here';
+  body.appendChild(noteIn);
+  const devErrors = [];
+  window.addEventListener('error', e => { devErrors.push(String(e.message).slice(0, 120)); if (devErrors.length > 3) devErrors.shift(); });
+  const noteCtx = () => {
+    const run = sig.lastRun;
+    return '[' + (document.querySelector('script[src*="main.js"]')?.src.match(/v=(\d+)/)?.[1] || '?')
+      + ' \u00b7 ' + currentWorldKey
+      + ' \u00b7 ' + prettyTrack($('track-select').value || audio.el.currentSrc || 'no song')
+      + (run ? ' \u00b7 last run: ' + run.kind : '') + ']';
+  };
+  const savedNotes = () => JSON.parse(localStorage.getItem('fp_notes') || '[]');
+  const saveBtn = BTN('\u2795 save note (0)', () => {
+    const t = noteIn.value.trim();
+    if (!t) { noteIn.focus(); return; }
+    const notes = savedNotes();
+    notes.push(noteCtx() + ' ' + t + (devErrors.length ? '  \u26a0 errors: ' + devErrors.join(' | ') : ''));
+    localStorage.setItem('fp_notes', JSON.stringify(notes));
+    noteIn.value = '';
+    saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
+    flash('NOTED \u2014 IT KNOWS WHERE YOU WERE', 1600);
+  });
+  saveBtn.textContent = '\u2795 save note (' + savedNotes().length + ')';
+  noteIn.addEventListener('keydown', e => { if (e.key === 'Enter') saveBtn.click(); });
+  body.appendChild(saveBtn);
+  const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
+    const notes = savedNotes();
+    const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
+    const out = [];
+    if (notes.length) out.push('NOTES:\n' + notes.join('\n'));
+    if (cuts.length) out.push('CUT THESE LINES:\n' + cuts.join('\n'));
+    if (!out.length) { flash('NOTHING SAVED YET', 1600); return; }
+    navigator.clipboard.writeText(out.join('\n\n'))
+      .then(() => flash('COPIED \u2014 PASTE THE WHOLE THING TO CLAUDE', 2400)).catch(() => {});
+  });
+  body.appendChild(copyAll);
+  body.appendChild(BTN('\ud83d\uddd1 clear notes & cut list', () => {
+    localStorage.removeItem('fp_notes'); localStorage.removeItem('fp_cutlist');
+    saveBtn.textContent = '\u2795 save note (0)';
+    flash('CLEARED \u2014 FRESH PAGE', 1600);
+  }));
 
   // ── what fired ──
   const fired = mk('div', 'color:#9d97c2;line-height:1.45;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
