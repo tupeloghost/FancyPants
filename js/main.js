@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=376';
-import { drawQR } from './lib/qr.js?v=376';
-import { WORLDS } from './worlds/registry.js?v=376';
-import { Net, PALETTE } from './net.js?v=376';
-import { Presence } from './lib/presence.js?v=376';
-import { Pulses } from './lib/pulse.js?v=376';
-import { BeatClock } from './lib/beatclock.js?v=376';
-import { BeatCue } from './lib/beatcue.js?v=376';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=376';
-import { Race, placeOf, standings } from './lib/race.js?v=376';
-import { Signals } from './lib/signals.js?v=376';
-import { pickShareLine, loadLines } from './lib/lines.js?v=376';
-import { RouteMap } from './lib/map.js?v=376';
-import * as sfx from './lib/sfx.js?v=376';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=376';
-import { glowTexture } from './lib/glow.js?v=376';
+import { AudioEngine } from './audio-engine.js?v=377';
+import { drawQR } from './lib/qr.js?v=377';
+import { WORLDS } from './worlds/registry.js?v=377';
+import { Net, PALETTE } from './net.js?v=377';
+import { Presence } from './lib/presence.js?v=377';
+import { Pulses } from './lib/pulse.js?v=377';
+import { BeatClock } from './lib/beatclock.js?v=377';
+import { BeatCue } from './lib/beatcue.js?v=377';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=377';
+import { Race, placeOf, standings } from './lib/race.js?v=377';
+import { Signals } from './lib/signals.js?v=377';
+import { pickShareLine, loadLines } from './lib/lines.js?v=377';
+import { RouteMap } from './lib/map.js?v=377';
+import * as sfx from './lib/sfx.js?v=377';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=377';
+import { glowTexture } from './lib/glow.js?v=377';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2406,6 +2406,85 @@ $('lyric-layer').addEventListener('click', () => {
   updateLyricLayer();
   flash('LYRICS TUCKED AWAY \u2014 BRING \u2019EM BACK IN THE MUSIC TAB', 2200);
 });
+// ── the creator page editor ── slug + bio + links + what's-next; promoted
+// songs land on the page by themselves. Creating returns the private edit
+// link (the magic link, kept in this browser and copyable).
+const ccSlugify = t => String(t || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+function ccParseLink(v) {
+  const parts = String(v || '').split('|').map(x => x.trim());
+  if (parts.length === 2 && /^https?:\/\//.test(parts[1])) return { label: parts[0], url: parts[1] };
+  if (parts.length === 1 && /^https?:\/\//.test(parts[0])) {
+    try { return { label: new URL(parts[0]).hostname.replace(/^www\./, ''), url: parts[0] }; } catch (e) { return null; }
+  }
+  return null;
+}
+function ccKey(slug) { return localStorage.getItem('fp_ck_' + slug) || ''; }
+async function openCreatorCard() {
+  const slug = ccSlugify($('cc-slug').value || $('mq-artist').value || sunoTrack.split(' \u2014 ')[1] || '');
+  $('cc-slug').value = slug;
+  if (!$('cc-name').value) $('cc-name').value = $('mq-artist').value || '';
+  $('creator-card').classList.remove('hidden');
+  $('cc-msg').textContent = '';
+  // if this browser owns the page, load it for editing + show private plays
+  if (slug && ccKey(slug)) {
+    try {
+      const d = await fetch(`${SUNO_PROXY}c-get?slug=${slug}&key=${ccKey(slug)}`).then(r => r.json());
+      if (d.canEdit) {
+        $('cc-name').value = d.name || '';
+        $('cc-bio').value = d.bio || '';
+        $('cc-next').value = d.next || '';
+        (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
+        $('cc-save').textContent = 'SAVE CHANGES';
+        $('cc-out').classList.remove('hidden');
+        const plays = Object.entries(d.plays || {});
+        if (plays.length) {
+          $('cc-plays').innerHTML = '<b>your plays (only you see this)</b><br>'
+            + plays.map(([k, n]) => '\u266a ' + k.split('/')[1].replace(/-/g, ' ') + ' \u2014 ' + n + ' visit' + (n === 1 ? '' : 's')).join('<br>');
+          $('cc-plays').classList.remove('hidden');
+        }
+      }
+    } catch (e) { /* offline: the form still works */ }
+  }
+}
+$('mq-page').addEventListener('click', openCreatorCard);
+$('cc-close').addEventListener('click', () => $('creator-card').classList.add('hidden'));
+$('cc-save').addEventListener('click', async () => {
+  const slug = ccSlugify($('cc-slug').value);
+  if (slug.length < 3) { $('cc-msg').textContent = 'that address needs at least 3 letters'; return; }
+  $('cc-slug').value = slug;
+  const links = ['cc-l1', 'cc-l2', 'cc-l3'].map(id => ccParseLink($(id).value)).filter(Boolean);
+  const body = {
+    slug, name: $('cc-name').value.trim() || slug,
+    bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), links,
+  };
+  const key = ccKey(slug);
+  $('cc-msg').textContent = 'savin\u2019\u2026';
+  try {
+    const path = key ? 'c-update' : 'c-create';
+    if (key) body.editKey = key;
+    const r = await fetch(`${SUNO_PROXY}${path}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 409) { $('cc-msg').textContent = 'that address is taken \u2014 try another'; return; }
+    if (!r.ok) { $('cc-msg').textContent = 'that didn\u2019t take \u2014 try again?'; return; }
+    if (d.editKey) localStorage.setItem('fp_ck_' + slug, d.editKey);
+    $('cc-save').textContent = 'SAVE CHANGES';
+    $('cc-out').classList.remove('hidden');
+    $('cc-msg').textContent = 'live at fancy-pants.tupeloghost.workers.dev/c/' + slug;
+  } catch (e) { $('cc-msg').textContent = 'no connection \u2014 try again in a spell'; }
+});
+$('cc-copy').addEventListener('click', () => {
+  const slug = ccSlugify($('cc-slug').value);
+  navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug)
+    .then(() => flash('PAGE LINK COPIED \u2014 PUT IT IN YOUR BIO', 2200)).catch(() => {});
+});
+$('cc-copyedit').addEventListener('click', () => {
+  const slug = ccSlugify($('cc-slug').value);
+  navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug + '  \u2014 edit key (KEEP PRIVATE): ' + ccKey(slug))
+    .then(() => flash('EDIT KEY COPIED \u2014 SAVE IT SOMEWHERE SAFE', 2400)).catch(() => {});
+});
+
 $('lyr-btn').addEventListener('click', () => {
   localStorage.setItem('fp_lyrics_off', localStorage.getItem('fp_lyrics_off') === '1' ? '0' : '1');
   lyrBtnPaint();

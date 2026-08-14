@@ -127,6 +127,72 @@ export class FancyPantsRoom {
       const bin = Uint8Array.from(atob(row.img), c => c.charCodeAt(0));
       return new Response(bin, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800' } });
     }
+    // ── creator pages ── one page per slug, reachable only by its link.
+    // Creating one returns a secret edit key (the magic link, in URL form).
+    if (url.pathname === '/c-create' && request.method === 'POST') {
+      const b = await request.json().catch(() => null);
+      const slug = b && String(b.slug || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+      if (!slug || slug.length < 3) return new Response('bad slug', { status: 400 });
+      if (await this.state.storage.get('cp:' + slug)) {
+        return new Response(JSON.stringify({ error: 'taken' }), { status: 409, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
+      const editKey = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
+      const page = {
+        slug, editKey,
+        name: String(b.name || slug).slice(0, 60),
+        bio: String(b.bio || '').slice(0, 500),
+        links: (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
+          label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
+        })).filter(l => l.label && /^https?:\/\//.test(l.url)),
+        next: String(b.next || '').slice(0, 120),
+        hidden: [],
+        at: Date.now(),
+      };
+      await this.state.storage.put('cp:' + slug, page);
+      return new Response(JSON.stringify({ ok: true, editKey }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    if (url.pathname === '/c-update' && request.method === 'POST') {
+      const b = await request.json().catch(() => null);
+      const slug = b && String(b.slug || '').toLowerCase().slice(0, 30);
+      const page = slug && await this.state.storage.get('cp:' + slug);
+      if (!page || page.editKey !== String(b.editKey || '')) {
+        return new Response('no', { status: 403 });
+      }
+      if ('name' in b) page.name = String(b.name || page.slug).slice(0, 60);
+      if ('bio' in b) page.bio = String(b.bio || '').slice(0, 500);
+      if ('next' in b) page.next = String(b.next || '').slice(0, 120);
+      if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
+        label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
+      })).filter(l => l.label && /^https?:\/\//.test(l.url));
+      if ('hidden' in b) page.hidden = (Array.isArray(b.hidden) ? b.hidden : []).map(x => String(x).slice(0, 90)).slice(0, 50);
+      await this.state.storage.put('cp:' + slug, page);
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
+    // page data: public shape by default; the edit key unlocks private plays
+    if (url.pathname === '/c-get') {
+      const slug = String(url.searchParams.get('slug') || '').toLowerCase().slice(0, 30);
+      const page = slug && await this.state.storage.get('cp:' + slug);
+      if (!page) return new Response('{}', { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      // their promoted songs appear automatically: every /w/{slug}/... link
+      const wl = await this.state.storage.list({ prefix: 'w:' + slug + '/' });
+      const songs = [];
+      for (const [k] of wl) {
+        const path = k.slice(2);
+        if (!page.hidden.includes(path)) songs.push(path);
+      }
+      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, songs };
+      if (url.searchParams.get('key') === page.editKey) {
+        out.hidden = page.hidden;
+        out.plays = {};
+        const allW = await this.state.storage.list({ prefix: 'w:' + slug + '/' });
+        for (const [k] of allW) {
+          const path = k.slice(2);
+          out.plays[path] = (await this.state.storage.get('wv:' + path)) || 0;
+        }
+        out.canEdit = true;
+      }
+      return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
     if (url.pathname === '/w-stats') {
       if (url.searchParams.get('key') !== '8a1b05350b66afe0803aabb4') return new Response('no', { status: 403 });
       const all = await this.state.storage.list({ prefix: 'wv:' });
@@ -368,7 +434,7 @@ export default {
     const url = new URL(request.url);
 
     // browsers preflight cross-origin JSON POSTs — answer politely
-    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom' || url.pathname === '/share-home' || url.pathname === '/shot')) {
+    if (request.method === 'OPTIONS' && (url.pathname === '/waitlist' || url.pathname === '/log' || url.pathname === '/custom' || url.pathname === '/share-home' || url.pathname === '/shot' || url.pathname === '/c-create' || url.pathname === '/c-update')) {
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -397,6 +463,53 @@ export default {
         : SITE_URL;
       return Response.redirect(dest, 302);
     }
+    // /c/{slug} — a creator's page: reachable only by its link, never listed
+    const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);
+    if (cslug) {
+      const id = env.ROOMS.idFromName('THE-WAITING-LIST');
+      const r = await env.ROOMS.get(id).fetch(new Request('https://do/c-get?slug=' + cslug[1]));
+      const pg = await r.json().catch(() => ({}));
+      if (!pg.slug) return new Response('no such page', { status: 404 });
+      const esc = t => String(t || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+      const songRows = (pg.songs || []).map(p2 => {
+        const title = p2.split('/')[1].replace(/-/g, ' ');
+        return '<a class="song" href="https://fancy-pants.tupeloghost.workers.dev/w/' + p2 + '">\u266a ' + esc(title) + ' <span>play it \u2192</span></a>';
+      }).join('');
+      const linkRows = (pg.links || []).map(l =>
+        '<a class="pill" href="' + esc(l.url) + '" rel="noopener">' + esc(l.label) + '</a>').join('');
+      const html = '<!doctype html><html><head><meta charset="utf-8">'
+        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<meta name="robots" content="noindex">'
+        + '<title>' + esc(pg.name) + '</title>'
+        + '<meta property="og:title" content="' + esc(pg.name) + '">'
+        + '<meta property="og:description" content="' + esc(pg.bio || 'songs you can play, free, in the browser') + '">'
+        + '<style>'
+        + 'body{margin:0;min-height:100vh;background:radial-gradient(1200px 700px at 50% -10%,#1a1430,#07060f 60%);'
+        + 'color:#eceafb;font:16px/1.6 Georgia,serif;display:flex;justify-content:center;padding:48px 18px;}'
+        + '.card{max-width:520px;width:100%;text-align:center;}'
+        + 'h1{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:44px;margin:0 0 6px;letter-spacing:1px;}'
+        + '.bio{font-style:italic;color:#b9b3da;margin:0 0 22px;white-space:pre-wrap;}'
+        + '.next{color:#eece78;font-style:italic;margin:0 0 26px;}'
+        + '.pill{display:inline-block;margin:5px;padding:11px 20px;border:1px solid rgba(180,170,230,0.35);'
+        + 'border-radius:24px;color:#e6e2fa;text-decoration:none;background:rgba(255,255,255,0.05);}'
+        + '.pill:hover{border-color:#a99ce8;}'
+        + '.songs{margin:30px 0 0;display:flex;flex-direction:column;gap:9px;}'
+        + '.song{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-radius:14px;'
+        + 'background:rgba(255,255,255,0.055);border:1px solid rgba(180,170,230,0.22);color:#f0eefc;text-decoration:none;}'
+        + '.song span{color:#b9b3da;font-size:13px;}'
+        + '.song:hover{border-color:#a99ce8;}'
+        + 'footer{margin-top:44px;font-size:12.5px;color:#8d87b0;}footer a{color:#b9b3da;}'
+        + '</style></head><body><div class="card">'
+        + '<h1>' + esc(pg.name) + '</h1>'
+        + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
+        + (pg.next ? '<p class="next">' + esc(pg.next) + '</p>' : '')
+        + (linkRows ? '<div>' + linkRows + '</div>' : '')
+        + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
+        + '<footer>every song here is a playable world \u2014 <a href="https://tupeloghost.github.io/FancyPants/">make yours free at fancy britches</a></footer>'
+        + '</div></body></html>';
+      return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+
     // /thisweek — wherever the special is right now
     if (url.pathname === '/thisweek') {
       const FEATURED = ['tunnel', 'surfer'];
@@ -415,7 +528,8 @@ export default {
     if (url.pathname === '/waitlist' || url.pathname === '/waitlist-list' ||
         url.pathname === '/custom' || url.pathname === '/custom-list' ||
         url.pathname === '/share-home' || url.pathname === '/w-stats' ||
-        url.pathname === '/shot' || url.pathname.startsWith('/shot/')) {
+        url.pathname === '/shot' || url.pathname.startsWith('/shot/') ||
+        url.pathname === '/c-create' || url.pathname === '/c-update' || url.pathname === '/c-get') {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       return env.ROOMS.get(id).fetch(request);
     }
