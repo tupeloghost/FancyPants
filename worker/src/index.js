@@ -467,7 +467,8 @@ export default {
         return json({ error: 'unreachable' }, 502);
       }
       // the audio id only ever appears as a real CDN url — no loose matching
-      const id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})/)?.[1]
+      // anchor to .mp3 — the same CDN now serves cover art with its own ids
+      const id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})\.mp3/)?.[1]
         || (token.match(UUID)?.[0] ?? null);
       if (!id) return json({ error: 'not a song link' }, 404);
       // "<title>Song by Artist | Suno</title>" carries both
@@ -478,7 +479,19 @@ export default {
       // a share code that lands on a generic Suno page is a dead link, not a
       // song — say so rather than handing back whatever id was lying around
       if (!token.match(UUID) && !artist) return json({ error: 'not a song link' }, 404);
-      return json({ id, title, artist });
+      // the words ride along: suno embeds the lyric sheet in the page payload
+      let lyrics = '';
+      const lm = html.match(/\\"prompt\\":\\"([\s\S]*?)\\",/);
+      if (lm) {
+        lyrics = lm[1]
+          .replace(/\\\\n/g, '\n')
+          .replace(/\\n/g, '\n')
+          .replace(/\\'/g, '\'')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\')
+          .slice(0, 4000);
+      }
+      return json({ id, title, artist, lyrics });
     }
 
     // a playlist link becomes an ordered song list — one fetch, every id and
@@ -534,7 +547,7 @@ export default {
         id = (page.url || '').match(UUID)?.[0] || null;
         if (!id) {
           const html = await page.text();
-          id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})/)?.[1]
+          id = html.match(/cdn\d?\.suno\.ai\/([0-9a-fA-F-]{36})\.mp3/)?.[1]
             || html.match(/"(?:clip_id|audio_url|id)"\s*:\s*"[^"]*?([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/)?.[1]
             || html.match(UUID)?.[0] || null;
         }

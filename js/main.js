@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=373';
-import { drawQR } from './lib/qr.js?v=373';
-import { WORLDS } from './worlds/registry.js?v=373';
-import { Net, PALETTE } from './net.js?v=373';
-import { Presence } from './lib/presence.js?v=373';
-import { Pulses } from './lib/pulse.js?v=373';
-import { BeatClock } from './lib/beatclock.js?v=373';
-import { BeatCue } from './lib/beatcue.js?v=373';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=373';
-import { Race, placeOf, standings } from './lib/race.js?v=373';
-import { Signals } from './lib/signals.js?v=373';
-import { pickShareLine, loadLines } from './lib/lines.js?v=373';
-import { RouteMap } from './lib/map.js?v=373';
-import * as sfx from './lib/sfx.js?v=373';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=373';
-import { glowTexture } from './lib/glow.js?v=373';
+import { AudioEngine } from './audio-engine.js?v=375';
+import { drawQR } from './lib/qr.js?v=375';
+import { WORLDS } from './worlds/registry.js?v=375';
+import { Net, PALETTE } from './net.js?v=375';
+import { Presence } from './lib/presence.js?v=375';
+import { Pulses } from './lib/pulse.js?v=375';
+import { BeatClock } from './lib/beatclock.js?v=375';
+import { BeatCue } from './lib/beatcue.js?v=375';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=375';
+import { Race, placeOf, standings } from './lib/race.js?v=375';
+import { Signals } from './lib/signals.js?v=375';
+import { pickShareLine, loadLines } from './lib/lines.js?v=375';
+import { RouteMap } from './lib/map.js?v=375';
+import * as sfx from './lib/sfx.js?v=375';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=375';
+import { glowTexture } from './lib/glow.js?v=375';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1018,6 +1018,7 @@ function loadSuno() {
       if (shareableFree(currentWorldKey)) setTimeout(claimHome, 400);
       window.__sunoShare = path.startsWith('suno-s') ? 's_' + token : info.id;
       window.__sunoUrl = `${SUNO_PROXY}suno/${info.id}.mp3`;
+      setLyrics(info.lyrics || '');
       sunoSay(sunoTrack, 'ok');
       audio.loadURL(`${SUNO_PROXY}suno/${info.id}.mp3`);
       $('track-select').value = '';
@@ -2357,6 +2358,61 @@ function signatureFor(key) {
   const f = WORLD_TRACKS[key];
   return f && trackList.includes('audio/' + f) ? 'audio/' + f : null;
 }
+// ── lyrics ── suno songs carry their words; they drift low across the
+// world, stanza-paced to the song's progress. Not syllable-karaoke (suno
+// keeps no timestamps) — a slow, pretty read-along. Tap the line to hide;
+// LYRICS: ON/OFF in the music tab brings it back.
+let lyrLines = [], lyrAt = -1;
+function setLyrics(raw) {
+  lyrLines = String(raw || '').split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !/^\[.*\]$/.test(l));
+  lyrAt = -1;
+  $('lyr-now').textContent = '';
+  $('lyr-next').textContent = '';
+  updateLyricLayer();
+}
+function lyricsWanted() {
+  return lyrLines.length > 0
+    && window.__sunoShare
+    && localStorage.getItem('fp_lyrics_off') !== '1'
+    && (audio.el.src || '').startsWith(SUNO_PROXY);
+}
+function updateLyricLayer() {
+  $('lyric-layer').classList.toggle('hidden', !lyricsWanted());
+}
+function lyrBtnPaint() {
+  $('lyr-btn').textContent = 'LYRICS: ' + (localStorage.getItem('fp_lyrics_off') === '1' ? 'OFF' : 'ON');
+}
+audio.el.addEventListener('timeupdate', () => {
+  if (!lyricsWanted()) { $('lyric-layer').classList.add('hidden'); return; }
+  $('lyric-layer').classList.remove('hidden');
+  if (!audio.el.duration) return;
+  const frac = Math.min(0.999, audio.el.currentTime / audio.el.duration);
+  const idx = Math.min(lyrLines.length - 1, Math.floor(frac * lyrLines.length));
+  if (idx === lyrAt) return;
+  lyrAt = idx;
+  const layer = $('lyric-layer');
+  layer.classList.add('turning');
+  setTimeout(() => {
+    $('lyr-now').textContent = lyrLines[idx];
+    $('lyr-next').textContent = lyrLines[idx + 1] || '';
+    layer.classList.remove('turning');
+  }, 220);
+});
+$('lyric-layer').addEventListener('click', () => {
+  localStorage.setItem('fp_lyrics_off', '1');
+  lyrBtnPaint();
+  updateLyricLayer();
+  flash('LYRICS TUCKED AWAY \u2014 BRING \u2019EM BACK IN THE MUSIC TAB', 2200);
+});
+$('lyr-btn').addEventListener('click', () => {
+  localStorage.setItem('fp_lyrics_off', localStorage.getItem('fp_lyrics_off') === '1' ? '0' : '1');
+  lyrBtnPaint();
+  updateLyricLayer();
+});
+lyrBtnPaint();
+
 // entering a world brings its song along — unless the artist's own song is
 // playing: PLAYING your music is free everywhere, so their track follows
 // them into every world untouched. The gate lives on SHARING, not playing.
@@ -3798,11 +3854,22 @@ if (params.get('dev') === '1') (function devPanel() {
     if (text) n.textContent = text;
     return n;
   };
-  const H = t => mk('div', 'color:#ff8f8f;letter-spacing:1px;margin-top:4px;', t);
-  const NOTE = t => mk('div', 'color:#7f79a8;line-height:1.4;', t);
+  // each zone gets its own colour + emoji anchor, so the eye can jump
+  // straight to the right block without reading
+  let curColor = '#ff8f8f';
+  const H = (t, c) => {
+    curColor = c || curColor;
+    const h = mk('div', 'color:' + curColor + ';letter-spacing:1.4px;margin-top:10px;font-weight:700;'
+      + 'padding:7px 9px;border-radius:9px;background:' + curColor + '1e;'
+      + 'border:1px solid ' + curColor + '4d;', t);
+    return h;
+  };
+  const NOTE = t => mk('div', 'color:#8d87b5;line-height:1.45;padding:0 2px;', t);
   const BTN = (label, fn) => {
-    const b = mk('button', 'padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);'
-      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10.5px "SF Mono",Menlo,monospace;text-align:left;', label);
+    const b = mk('button', 'padding:9px 10px;border-radius:10px;'
+      + 'border:1px solid rgba(255,255,255,0.14);border-left:3px solid ' + curColor + ';'
+      + 'background:linear-gradient(90deg,' + curColor + '14, rgba(255,255,255,0.05));'
+      + 'color:#eeeafc;cursor:pointer;font:10.5px "SF Mono",Menlo,monospace;text-align:left;', label);
     b.addEventListener('click', fn);
     return b;
   };
@@ -3830,7 +3897,7 @@ if (params.get('dev') === '1') (function devPanel() {
   body.appendChild(NOTE('only you see this (the ?dev=1 in the address turns it on)'));
 
   // ── the jokes: walk each pool in order, thumb down the misses ──
-  body.appendChild(H('REVIEW THE JOKES'));
+  body.appendChild(H('\ud83d\ude06 REVIEW THE JOKES', '#eece78'));
   body.appendChild(NOTE('pick a player type \u2014 jokes appear one by one, in order. \ud83d\udc4e saves a joke to your cut list.'));
   const sel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   body.appendChild(sel);
@@ -3894,7 +3961,7 @@ if (params.get('dev') === '1') (function devPanel() {
   body.appendChild(cutRow);
 
   // ── the cards ──
-  body.appendChild(H('TEST THE SHARE CARDS'));
+  body.appendChild(H('\ud83c\udfac TEST THE SHARE CARDS', '#7cc4ff'));
   body.appendChild(NOTE('opens each card filled with pretend data \u2014 nothing is posted anywhere.'));
   body.appendChild(BTN('\u25b6 player card (joke + clip)', async () => {
     if (!sig.lastRun) sig.endRun(runMeta('toy', { pointsGained: 230 }));
@@ -3914,7 +3981,7 @@ if (params.get('dev') === '1') (function devPanel() {
   }));
 
   // ── shortcuts ──
-  body.appendChild(H('SHORTCUTS'));
+  body.appendChild(H('\u26a1 SHORTCUTS', '#8affc1'));
   body.appendChild(BTN('\u23e9 skip to the end of this song', () => {
     if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
   }));
@@ -3927,7 +3994,7 @@ if (params.get('dev') === '1') (function devPanel() {
 
   // ── the notebook: anything she notices becomes a note that knows where
   // it happened; one button copies the whole session's feedback for claude ──
-  body.appendChild(H('NOTES FOR CLAUDE'));
+  body.appendChild(H('\ud83d\udcdd NOTES FOR CLAUDE', '#ff9de2'));
   body.appendChild(NOTE('type what you noticed \u2014 the note remembers the world, song & version by itself.'));
   const noteIn = mk('input', 'padding:8px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   noteIn.placeholder = 'e.g. the hoops feel too fast here';
