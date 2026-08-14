@@ -11,27 +11,27 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=385';
-import { createSurfer } from './surfer.js?v=385';
-import { createOrbit } from './orbit.js?v=385';
-import { createBloom } from './bloom.js?v=385';
-import { createTrail } from './trail.js?v=385';
-import { createSignal } from './signal.js?v=385';
-import { createRiver } from './river.js?v=385';
-import { createFunhouse } from './funhouse.js?v=385';
-import { createLavaLamp } from './lavalamp.js?v=385';
-import { createPlasma } from './plasma.js?v=385';
-import { createCherryLand } from './cherryland.js?v=385';
-import { createSlinky } from './slinky.js?v=385';
-import { createBlacktop } from './blacktop.js?v=385';
-import { createWaterslide } from './waterslide.js?v=385';
-import { createGarden } from './garden.js?v=385';
-import { createPaint } from './paint.js?v=385';
-import { createComets } from './comets.js?v=385';
+import { createTunnel } from './tunnel.js?v=386';
+import { createSurfer } from './surfer.js?v=386';
+import { createOrbit } from './orbit.js?v=386';
+import { createBloom } from './bloom.js?v=386';
+import { createTrail } from './trail.js?v=386';
+import { createSignal } from './signal.js?v=386';
+import { createRiver } from './river.js?v=386';
+import { createFunhouse } from './funhouse.js?v=386';
+import { createLavaLamp } from './lavalamp.js?v=386';
+import { createPlasma } from './plasma.js?v=386';
+import { createCherryLand } from './cherryland.js?v=386';
+import { createSlinky } from './slinky.js?v=386';
+import { createBlacktop } from './blacktop.js?v=386';
+import { createWaterslide } from './waterslide.js?v=386';
+import { createGarden } from './garden.js?v=386';
+import { createPaint } from './paint.js?v=386';
+import { createComets } from './comets.js?v=386';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe — clicks send shockwaves', label: 'TUNNEL', create: createTunnel },
-  surfer: { pulse: 0.9, goal: 'the waves ARE the song — steer into the sparks, tap to jump for the high ones. bass hits throw you higher, and mid-air catches pay double.', label: 'SURFER', create: createSurfer },
+  surfer: { pulse: 0.9, goal: 'steer into the sparks, tap to jump for the high ones, HOLD to surge — sparks are your fuel. the shimmering ones repaint the whole world.', label: 'SURFER', create: createSurfer },
   orbit:  { pulse: 1.0, rhythm: true, autoRound: true, mode: 'DODGE', unit: 'FLARES',
             rules: 'Your light circles the core. Steer in and out with the mouse or arrows. When the CENTER glows, swing wide; when the OUTER sky glows, tuck in close — the fire always tells you first. Dodge a flare and it’s a point; get caught and it costs you. Whoever rides out the most flares when the song ends wins.',
             goal: 'circle the core — dodge the flares', label: 'ORBIT',  create: createOrbit },

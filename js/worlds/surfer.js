@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=385';
-import { themePaint } from '../lib/themes.js?v=385';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=386';
+import { themePaint } from '../lib/themes.js?v=386';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -22,6 +22,9 @@ export function createSurfer() {
   // beat. Low ones you carve into; high ones demand a jump. Catch mid-air
   // and they pay double. A chain builds while you keep catching.
   let sparks = [], sparkTimer = 0, sparkChain = 0, sparkDry = 0, sparkN = 0;
+  // ── surge ── hold to open the throttle. Sparks are the fuel: a full tank
+  // surges harder, and it drains while you burn.
+  let surge = 0, sparkFuel = 0.5;
   let rowTimer = 0, scrollOff = 0;
   let waveR = -1;             // tap shockwave position in row units (-1 = off)
   const history = [];       // ring of Float32Array(COLS), newest first
@@ -121,8 +124,15 @@ export function createSurfer() {
       this._lastBass = audio.bass;
       const tp = this._tp || (this._tp = [0, 0, 0]);
 
+      // hold = surge; fuel decides how hard. Eases in and out like a throttle
+      const surgeTarget = (opts.holding && !attract) ? (0.45 + sparkFuel * 0.75) : 0;
+      surge += (surgeTarget - surge) * Math.min(1, dt * 5);
+      if (opts.holding) sparkFuel = Math.max(0, sparkFuel - dt * 0.15);
+      camera.fov = 76 + surge * 9;
+      camera.updateProjectionMatrix();
+
       // push a new spectrum row at a fixed cadence; terrain scrolls between rows
-      rowTimer += dt * (0.6 + audio.volume * 1.2); // music speeds the world up
+      rowTimer += dt * (0.6 + audio.volume * 1.2) * (1 + surge); // music (and the throttle) speed the world up
       while (rowTimer >= ROW_INTERVAL) {
         rowTimer -= ROW_INTERVAL;
         const row = history.pop();
@@ -146,7 +156,7 @@ export function createSurfer() {
       steer += (steerTarget - steer) * Math.min(1, dt * 3);
 
       // ── sparks: spawn on the beat, flow with the terrain, get caught ──
-      const flow = 77 * (0.6 + audio.volume * 1.2);
+      const flow = 77 * (0.6 + audio.volume * 1.2) * (1 + surge);
       sparkTimer -= dt;
       if (audio.beat && sparkTimer <= 0 && !attract) {
         sparkTimer = 0.38;
@@ -154,9 +164,10 @@ export function createSurfer() {
         if (sp) {
           sparkN++;
           sp.alive = true;
-          sp.high = (sparkN % 3) === 0;              // every third asks for air
+          sp.look = (sparkN % 7) === 0;              // the shimmering repainter
+          sp.high = !sp.look && (sparkN % 3) === 0;  // every third asks for air
           sp.x = (Math.random() * 2 - 1) * 55;
-          sp.y = sp.high ? 21 + Math.random() * 6 : 8 + Math.random() * 3;
+          sp.y = sp.look ? 14 + Math.random() * 8 : sp.high ? 21 + Math.random() * 6 : 8 + Math.random() * 3;
           sp.z = -235;
           sp.pop = 0;
           sp.m.visible = true;
@@ -174,10 +185,11 @@ export function createSurfer() {
         }
         sp.z += flow * dt;
         sp.m.position.set(sp.x, sp.y + Math.sin(time * 5 + sp.x) * 0.8, sp.z);
-        color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.65);
+        if (sp.look) color.setHSL((time * 0.5 + sp.x * 0.01) % 1, 1, 0.7);   // shimmer: it cycles the whole wheel
+        else color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.65);
         sp.m.material.color.copy(color);
         sp.m.material.opacity = 0.85;
-        sp.m.scale.setScalar(sp.high ? 11 : 9);
+        sp.m.scale.setScalar(sp.look ? 13 : sp.high ? 11 : 9);
         // the catch plane rides with the surfer
         if (sp.z > 30 && sp.z < 48) {
           const dx = Math.abs(sp.x - steer * 40);
@@ -187,8 +199,10 @@ export function createSurfer() {
             const midair = jumpY > 3;
             sparkChain++;
             sparkDry = 0;
-            if (opts.addScore) opts.addScore((sp.high ? 3 : 2) * (midair ? 2 : 1) + (sparkChain >= 5 ? 2 : 0));
-            if (opts.impact) opts.impact(midair ? 0.5 : 0.3);
+            sparkFuel = Math.min(1, sparkFuel + 0.22);   // every catch feeds the throttle
+            if (sp.look && !attract) document.dispatchEvent(new CustomEvent('fp-lookspark'));
+            if (opts.addScore) opts.addScore((sp.look ? 5 : sp.high ? 3 : 2) * (midair ? 2 : 1) + (sparkChain >= 5 ? 2 : 0));
+            if (opts.impact) opts.impact(sp.look ? 0.7 : midair ? 0.5 : 0.3);
             if (window.__setFigure && sparkChain >= 3) window.__setFigure('SPARKS \u00d7' + sparkChain + (midair ? ' \u00b7 MID-AIR' : ''), 0, 0);
             sp.pop = 1;
             continue;

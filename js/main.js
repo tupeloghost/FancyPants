@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=385';
-import { drawQR } from './lib/qr.js?v=385';
-import { WORLDS } from './worlds/registry.js?v=385';
-import { Net, PALETTE } from './net.js?v=385';
-import { Presence } from './lib/presence.js?v=385';
-import { Pulses } from './lib/pulse.js?v=385';
-import { BeatClock } from './lib/beatclock.js?v=385';
-import { BeatCue } from './lib/beatcue.js?v=385';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=385';
-import { Race, placeOf, standings } from './lib/race.js?v=385';
-import { Signals } from './lib/signals.js?v=385';
-import { pickShareLine, loadLines } from './lib/lines.js?v=385';
-import { RouteMap } from './lib/map.js?v=385';
-import * as sfx from './lib/sfx.js?v=385';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=385';
-import { glowTexture } from './lib/glow.js?v=385';
+import { AudioEngine } from './audio-engine.js?v=386';
+import { drawQR } from './lib/qr.js?v=386';
+import { WORLDS } from './worlds/registry.js?v=386';
+import { Net, PALETTE } from './net.js?v=386';
+import { Presence } from './lib/presence.js?v=386';
+import { Pulses } from './lib/pulse.js?v=386';
+import { BeatClock } from './lib/beatclock.js?v=386';
+import { BeatCue } from './lib/beatcue.js?v=386';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=386';
+import { Race, placeOf, standings } from './lib/race.js?v=386';
+import { Signals } from './lib/signals.js?v=386';
+import { pickShareLine, loadLines } from './lib/lines.js?v=386';
+import { RouteMap } from './lib/map.js?v=386';
+import * as sfx from './lib/sfx.js?v=386';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=386';
+import { glowTexture } from './lib/glow.js?v=386';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1573,6 +1573,14 @@ function pickPass(pool, who) {
 }
 
 let passT = 0;
+// a caught look-spark repaints the whole world with a random preset
+document.addEventListener('fp-lookspark', () => {
+  const cur = settings.colorMode;
+  const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur);
+  const [name, cfg] = pool[(Math.random() * pool.length) | 0];
+  applyPreset(cfg);
+  flash('\u2728 CAUGHT A LOOK \u2014 ' + name.toUpperCase(), 2200);
+});
 document.addEventListener('fp-swallowed', e => {
   const n = (e.detail && e.detail.n) || 2;
   flash('BLACK HOLE! \u2014 ' + n + ' RINGS GONE', 2200, true);
