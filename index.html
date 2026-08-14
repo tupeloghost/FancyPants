@@ -729,15 +729,16 @@
   }
 
   #results-actions {
-    display: none; gap: 10px; justify-content: center;
+    display: none; gap: 8px; justify-content: center; flex-wrap: wrap;
+    max-width: 100%;
     margin-top: 18px; padding-top: 16px;
     border-top: 1px solid hsla(var(--accent-h), 60%, 65%, 0.16);
   }
   #results-actions.show { display: flex; }
   .rbtn {
-    padding: 10px 22px; cursor: pointer;
-    font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
-    letter-spacing: 3px; color: hsl(var(--accent-h), 55%, 94%);
+    padding: 9px 14px; cursor: pointer; white-space: nowrap;
+    font: 400 12px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1.8px; color: hsl(var(--accent-h), 55%, 94%);
     background: linear-gradient(175deg, hsla(var(--accent-h),70%,60%,0.14), hsla(var(--accent-h),50%,30%,0.08));
     border: 1px solid hsla(var(--accent-h), 80%, 70%, 0.45);
     border-radius: 999px;
@@ -2324,7 +2325,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 378</div>
+      <div id="build-stamp">build 379</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2366,6 +2367,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=378"></script>
+<script type="module" src="js/main.js?v=379"></script>
 </body>
 </html>

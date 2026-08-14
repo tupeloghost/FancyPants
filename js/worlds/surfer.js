@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=378';
-import { themePaint } from '../lib/themes.js?v=378';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=379';
+import { themePaint } from '../lib/themes.js?v=379';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -57,7 +57,7 @@ export function createSurfer() {
         new THREE.CircleGeometry(26, 48),
         new THREE.MeshBasicMaterial({ toneMapped: false, fog: false })
       );
-      sun.position.set(0, 16, -230);
+      sun.position.set(0, 34, -230);
       group.add(sun);
       sunHalo = glowSprite(190);
       sunHalo.material.fog = false;
@@ -204,10 +204,11 @@ export function createSurfer() {
       sky.material.color.copy(color);
 
       // sun pulses with bass, hue-complementary so it pops against the grid
-      const sunScale = 1 + audio.bass * 0.35 * reactivity + audio.beatIntensity * 0.15;
+      const sunScale = 1 + audio.bass * 0.25 * reactivity + audio.beatIntensity * 0.1;
       sun.scale.setScalar(sunScale);
-      sunHalo.scale.setScalar(190 * sunScale * (1 + audio.beatIntensity * 0.25));
-      color.setHSL(((hue / 360) + 0.5) % 1, 0.9, 0.55 + audio.bass * 0.15);
+      sunHalo.scale.setScalar(210 * sunScale * (1 + audio.beatIntensity * 0.25));
+      // warm and saturated, never blown to white — the halo carries the glow
+      color.setHSL(((hue / 360) + 0.5) % 1, 0.95, 0.48 + audio.bass * 0.08);
       sun.material.color.copy(color);
       sunHalo.material.color.copy(color);
       sunHalo.material.opacity = 0.55 + audio.beatIntensity * 0.4;

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=378';
-import { drawQR } from './lib/qr.js?v=378';
-import { WORLDS } from './worlds/registry.js?v=378';
-import { Net, PALETTE } from './net.js?v=378';
-import { Presence } from './lib/presence.js?v=378';
-import { Pulses } from './lib/pulse.js?v=378';
-import { BeatClock } from './lib/beatclock.js?v=378';
-import { BeatCue } from './lib/beatcue.js?v=378';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=378';
-import { Race, placeOf, standings } from './lib/race.js?v=378';
-import { Signals } from './lib/signals.js?v=378';
-import { pickShareLine, loadLines } from './lib/lines.js?v=378';
-import { RouteMap } from './lib/map.js?v=378';
-import * as sfx from './lib/sfx.js?v=378';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=378';
-import { glowTexture } from './lib/glow.js?v=378';
+import { AudioEngine } from './audio-engine.js?v=379';
+import { drawQR } from './lib/qr.js?v=379';
+import { WORLDS } from './worlds/registry.js?v=379';
+import { Net, PALETTE } from './net.js?v=379';
+import { Presence } from './lib/presence.js?v=379';
+import { Pulses } from './lib/pulse.js?v=379';
+import { BeatClock } from './lib/beatclock.js?v=379';
+import { BeatCue } from './lib/beatcue.js?v=379';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=379';
+import { Race, placeOf, standings } from './lib/race.js?v=379';
+import { Signals } from './lib/signals.js?v=379';
+import { pickShareLine, loadLines } from './lib/lines.js?v=379';
+import { RouteMap } from './lib/map.js?v=379';
+import * as sfx from './lib/sfx.js?v=379';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=379';
+import { glowTexture } from './lib/glow.js?v=379';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3955,24 +3955,32 @@ if (params.get('dev') === '1') (function devPanel() {
 
   const headRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;gap:6px;');
   const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;flex:1;', 'TESTING PANEL \u2014 tap to hide');
-  const SIZES = { S: 210, M: 280, L: 380 };
-  let sizeKey = localStorage.getItem('fp_dev_sizekey') || 'M';
-  const sizeBtn = mk('div', 'display:flex;gap:3px;');
-  const applySize = () => { el.style.width = (SIZES[sizeKey] || 280) + 'px'; };
-  for (const k of ['S', 'M', 'L']) {
-    const b = mk('button', 'padding:4px 9px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);'
-      + 'background:rgba(255,255,255,0.06);color:#e8e4fa;cursor:pointer;font:10px "SF Mono",Menlo,monospace;', k);
-    const paint = () => { b.style.background = sizeKey === k ? 'rgba(255,143,143,0.35)' : 'rgba(255,255,255,0.06)'; };
-    b.addEventListener('click', () => {
-      sizeKey = k;
-      localStorage.setItem('fp_dev_sizekey', k);
-      applySize();
-      [...sizeBtn.children].forEach(x => x.dispatchEvent(new Event('paintme')));
-    });
-    b.addEventListener('paintme', paint);
-    paint();
-    sizeBtn.appendChild(b);
-  }
+  // drag the right edge to size the panel however you like (remembered)
+  const applySize = () => { el.style.width = (parseInt(localStorage.getItem('fp_dev_width') || '280', 10)) + 'px'; };
+  const sizeBtn = mk('div', 'color:#8d87b5;font-size:9.5px;', '\u21d4 drag edge');
+  const grip = mk('div', 'position:absolute;top:0;right:-4px;width:14px;height:100%;cursor:ew-resize;'
+    + 'touch-action:none;');
+  const gripBar = mk('div', 'position:absolute;top:50%;right:5px;transform:translateY(-50%);width:4px;height:56px;'
+    + 'border-radius:3px;background:rgba(255,143,143,0.5);');
+  grip.appendChild(gripBar);
+  el.style.position = 'fixed';
+  el.appendChild(grip);
+  let dragW = null;
+  grip.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    grip.setPointerCapture(e.pointerId);
+    dragW = { x: e.clientX, w: el.offsetWidth };
+  });
+  grip.addEventListener('pointermove', e => {
+    if (!dragW) return;
+    const w = Math.max(190, Math.min(560, dragW.w + (e.clientX - dragW.x)));
+    el.style.width = w + 'px';
+  });
+  grip.addEventListener('pointerup', () => {
+    if (!dragW) return;
+    localStorage.setItem('fp_dev_width', String(el.offsetWidth));
+    dragW = null;
+  });
   const body = mk('div', 'display:flex;flex-direction:column;gap:8px;');
   head.addEventListener('click', () => { body.style.display = body.style.display === 'none' ? '' : 'none'; });
   headRow.appendChild(head);
