@@ -1486,11 +1486,15 @@
   #shc-inner {
     width: min(340px, 92vw); max-height: 92vh; overflow-y: auto;
     display: flex; flex-direction: column; gap: 12px; text-align: center;
-    padding: 22px 20px 16px; border-radius: 18px;
-    border: 1px solid var(--accent-line);
-    background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.16), rgba(6,6,14,0.92));
+    padding: 22px 20px 16px; border-radius: 20px;
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35);
+    background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.2), rgba(6,6,14,0.94));
+    box-shadow: 0 0 60px hsla(var(--accent-h), 80%, 60%, 0.22), 0 24px 60px rgba(0,0,0,0.5);
   }
-  #shc-video { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  #shc-video {
+    width: 100%; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.55);
+  }
   #shc-cap {
     text-align: left; font: 13px/1.55 -apple-system, 'Helvetica Neue', sans-serif;
     color: rgba(238,236,250,0.94); background: rgba(255,255,255,0.05);
@@ -2215,7 +2219,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 368</div>
+      <div id="build-stamp">build 369</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2257,6 +2261,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=368"></script>
+<script type="module" src="js/main.js?v=369"></script>
 </body>
 </html>

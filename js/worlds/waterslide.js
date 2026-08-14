@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=368';
-import { themePaint } from '../lib/themes.js?v=368';
-import { TUNE } from '../lib/tune.js?v=368';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=369';
+import { themePaint } from '../lib/themes.js?v=369';
+import { TUNE } from '../lib/tune.js?v=369';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -237,10 +237,13 @@ export function createWaterslide() {
           // green means through; a BLACK HOLE means around — dark core,
           // white-violet rim, slowly turning. unmistakable at speed
           if (h.red) {
-            color.setHSL(0.72, 0.35, 0.72 + Math.sin(time * 2.2 + t) * 0.1);
+            // ember accretion rim, flickering like it's feeding
+            const flicker = Math.max(0, Math.sin(time * 13 + t * 7)) * 0.18 + audio.bass * 0.15;
+            color.setHSL(0.04, 0.95, 0.42 + flicker);
             h.core.visible = true;
-            h.mesh.rotation.z = time * 0.8;
-            h.gl.material.opacity = 0.12;
+            h.core.scale.setScalar(1 + Math.sin(time * 3 + t) * 0.08);
+            h.mesh.rotation.z = time * 1.6;
+            h.gl.material.opacity = 0.05;
           } else {
             color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + t) * 0.08 + audio.volume * 0.12);
             h.core.visible = false;
@@ -255,11 +258,25 @@ export function createWaterslide() {
             const through = gap < 0.42;
             const flooring = wThrottle > 0.6;
             if (through && h.red) {
-              // a red ring at speed hits harder and floods the run
+              // SWALLOWED: the void takes rings, speed, and a full second —
+              // and everyone gets to feel it
               race.drop(flooring ? 3 : 2);
               hoopBoost = 0;
               wStun = flooring ? 1.2 : 0.5; wThrottle *= 0.2;
               if (opts.impact) opts.impact(1.0);
+              document.dispatchEvent(new CustomEvent('fp-swallowed'));
+              // shockrings collapse INTO the hole — violet, staggered
+              let bi = 0;
+              for (const b of bursts) {
+                if (b.visible || bi >= 3) continue;
+                bi++;
+                b.visible = true;
+                b.userData.life = 1 + bi * 0.25;
+                b.userData.inward = true;
+                b.material.color.setHSL(0.75, 0.8, 0.6);
+                b.position.copy(h.mesh.position);
+                b.rotation.copy(h.mesh.rotation);
+              }
             } else if (h.red && flooring && gap < 0.8) {
               // the close call: shave past a red flat out and the near-miss pays
               race.collect(1);
@@ -315,11 +332,17 @@ export function createWaterslide() {
       for (const b of bursts) {
         if (!b.visible) continue;
         b.userData.life -= dt * 2;
-        if (b.userData.life <= 0) { b.visible = false; continue; }
-        const e = 1 - b.userData.life;
-        b.scale.setScalar(1 + e * 1.8);
-        b.material.opacity = b.userData.life * 0.8;
-        b.material.color.setHSL(0.12, 1, 0.6);
+        if (b.userData.life <= 0) { b.visible = false; b.userData.inward = false; continue; }
+        const e = 1 - Math.min(1, b.userData.life);
+        if (b.userData.inward) {
+          // swallowed: rings collapse INTO the void instead of blooming out
+          b.scale.setScalar(Math.max(0.05, 2.6 - e * 2.4));
+          b.material.opacity = Math.min(1, b.userData.life) * 0.9;
+        } else {
+          b.scale.setScalar(1 + e * 1.8);
+          b.material.opacity = b.userData.life * 0.8;
+          b.material.color.setHSL(0.12, 1, 0.6);
+        }
       }
 
       // half-pipe rings recycle ahead. ringZ is the ring's ABSOLUTE world z
