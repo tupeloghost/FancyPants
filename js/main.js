@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=351';
-import { drawQR } from './lib/qr.js?v=351';
-import { WORLDS } from './worlds/registry.js?v=351';
-import { Net, PALETTE } from './net.js?v=351';
-import { Presence } from './lib/presence.js?v=351';
-import { Pulses } from './lib/pulse.js?v=351';
-import { BeatClock } from './lib/beatclock.js?v=351';
-import { BeatCue } from './lib/beatcue.js?v=351';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=351';
-import { Race, placeOf, standings } from './lib/race.js?v=351';
-import { Signals } from './lib/signals.js?v=351';
-import { pickShareLine, loadLines } from './lib/lines.js?v=351';
-import { RouteMap } from './lib/map.js?v=351';
-import * as sfx from './lib/sfx.js?v=351';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=351';
-import { glowTexture } from './lib/glow.js?v=351';
+import { AudioEngine } from './audio-engine.js?v=352';
+import { drawQR } from './lib/qr.js?v=352';
+import { WORLDS } from './worlds/registry.js?v=352';
+import { Net, PALETTE } from './net.js?v=352';
+import { Presence } from './lib/presence.js?v=352';
+import { Pulses } from './lib/pulse.js?v=352';
+import { BeatClock } from './lib/beatclock.js?v=352';
+import { BeatCue } from './lib/beatcue.js?v=352';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=352';
+import { Race, placeOf, standings } from './lib/race.js?v=352';
+import { Signals } from './lib/signals.js?v=352';
+import { pickShareLine, loadLines } from './lib/lines.js?v=352';
+import { RouteMap } from './lib/map.js?v=352';
+import * as sfx from './lib/sfx.js?v=352';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=352';
+import { glowTexture } from './lib/glow.js?v=352';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3735,13 +3735,37 @@ if (params.get('dev') === '1') (function devPanel() {
   el.appendChild(body);
   body.appendChild(NOTE('only you see this (the ?dev=1 in the address turns it on)'));
 
-  // ── the jokes ──
-  body.appendChild(H('TEST THE JOKES'));
-  body.appendChild(NOTE('pick a player type, then keep tapping the button to read its jokes. works in tunnel, surfer & slide.'));
+  // ── the jokes: walk each pool in order, thumb down the misses ──
+  body.appendChild(H('REVIEW THE JOKES'));
+  body.appendChild(NOTE('pick a player type \u2014 jokes appear one by one, in order. \ud83d\udc4e saves a joke to your cut list.'));
   const sel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   body.appendChild(sel);
+  let pool = [], poolAt = -1, poolArch = '';
+  const jokeOut = mk('div', 'min-height:44px;color:#e8e4fa;line-height:1.45;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;cursor:pointer;');
+  const jokeMeta = mk('div', 'color:#7f79a8;');
+  const rarity = w => (w >= 8 ? 'common' : w >= 3 ? 'uncommon' : 'RARE');
+  function showJoke(step) {
+    if (!pool.length) { jokeOut.textContent = 'no lines for this type yet'; jokeMeta.textContent = ''; return; }
+    poolAt = (poolAt + step + pool.length) % pool.length;
+    const l = pool[poolAt];
+    jokeOut.textContent = l.t + '  ' + (l.c || '');
+    jokeMeta.textContent = 'joke ' + (poolAt + 1) + ' of ' + pool.length + ' \u00b7 ' + rarity(l.w || 1) + ' \u00b7 tap the joke for the next one';
+  }
+  async function loadPool() {
+    const spec = await loadLines(currentWorldKey);
+    const id = sel.value;
+    poolArch = id || 'fallback';
+    pool = [];
+    if (spec) {
+      const arch = id ? spec.archetypes.find(x => x.id === id) : null;
+      pool = arch ? arch.lines : (spec.fallback || []);
+    }
+    poolAt = -1;
+    showJoke(1);
+    window.__forceArchetype = id || null;
+  }
   async function fillArchetypes() {
-    sel.innerHTML = '<option value="">player type: whatever fits the run</option>';
+    sel.innerHTML = '<option value="">player type: (the everyday fallbacks)</option>';
     const spec = await loadLines(currentWorldKey);
     if (spec && spec.archetypes) for (const a2 of spec.archetypes) {
       const o = document.createElement('option');
@@ -3749,17 +3773,31 @@ if (params.get('dev') === '1') (function devPanel() {
       o.textContent = 'player type: ' + a2.id.replace(/-/g, ' ');
       sel.appendChild(o);
     }
+    loadPool();
   }
   fillArchetypes();
-  sel.addEventListener('change', () => { window.__forceArchetype = sel.value || null; });
-  const jokeOut = mk('div', 'min-height:30px;color:#e8e4fa;line-height:1.45;background:rgba(255,255,255,0.04);border-radius:8px;padding:7px;');
-  body.appendChild(BTN('\u25b6 show me a joke from this type', async () => {
-    const run = sig.lastRun || { worldId: currentWorldKey, runSeconds: 47, movementRatio: 0.1, songTitle: 'holographic', artistName: 'Tupelo Ghost' };
-    run.worldId = run.worldId || currentWorldKey;
-    const l = await pickShareLine(run, '', window.__forceArchetype);
-    jokeOut.textContent = l.text + '  ' + l.cta;
-  }));
+  sel.addEventListener('change', loadPool);
+  jokeOut.addEventListener('click', () => showJoke(1));
   body.appendChild(jokeOut);
+  body.appendChild(jokeMeta);
+  const cutRow = mk('div', 'display:flex;gap:6px;');
+  const cutBtn = BTN('\ud83d\udc4e cut it', () => {
+    if (poolAt < 0 || !pool.length) return;
+    const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
+    const entry = currentWorldKey + ' / ' + poolArch + ': ' + pool[poolAt].t;
+    if (!cuts.includes(entry)) cuts.push(entry);
+    localStorage.setItem('fp_cutlist', JSON.stringify(cuts));
+    copyBtn.textContent = '\ud83d\udccb copy cut list (' + cuts.length + ')';
+    showJoke(1);
+  });
+  const copyBtn = BTN('\ud83d\udccb copy cut list (' + JSON.parse(localStorage.getItem('fp_cutlist') || '[]').length + ')', () => {
+    const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
+    navigator.clipboard.writeText('cut these lines:\n' + cuts.join('\n'))
+      .then(() => flash('CUT LIST COPIED \u2014 PASTE IT TO CLAUDE', 2200)).catch(() => {});
+  });
+  cutBtn.style.flex = '1'; copyBtn.style.flex = '1.4';
+  cutRow.appendChild(cutBtn); cutRow.appendChild(copyBtn);
+  body.appendChild(cutRow);
 
   // ── the cards ──
   body.appendChild(H('TEST THE SHARE CARDS'));

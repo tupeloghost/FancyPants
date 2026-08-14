@@ -11,7 +11,7 @@
 // sends a wave across the finished work.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=351';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=352';
 
 const N = 44;                 // plate is N x N cells
 const CELL = 1.12;
