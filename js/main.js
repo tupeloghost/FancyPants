@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=371';
-import { drawQR } from './lib/qr.js?v=371';
-import { WORLDS } from './worlds/registry.js?v=371';
-import { Net, PALETTE } from './net.js?v=371';
-import { Presence } from './lib/presence.js?v=371';
-import { Pulses } from './lib/pulse.js?v=371';
-import { BeatClock } from './lib/beatclock.js?v=371';
-import { BeatCue } from './lib/beatcue.js?v=371';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=371';
-import { Race, placeOf, standings } from './lib/race.js?v=371';
-import { Signals } from './lib/signals.js?v=371';
-import { pickShareLine, loadLines } from './lib/lines.js?v=371';
-import { RouteMap } from './lib/map.js?v=371';
-import * as sfx from './lib/sfx.js?v=371';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=371';
-import { glowTexture } from './lib/glow.js?v=371';
+import { AudioEngine } from './audio-engine.js?v=372';
+import { drawQR } from './lib/qr.js?v=372';
+import { WORLDS } from './worlds/registry.js?v=372';
+import { Net, PALETTE } from './net.js?v=372';
+import { Presence } from './lib/presence.js?v=372';
+import { Pulses } from './lib/pulse.js?v=372';
+import { BeatClock } from './lib/beatclock.js?v=372';
+import { BeatCue } from './lib/beatcue.js?v=372';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=372';
+import { Race, placeOf, standings } from './lib/race.js?v=372';
+import { Signals } from './lib/signals.js?v=372';
+import { pickShareLine, loadLines } from './lib/lines.js?v=372';
+import { RouteMap } from './lib/map.js?v=372';
+import * as sfx from './lib/sfx.js?v=372';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=372';
+import { glowTexture } from './lib/glow.js?v=372';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3307,25 +3307,43 @@ $('mq-artist').addEventListener('input', marqueeApply);
 const AC_DIMS = { v: [540, 960], s: [720, 720], l: [960, 540] };
 let acFmt = 'v', acRec = null, acSaved = null, acStop = 0, acTick = 0, acDraw = false;
 function drawArtistType(x, W, H, fmt) {
-  const grad = x.createLinearGradient(0, H * 0.55, 0, H);
+  // cinematic grade: a soft vignette all around, deeper at the foot where
+  // the billing block sits
+  const vg = x.createRadialGradient(W / 2, H * 0.42, Math.min(W, H) * 0.35, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, 'rgba(3,3,10,0)');
+  vg.addColorStop(1, 'rgba(3,3,10,0.55)');
+  x.fillStyle = vg; x.fillRect(0, 0, W, H);
+  const grad = x.createLinearGradient(0, H * 0.5, 0, H);
   grad.addColorStop(0, 'rgba(3,3,10,0)');
-  grad.addColorStop(1, 'rgba(3,3,10,0.88)');
+  grad.addColorStop(1, 'rgba(3,3,10,0.92)');
   x.fillStyle = grad; x.fillRect(0, 0, W, H);
-  const title = ($('mq-title').value.trim() || sunoTrack.split(' \u2014 ')[0] || 'a song').toLowerCase();
-  const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u2014 ')[1] || '').toLowerCase();
+  const title = ($('mq-title').value.trim() || sunoTrack.split(' \u2014 ')[0] || 'a song');
+  const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u2014 ')[1] || '');
+  const hue = getComputedStyle(document.documentElement).getPropertyValue('--accent-h').trim() || '210';
   x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-  const base = fmt === 'l' ? H - 84 : H - 150;
-  x.fillStyle = 'rgba(250,248,255,0.97)';
-  x.font = '400 ' + Math.round(W * (fmt === 'l' ? 0.045 : 0.075)) + 'px Didot, "Bodoni 72", Georgia, serif';
-  x.fillText(title, W / 2, base, W - 60);
+  const base = fmt === 'l' ? H - 120 : H - 210;
+  // the billing block: eyebrow / TITLE / hairline / artist / invitation
+  x.font = '500 ' + Math.round(W * 0.016) + 'px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'hsla(' + hue + ', 60%, 80%, 0.75)';
+  x.fillText('A   P L A Y A B L E   W O R L D', W / 2, base - Math.round(W * (fmt === 'l' ? 0.062 : 0.098)));
+  x.fillStyle = 'rgba(252,250,255,0.98)';
+  x.save();
+  x.shadowColor = 'rgba(0,0,0,0.65)'; x.shadowBlur = Math.round(W * 0.02);
+  x.font = '400 ' + Math.round(W * (fmt === 'l' ? 0.052 : 0.082)) + 'px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText(title, W / 2, base, W - Math.round(W * 0.14));
+  x.restore();
+  // a fine accent hairline under the title
+  const lw = Math.min(x.measureText(title).width, W - Math.round(W * 0.2));
+  x.fillStyle = 'hsla(' + hue + ', 75%, 72%, 0.65)';
+  x.fillRect(W / 2 - lw / 2, base + Math.round(W * 0.018), lw, Math.max(1, Math.round(W * 0.0022)));
   if (artist) {
-    x.font = 'italic 400 ' + Math.round(W * (fmt === 'l' ? 0.024 : 0.036)) + 'px Didot, "Bodoni 72", Georgia, serif';
-    x.fillStyle = 'rgba(226,222,245,0.85)';
-    x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.042 : 0.062)), W - 80);
+    x.font = 'italic 400 ' + Math.round(W * (fmt === 'l' ? 0.026 : 0.04)) + 'px Didot, "Bodoni 72", Georgia, serif';
+    x.fillStyle = 'rgba(232,228,250,0.92)';
+    x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.056 : 0.082)), W - Math.round(W * 0.2));
   }
-  x.font = Math.round(W * 0.02) + 'px "SF Mono", Menlo, monospace';
-  x.fillStyle = 'rgba(205,200,230,0.7)';
-  x.fillText('now a playable world \u2014 free, in the browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.075 : 0.115)));
+  x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
+  x.fillStyle = 'rgba(210,206,235,0.72)';
+  x.fillText('play it free \u2014 in the browser, no app', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
