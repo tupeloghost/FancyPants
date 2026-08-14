@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=364';
-import { drawQR } from './lib/qr.js?v=364';
-import { WORLDS } from './worlds/registry.js?v=364';
-import { Net, PALETTE } from './net.js?v=364';
-import { Presence } from './lib/presence.js?v=364';
-import { Pulses } from './lib/pulse.js?v=364';
-import { BeatClock } from './lib/beatclock.js?v=364';
-import { BeatCue } from './lib/beatcue.js?v=364';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=364';
-import { Race, placeOf, standings } from './lib/race.js?v=364';
-import { Signals } from './lib/signals.js?v=364';
-import { pickShareLine, loadLines } from './lib/lines.js?v=364';
-import { RouteMap } from './lib/map.js?v=364';
-import * as sfx from './lib/sfx.js?v=364';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=364';
-import { glowTexture } from './lib/glow.js?v=364';
+import { AudioEngine } from './audio-engine.js?v=365';
+import { drawQR } from './lib/qr.js?v=365';
+import { WORLDS } from './worlds/registry.js?v=365';
+import { Net, PALETTE } from './net.js?v=365';
+import { Presence } from './lib/presence.js?v=365';
+import { Pulses } from './lib/pulse.js?v=365';
+import { BeatClock } from './lib/beatclock.js?v=365';
+import { BeatCue } from './lib/beatcue.js?v=365';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=365';
+import { Race, placeOf, standings } from './lib/race.js?v=365';
+import { Signals } from './lib/signals.js?v=365';
+import { pickShareLine, loadLines } from './lib/lines.js?v=365';
+import { RouteMap } from './lib/map.js?v=365';
+import * as sfx from './lib/sfx.js?v=365';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=365';
+import { glowTexture } from './lib/glow.js?v=365';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -913,16 +913,17 @@ function showToyResults() {
   clipBufStop(true);
   const gained = Math.max(0, score - toyRound.score0);
   recordRun(runMeta('toy', { pointsGained: gained }));
+  const quiet = WORLDS[currentWorldKey] && WORLDS[currentWorldKey].quietPoints;
   toyRound = null;
   toyLast = true;
   resultsShown = true;
   $('awards').innerHTML = '';
-  $('results-place').textContent = gained > 0 ? '+' + gained.toLocaleString() : 'THAT\u2019S THE SONG';
+  $('results-place').textContent = (!quiet && gained > 0) ? '+' + gained.toLocaleString() : 'THAT\u2019S THE SONG';
   const subs = ["the song's done \u2014 look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
   $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
   $('results-board').innerHTML = '';
   $('rs-acc').textContent = '\u2014'; $('rs-streak').textContent = '\u2014'; $('rs-notes').textContent = '\u2014';
-  $('rs-pts').textContent = gained > 0 ? '+' + gained : '';
+  $('rs-pts').textContent = (!quiet && gained > 0) ? '+' + gained : '';
   $('rb-again').textContent = 'PLAY AGAIN';
   $('rb-next').textContent = 'NEXT WORLD';
   delete $('rb-again').dataset.mode;
@@ -2717,10 +2718,9 @@ $('rb-share').addEventListener('click', () => {
 // ── the player share card ── pre-built from the run that just ended: the
 // archetype's verdict big, their own clip beneath it, the CTA extending the
 // joke, and the song + QR small below. NEW LINE rerolls the verdict.
-function openShareCard() {
+function shareCaption() {
   const l = window.__shareLine;
   const run = sig.lastRun || {};
-  // no verdict yet? the card still sells the ride — a promo line, not a shrug
   const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
   const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
   const PROMO = [
@@ -2731,12 +2731,12 @@ function openShareCard() {
     { t: 'no app, no login \u2014 i tapped a link and was INSIDE the song.', c: 'tap yours \u2192' },
   ];
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
-  $('shc-line').textContent = l ? l.text : pf.t;
-  $('shc-cta').textContent = l ? l.cta : pf.c;
-  $('shc-song').innerHTML = (run.songTitle ? 'song&nbsp;&nbsp;<b>' + run.songTitle.replace(/[<>&]/g, '') + '</b><br>' : '')
-    + (run.artistName ? 'artist&nbsp;&nbsp;<b>' + run.artistName.replace(/[<>&]/g, '') + '</b><br>' : '')
-    + (run.worldId && WORLDS[run.worldId] ? 'world&nbsp;&nbsp;<b>' + WORLDS[run.worldId].label + '</b>' : '');
-  drawQR($('shc-qr'), clipURL(), 2);
+  const line = l ? l.text : pf.t;
+  const cta = l ? l.cta : pf.c;
+  return line + ' ' + cta + '\n' + clipURL();
+}
+function openShareCard() {
+  $('shc-cap').textContent = shareCaption();
   const v = $('shc-video');
   if (v.dataset.url) { URL.revokeObjectURL(v.dataset.url); delete v.dataset.url; }
   if (clipSaved) {
@@ -2755,17 +2755,12 @@ $('shc-reroll').addEventListener('click', () => {
   const spin = tries => pickShareLine(sig.lastRun || {}, '', window.__forceArchetype).then(l => {
     if (l.text === cur && tries > 0) return spin(tries - 1);
     window.__shareLine = l;
-    $('shc-line').textContent = l.text;
-    $('shc-cta').textContent = l.cta;
+    $('shc-cap').textContent = shareCaption();
   });
   spin(4);
 });
 $('shc-share').addEventListener('click', () => {
-  const l = window.__shareLine;
-  const url = clipURL();
-  const run2 = sig.lastRun || {};
-  const caption = (l ? l.text + ' ' + l.cta
-    : 'come play ' + (run2.songTitle ? '\u2018' + run2.songTitle + '\u2019' : 'this') + ' \u2014 free, in the browser') + '\n' + url;
+  const caption = $('shc-cap').textContent || shareCaption();
   // the artist's song claims its home world when a link goes out from here
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();
@@ -3853,11 +3848,15 @@ if (params.get('dev') === '1') (function devPanel() {
       + (run ? ' \u00b7 last run: ' + run.kind : '') + ']';
   };
   const savedNotes = () => JSON.parse(localStorage.getItem('fp_notes') || '[]');
+  let pendingShot = null;
   const saveBtn = BTN('\u2795 save note (0)', () => {
     const t = noteIn.value.trim();
-    if (!t) { noteIn.focus(); return; }
+    if (!t && !pendingShot) { noteIn.focus(); return; }
     const notes = savedNotes();
-    notes.push(noteCtx() + ' ' + t + (devErrors.length ? '  \u26a0 errors: ' + devErrors.join(' | ') : ''));
+    const shotTag = pendingShot ? ' \ud83d\udcf8 ' + pendingShot : '';
+    pendingShot = null;
+    noteIn.placeholder = 'e.g. the hoops feel too fast here';
+    notes.push(noteCtx() + shotTag + (t ? ' ' + t : '') + (devErrors.length ? '  \u26a0 errors: ' + devErrors.join(' | ') : ''));
     localStorage.setItem('fp_notes', JSON.stringify(notes));
     noteIn.value = '';
     saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
@@ -3884,14 +3883,15 @@ if (params.get('dev') === '1') (function devPanel() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ img: b64, note: text }),
     }).then(r => r.json()).then(r => {
-      const notes = savedNotes();
-      notes.push(noteCtx() + ' \ud83d\udcf8 ' + r.url + (text ? ' \u2014 ' + text : ''));
-      localStorage.setItem('fp_notes', JSON.stringify(notes));
+      // the shot is up — now ask what it's ABOUT, and tie the two together
+      pendingShot = r.url;
       noteIn.value = '';
-      saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
-      flash('SHOT UPLOADED + NOTED \u2014 NOTHIN\u2019 TO DRAG', 2200);
+      noteIn.placeholder = 'what should this screenshot say?';
+      noteIn.focus();
+      flash('SHOT UPLOADED \u2014 NOW TELL IT WHAT IT MEANS', 2400);
     }).catch(() => flash('UPLOAD DIDN\u2019T TAKE \u2014 TRY AGAIN', 2000, true));
   }));
+  body.appendChild(NOTE('\ud83d\udcf8 captures the game world only \u2014 for menu/card problems use your phone\u2019s own screenshot.'));
   const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
     const notes = savedNotes();
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
