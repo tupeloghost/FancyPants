@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=375';
-import { drawQR } from './lib/qr.js?v=375';
-import { WORLDS } from './worlds/registry.js?v=375';
-import { Net, PALETTE } from './net.js?v=375';
-import { Presence } from './lib/presence.js?v=375';
-import { Pulses } from './lib/pulse.js?v=375';
-import { BeatClock } from './lib/beatclock.js?v=375';
-import { BeatCue } from './lib/beatcue.js?v=375';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=375';
-import { Race, placeOf, standings } from './lib/race.js?v=375';
-import { Signals } from './lib/signals.js?v=375';
-import { pickShareLine, loadLines } from './lib/lines.js?v=375';
-import { RouteMap } from './lib/map.js?v=375';
-import * as sfx from './lib/sfx.js?v=375';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=375';
-import { glowTexture } from './lib/glow.js?v=375';
+import { AudioEngine } from './audio-engine.js?v=376';
+import { drawQR } from './lib/qr.js?v=376';
+import { WORLDS } from './worlds/registry.js?v=376';
+import { Net, PALETTE } from './net.js?v=376';
+import { Presence } from './lib/presence.js?v=376';
+import { Pulses } from './lib/pulse.js?v=376';
+import { BeatClock } from './lib/beatclock.js?v=376';
+import { BeatCue } from './lib/beatcue.js?v=376';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=376';
+import { Race, placeOf, standings } from './lib/race.js?v=376';
+import { Signals } from './lib/signals.js?v=376';
+import { pickShareLine, loadLines } from './lib/lines.js?v=376';
+import { RouteMap } from './lib/map.js?v=376';
+import * as sfx from './lib/sfx.js?v=376';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=376';
+import { glowTexture } from './lib/glow.js?v=376';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3982,6 +3982,31 @@ if (params.get('dev') === '1') (function devPanel() {
 
   // ── shortcuts ──
   body.appendChild(H('\u26a1 SHORTCUTS', '#8affc1'));
+  // jump to ANY world without SEE ALL clicking
+  const wsel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
+  const wo0 = document.createElement('option');
+  wo0.value = ''; wo0.textContent = 'jump to any world\u2026';
+  wsel.appendChild(wo0);
+  for (const k of Object.keys(WORLDS)) {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605' : '');
+    wsel.appendChild(o);
+  }
+  wsel.addEventListener('change', () => {
+    if (!wsel.value) return;
+    $('world-select').value = wsel.value;
+    switchWorld(wsel.value);
+    wsel.value = '';
+  });
+  body.appendChild(wsel);
+  // scrub the song in quarters — audition lyrics, endings, drops
+  const seekRow = mk('div', 'display:flex;gap:5px;');
+  [['\u25b8 \u00bc', 0.25], ['\u25b8 \u00bd', 0.5], ['\u25b8 \u00be', 0.75], ['\u25b8 end', 0.985]].forEach(([lab, f]) => {
+    const b = BTN(lab, () => { if (audio.el.duration) { audio.el.currentTime = audio.el.duration * f; audio.play().catch(() => {}); } });
+    b.style.flex = '1'; b.style.textAlign = 'center';
+    seekRow.appendChild(b);
+  });
+  body.appendChild(seekRow);
   body.appendChild(BTN('\u23e9 skip to the end of this song', () => {
     if (audio.el.duration) { audio.el.currentTime = Math.max(0, audio.el.duration - 1.2); audio.play().catch(() => {}); }
   }));
@@ -4092,11 +4117,27 @@ if (params.get('dev') === '1') (function devPanel() {
       .then(() => flash('COPIED \u2014 PASTE THE WHOLE THING TO CLAUDE', 2400)).catch(() => {});
   });
   body.appendChild(copyAll);
+  const notesView = mk('div', 'display:none;color:#c9c3ec;line-height:1.5;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;');
+  body.appendChild(BTN('\ud83d\udc40 view saved notes', () => {
+    const notes = savedNotes();
+    notesView.textContent = notes.length ? notes.map((n, i) => (i + 1) + '. ' + n).join('\n\n') : 'nothing saved yet';
+    notesView.style.display = notesView.style.display === 'none' ? '' : 'none';
+  }));
+  body.appendChild(notesView);
   body.appendChild(BTN('\ud83d\uddd1 clear notes & cut list', () => {
     localStorage.removeItem('fp_notes'); localStorage.removeItem('fp_cutlist');
     saveBtn.textContent = '\u2795 save note (0)';
     flash('CLEARED \u2014 FRESH PAGE', 1600);
   }));
+
+  // ── status: the facts you keep asking the console for ──
+  const status = mk('div', 'color:#8d87b5;line-height:1.5;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
+  const ver = document.querySelector('script[src*="main.js"]')?.src.match(/v=(\d+)/)?.[1] || '?';
+  setInterval(() => {
+    status.textContent = 'v' + ver + ' \u00b7 this week\u2019s special: ' + WORLDS[WEEK_WORLD].label
+      + (devErrors.length ? '\n\u26a0 ' + devErrors[devErrors.length - 1] : '');
+  }, 2000);
+  body.appendChild(status);
 
   // ── what fired ──
   const fired = mk('div', 'color:#9d97c2;line-height:1.45;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
