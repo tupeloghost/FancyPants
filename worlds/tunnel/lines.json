@@ -16,29 +16,19 @@
       },
       "lines": [
         {
-          "t": "{room} people played. you watched. that’s a choice.",
-          "c": "make a different one →",
-          "w": 10
-        },
-        {
-          "t": "you scored {points} points in a full room. everybody noticed.",
-          "c": "score somethin’ →",
-          "w": 8
-        },
-        {
           "t": "a whole room playin’ and you stood real still. bless it.",
           "c": "jump in next round →",
           "w": 6
         },
         {
-          "t": "{points} points. the room carried you tonight.",
-          "c": "return the favor →",
-          "w": 3
+          "t": "every shockwave in there was somebody else’s. try one — they’re free.",
+          "c": "send one →",
+          "w": 8
         },
         {
-          "t": "you were technically there.",
-          "c": "be actually there →",
-          "w": 1
+          "t": "the room made a light show tonight. you had the best seat.",
+          "c": "join the show →",
+          "w": 3
         }
       ]
     },
@@ -65,11 +55,6 @@
           "t": "back again — this round’s on the house.",
           "c": "come on in →",
           "w": 4
-        },
-        {
-          "t": "you found your way back. they always do.",
-          "c": "make it a habit →",
-          "w": 1
         }
       ]
     },
@@ -88,24 +73,19 @@
           "w": 10
         },
         {
-          "t": "{move}% movement. the song did all the work.",
-          "c": "help it out →",
-          "w": 8
-        },
-        {
-          "t": "you held still for {seconds} seconds straight. impressive. wrong game though.",
-          "c": "play the right one →",
-          "w": 6
-        },
-        {
           "t": "the lights danced all around you and you just watched.",
           "c": "dance back →",
           "w": 3
         },
         {
-          "t": "{seconds} seconds of beautiful nothing.",
-          "c": "make somethin’ →",
-          "w": 1
+          "t": "you let the tunnel do the flyin’. fair — it’s good at it.",
+          "c": "take the wheel a second →",
+          "w": 8
+        },
+        {
+          "t": "still waters, glowin’ lights. one tap makes waves, just sayin’.",
+          "c": "make a wave →",
+          "w": 3
         }
       ]
     },
@@ -124,19 +104,14 @@
           "w": 10
         },
         {
-          "t": "{move}% motion, start to finish. the tunnel’s still spinnin’.",
-          "c": "spin it again →",
-          "w": 8
-        },
-        {
-          "t": "you didn’t play the song. you chased it.",
-          "c": "catch the next one →",
-          "w": 4
-        },
-        {
           "t": "not one still second in {seconds}. respect.",
           "c": "do it twice →",
           "w": 1
+        },
+        {
+          "t": "you rode every light in that tunnel.",
+          "c": "ride ’em again →",
+          "w": 6
         }
       ]
     },
@@ -150,55 +125,19 @@
       },
       "lines": [
         {
-          "t": "{points} points in one song. you found every last one.",
-          "c": "find more →",
-          "w": 10
-        },
-        {
-          "t": "you rang up {points} points like the song owed you money.",
-          "c": "collect again →",
-          "w": 8
-        },
-        {
           "t": "{points} points. the tunnel’s still lit from it.",
           "c": "light it again →",
           "w": 4
         },
         {
-          "t": "one song, {points} points. show-off.",
-          "c": "show off again →",
-          "w": 1
-        }
-      ]
-    },
-    {
-      "id": "porch-peeker",
-      "when": {
-        "bailedEarly": [
-          "==",
-          true
-        ]
-      },
-      "lines": [
-        {
-          "t": "{seconds} seconds. you barely got in the door.",
-          "c": "come all the way in →",
-          "w": 10
-        },
-        {
-          "t": "in and out in {seconds} seconds. it gets good after that, for the record.",
-          "c": "see the good part →",
+          "t": "{points} points of pure shockwave. the tunnel felt every one.",
+          "c": "rattle it again →",
           "w": 8
         },
         {
-          "t": "you gave it {seconds} seconds. the song was three minutes.",
-          "c": "give it the rest →",
-          "w": 6
-        },
-        {
-          "t": "{seconds} seconds is a peek, not a play.",
-          "c": "play it proper →",
-          "w": 1
+          "t": "you lit that tunnel up like a storm rollin’ through.",
+          "c": "roll through again →",
+          "w": 3
         }
       ]
     },
@@ -212,24 +151,19 @@
       },
       "lines": [
         {
-          "t": "{seconds} seconds in one tunnel. you live here now.",
-          "c": "pay rent in points →",
-          "w": 10
-        },
-        {
-          "t": "you stayed past the whole song and kept goin’.",
-          "c": "stay longer →",
-          "w": 8
-        },
-        {
           "t": "{seconds} seconds. the tunnel knows your name at this point.",
           "c": "learn its tricks →",
           "w": 4
         },
         {
-          "t": "most folks visit. you moved in.",
-          "c": "host a housewarmin’ →",
-          "w": 1
+          "t": "the song ended and you just kept floatin’. good call.",
+          "c": "float the next one too →",
+          "w": 8
+        },
+        {
+          "t": "{seconds} seconds of glow and countin’.",
+          "c": "count higher →",
+          "w": 3
         }
       ]
     },
@@ -243,19 +177,19 @@
       },
       "lines": [
         {
-          "t": "{tweaks} look changes in one song. it never looked wrong, sugar.",
-          "c": "let one look breathe →",
-          "w": 10
-        },
-        {
           "t": "you redecorated {tweaks} times mid-song. commitment issues, gorgeous results.",
-          "c": "commit to one →",
+          "c": "keep testin’ looks →",
           "w": 6
         },
         {
-          "t": "{tweaks} tweaks. somewhere in there was a perfect one.",
-          "c": "find it again →",
-          "w": 1
+          "t": "{tweaks} looks in one song and every one of ’em glowed.",
+          "c": "find another →",
+          "w": 8
+        },
+        {
+          "t": "the tunnel loves gettin’ dressed up. {tweaks} outfits tonight.",
+          "c": "keep the looks comin’ →",
+          "w": 3
         }
       ]
     },
@@ -269,19 +203,14 @@
       },
       "lines": [
         {
-          "t": "{worlds} worlds in one sittin’. pick a favorite, sugar.",
-          "c": "this one’s a contender →",
+          "t": "{worlds} worlds tonight. the tunnel’s a good place to land.",
+          "c": "land here a minute →",
           "w": 10
         },
         {
-          "t": "you’ve seen {worlds} worlds tonight and settled in none.",
-          "c": "settle somewhere →",
-          "w": 6
-        },
-        {
-          "t": "{worlds} worlds deep. the tour is not the show.",
-          "c": "stay for the show →",
-          "w": 1
+          "t": "{worlds} worlds and countin’. the lights in this one move different.",
+          "c": "watch ’em a while →",
+          "w": 3
         }
       ]
     },
@@ -299,19 +228,14 @@
       },
       "lines": [
         {
-          "t": "{minutes} minutes, just you and the lights. honestly? sounds nice.",
-          "c": "bring a friend anyway →",
+          "t": "{minutes} minutes of glow and drift. that’s self-care, sugar.",
+          "c": "keep glowin’ →",
           "w": 10
         },
         {
-          "t": "you’ve floated alone for {minutes} minutes. the tunnel’s good company.",
-          "c": "float another one →",
-          "w": 6
-        },
-        {
-          "t": "{minutes} minutes solo. some songs are better alone.",
-          "c": "prove it again →",
-          "w": 1
+          "t": "{minutes} minutes deep in the lights.",
+          "c": "sink deeper →",
+          "w": 3
         }
       ]
     },
@@ -329,11 +253,6 @@
       },
       "lines": [
         {
-          "t": "{minutes} minutes, one world. sixteen others are curious about you.",
-          "c": "break their hearts →",
-          "w": 10
-        },
-        {
           "t": "you found your world and stayed. can’t argue with that.",
           "c": "defend the title →",
           "w": 6
@@ -348,24 +267,19 @@
   ],
   "fallback": [
     {
-      "t": "one song down in the tunnel. it went how it went.",
-      "c": "make the next one count →",
+      "t": "you floated, the lights followed, the song carried the rest.",
+      "c": "go again →",
       "w": 10
     },
     {
-      "t": "you and ‘{song}’ spent three minutes together. no regrets.",
+      "t": "three minutes of glow, well spent.",
       "c": "spend three more →",
-      "w": 8
+      "w": 6
     },
     {
-      "t": "somewhere between sittin’ still and showin’ off.",
-      "c": "pick a side →",
-      "w": 4
-    },
-    {
-      "t": "a perfectly decent run. decent’s a start.",
-      "c": "beat decent →",
-      "w": 2
+      "t": "‘{song}’ looked good on you.",
+      "c": "wear another one →",
+      "w": 3
     }
   ]
 }
