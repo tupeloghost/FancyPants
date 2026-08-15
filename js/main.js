@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=390';
-import { drawQR } from './lib/qr.js?v=390';
-import { WORLDS } from './worlds/registry.js?v=390';
-import { Net, PALETTE } from './net.js?v=390';
-import { Presence } from './lib/presence.js?v=390';
-import { Pulses } from './lib/pulse.js?v=390';
-import { BeatClock } from './lib/beatclock.js?v=390';
-import { BeatCue } from './lib/beatcue.js?v=390';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=390';
-import { Race, placeOf, standings } from './lib/race.js?v=390';
-import { Signals } from './lib/signals.js?v=390';
-import { pickShareLine, loadLines } from './lib/lines.js?v=390';
-import { RouteMap } from './lib/map.js?v=390';
-import * as sfx from './lib/sfx.js?v=390';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=390';
-import { glowTexture } from './lib/glow.js?v=390';
+import { AudioEngine } from './audio-engine.js?v=391';
+import { drawQR } from './lib/qr.js?v=391';
+import { WORLDS } from './worlds/registry.js?v=391';
+import { Net, PALETTE } from './net.js?v=391';
+import { Presence } from './lib/presence.js?v=391';
+import { Pulses } from './lib/pulse.js?v=391';
+import { BeatClock } from './lib/beatclock.js?v=391';
+import { BeatCue } from './lib/beatcue.js?v=391';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=391';
+import { Race, placeOf, standings } from './lib/race.js?v=391';
+import { Signals } from './lib/signals.js?v=391';
+import { pickShareLine, loadLines } from './lib/lines.js?v=391';
+import { RouteMap } from './lib/map.js?v=391';
+import * as sfx from './lib/sfx.js?v=391';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=391';
+import { glowTexture } from './lib/glow.js?v=391';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1650,7 +1650,8 @@ function updateHUD() {
 let keySteer = 0, keySteerAt = 0, keyAim = 0;
 let throttleKey = false;   // space / up-arrow holds the gas
 function steeredRound() {
-  return race.active && (race.mode === 'DODGE' || race.mode === 'CATCH');
+  // any steerable world owns the arrows — mid-race or just cruising
+  return (world && world.setInput) || (race.active && (race.mode === 'DODGE' || race.mode === 'CATCH'));
 }
 window.addEventListener('keyup', e => {
   if (e.key === 'ArrowRight' && keySteer > 0) keySteer = 0;
@@ -1784,9 +1785,11 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     const dir = e.key === 'ArrowRight' ? 1 : -1;
     if (steeredRound()) { keySteer = dir; keySteerAt = performance.now(); }
-    else if (dir > 0) { if (!document.body.classList.contains('guest')) playAuto(true); }
-    else playPrev();
+    // arrows never skip songs — that surprise cost people their steering.
+    // next/prev live on the quick bar and , / . for keyboard folks
   }
+  if (e.key === '.' && !document.body.classList.contains('guest')) playAuto(true);
+  if (e.key === ',' && !document.body.classList.contains('guest')) playPrev();
 
   // 1–9, 0 jump straight to a world — a Stream Deck is just a keyboard
   if (e.key >= '0' && e.key <= '9') {
