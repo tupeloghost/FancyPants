@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=395';
-import { themePaint } from '../lib/themes.js?v=395';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=396';
+import { themePaint } from '../lib/themes.js?v=396';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -168,8 +168,10 @@ export function createSurfer() {
           sp.alive = true;
           sp.look = (sparkN % 7) === 0;              // the shimmering repainter
           sp.high = !sp.look && (sparkN % 3) === 0;  // every third asks for air
-          sp.x = (Math.random() * 2 - 1) * 55;
-          sp.y = sp.look ? 14 + Math.random() * 8 : sp.high ? 21 + Math.random() * 6 : 8 + Math.random() * 3;
+          // spawn only where a surfer can actually get: steering reaches
+          // x ±40, and a full-bass jump tops out around boardY 17
+          sp.x = (Math.random() * 2 - 1) * 36;
+          sp.y = sp.look ? 12 + Math.random() * 5 : sp.high ? 15 + Math.random() * 5 : 8 + Math.random() * 3;
           sp.z = -235;
           sp.pop = 0;
           sp.m.visible = true;
