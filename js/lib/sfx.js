@@ -77,32 +77,50 @@ export function pass(up = true) {
 }
 
 // a milestone or finish: a little fanfare climb
-// a swoosh: filtered noise sweeping upward — key-agnostic, so it compliments
-// any song instead of clashing with it. big=true doubles it into a whoosh-bloom
-// for the rainbow ceremony.
-export function swoosh(big = false) {
+// swooshes: filtered noise sweeps in three weights — 'soft' (a breath),
+// 'air' (a real whoosh), 'bloom' (the rainbow ceremony). Noise-based means
+// key-agnostic: they sit under any song like wind, never like a game.
+export function swoosh(kind = 'air') {
   if (muted || !ensure()) return;
   if (ctx.state === 'suspended') ctx.resume();
   const t = ctx.currentTime;
-  const dur = big ? 0.7 : 0.35;
-  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const P = kind === 'bloom'
+    ? { dur: 0.8, f0: 260, f1: 3800, q: 1.1, gain: 0.9, attack: 0.05 }
+    : kind === 'soft'
+      ? { dur: 0.28, f0: 700, f1: 1900, q: 2.2, gain: 0.28, attack: 0.03 }
+      : { dur: 0.42, f0: 450, f1: 2500, q: 1.6, gain: 0.5, attack: 0.04 };
+  const buf = ctx.createBuffer(1, ctx.sampleRate * P.dur, ctx.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 0.6);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const bp = ctx.createBiquadFilter();
   bp.type = 'bandpass';
-  bp.Q.value = 1.4;
-  bp.frequency.setValueAtTime(big ? 300 : 500, t);
-  bp.frequency.exponentialRampToValueAtTime(big ? 4200 : 2600, t + dur * 0.85);
+  bp.Q.value = P.q;
+  bp.frequency.setValueAtTime(P.f0, t);
+  bp.frequency.exponentialRampToValueAtTime(P.f1, t + P.dur * 0.85);
+  // a soft lowpass on top takes the hiss off — breath, not static
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 5200;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(big ? 1.1 : 0.55, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  src.connect(bp); bp.connect(g); g.connect(master);
-  src.start(t); src.stop(t + dur);
-  if (big) {
-    // the shimmer on top: three soft pentatonic sines stacked like wind chimes
-    [4, 6, 8].forEach((step, i) => setTimeout(() => blip(stepFreq(step), 0.5, 'sine', 0.3), 90 + i * 110));
+  g.gain.setValueAtTime(0.001, t);
+  g.gain.exponentialRampToValueAtTime(P.gain, t + P.attack);
+  g.gain.exponentialRampToValueAtTime(0.001, t + P.dur);
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(master);
+  src.start(t); src.stop(t + P.dur);
+  if (kind === 'bloom') {
+    // a warm chord swell instead of chimes — pads, not pinball
+    [0, 7, 12].forEach(semi => {
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 262 * Math.pow(2, semi / 12);
+      og.gain.setValueAtTime(0.001, t);
+      og.gain.exponentialRampToValueAtTime(0.16, t + 0.25);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+      o.connect(og); og.connect(master);
+      o.start(t + 0.1); o.stop(t + 1.2);
+    });
   }
 }
 
