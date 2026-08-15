@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=427';
-import { drawQR } from './lib/qr.js?v=427';
-import { WORLDS } from './worlds/registry.js?v=427';
-import { Net, PALETTE } from './net.js?v=427';
-import { Presence } from './lib/presence.js?v=427';
-import { Pulses } from './lib/pulse.js?v=427';
-import { BeatClock } from './lib/beatclock.js?v=427';
-import { BeatCue } from './lib/beatcue.js?v=427';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=427';
-import { Race, placeOf, standings } from './lib/race.js?v=427';
-import { Signals } from './lib/signals.js?v=427';
-import { pickShareLine, loadLines } from './lib/lines.js?v=427';
-import { RouteMap } from './lib/map.js?v=427';
-import * as sfx from './lib/sfx.js?v=427';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=427';
-import { glowTexture } from './lib/glow.js?v=427';
+import { AudioEngine } from './audio-engine.js?v=428';
+import { drawQR } from './lib/qr.js?v=428';
+import { WORLDS } from './worlds/registry.js?v=428';
+import { Net, PALETTE } from './net.js?v=428';
+import { Presence } from './lib/presence.js?v=428';
+import { Pulses } from './lib/pulse.js?v=428';
+import { BeatClock } from './lib/beatclock.js?v=428';
+import { BeatCue } from './lib/beatcue.js?v=428';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=428';
+import { Race, placeOf, standings } from './lib/race.js?v=428';
+import { Signals } from './lib/signals.js?v=428';
+import { pickShareLine, loadLines } from './lib/lines.js?v=428';
+import { RouteMap } from './lib/map.js?v=428';
+import * as sfx from './lib/sfx.js?v=428';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=428';
+import { glowTexture } from './lib/glow.js?v=428';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -766,6 +766,7 @@ function showResults(reason) {
   $('rs-pts').textContent = '+' + payout;
   celebrate(winHex, (solo ? race.finished : place === 1) || newBest);
 
+  $('results-stats').style.display = '';
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;
@@ -879,7 +880,9 @@ audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 // round is on: those END, with a tally and a share moment, like a real round
 audio.el.addEventListener('ended', () => {
   if (toyRound) { showToyResults(); return; }
-  if (!setList) playAuto(true);
+  // a free round's results card is a question, and questions wait — rolling
+  // to the next song here buried the card under the next round's intro
+  if (!setList && !resultsShown) playAuto(true);
 });
 
 // ── toy rounds ── in the wandering worlds (no race chart) every song IS a
@@ -913,12 +916,13 @@ function showToyResults() {
   toyLast = true;
   resultsShown = true;
   $('awards').innerHTML = '';
-  $('results-place').textContent = (!quiet && gained > 0) ? '+' + gained.toLocaleString() : 'THAT\u2019S THE SONG';
+  $('results-place').textContent = 'THAT\u2019S THE SONG';
   const subs = ["the song's done \u2014 look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
   $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
   $('results-board').innerHTML = '';
-  $('rs-acc').textContent = '\u2014'; $('rs-streak').textContent = '\u2014'; $('rs-notes').textContent = '\u2014';
-  $('rs-pts').textContent = (!quiet && gained > 0) ? '+' + gained : '';
+  // a toy world has no accuracy or streak \u2014 empty dashes just look broken
+  $('results-stats').style.display = 'none';
+  $('rs-pts').textContent = '';
   $('rb-again').textContent = 'PLAY AGAIN';
   $('rb-next').textContent = 'NEXT WORLD';
   delete $('rb-again').dataset.mode;
@@ -1702,7 +1706,8 @@ function updateHUD() {
   }
   hudLast = v;
   $('hud-value').textContent = v.toLocaleString();
-  $('hud-unit').textContent = race.unit || 'FT';
+  const u = race.unit || 'FT';
+  $('hud-unit').textContent = (v === 1 && /S$/.test(u)) ? u.slice(0, -1) : u;
   const bits = [];
   if (race.streak >= 3) bits.push(race.streak + ' streak');
   if (race.multiplier > 1) bits.push('\u00d7' + race.multiplier.toFixed(2).replace(/0$/, ''));
@@ -3446,6 +3451,7 @@ function showSetResults() {
     `<div class="rrow${name === net.local.name ? ' me' : ''}">`
     + `<i style="background:hsl(var(--accent-h),80%,70%)"></i>`
     + `<span>${name.replace(/[<>&]/g, '')}</span><b>${['1st', '2nd', '3rd'][k] || (k + 1) + 'th'}</b></div>`).join('');
+  $('results-stats').style.display = '';
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;
