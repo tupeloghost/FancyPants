@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=396';
-import { themePaint } from '../lib/themes.js?v=396';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=397';
+import { themePaint } from '../lib/themes.js?v=397';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -65,7 +65,12 @@ export function createSurfer() {
         const sp = glowSprite(7);
         sp.visible = false;
         group.add(sp);
-        sparks.push({ m: sp, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
+        // the pillar: a stretched glow beneath a high spark — reads as
+        // "this one's above you, jump" from any distance
+        const pil = glowSprite(7);
+        pil.visible = false;
+        group.add(pil);
+        sparks.push({ m: sp, pil, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
       }
       sparkTimer = 0; sparkChain = 0; sparkDry = 0; sparkN = 0;
 
@@ -160,8 +165,9 @@ export function createSurfer() {
       sparkTimer -= dt;
       // a steady stream regardless of the beat detector (some songs hide
       // their beats from it) — detected beats just make it rain harder
-      if (!attract && (sparkTimer <= 0 || (audio.beat && sparkTimer <= 0.7))) {
-        sparkTimer = audio.beat ? 0.45 : 1.05;
+      const aliveN = sparks.reduce((a, x) => a + (x.alive ? 1 : 0), 0);
+      if (!attract && aliveN < 3 && (sparkTimer <= 0 || (audio.beat && sparkTimer <= 0.8))) {
+        sparkTimer = audio.beat ? 0.9 : 1.6;
         const sp = sparks.find(x => !x.alive);
         if (sp) {
           sparkN++;
@@ -182,19 +188,41 @@ export function createSurfer() {
         if (sp.pop > 0) {
           // caught: a quick bloom, then gone
           sp.pop -= dt * 4;
-          sp.m.scale.setScalar(14 * (1.6 - sp.pop));
+          sp.m.scale.setScalar(18 * (1.8 - sp.pop));
           sp.m.material.opacity = sp.pop;
+          sp.pil.visible = false;
           if (sp.pop <= 0) { sp.alive = false; sp.m.visible = false; }
           continue;
         }
         sp.z += flow * dt;
-        sp.m.position.set(sp.x, sp.y + Math.sin(time * 5 + sp.x) * 0.8, sp.z);
-        if (sp.look) color.setHSL((time * 0.8 + sp.x * 0.01) % 1, 1, 0.72);   // rainbow: the rare repainter
-        else color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.68);
+        const bob = Math.sin(time * 5 + sp.x) * (0.6 + audio.volume * 1.4);
+        sp.m.position.set(sp.x, sp.y + bob, sp.z);
+        if (sp.look) {
+          // RAINBOW — the rare repainter, cycling hard and popping on beats
+          color.setHSL((time * 0.9 + sp.x * 0.01) % 1, 1, 0.6);
+          sp.m.scale.setScalar(18 * (1 + audio.beatIntensity * 0.6));
+        } else if (sp.high) {
+          // CYAN with a light pillar — jump bait, alive on the highs
+          color.setHSL(0.52, 1, 0.5 + audio.high * 0.25);
+          sp.m.scale.setScalar(14 * (1 + audio.high * 0.5));
+          sp.pil.visible = true;
+          sp.pil.material.color.copy(color);
+          sp.pil.material.opacity = 0.35 + audio.high * 0.3;
+          sp.pil.scale.set(3.5, sp.y * 1.9, 1);
+          sp.pil.position.set(sp.x, sp.y / 2, sp.z);
+        } else {
+          // GOLD — the everyday catch, breathing with the bass
+          color.setHSL(0.1, 1, 0.5 + audio.bass * 0.22);
+          sp.m.scale.setScalar(12 * (1 + audio.bass * 0.5));
+        }
         sp.m.material.color.copy(color);
         sp.m.material.opacity = 1;
-        const pulse = 1 + audio.beatIntensity * 0.35;
-        sp.m.scale.setScalar((sp.look ? 20 : sp.high ? 16 : 13) * pulse);
+        // a gentle magnet: ground sparks lean toward a surfer who's close —
+        // carving NEAR one is rewarded, pixel-perfect isn't required
+        if (!sp.high && sp.z > 0 && sp.z < 34) {
+          const bx = steer * 40;
+          if (Math.abs(sp.x - bx) < 20) sp.x += (bx - sp.x) * Math.min(1, dt * 2.2);
+        }
         // the catch plane rides with the surfer
         if (sp.z > 30 && sp.z < 48) {
           const dx = Math.abs(sp.x - steer * 40);
@@ -213,7 +241,7 @@ export function createSurfer() {
             continue;
           }
         }
-        if (sp.z > 60) { sp.alive = false; sp.m.visible = false; }
+        if (sp.z > 60) { sp.alive = false; sp.m.visible = false; sp.pil.visible = false; }
       }
       window.__sparkInfo = { alive: sparks.filter(x => x.alive).length, n: sparkN, timer: +sparkTimer.toFixed(2), beat: audio.beat, sample: sparks.find(x => x.alive) ? { z: Math.round(sparks.find(x => x.alive).z), y: Math.round(sparks.find(x => x.alive).y), vis: sparks.find(x => x.alive).m.visible } : null };
       // the chain fades if the catching stops
