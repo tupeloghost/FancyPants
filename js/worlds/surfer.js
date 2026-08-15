@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=411';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=411';
-import { themePaint } from '../lib/themes.js?v=411';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=412';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=412';
+import { themePaint } from '../lib/themes.js?v=412';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -113,7 +113,10 @@ export function createSurfer() {
       camera.updateProjectionMatrix();
     },
 
-    setInput(x) { steerTarget = x; },
+    setInput(x) {
+      if (Math.abs(x - steerTarget) > 0.04) this._lastActive = performance.now();
+      steerTarget = x;
+    },
 
     // ghost riders share the terrain, staggered ahead of the camera
     placeGhost(p, i, out) {
@@ -123,7 +126,7 @@ export function createSurfer() {
     onTap() {
       // the wave does the throwing: jump ON a bass swell and it launches you
       // half again higher — the music is the trampoline, and you can feel it
-      if (jumpY <= 0.01) { jumpVel = 17 + this._lastBass * 14; if (this._lastBass > 0.45) sfxSwoosh('soft'); }
+      if (jumpY <= 0.01) { this._lastActive = performance.now(); jumpVel = 17 + this._lastBass * 14; if (this._lastBass > 0.45) sfxSwoosh('soft'); }
       waveR = 0;                        // + a shockwave ridge racing to the horizon
     },
 
@@ -244,7 +247,12 @@ export function createSurfer() {
           const dx = Math.abs(sp.x - steer * 40);
           const boardY = 9 + jumpY;
           const dy = Math.abs(sp.y - boardY);
-          if (dx < 12 && dy < 8) {
+          // a rainbow only counts for someone actually PLAYING — hands on
+          // in the last few seconds, and a tighter window. Drifters keep
+          // their look.
+          const active = this._lastActive && performance.now() - this._lastActive < 3000;
+          if (sp.look && (!active || dx >= 9)) { /* passes by, unclaimed */ }
+          else if (dx < 12 && dy < 8) {
             const midair = jumpY > 3;
             sparkChain++;
             sparkDry = 0;
