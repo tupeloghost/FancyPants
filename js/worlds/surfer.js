@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=424';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=424';
-import { themePaint, richHSL } from '../lib/themes.js?v=424';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=425';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=425';
+import { themePaint, richHSL } from '../lib/themes.js?v=425';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -344,9 +344,18 @@ export function createSurfer() {
           const jitv = Math.abs(Math.sin(c * 12.9898 + r * 78.233));
           themePaint(colorMode, hue / 360, t, r * 0.08 + time * 0.15, time, t, jitv, tp);
           // altitude grades the hue a touch — peaks lean warm, valleys lean
-          // cool — and saturation runs rich instead of safe
-          const gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
-          richHSL(color, gradedHue, Math.min(1, tp[1] * 1.12 + 0.05), Math.min(0.72, lum * Math.min(1.5, tp[2])));
+          // cool — and saturation runs rich instead of safe. The acid-yellow
+          // band is off the menu: it slides to amber-coral like the sun does.
+          let gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
+          if (gradedHue > 0.1 && gradedHue < 0.19) {
+            gradedHue = 0.055 + (gradedHue - 0.1) * 0.4;   // amber, never acid
+          }
+          // the center road takes the sun's color — a lit path to the horizon
+          const roadMix = Math.exp(-Math.pow(c - COLS / 2, 2) / 16);
+          let dh = this._sunHue !== undefined ? this._sunHue - gradedHue : 0;
+          if (dh > 0.5) dh -= 1; else if (dh < -0.5) dh += 1;
+          gradedHue = ((gradedHue + dh * roadMix * 0.5) % 1 + 1) % 1;
+          richHSL(color, gradedHue, Math.min(1, tp[1] * 1.1 + 0.05), Math.min(0.66, lum * Math.min(1.45, tp[2])));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
@@ -370,8 +379,11 @@ export function createSurfer() {
       // slides to sunset coral instead, which always reads expensive
       let sunHue = ((hue / 360) + 0.5) % 1;
       if (sunHue > 0.06 && sunHue < 0.22) sunHue = 0.02;
+      this._sunHue = sunHue;
       color.setHSL(sunHue, 1, 0.52 + audio.bass * 0.1);
       sun.material.color.copy(color);
+      // fog breathes in the sky's deep tone — distance melts into atmosphere
+      if (scene.fog) scene.fog.color.setHSL(sunHue, 0.5, 0.035);
       sunHalo.material.color.copy(color);
       sunHalo.material.opacity = 0.38 + audio.beatIntensity * 0.3;
 
