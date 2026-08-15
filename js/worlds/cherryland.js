@@ -3,8 +3,8 @@
 // down with the highs. Tap a cherry to POP it — juice everywhere.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=397';
-import { themePaint } from '../lib/themes.js?v=397';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=398';
+import { themePaint } from '../lib/themes.js?v=398';
 
 const TREES = 30;
 const CHERRIES_PER = 6;

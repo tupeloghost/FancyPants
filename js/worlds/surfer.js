@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=397';
-import { themePaint } from '../lib/themes.js?v=397';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=398';
+import { themePaint } from '../lib/themes.js?v=398';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -202,8 +202,8 @@ export function createSurfer() {
           color.setHSL((time * 0.9 + sp.x * 0.01) % 1, 1, 0.6);
           sp.m.scale.setScalar(18 * (1 + audio.beatIntensity * 0.6));
         } else if (sp.high) {
-          // CYAN with a light pillar — jump bait, alive on the highs
-          color.setHSL(0.52, 1, 0.5 + audio.high * 0.25);
+          // the jump bait: complementary to the world's palette, pillar below
+          color.setHSL(((hue / 360) + 0.5) % 1, 1, 0.55 + audio.high * 0.2);
           sp.m.scale.setScalar(14 * (1 + audio.high * 0.5));
           sp.pil.visible = true;
           sp.pil.material.color.copy(color);
@@ -211,8 +211,9 @@ export function createSurfer() {
           sp.pil.scale.set(3.5, sp.y * 1.9, 1);
           sp.pil.position.set(sp.x, sp.y / 2, sp.z);
         } else {
-          // GOLD — the everyday catch, breathing with the bass
-          color.setHSL(0.1, 1, 0.5 + audio.bass * 0.22);
+          // the everyday catch: a warm shift of the world's own hue,
+          // breathing with the bass
+          color.setHSL(((hue / 360) + 0.09) % 1, 1, 0.55 + audio.bass * 0.2);
           sp.m.scale.setScalar(12 * (1 + audio.bass * 0.5));
         }
         sp.m.material.color.copy(color);
@@ -324,8 +325,8 @@ export function createSurfer() {
       const sunScale = 1 + audio.bass * 0.25 * reactivity + audio.beatIntensity * 0.1;
       sun.scale.setScalar(sunScale);
       sunHalo.scale.setScalar(210 * sunScale * (1 + audio.beatIntensity * 0.25));
-      // warm and saturated, never blown to white — the halo carries the glow
-      color.setHSL(((hue / 360) + 0.5) % 1, 0.95, 0.48 + audio.bass * 0.08);
+      // radiant but never blown to white — the halo carries the outer glow
+      color.setHSL(((hue / 360) + 0.5) % 1, 1, 0.53 + audio.bass * 0.12);
       sun.material.color.copy(color);
       sunHalo.material.color.copy(color);
       sunHalo.material.opacity = 0.55 + audio.beatIntensity * 0.4;
