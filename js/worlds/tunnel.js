@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=402';
+import { glowTexture } from '../lib/glow.js?v=403';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -492,6 +492,10 @@ export function createTunnel() {
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
           color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave);
+          // the absolute floor, AFTER every mode and pattern has had its say:
+          // no bead ever renders black — dark reads as broken, not musical
+          const peak = Math.max(color.r, color.g, color.b);
+          if (peak > 0 && peak < 0.16) color.multiplyScalar(0.16 / peak);
           wall.setColorAt(idx, color);
           idx++;
         }
