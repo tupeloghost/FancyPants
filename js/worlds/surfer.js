@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=406';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=406';
-import { themePaint } from '../lib/themes.js?v=406';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=407';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=407';
+import { themePaint } from '../lib/themes.js?v=407';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -78,14 +78,13 @@ export function createSurfer() {
       }
       sparkTimer = 0; sparkChain = 0; sparkDry = 0; sparkN = 0;
 
-      // synthwave sun on the horizon — blooms hard, pulses with bass
-      sun = new THREE.Mesh(
-        new THREE.CircleGeometry(26, 48),
-        new THREE.MeshBasicMaterial({ toneMapped: false, fog: false })
-      );
-      sun.position.set(0, 34, -230);
+      // synthwave sun — layered soft glows, no hard disc: geometry crossing
+      // a gradient just dims it gently instead of slicing a seam through it
+      sun = glowSprite(85);
+      sun.material.fog = false;
+      sun.position.set(0, 24, -230);
       group.add(sun);
-      sunHalo = glowSprite(190);
+      sunHalo = glowSprite(200);
       sunHalo.material.fog = false;
       sunHalo.position.copy(sun.position);
       sunHalo.position.z += 2;
@@ -345,7 +344,8 @@ export function createSurfer() {
 
       // sun pulses with bass, hue-complementary so it pops against the grid
       const sunScale = 1 + audio.bass * 0.25 * reactivity + audio.beatIntensity * 0.1;
-      sun.scale.setScalar(sunScale);
+      sun.scale.setScalar(85 * sunScale);
+      sun.material.opacity = 0.95;
       sunHalo.scale.setScalar(210 * sunScale * (1 + audio.beatIntensity * 0.25));
       // radiant but never blown to white — the halo carries the outer glow
       color.setHSL(((hue / 360) + 0.5) % 1, 1, 0.53 + audio.bass * 0.12);
