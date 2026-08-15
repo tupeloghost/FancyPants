@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=420';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=420';
-import { themePaint } from '../lib/themes.js?v=420';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=422';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=422';
+import { themePaint, richHSL } from '../lib/themes.js?v=422';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -231,7 +231,7 @@ export function createSurfer() {
         } else {
           // the everyday catch: a warm shift of the world's own hue,
           // breathing with the bass
-          color.setHSL(((hue / 360) + 0.09) % 1, 1, 0.55 + audio.bass * 0.2);
+          richHSL(color, ((hue / 360) + 0.09) % 1, 1, 0.55 + audio.bass * 0.2);
           sp.m.scale.setScalar(12 * (1 + audio.bass * 0.5));
         }
         sp.m.material.color.copy(color);
@@ -346,7 +346,7 @@ export function createSurfer() {
           // altitude grades the hue a touch — peaks lean warm, valleys lean
           // cool — and saturation runs rich instead of safe
           const gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
-          color.setHSL(gradedHue, Math.min(1, tp[1] * 1.12 + 0.05), Math.min(0.72, lum * Math.min(1.5, tp[2])));
+          richHSL(color, gradedHue, Math.min(1, tp[1] * 1.12 + 0.05), Math.min(0.72, lum * Math.min(1.5, tp[2])));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
@@ -363,7 +363,7 @@ export function createSurfer() {
       sun.scale.setScalar(62 * sunScale);
       sun.material.opacity = 0.85;
       sunHalo.scale.setScalar(150 * sunScale * (1 + audio.beatIntensity * 0.2));
-      color.setHSL(((hue / 360) + 0.5) % 1, 1, 0.5 + audio.bass * 0.1);
+      richHSL(color, ((hue / 360) + 0.5) % 1, 1, 0.5 + audio.bass * 0.1);
       sun.material.color.copy(color);
       sunHalo.material.color.copy(color);
       sunHalo.material.opacity = 0.38 + audio.beatIntensity * 0.3;

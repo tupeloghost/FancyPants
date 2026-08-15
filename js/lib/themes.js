@@ -30,6 +30,20 @@ function palLerp(pal, t, out) {
   out[2] = a[2] + (b[2] - a[2]) * f;
 }
 
+// yellow runs perceptually hotter than any other hue — at equal lightness it
+// blows out first and reads cheap. richHSL sets a color with the yellow band
+// pulled a touch amber and deepened, so golds look like gold, not acid.
+export function richHSL(color, h, s, l) {
+  const hh = ((h % 1) + 1) % 1;
+  if (hh > 0.1 && hh < 0.2) {
+    const mid = 1 - Math.abs(hh - 0.15) / 0.05;   // strongest at pure yellow
+    color.setHSL(hh - 0.012 * mid, s, l * (1 - 0.14 * mid));
+  } else {
+    color.setHSL(hh, s, l);
+  }
+  return color;
+}
+
 export function themePaint(mode, hue, u, v, time, level, jit, out) {
   out[1] = 1.0; out[2] = 1.0;
   switch (mode) {
