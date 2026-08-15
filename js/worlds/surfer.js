@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=422';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=422';
-import { themePaint, richHSL } from '../lib/themes.js?v=422';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=423';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=423';
+import { themePaint, richHSL } from '../lib/themes.js?v=423';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -353,7 +353,10 @@ export function createSurfer() {
       pos.needsUpdate = true;
       col.needsUpdate = true;
 
-      color.setHSL(((hue / 360) + 0.5) % 1, 0.85, 0.36 + audio.energy * 0.3);
+      // the sky is atmosphere, not paint: original softer tint, with the
+      // yellow band tamed so a complement landing on yellow reads as haze,
+      // never a mustard wall
+      richHSL(color, ((hue / 360) + 0.5) % 1, 0.6, 0.38 + audio.energy * 0.22);
       sky.material.color.copy(color);
 
       // sun pulses with bass, hue-complementary so it pops against the grid
