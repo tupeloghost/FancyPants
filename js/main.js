@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=417';
-import { drawQR } from './lib/qr.js?v=417';
-import { WORLDS } from './worlds/registry.js?v=417';
-import { Net, PALETTE } from './net.js?v=417';
-import { Presence } from './lib/presence.js?v=417';
-import { Pulses } from './lib/pulse.js?v=417';
-import { BeatClock } from './lib/beatclock.js?v=417';
-import { BeatCue } from './lib/beatcue.js?v=417';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=417';
-import { Race, placeOf, standings } from './lib/race.js?v=417';
-import { Signals } from './lib/signals.js?v=417';
-import { pickShareLine, loadLines } from './lib/lines.js?v=417';
-import { RouteMap } from './lib/map.js?v=417';
-import * as sfx from './lib/sfx.js?v=417';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=417';
-import { glowTexture } from './lib/glow.js?v=417';
+import { AudioEngine } from './audio-engine.js?v=418';
+import { drawQR } from './lib/qr.js?v=418';
+import { WORLDS } from './worlds/registry.js?v=418';
+import { Net, PALETTE } from './net.js?v=418';
+import { Presence } from './lib/presence.js?v=418';
+import { Pulses } from './lib/pulse.js?v=418';
+import { BeatClock } from './lib/beatclock.js?v=418';
+import { BeatCue } from './lib/beatcue.js?v=418';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=418';
+import { Race, placeOf, standings } from './lib/race.js?v=418';
+import { Signals } from './lib/signals.js?v=418';
+import { pickShareLine, loadLines } from './lib/lines.js?v=418';
+import { RouteMap } from './lib/map.js?v=418';
+import * as sfx from './lib/sfx.js?v=418';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=418';
+import { glowTexture } from './lib/glow.js?v=418';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1575,10 +1575,9 @@ function pickPass(pool, who) {
 
 let passT = 0;
 let peakFast = 0, peakSlow = 0, peakLevel = 0, peakUntil = 0, peakCooldown = 0;
-const gentleDefault = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let gentleLights = localStorage.getItem('fp_gentle') === null
-  ? gentleDefault
-  : localStorage.getItem('fp_gentle') === '1';
+// opt-in only: full visuals by default, the toggle is there for whoever
+// needs it (auto-enabling dimmed the show for folks with reduce-motion set)
+let gentleLights = localStorage.getItem('fp_gentle') === '1';
 document.body.classList.toggle('gentle', gentleLights);
 function setGentle(on) {
   gentleLights = on;
