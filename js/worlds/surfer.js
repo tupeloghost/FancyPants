@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=423';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=423';
-import { themePaint, richHSL } from '../lib/themes.js?v=423';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=424';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=424';
+import { themePaint, richHSL } from '../lib/themes.js?v=424';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -366,7 +366,11 @@ export function createSurfer() {
       sun.scale.setScalar(62 * sunScale);
       sun.material.opacity = 0.85;
       sunHalo.scale.setScalar(150 * sunScale * (1 + audio.beatIntensity * 0.2));
-      richHSL(color, ((hue / 360) + 0.5) % 1, 1, 0.5 + audio.bass * 0.1);
+      // the sun never goes yellow — when the complement lands there it
+      // slides to sunset coral instead, which always reads expensive
+      let sunHue = ((hue / 360) + 0.5) % 1;
+      if (sunHue > 0.06 && sunHue < 0.22) sunHue = 0.02;
+      color.setHSL(sunHue, 1, 0.52 + audio.bass * 0.1);
       sun.material.color.copy(color);
       sunHalo.material.color.copy(color);
       sunHalo.material.opacity = 0.38 + audio.beatIntensity * 0.3;
