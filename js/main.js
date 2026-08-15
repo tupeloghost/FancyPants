@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=412';
-import { drawQR } from './lib/qr.js?v=412';
-import { WORLDS } from './worlds/registry.js?v=412';
-import { Net, PALETTE } from './net.js?v=412';
-import { Presence } from './lib/presence.js?v=412';
-import { Pulses } from './lib/pulse.js?v=412';
-import { BeatClock } from './lib/beatclock.js?v=412';
-import { BeatCue } from './lib/beatcue.js?v=412';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=412';
-import { Race, placeOf, standings } from './lib/race.js?v=412';
-import { Signals } from './lib/signals.js?v=412';
-import { pickShareLine, loadLines } from './lib/lines.js?v=412';
-import { RouteMap } from './lib/map.js?v=412';
-import * as sfx from './lib/sfx.js?v=412';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=412';
-import { glowTexture } from './lib/glow.js?v=412';
+import { AudioEngine } from './audio-engine.js?v=416';
+import { drawQR } from './lib/qr.js?v=416';
+import { WORLDS } from './worlds/registry.js?v=416';
+import { Net, PALETTE } from './net.js?v=416';
+import { Presence } from './lib/presence.js?v=416';
+import { Pulses } from './lib/pulse.js?v=416';
+import { BeatClock } from './lib/beatclock.js?v=416';
+import { BeatCue } from './lib/beatcue.js?v=416';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=416';
+import { Race, placeOf, standings } from './lib/race.js?v=416';
+import { Signals } from './lib/signals.js?v=416';
+import { pickShareLine, loadLines } from './lib/lines.js?v=416';
+import { RouteMap } from './lib/map.js?v=416';
+import * as sfx from './lib/sfx.js?v=416';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=416';
+import { glowTexture } from './lib/glow.js?v=416';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1574,6 +1574,34 @@ function pickPass(pool, who) {
 }
 
 let passT = 0;
+let peakFast = 0, peakSlow = 0, peakLevel = 0, peakUntil = 0, peakCooldown = 0;
+function updatePeak(dt, a) {
+  const e = (a && a.volume) || 0;
+  peakFast += (e - peakFast) * Math.min(1, dt * 2.5);
+  peakSlow += (e - peakSlow) * Math.min(1, dt * 0.18);
+  const now = performance.now();
+  const active = now < peakUntil;
+  if (!active && now > peakCooldown && audio.currentTime > 12
+      && peakSlow > 0.05 && peakFast > peakSlow * 1.35 && peakFast > 0.22
+      && audio.playing) {
+    peakUntil = now + 9000;
+    peakCooldown = now + 32000;
+    document.body.classList.add('peak');
+    flash('\ud83c\udf86 THE DROP', 2000);
+    celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], false);
+    sfx.swoosh && sfx.swoosh('bloom');
+  }
+  if (active) {
+    peakLevel = Math.min(1, peakLevel + dt * 3);
+    // the surge ends early if the song cools right off
+    if (peakFast < peakSlow * 0.95) peakUntil = Math.min(peakUntil, now + 1200);
+  } else if (peakLevel > 0) {
+    peakLevel = Math.max(0, peakLevel - dt * 1.2);
+    if (peakLevel === 0) document.body.classList.remove('peak');
+  }
+  window.__peakLevel = peakLevel;
+  window.__peakDbg = { fast: +peakFast.toFixed(3), slow: +peakSlow.toFixed(3), ratio: peakSlow > 0 ? +(peakFast / peakSlow).toFixed(3) : 0 };
+}
 // a caught look-spark repaints the whole world — as a two-beat ceremony:
 // first the flash and the announcement, THEN the new look sweeps in, so
 // the change reads as earned, never random
@@ -2007,6 +2035,7 @@ window.__impact = impact;
 let score = 0;
 function addScore(n, x, y, force = false) {
   if (settings.attract) return; // watching earns nothing
+  if (n > 0 && peakLevel > 0.5) n *= 2;   // the drop pays double
   // the ladder remembers: points persist per name across visits
   clearTimeout(addScore._saveT);
   addScore._saveT = setTimeout(() => {
@@ -4560,6 +4589,7 @@ function frame(now) {
     shape: settings.shape,
     hdr: settings.hdr,
     stardust: settings.stardust,
+    peak: peakLevel,
     balls: settings.balls,
     holding: pointerHeld || throttleKey,
     time,
@@ -4649,6 +4679,7 @@ function frame(now) {
     }
   }
 
+  updatePeak(dt, a);
   updateHUD();
   checkBest();
 

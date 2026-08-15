@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=412';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=412';
-import { themePaint } from '../lib/themes.js?v=412';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=416';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=416';
+import { themePaint } from '../lib/themes.js?v=416';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -167,13 +167,14 @@ export function createSurfer() {
       steer += (steerTarget - steer) * Math.min(1, dt * 3);
 
       // ── sparks: spawn on the beat, flow with the terrain, get caught ──
-      const flow = 77 * (0.6 + audio.volume * 1.2) * (1 + surge * 1.6);
+      const flow = 77 * (0.6 + audio.volume * 1.2) * (1 + surge * 1.6) * (1 + (opts.peak || 0) * 0.25);
       sparkTimer -= dt;
       // a steady stream regardless of the beat detector (some songs hide
       // their beats from it) — detected beats just make it rain harder
+      const pk = opts.peak || 0;
       const aliveN = sparks.reduce((a, x) => a + (x.alive ? 1 : 0), 0);
-      if (!attract && aliveN < 3 && (sparkTimer <= 0 || (audio.beat && sparkTimer <= 0.8))) {
-        sparkTimer = audio.beat ? 0.9 : 1.6;
+      if (!attract && aliveN < (pk > 0.5 ? 6 : 3) && (sparkTimer <= 0 || (audio.beat && sparkTimer <= 0.8))) {
+        sparkTimer = (audio.beat ? 0.9 : 1.6) * (pk > 0.5 ? 0.45 : 1);
         const sp = sparks.find(x => !x.alive);
         if (sp) {
           sparkN++;
