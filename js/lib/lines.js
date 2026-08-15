@@ -53,6 +53,12 @@ function weightedPick(pool) {
 // numbers folded into the copy — real details, per the house style
 function fill(text, run) {
   const subs = {
+    // a world's own tallies are placeholders too — {sparks}, {chain}, ...
+    sparks: run.sparksCaught ?? 0,
+    chain: run.bestChain ?? 0,
+    midairs: run.midairCatches ?? 0,
+    rainbows: run.rainbowSparks ?? 0,
+    jumps: run.jumps ?? 0,
     seconds: run.runSeconds ?? 0,
     minutes: Math.max(1, Math.round((run.sessionSeconds ?? 0) / 60)),
     move: Math.round((run.movementRatio ?? 0) * 100),
@@ -70,6 +76,27 @@ function fill(text, run) {
   return text.replace(/\{(\w+)\}/g, (m, k) => (k in subs ? String(subs[k]) : m));
 }
 
+// Which placeholders are REAL for this run. A world that keeps no distance
+// has no {feet}, and a line that asks for one would print "0 feet" — the
+// card confidently reporting a stat the world never tracked. Those lines are
+// removed from the running instead, so a pool can never lie about a world.
+const NEEDS = {
+  sparks: 'sparksCaught', chain: 'bestChain', midairs: 'midairCatches',
+  rainbows: 'rainbowSparks', jumps: 'jumps', seconds: 'runSeconds',
+  minutes: 'sessionSeconds', move: 'movementRatio', tweaks: 'tweakCount',
+  worlds: 'worldsVisited', songs: 'songsPlayed', feet: 'feet',
+  pct: 'accuracy', streak: 'bestStreak', points: 'pointsGained', room: 'roomSize',
+};
+function truthful(line, run) {
+  const keys = String(line.t + ' ' + (line.c || '')).match(/\{(\w+)\}/g) || [];
+  return keys.every(k => {
+    const field = NEEDS[k.slice(1, -1)];
+    if (!field) return true;                       // {song}/{artist} always resolve
+    const v = run[field];
+    return v !== undefined && v !== null;
+  });
+}
+
 // the one call the share card makes. force = archetype id override (dev).
 export async function pickShareLine(run, version = '', force = null) {
   const spec = run && run.worldId ? await loadLines(run.worldId, version) : null;
@@ -82,7 +109,11 @@ export async function pickShareLine(run, version = '', force = null) {
   const pool = (arch && arch.lines && arch.lines.length ? arch.lines : null)
     || (spec && spec.fallback && spec.fallback.length ? spec.fallback : null)
     || BUILTIN_FALLBACK;
-  const line = weightedPick(pool);
+  // never promise a number this world doesn't keep
+  const honest = pool.filter(l => truthful(l, run || {}));
+  const line = weightedPick(honest.length ? honest
+    : (BUILTIN_FALLBACK.filter(l => truthful(l, run || {})).length
+        ? BUILTIN_FALLBACK.filter(l => truthful(l, run || {})) : BUILTIN_FALLBACK));
   return {
     archetype: arch ? arch.id : 'fallback',
     text: fill(line.t, run || {}),

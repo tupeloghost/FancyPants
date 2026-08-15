@@ -1,254 +1,99 @@
 {
   "world": "surfer",
-  "note": "surfer: tap to jump, hang time pays, feet = distance, streak = chained ramps, pct = accuracy. register: real number + plain relatable observation + a dare.",
+  "note": "surfer is a TOY world — no feet, no accuracy, no note streak. It keeps its own tallies: sparksCaught, bestChain, midairCatches, rainbowSparks, jumps. Never reference race stats here. Register: real number + plain relatable observation + a dare.",
   "archetypes": [
     {
-      "id": "cannonball",
-      "when": {
-        "movementRatio": [
-          ">=",
-          0.9
-        ],
-        "accuracy": [
-          "<=",
-          0.25
-        ]
-      },
+      "id": "spark-hoarder",
+      "when": { "sparksCaught": [">=", 40] },
       "lines": [
-        {
-          "t": "you moved {move}% of the song and hit {pct}% of the ramps. all heart, no aim.",
-          "c": "aim next time →",
-          "w": 10
-        },
-        {
-          "t": "maximum effort, {pct}% accuracy. the river loved watchin’.",
-          "c": "give it a show AND a score →",
-          "w": 6
-        },
-        {
-          "t": "you fought the river the whole song. it won, barely.",
-          "c": "rematch →",
-          "w": 4
-        },
-        {
-          "t": "everywhere but the ramps. that takes talent, honestly.",
-          "c": "waste less talent →",
-          "w": 1
-        }
+        { "t": "{sparks} sparks in one song. you cleaned the place out.", "c": "leave some for the rest of us →", "w": 10 },
+        { "t": "{sparks} caught. the river ran out before you did.", "c": "go again →", "w": 6 },
+        { "t": "you took {sparks} sparks off that horizon.", "c": "take more →", "w": 3 }
       ]
     },
     {
-      "id": "big-air",
-      "when": {
-        "bestStreak": [
-          ">=",
-          12
-        ]
-      },
+      "id": "chain-gang",
+      "when": { "bestChain": [">=", 8] },
       "lines": [
-        {
-          "t": "{streak} ramps in a row without missin’. you basically flew.",
-          "c": "fly further →",
-          "w": 10
-        },
-        {
-          "t": "a {streak}-ramp streak. the river’s still talkin’ about it.",
-          "c": "give it more to talk about →",
-          "w": 8
-        },
-        {
-          "t": "{streak} straight. at some point that’s not luck.",
-          "c": "prove it’s not →",
-          "w": 4
-        },
-        {
-          "t": "you spent half that song in the air.",
-          "c": "stay up longer →",
-          "w": 1
-        }
+        { "t": "{chain} sparks in a row without a miss. that's a rhythm.", "c": "stretch it →", "w": 10 },
+        { "t": "{chain} sparks chained clean. you found the groove and stayed in it.", "c": "find a longer one →", "w": 6 },
+        { "t": "{chain} straight. at some point that's not luck.", "c": "prove it twice →", "w": 3 }
       ]
     },
     {
-      "id": "hot-rod",
-      "when": {
-        "feet": [
-          ">=",
-          1200
-        ]
-      },
+      "id": "air-mail",
+      "when": { "midairCatches": [">=", 5] },
       "lines": [
-        {
-          "t": "{feet} feet in one song. the river couldn’t keep up.",
-          "c": "outrun it again →",
-          "w": 10
-        },
-        {
-          "t": "{feet} feet. that’s not surfin’, that’s leavin’.",
-          "c": "leave faster →",
-          "w": 6
-        },
-        {
-          "t": "you covered {feet} feet like you were late for somethin’.",
-          "c": "be late again →",
-          "w": 1
-        }
+        { "t": "{midairs} sparks caught with both feet off the board.", "c": "stay up there →", "w": 10 },
+        { "t": "you did {midairs} of your best catches in the air.", "c": "more air →", "w": 6 },
+        { "t": "{midairs} midair grabs. gravity took it personally.", "c": "insult it again →", "w": 3 }
       ]
     },
     {
-      "id": "metronome",
-      "when": {
-        "accuracy": [
-          ">=",
-          0.85
-        ]
-      },
+      "id": "lucky-one",
+      "when": { "rainbowSparks": [">=", 2] },
       "lines": [
-        {
-          "t": "{pct}% on the beat. on water.",
-          "c": "stay perfect →",
-          "w": 10
-        },
-        {
-          "t": "{pct}% accuracy. the song thought you wrote it.",
-          "c": "write the next one →",
-          "w": 6
-        },
-        {
-          "t": "you missed almost nothin’. {pct}%.",
-          "c": "miss nothin’ →",
-          "w": 1
-        }
+        { "t": "you caught {rainbows} shimmering sparks. the world changed clothes for you every time.", "c": "find another →", "w": 10 },
+        { "t": "{rainbows} rainbow sparks in one song. those are rare, sugar.", "c": "get greedy →", "w": 6 }
       ]
     },
     {
-      "id": "iron-liver",
-      "when": {
-        "finished": [
-          "==",
-          true
-        ]
-      },
+      "id": "first-taste",
+      "when": { "rainbowSparks": [">=", 1] },
       "lines": [
-        {
-          "t": "you rode the whole song and never bailed. rare.",
-          "c": "make it a habit →",
-          "w": 10
-        },
-        {
-          "t": "start to finish, still standin’.",
-          "c": "run it back →",
-          "w": 6
-        },
-        {
-          "t": "the whole song, top to bottom. most folks don’t.",
-          "c": "do it again →",
-          "w": 1
-        }
+        { "t": "you caught a shimmering one and the whole world repainted itself.", "c": "do it again →", "w": 10 },
+        { "t": "one rainbow spark, one brand-new world. that's the trade.", "c": "trade again →", "w": 6 },
+        { "t": "the world's wearin' that new look because of you.", "c": "pick another →", "w": 3 }
+      ]
+    },
+    {
+      "id": "jackrabbit",
+      "when": { "jumps": [">=", 25] },
+      "lines": [
+        { "t": "{jumps} jumps in one song. the board's askin' for a rest.", "c": "no rest →", "w": 10 },
+        { "t": "you spent that whole song leavin' the ground.", "c": "leave it again →", "w": 6 }
+      ]
+    },
+    {
+      "id": "sparks-flying",
+      "when": { "sparksCaught": [">=", 12] },
+      "lines": [
+        { "t": "{sparks} sparks. you're gettin' the hang of this.", "c": "get better →", "w": 10 },
+        { "t": "{sparks} caught, best run of {chain} in a row.", "c": "beat your chain →", "w": 8 },
+        { "t": "a decent haul. the high ones are worth more, just sayin'.", "c": "jump for one →", "w": 4 }
       ]
     },
     {
       "id": "driftwood",
-      "when": {
-        "movementRatio": [
-          "<=",
-          0.2
-        ]
-      },
+      "when": { "movementRatio": ["<=", 0.2] },
       "lines": [
-        {
-          "t": "you moved {move}% of the song. on a river.",
-          "c": "paddle somethin’ →",
-          "w": 10
-        },
-        {
-          "t": "the current did all the work and you let it.",
-          "c": "earn the ride →",
-          "w": 8
-        },
-        {
-          "t": "{move}% movement. driftwood does more, sugar.",
-          "c": "out-swim a log →",
-          "w": 4
-        },
-        {
-          "t": "the river carried you {seconds} seconds like a sleepin’ baby.",
-          "c": "wake up →",
-          "w": 1
-        }
+        { "t": "you moved {move}% of the song. the sparks came right to you and you let 'em pass.", "c": "steer into one →", "w": 10 },
+        { "t": "the current did all the work and you let it.", "c": "earn the ride →", "w": 8 },
+        { "t": "{move}% movement. driftwood does more, sugar.", "c": "out-swim a log →", "w": 4 }
       ]
     },
     {
       "id": "toe-dipper",
-      "when": {
-        "bailedEarly": [
-          "==",
-          true
-        ]
-      },
+      "when": { "bailedEarly": ["==", true] },
       "lines": [
-        {
-          "t": "{seconds} seconds on the water. you checked the temperature and left.",
-          "c": "get in the river →",
-          "w": 10
-        },
-        {
-          "t": "{seconds} seconds. the first ramp was right there.",
-          "c": "hit one ramp →",
-          "w": 6
-        },
-        {
-          "t": "that wasn’t a ride, that was a rinse.",
-          "c": "take the ride →",
-          "w": 1
-        }
+        { "t": "{seconds} seconds on the water. you checked the temperature and left.", "c": "get in the river →", "w": 10 },
+        { "t": "{seconds} seconds. the sparks were just gettin' started.", "c": "stay for the good part →", "w": 6 },
+        { "t": "that wasn't a ride, that was a rinse.", "c": "take the ride →", "w": 3 }
       ]
     },
     {
-      "id": "glass-ankles",
-      "when": {
-        "accuracy": [
-          "<=",
-          0.3
-        ],
-        "runSeconds": [
-          ">=",
-          60
-        ]
-      },
+      "id": "window-shopper",
+      "when": { "sparksCaught": ["<=", 2] },
       "lines": [
-        {
-          "t": "{pct}% on the ramps but you never quit. that counts.",
-          "c": "make it count more →",
-          "w": 10
-        },
-        {
-          "t": "you stayed the whole song at {pct}% accuracy. stubborn. good.",
-          "c": "stay stubborn →",
-          "w": 6
-        },
-        {
-          "t": "the ramps kept dodgin’ you. rude of them.",
-          "c": "dodge back →",
-          "w": 1
-        }
+        { "t": "the sparks were right there the whole time. steer into 'em — that's the whole game.", "c": "catch one →", "w": 10 },
+        { "t": "a whole song and the sparks went home hungry.", "c": "feed one →", "w": 6 },
+        { "t": "pretty ride. now try touchin' somethin'.", "c": "touch somethin' →", "w": 3 }
       ]
     }
   ],
   "fallback": [
-    {
-      "t": "{feet} feet, {pct}% on the beat. the river’s seen worse.",
-      "c": "show it better →",
-      "w": 10
-    },
-    {
-      "t": "some ramps hit, some didn’t. that’s surfin’.",
-      "c": "hit more →",
-      "w": 6
-    },
-    {
-      "t": "you rode ‘{song}’ down the river and lived.",
-      "c": "ride it again →",
-      "w": 3
-    }
+    { "t": "{sparks} sparks off that horizon, best chain of {chain}.", "c": "beat it →", "w": 10 },
+    { "t": "one song, one long ride, a fistful of sparks.", "c": "grab more →", "w": 6 },
+    { "t": "you and that sunset got along just fine.", "c": "go again →", "w": 3 }
   ]
 }

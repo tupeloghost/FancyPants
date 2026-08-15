@@ -97,6 +97,9 @@ export class Signals {
     const c = this.current;
     const run = {
       ...meta,                                   // kind: 'race'|'toy'|'set', plus app context
+      // a world's own tallies ride at the top level too, so line conditions
+      // can match on them the same way they match movement or time
+      ...(c ? c.declared : {}),
       at: Date.now(),
       worldId: c ? c.world : null,
       runSeconds: c ? Math.round((Date.now() - c.enteredAt) / 1000) : 0,

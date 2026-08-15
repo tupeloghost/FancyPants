@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=432';
-import { drawQR } from './lib/qr.js?v=432';
-import { WORLDS } from './worlds/registry.js?v=432';
-import { Net, PALETTE } from './net.js?v=432';
-import { Presence } from './lib/presence.js?v=432';
-import { Pulses } from './lib/pulse.js?v=432';
-import { BeatClock } from './lib/beatclock.js?v=432';
-import { BeatCue } from './lib/beatcue.js?v=432';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=432';
-import { Race, placeOf, standings } from './lib/race.js?v=432';
-import { Signals } from './lib/signals.js?v=432';
-import { pickShareLine, loadLines } from './lib/lines.js?v=432';
-import { RouteMap } from './lib/map.js?v=432';
-import * as sfx from './lib/sfx.js?v=432';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=432';
-import { glowTexture } from './lib/glow.js?v=432';
+import { AudioEngine } from './audio-engine.js?v=434';
+import { drawQR } from './lib/qr.js?v=434';
+import { WORLDS } from './worlds/registry.js?v=434';
+import { Net, PALETTE } from './net.js?v=434';
+import { Presence } from './lib/presence.js?v=434';
+import { Pulses } from './lib/pulse.js?v=434';
+import { BeatClock } from './lib/beatclock.js?v=434';
+import { BeatCue } from './lib/beatcue.js?v=434';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=434';
+import { Race, placeOf, standings } from './lib/race.js?v=434';
+import { Signals } from './lib/signals.js?v=434';
+import { pickShareLine, loadLines } from './lib/lines.js?v=434';
+import { RouteMap } from './lib/map.js?v=434';
+import * as sfx from './lib/sfx.js?v=434';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=434';
+import { glowTexture } from './lib/glow.js?v=434';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -801,6 +801,7 @@ function showResults(reason) {
   celebrate(winHex, (solo ? race.finished : place === 1) || newBest);
 
   $('results-stats').style.display = '';
+  $('results-rule').style.display = '';
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;
@@ -956,6 +957,7 @@ function showToyResults() {
   $('results-board').innerHTML = '';
   // a toy world has no accuracy or streak \u2014 empty dashes just look broken
   $('results-stats').style.display = 'none';
+  $('results-rule').style.display = 'none';   // nothing between the hairlines but void
   $('rs-pts').textContent = '';
   $('rb-again').textContent = 'PLAY AGAIN';
   $('rb-next').textContent = 'NEXT WORLD';
@@ -3521,6 +3523,7 @@ function showSetResults() {
     + `<i style="background:hsl(var(--accent-h),80%,70%)"></i>`
     + `<span>${name.replace(/[<>&]/g, '')}</span><b>${['1st', '2nd', '3rd'][k] || (k + 1) + 'th'}</b></div>`).join('');
   $('results-stats').style.display = '';
+  $('results-rule').style.display = '';
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;

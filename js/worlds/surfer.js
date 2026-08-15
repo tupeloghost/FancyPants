@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=432';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=432';
-import { themePaint, richHSL } from '../lib/themes.js?v=432';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=434';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=434';
+import { themePaint, richHSL } from '../lib/themes.js?v=434';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -23,6 +23,9 @@ export function createSurfer() {
   // beat. Low ones you carve into; high ones demand a jump. Catch mid-air
   // and they pay double. A chain builds while you keep catching.
   let sparks = [], sparkTimer = 0, sparkChain = 0, sparkDry = 0, sparkN = 0;
+  // what the run is MADE of — reported to the signal ledger so the end-of-song
+  // card can talk about sparks and air instead of stats this world never keeps
+  let caught = 0, bestChain = 0, midairs = 0, rainbows = 0, jumps = 0;
   // ── surge ── hold to open the throttle. Sparks are the fuel: a full tank
   // surges harder, and it drains while you burn.
   let surge = 0, sparkFuel = 0.5;
@@ -77,6 +80,7 @@ export function createSurfer() {
         sparks.push({ m: sp, pil, o1, o2, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
       }
       sparkTimer = 0; sparkChain = 0; sparkDry = 0; sparkN = 0;
+      caught = 0; bestChain = 0; midairs = 0; rainbows = 0; jumps = 0;
 
       // synthwave sun — layered soft glows, no hard disc: geometry crossing
       // a gradient just dims it gently instead of slicing a seam through it
@@ -113,6 +117,13 @@ export function createSurfer() {
       camera.updateProjectionMatrix();
     },
 
+    // the ledger only needs the totals; cheap enough to send on every event
+    _report() {
+      if (window.__declareSignals) {
+        window.__declareSignals({ sparksCaught: caught, bestChain, midairCatches: midairs, rainbowSparks: rainbows, jumps });
+      }
+    },
+
     setInput(x) {
       if (Math.abs(x - steerTarget) > 0.04) this._lastActive = performance.now();
       steerTarget = x;
@@ -126,7 +137,7 @@ export function createSurfer() {
     onTap() {
       // the wave does the throwing: jump ON a bass swell and it launches you
       // half again higher — the music is the trampoline, and you can feel it
-      if (jumpY <= 0.01) { this._lastActive = performance.now(); jumpVel = 17 + this._lastBass * 14; if (this._lastBass > 0.45) sfxSwoosh('soft'); }
+      if (jumpY <= 0.01) { this._lastActive = performance.now(); jumpVel = 17 + this._lastBass * 14; jumps++; this._report(); if (this._lastBass > 0.45) sfxSwoosh('soft'); }
       waveR = 0;                        // + a shockwave ridge racing to the horizon
     },
 
@@ -257,6 +268,11 @@ export function createSurfer() {
             const midair = jumpY > 3;
             sparkChain++;
             sparkDry = 0;
+            caught++;
+            if (sparkChain > bestChain) bestChain = sparkChain;
+            if (midair) midairs++;
+            if (sp.look) rainbows++;
+            this._report();
             sparkFuel = Math.min(1, sparkFuel + 0.22);   // every catch feeds the throttle
             if (sp.look && !attract) {
               document.dispatchEvent(new CustomEvent('fp-lookspark'));
