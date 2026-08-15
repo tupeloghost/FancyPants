@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=430';
-import { drawQR } from './lib/qr.js?v=430';
-import { WORLDS } from './worlds/registry.js?v=430';
-import { Net, PALETTE } from './net.js?v=430';
-import { Presence } from './lib/presence.js?v=430';
-import { Pulses } from './lib/pulse.js?v=430';
-import { BeatClock } from './lib/beatclock.js?v=430';
-import { BeatCue } from './lib/beatcue.js?v=430';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=430';
-import { Race, placeOf, standings } from './lib/race.js?v=430';
-import { Signals } from './lib/signals.js?v=430';
-import { pickShareLine, loadLines } from './lib/lines.js?v=430';
-import { RouteMap } from './lib/map.js?v=430';
-import * as sfx from './lib/sfx.js?v=430';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=430';
-import { glowTexture } from './lib/glow.js?v=430';
+import { AudioEngine } from './audio-engine.js?v=431';
+import { drawQR } from './lib/qr.js?v=431';
+import { WORLDS } from './worlds/registry.js?v=431';
+import { Net, PALETTE } from './net.js?v=431';
+import { Presence } from './lib/presence.js?v=431';
+import { Pulses } from './lib/pulse.js?v=431';
+import { BeatClock } from './lib/beatclock.js?v=431';
+import { BeatCue } from './lib/beatcue.js?v=431';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=431';
+import { Race, placeOf, standings } from './lib/race.js?v=431';
+import { Signals } from './lib/signals.js?v=431';
+import { pickShareLine, loadLines } from './lib/lines.js?v=431';
+import { RouteMap } from './lib/map.js?v=431';
+import * as sfx from './lib/sfx.js?v=431';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=431';
+import { glowTexture } from './lib/glow.js?v=431';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3122,6 +3122,11 @@ function clipURL() {
   if (window.__sunoShare && window.__permUrl) return window.__permUrl;
   if (window.__sunoShare) return SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
   const file = ($('track-select').value || audio.el.currentSrc || '').split('/').pop();
+  // house songs ride the short door too — a clean link that unfurls with
+  // the song's name beats a query-string tail in any feed
+  if (SUNO_PROXY && file && /^[A-Za-z0-9_.-]{1,60}\.mp3$/.test(file)) {
+    return SUNO_PROXY + 'p/' + currentWorldKey + '/' + file;
+  }
   return SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
 }
 // ── the rolling reel: while a round runs, two staggered recorders keep the

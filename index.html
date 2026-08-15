@@ -10,6 +10,7 @@
 <meta property="og:title" content="Fancy Britches — your music is a world">
 <meta property="og:description" content="Paste a song and play inside it. Race friends on their phones, throw emoji storms, light the neon. Jackbox meets your playlist.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Fancy Britches">
 <meta property="og:url" content="https://tupeloghost.github.io/FancyPants/">
 <meta property="og:image" content="https://tupeloghost.github.io/FancyPants/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -1640,7 +1641,9 @@
     box-shadow: 0 0 60px hsla(var(--accent-h), 80%, 60%, 0.22), 0 24px 60px rgba(0,0,0,0.5);
   }
   #shc-video, #shc-still {
-    width: 100%; max-height: 44vh; object-fit: cover;
+    /* contain, never cover: the preview IS the post — cropping the burned
+       bar and QR out of the preview lied about what gets shared */
+    width: 100%; max-height: 44vh; object-fit: contain; background: #05040c;
     border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
     box-shadow: 0 10px 34px rgba(0,0,0,0.55);
   }
@@ -2402,7 +2405,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 430</div>
+      <div id="build-stamp">build 431</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2444,6 +2447,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=430"></script>
+<script type="module" src="js/main.js?v=431"></script>
 </body>
 </html>

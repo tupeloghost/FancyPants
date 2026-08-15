@@ -452,7 +452,30 @@ export default {
 
     // /w/{artist}/{song} — the permanent front door for a promoted song.
     // Resolves through the song's current home world, so links never stale.
+    // NOT a bare redirect: link crawlers (iMessage, Discord, X) don't follow
+    // JS but do read og tags — so the page itself carries the song's card,
+    // and a human is bounced onward before they can blink. The pasted link
+    // unfurls as THE SONG, which is the whole ad.
     const SITE_URL = 'https://tupeloghost.github.io/FancyPants/';
+    const unfurl = (title, desc, dest, image) => {
+      const esc = t => String(t || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+      const img = image || SITE_URL + 'og.jpg';
+      return new Response('<!doctype html><html><head><meta charset="utf-8">'
+        + '<title>' + esc(title) + '</title>'
+        + '<meta property="og:title" content="' + esc(title) + '">'
+        + '<meta property="og:description" content="' + esc(desc) + '">'
+        + '<meta property="og:type" content="website">'
+        + '<meta property="og:site_name" content="Fancy Britches">'
+        + '<meta property="og:image" content="' + esc(img) + '">'
+        + '<meta name="twitter:card" content="summary_large_image">'
+        + '<meta name="twitter:title" content="' + esc(title) + '">'
+        + '<meta name="twitter:description" content="' + esc(desc) + '">'
+        + '<meta name="twitter:image" content="' + esc(img) + '">'
+        + '<meta http-equiv="refresh" content="0;url=' + esc(dest) + '">'
+        + '<script>location.replace(' + JSON.stringify(dest) + ')</scr' + 'ipt>'
+        + '</head><body style="background:#07060f"></body></html>', {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    };
     const wslug = url.pathname.match(/^\/w\/([a-z0-9-]{1,40})\/([a-z0-9-]{1,40})$/);
     if (wslug) {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
@@ -461,7 +484,21 @@ export default {
       const dest = row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
         : SITE_URL;
-      return Response.redirect(dest, 302);
+      const title = wslug[2].replace(/-/g, ' ') + ' — by ' + wslug[1].replace(/-/g, ' ');
+      const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
+        ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
+      return unfurl(title, 'this song is a playable 3D world — free, no app, in the browser.', dest, image);
+    }
+    // /p/{world}/{file} — the short front door for a house song: a clean
+    // link that unfurls with the song's name instead of a query-string tail
+    const pslug = url.pathname.match(/^\/p\/([a-z0-9-]{1,24})\/([A-Za-z0-9_.-]{1,60}\.mp3)$/);
+    if (pslug) {
+      const dest = SITE_URL + '?world=' + pslug[1] + '&track=' + encodeURIComponent(pslug[2]);
+      const title = pslug[2].replace(/\.mp3$/, '').replace(/[_-]+/g, ' ');
+      const image = ['tunnel', 'surfer', 'slide'].includes(pslug[1])
+        ? SITE_URL + 'previews/' + pslug[1] + '.jpg' : null;
+      return unfurl(title + ' — play it, don’t just hear it',
+        'a song you can be inside — free, no app, in the browser.', dest, image);
     }
     // /c/{slug} — a creator's page: reachable only by its link, never listed
     const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);
@@ -483,6 +520,11 @@ export default {
         + '<title>' + esc(pg.name) + '</title>'
         + '<meta property="og:title" content="' + esc(pg.name) + '">'
         + '<meta property="og:description" content="' + esc(pg.bio || 'songs you can play, free, in the browser') + '">'
+        + '<meta property="og:site_name" content="Fancy Britches">'
+        + '<meta property="og:image" content="' + SITE_URL + 'og.jpg">'
+        + '<meta name="twitter:card" content="summary_large_image">'
+        + '<meta name="twitter:title" content="' + esc(pg.name) + '">'
+        + '<meta name="twitter:image" content="' + SITE_URL + 'og.jpg">'
         + '<style>'
         + 'body{margin:0;min-height:100vh;background:radial-gradient(1200px 700px at 50% -10%,#1a1430,#07060f 60%);'
         + 'color:#eceafb;font:16px/1.6 Georgia,serif;display:flex;justify-content:center;padding:48px 18px;}'
