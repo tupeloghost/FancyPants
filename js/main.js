@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=426';
-import { drawQR } from './lib/qr.js?v=426';
-import { WORLDS } from './worlds/registry.js?v=426';
-import { Net, PALETTE } from './net.js?v=426';
-import { Presence } from './lib/presence.js?v=426';
-import { Pulses } from './lib/pulse.js?v=426';
-import { BeatClock } from './lib/beatclock.js?v=426';
-import { BeatCue } from './lib/beatcue.js?v=426';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=426';
-import { Race, placeOf, standings } from './lib/race.js?v=426';
-import { Signals } from './lib/signals.js?v=426';
-import { pickShareLine, loadLines } from './lib/lines.js?v=426';
-import { RouteMap } from './lib/map.js?v=426';
-import * as sfx from './lib/sfx.js?v=426';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=426';
-import { glowTexture } from './lib/glow.js?v=426';
+import { AudioEngine } from './audio-engine.js?v=427';
+import { drawQR } from './lib/qr.js?v=427';
+import { WORLDS } from './worlds/registry.js?v=427';
+import { Net, PALETTE } from './net.js?v=427';
+import { Presence } from './lib/presence.js?v=427';
+import { Pulses } from './lib/pulse.js?v=427';
+import { BeatClock } from './lib/beatclock.js?v=427';
+import { BeatCue } from './lib/beatcue.js?v=427';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=427';
+import { Race, placeOf, standings } from './lib/race.js?v=427';
+import { Signals } from './lib/signals.js?v=427';
+import { pickShareLine, loadLines } from './lib/lines.js?v=427';
+import { RouteMap } from './lib/map.js?v=427';
+import * as sfx from './lib/sfx.js?v=427';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=427';
+import { glowTexture } from './lib/glow.js?v=427';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1598,8 +1598,7 @@ function updatePeak(dt, a) {
     peakUntil = now + 9000;
     peakCooldown = now + 32000;
     document.body.classList.add('peak');
-    flash('\ud83c\udf86 THE DROP', 2000);
-    celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], false);
+    announce('THE DROP', '', 3000);
     sfx.swoosh && sfx.swoosh('bloom');
   }
   if (active) {
@@ -1624,21 +1623,38 @@ document.addEventListener('fp-lookspark', () => {
   const [name, cfg] = pool[(Math.random() * pool.length) | 0];
   document.body.classList.remove('lookflash'); void document.body.offsetWidth;
   document.body.classList.add('lookflash');
-  flash('\ud83c\udf08 RAINBOW SPARK!', 900);
+  announce('RAINBOW SPARK', '', 1000);
   setTimeout(() => {
     applyPreset(cfg);
-    flash('\u2728 NEW LOOK \u2014 ' + name.toUpperCase(), 2400);
+    announce('A NEW LOOK', name.toLowerCase(), 2800);
     setTimeout(() => document.body.classList.remove('lookflash'), 400);
   }, 750);
 });
 document.addEventListener('fp-swallowed', e => {
   const n = (e.detail && e.detail.n) || 2;
-  flash('BLACK HOLE! \u2014 ' + n + ' RINGS GONE', 2200, true);
+  announce('BLACK HOLE', n + ' rings, gone', 2400, 'ember');
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 750);
 });
-// one flash pipe for every announcement — good news plain, bad news red
+// the annunciator: ceremonies get a title card — hairlines drawing outward,
+// a tracked serif title, an italic subline — never the corner popup.
+// tone 'ember' dresses bad news.
+let anncT = null, anncT2 = null;
+function announce(title, sub = '', ms = 2600, tone = '') {
+  const el = $('annc');
+  clearTimeout(anncT); clearTimeout(anncT2);
+  el.classList.remove('show', 'leave', 'ember');
+  void el.offsetWidth;
+  $('annc-title').textContent = title;
+  $('annc-sub').textContent = sub;
+  if (tone) el.classList.add(tone);
+  el.classList.add('show');
+  anncT = setTimeout(() => { el.classList.remove('show'); el.classList.add('leave'); }, ms);
+  anncT2 = setTimeout(() => el.classList.remove('leave', 'ember'), ms + 900);
+}
+
+// one flash pipe for every quick note — good news plain, bad news red
 function flash(msg, ms = 2200, bad = false) {
   const el = $('pass-flash');
   el.textContent = msg;
