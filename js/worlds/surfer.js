@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=408';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=408';
-import { themePaint } from '../lib/themes.js?v=408';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=409';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=409';
+import { themePaint } from '../lib/themes.js?v=409';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -233,8 +233,9 @@ export function createSurfer() {
         sp.m.material.color.copy(color);
         sp.m.material.opacity = 1;
         // a gentle magnet: ground sparks lean toward a surfer who's close —
-        // carving NEAR one is rewarded, pixel-perfect isn't required
-        if (!sp.high && sp.z > 0 && sp.z < 34) {
+        // carving NEAR one is rewarded, pixel-perfect isn't required.
+        // Rainbows are exempt: repainting the world must be a CHOICE.
+        if (!sp.high && !sp.look && sp.z > 0 && sp.z < 34) {
           const bx = steer * 40;
           if (Math.abs(sp.x - bx) < 20) sp.x += (bx - sp.x) * Math.min(1, dt * 2.2);
         }

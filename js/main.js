@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=408';
-import { drawQR } from './lib/qr.js?v=408';
-import { WORLDS } from './worlds/registry.js?v=408';
-import { Net, PALETTE } from './net.js?v=408';
-import { Presence } from './lib/presence.js?v=408';
-import { Pulses } from './lib/pulse.js?v=408';
-import { BeatClock } from './lib/beatclock.js?v=408';
-import { BeatCue } from './lib/beatcue.js?v=408';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=408';
-import { Race, placeOf, standings } from './lib/race.js?v=408';
-import { Signals } from './lib/signals.js?v=408';
-import { pickShareLine, loadLines } from './lib/lines.js?v=408';
-import { RouteMap } from './lib/map.js?v=408';
-import * as sfx from './lib/sfx.js?v=408';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=408';
-import { glowTexture } from './lib/glow.js?v=408';
+import { AudioEngine } from './audio-engine.js?v=409';
+import { drawQR } from './lib/qr.js?v=409';
+import { WORLDS } from './worlds/registry.js?v=409';
+import { Net, PALETTE } from './net.js?v=409';
+import { Presence } from './lib/presence.js?v=409';
+import { Pulses } from './lib/pulse.js?v=409';
+import { BeatClock } from './lib/beatclock.js?v=409';
+import { BeatCue } from './lib/beatcue.js?v=409';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=409';
+import { Race, placeOf, standings } from './lib/race.js?v=409';
+import { Signals } from './lib/signals.js?v=409';
+import { pickShareLine, loadLines } from './lib/lines.js?v=409';
+import { RouteMap } from './lib/map.js?v=409';
+import * as sfx from './lib/sfx.js?v=409';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=409';
+import { glowTexture } from './lib/glow.js?v=409';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -290,6 +290,7 @@ function _switchWorldNow(key) {
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
   if (window.__sig) window.__sig.enterWorld(key);
+  if (lookBefore) { applyPreset(lookBefore); lookBefore = null; }   // your look comes home with you
   toyRound = null;   // switching worlds mid-song cancels a toy round quietly
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
   zoom = zoomTarget = 1;   // never carry a pinch into a new world
@@ -1576,7 +1577,9 @@ let passT = 0;
 // a caught look-spark repaints the whole world — as a two-beat ceremony:
 // first the flash and the announcement, THEN the new look sweeps in, so
 // the change reads as earned, never random
+let lookBefore = null;   // the player's own look, saved before the first rainbow
 document.addEventListener('fp-lookspark', () => {
+  if (!lookBefore) lookBefore = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
   const cur = settings.colorMode;
   const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur);
   const [name, cfg] = pool[(Math.random() * pool.length) | 0];
