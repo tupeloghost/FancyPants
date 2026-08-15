@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=391';
-import { drawQR } from './lib/qr.js?v=391';
-import { WORLDS } from './worlds/registry.js?v=391';
-import { Net, PALETTE } from './net.js?v=391';
-import { Presence } from './lib/presence.js?v=391';
-import { Pulses } from './lib/pulse.js?v=391';
-import { BeatClock } from './lib/beatclock.js?v=391';
-import { BeatCue } from './lib/beatcue.js?v=391';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=391';
-import { Race, placeOf, standings } from './lib/race.js?v=391';
-import { Signals } from './lib/signals.js?v=391';
-import { pickShareLine, loadLines } from './lib/lines.js?v=391';
-import { RouteMap } from './lib/map.js?v=391';
-import * as sfx from './lib/sfx.js?v=391';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=391';
-import { glowTexture } from './lib/glow.js?v=391';
+import { AudioEngine } from './audio-engine.js?v=392';
+import { drawQR } from './lib/qr.js?v=392';
+import { WORLDS } from './worlds/registry.js?v=392';
+import { Net, PALETTE } from './net.js?v=392';
+import { Presence } from './lib/presence.js?v=392';
+import { Pulses } from './lib/pulse.js?v=392';
+import { BeatClock } from './lib/beatclock.js?v=392';
+import { BeatCue } from './lib/beatcue.js?v=392';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=392';
+import { Race, placeOf, standings } from './lib/race.js?v=392';
+import { Signals } from './lib/signals.js?v=392';
+import { pickShareLine, loadLines } from './lib/lines.js?v=392';
+import { RouteMap } from './lib/map.js?v=392';
+import * as sfx from './lib/sfx.js?v=392';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=392';
+import { glowTexture } from './lib/glow.js?v=392';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2085,7 +2085,6 @@ function openRivalsPick() {
   EMOJIS.forEach((e2, k) => {
     const b = document.createElement('button');
     b.textContent = e2;
-    b.style.opacity = score >= BOMB_COST ? '1' : '0.35';
     b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
@@ -2093,14 +2092,8 @@ function openRivalsPick() {
   TRICKS.forEach(t => {
     const b = document.createElement('button');
     b.textContent = t.e; b.title = t.name;
-    b.style.opacity = score >= t.cost ? '1' : '0.35';
     b.addEventListener('click', () => {
-      if (score < t.cost) {
-        sfx.thud();
-        flash("YOU'LL NEED " + t.cost + ' PTS FOR THAT, SUGAR', 1600, true);
-        return;
-      }
-      addScore(-t.cost, undefined, undefined, true);
+      if (!rateOk(trickLog, 30000, 2)) return;
       myStats.bombs++; statsPush();
       net.sendEmote(t.i, name, t.e);
       flash(t.e + ' \u2192 ' + name.toUpperCase(), 1600);
@@ -2109,7 +2102,7 @@ function openRivalsPick() {
     pick.appendChild(b);
   });
   const em = document.createElement('em');
-  em.textContent = '\u2192 ' + name + ' \u00b7 ' + BOMB_COST + '/' + TRICKS[0].cost + ' pts';
+  em.textContent = '\u2192 ' + name;
   pick.appendChild(em);
 }
 setInterval(renderRivals, 600);
@@ -4313,7 +4306,21 @@ switchWorld(startWorld);
 // THEIR screen. Costs points, which completes the economy: rounds pay you at
 // the bell, and this is what the money is FOR — mischief.
 const EMOJIS = ['\u2764\uFE0F', '\u{1F47B}', '\u{1F319}', '\u{1F352}', '\u2728', '\u{1F4A9}', '\u{1F61B}', '\u{1F618}'];  // heart, ghost, moon, cherry, stars, poop, tongue, kiss — her list, verbatim
-const BOMB_COST = 15;
+const BOMB_COST = 15;   // (legacy name; emojis are free now)
+// free to throw, limited by breath: emojis 6 per 20s, tricks 2 per 30s —
+// enough to be rowdy, never enough to wallpaper somebody's screen
+const emoteLog = [], trickLog = [];
+function rateOk(log, windowMs, max) {
+  const now = performance.now();
+  while (log.length && now - log[0] > windowMs) log.shift();
+  if (log.length >= max) {
+    sfx.thud();
+    flash('EASY, SUGAR \u2014 GIVE IT A BREATH', 1600, true);
+    return false;
+  }
+  log.push(now);
+  return true;
+}
 // Tricks are the Mario Kart layer: not decoration on a rival's screen but a
 // hand on their wheel. Dearer than a bomb because they change the race.
 const TRICKS = [
@@ -4359,14 +4366,7 @@ function emojiRain(char, fromName) {
 }
 
 function sendBomb(toName, idx) {
-  if (score < BOMB_COST) {
-    const b = $('score-badge');
-    b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
-    sfx.thud();
-    flash("YOU'LL NEED " + BOMB_COST + ' PTS FOR THAT, SUGAR', 1600, true);
-    return;
-  }
-  addScore(-BOMB_COST, undefined, undefined, true);
+  if (!rateOk(emoteLog, 20000, 6)) return;
   myStats.bombs++; statsPush();
   net.sendEmote(idx, toName, EMOJIS[idx]);
   flash(EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase(), 1600);
