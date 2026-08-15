@@ -292,21 +292,6 @@
     100% { transform: translate(0,0); filter: brightness(1); }
   }
   body.gentle.swallowed #canvas { animation: swallow-gentle 0.75s ease-out; }
-  body.gentle.peak #canvas { filter: saturate(1.12) brightness(1.04); }
-  body.gentle.peak::after { animation-duration: 3.8s; opacity: 0.5; }
-  /* THE DROP: the whole frame runs hotter while the song surges */
-  #canvas { transition: filter 0.7s ease; }
-  body.peak #canvas { filter: saturate(1.1) brightness(1.05) contrast(1.03); }
-  body.peak::after {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 5;
-    /* a slow warm breath from below, plus the faintest darkening of the
-       corners — the room leans in, nothing strobes */
-    background:
-      radial-gradient(ellipse at 50% 108%, hsla(var(--accent-h), 85%, 62%, 0.09), transparent 58%),
-      radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(2, 1, 8, 0.22) 100%);
-    animation: peak-breathe 2.8s ease-in-out infinite alternate;
-  }
-  @keyframes peak-breathe { from { opacity: 0.55; } to { opacity: 0.95; } }
   #name-row { display: flex; gap: 8px; }
   #name-row input { flex: 1; min-width: 0; }
   #name-dice {
@@ -2417,7 +2402,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 429</div>
+      <div id="build-stamp">build 430</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2459,6 +2444,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=429"></script>
+<script type="module" src="js/main.js?v=430"></script>
 </body>
 </html>

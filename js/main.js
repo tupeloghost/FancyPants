@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=429';
-import { drawQR } from './lib/qr.js?v=429';
-import { WORLDS } from './worlds/registry.js?v=429';
-import { Net, PALETTE } from './net.js?v=429';
-import { Presence } from './lib/presence.js?v=429';
-import { Pulses } from './lib/pulse.js?v=429';
-import { BeatClock } from './lib/beatclock.js?v=429';
-import { BeatCue } from './lib/beatcue.js?v=429';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=429';
-import { Race, placeOf, standings } from './lib/race.js?v=429';
-import { Signals } from './lib/signals.js?v=429';
-import { pickShareLine, loadLines } from './lib/lines.js?v=429';
-import { RouteMap } from './lib/map.js?v=429';
-import * as sfx from './lib/sfx.js?v=429';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=429';
-import { glowTexture } from './lib/glow.js?v=429';
+import { AudioEngine } from './audio-engine.js?v=430';
+import { drawQR } from './lib/qr.js?v=430';
+import { WORLDS } from './worlds/registry.js?v=430';
+import { Net, PALETTE } from './net.js?v=430';
+import { Presence } from './lib/presence.js?v=430';
+import { Pulses } from './lib/pulse.js?v=430';
+import { BeatClock } from './lib/beatclock.js?v=430';
+import { BeatCue } from './lib/beatcue.js?v=430';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=430';
+import { Race, placeOf, standings } from './lib/race.js?v=430';
+import { Signals } from './lib/signals.js?v=430';
+import { pickShareLine, loadLines } from './lib/lines.js?v=430';
+import { RouteMap } from './lib/map.js?v=430';
+import * as sfx from './lib/sfx.js?v=430';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=430';
+import { glowTexture } from './lib/glow.js?v=430';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1600,11 +1600,11 @@ function updatePeak(dt, a) {
   if (!active && now > peakCooldown && audio.currentTime > 12
       && peakSlow > 0.05 && peakFast > peakSlow * 1.35 && peakFast > 0.22
       && audio.playing) {
+    // the drop is FELT, never announced: no card, no sound, no filter —
+    // the song made the announcement. Worlds lean in (surfer rains sparks),
+    // the pay quietly doubles, and that's the whole ceremony.
     peakUntil = now + 9000;
     peakCooldown = now + 32000;
-    document.body.classList.add('peak');
-    announce('THE DROP', '', 3000);
-    sfx.swoosh && sfx.swoosh('bloom');
   }
   if (active) {
     peakLevel = Math.min(1, peakLevel + dt * 3);
@@ -1612,7 +1612,6 @@ function updatePeak(dt, a) {
     if (peakFast < peakSlow * 0.95) peakUntil = Math.min(peakUntil, now + 1200);
   } else if (peakLevel > 0) {
     peakLevel = Math.max(0, peakLevel - dt * 1.2);
-    if (peakLevel === 0) document.body.classList.remove('peak');
   }
   window.__peakLevel = peakLevel;
   window.__peakDbg = { fast: +peakFast.toFixed(3), slow: +peakSlow.toFixed(3), ratio: peakSlow > 0 ? +(peakFast / peakSlow).toFixed(3) : 0 };
