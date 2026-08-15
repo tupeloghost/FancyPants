@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=399';
-import { themePaint } from '../lib/themes.js?v=399';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=400';
+import { themePaint } from '../lib/themes.js?v=400';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -70,7 +70,10 @@ export function createSurfer() {
         const pil = glowSprite(7);
         pil.visible = false;
         group.add(pil);
-        sparks.push({ m: sp, pil, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
+        const o1 = glowSprite(5), o2 = glowSprite(5);
+        o1.visible = false; o2.visible = false;
+        group.add(o1); group.add(o2);
+        sparks.push({ m: sp, pil, o1, o2, alive: false, x: 0, y: 0, z: 0, high: false, pop: 0 });
       }
       sparkTimer = 0; sparkChain = 0; sparkDry = 0; sparkN = 0;
 
@@ -191,6 +194,7 @@ export function createSurfer() {
           sp.m.scale.setScalar(18 * (1.8 - sp.pop));
           sp.m.material.opacity = sp.pop;
           sp.pil.visible = false;
+          sp.o1.visible = false; sp.o2.visible = false;
           if (sp.pop <= 0) { sp.alive = false; sp.m.visible = false; }
           continue;
         }
@@ -198,9 +202,19 @@ export function createSurfer() {
         const bob = Math.sin(time * 5 + sp.x) * (0.6 + audio.volume * 1.4);
         sp.m.position.set(sp.x, sp.y + bob, sp.z);
         if (sp.look) {
-          // RAINBOW — the rare repainter, cycling hard and popping on beats
-          color.setHSL((time * 0.9 + sp.x * 0.01) % 1, 1, 0.6);
+          // RAINBOW — the rare repainter: a cycling core with two orbiting
+          // motes in offset hues. Nothing else on the water looks like this.
+          const h0 = (time * 0.9 + sp.x * 0.01) % 1;
+          color.setHSL(h0, 1, 0.6);
           sp.m.scale.setScalar(18 * (1 + audio.beatIntensity * 0.6));
+          const orbR = 6 + Math.sin(time * 3) * 1.5;
+          sp.o1.visible = true; sp.o2.visible = true;
+          sp.o1.position.set(sp.x + Math.cos(time * 4) * orbR, sp.y + bob + Math.sin(time * 4) * orbR, sp.z);
+          sp.o2.position.set(sp.x + Math.cos(time * 4 + Math.PI) * orbR, sp.y + bob + Math.sin(time * 4 + Math.PI) * orbR, sp.z);
+          sp.o1.material.color.setHSL((h0 + 0.33) % 1, 1, 0.6);
+          sp.o2.material.color.setHSL((h0 + 0.66) % 1, 1, 0.6);
+          sp.o1.material.opacity = 0.95; sp.o2.material.opacity = 0.95;
+          sp.o1.scale.setScalar(7); sp.o2.scale.setScalar(7);
         } else if (sp.high) {
           // the jump bait: complementary to the world's palette, pillar below
           color.setHSL(((hue / 360) + 0.5) % 1, 1, 0.55 + audio.high * 0.2);
@@ -242,7 +256,7 @@ export function createSurfer() {
             continue;
           }
         }
-        if (sp.z > 60) { sp.alive = false; sp.m.visible = false; sp.pil.visible = false; }
+        if (sp.z > 60) { sp.alive = false; sp.m.visible = false; sp.pil.visible = false; sp.o1.visible = false; sp.o2.visible = false; }
       }
       window.__sparkInfo = { alive: sparks.filter(x => x.alive).length, n: sparkN, timer: +sparkTimer.toFixed(2), beat: audio.beat, sample: sparks.find(x => x.alive) ? { z: Math.round(sparks.find(x => x.alive).z), y: Math.round(sparks.find(x => x.alive).y), vis: sparks.find(x => x.alive).m.visible } : null };
       // the chain fades if the catching stops

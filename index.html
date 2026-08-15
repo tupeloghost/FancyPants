@@ -272,6 +272,13 @@
     100% { transform: translate(0,0); filter: brightness(1); }
   }
   body.swallowed #canvas { animation: swallow-shake 0.75s ease-out; }
+  /* rainbow spark caught: the world blooms white-hot, then the new look lands */
+  @keyframes lookflash {
+    0% { filter: brightness(1) saturate(1); }
+    35% { filter: brightness(2.4) saturate(2.2); }
+    100% { filter: brightness(1) saturate(1); }
+  }
+  body.lookflash #canvas { animation: lookflash 1.15s ease-out; }
   #name-row { display: flex; gap: 8px; }
   #name-row input { flex: 1; min-width: 0; }
   #name-dice {
@@ -2330,7 +2337,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 399</div>
+      <div id="build-stamp">build 400</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2372,6 +2379,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=399"></script>
+<script type="module" src="js/main.js?v=400"></script>
 </body>
 </html>
