@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=425';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=425';
-import { themePaint, richHSL } from '../lib/themes.js?v=425';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=426';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=426';
+import { themePaint, richHSL } from '../lib/themes.js?v=426';
 
 
 const COLS = 64;            // one column per spectrum bin

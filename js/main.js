@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=425';
-import { drawQR } from './lib/qr.js?v=425';
-import { WORLDS } from './worlds/registry.js?v=425';
-import { Net, PALETTE } from './net.js?v=425';
-import { Presence } from './lib/presence.js?v=425';
-import { Pulses } from './lib/pulse.js?v=425';
-import { BeatClock } from './lib/beatclock.js?v=425';
-import { BeatCue } from './lib/beatcue.js?v=425';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=425';
-import { Race, placeOf, standings } from './lib/race.js?v=425';
-import { Signals } from './lib/signals.js?v=425';
-import { pickShareLine, loadLines } from './lib/lines.js?v=425';
-import { RouteMap } from './lib/map.js?v=425';
-import * as sfx from './lib/sfx.js?v=425';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=425';
-import { glowTexture } from './lib/glow.js?v=425';
+import { AudioEngine } from './audio-engine.js?v=426';
+import { drawQR } from './lib/qr.js?v=426';
+import { WORLDS } from './worlds/registry.js?v=426';
+import { Net, PALETTE } from './net.js?v=426';
+import { Presence } from './lib/presence.js?v=426';
+import { Pulses } from './lib/pulse.js?v=426';
+import { BeatClock } from './lib/beatclock.js?v=426';
+import { BeatCue } from './lib/beatcue.js?v=426';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=426';
+import { Race, placeOf, standings } from './lib/race.js?v=426';
+import { Signals } from './lib/signals.js?v=426';
+import { pickShareLine, loadLines } from './lib/lines.js?v=426';
+import { RouteMap } from './lib/map.js?v=426';
+import * as sfx from './lib/sfx.js?v=426';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=426';
+import { glowTexture } from './lib/glow.js?v=426';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3426,10 +3426,10 @@ function showSetResults() {
   $('results-place').textContent = rows[0][0] === (net.local.name || 'you') ? 'YOU WIN' : 'FULL TIME';
   const overs = ["that's the whole show", "y'all come back now", 'no more songs, no more stairs'];
   $('results-sub').textContent = overs[Math.floor(Math.random() * overs.length)];
-  $('results-board').innerHTML = rows.map(([name, pts]) =>
+  $('results-board').innerHTML = rows.map(([name], k) =>
     `<div class="rrow${name === net.local.name ? ' me' : ''}">`
     + `<i style="background:hsl(var(--accent-h),80%,70%)"></i>`
-    + `<span>${name.replace(/[<>&]/g, '')}</span><b>${pts}</b></div>`).join('');
+    + `<span>${name.replace(/[<>&]/g, '')}</span><b>${['1st', '2nd', '3rd'][k] || (k + 1) + 'th'}</b></div>`).join('');
   $('rs-acc').textContent = Math.round(race.accuracy * 100) + '%';
   $('rs-streak').textContent = race.bestStreak;
   $('rs-notes').textContent = race.perfect + race.good;
@@ -3473,7 +3473,7 @@ function showSetResults() {
     const mine = win.name === (net.local.name || 'you');
     const row = document.createElement('div');
     row.className = 'award';
-    row.innerHTML = `<b>${cat.title}</b><span>${win.name.replace(/[<>&]/g, '')} \u00b7 ${cat.why}</span><em>+15</em>`;
+    row.innerHTML = `<b>${cat.title}</b><span>${win.name.replace(/[<>&]/g, '')} \u00b7 ${cat.why}</span><em>\u2605</em>`;
     setTimeout(() => {
       box.appendChild(row);
       sfx.pass(true);
@@ -4465,9 +4465,6 @@ function renderPlist() {
         b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(p.name, k); pick.remove(); });
         pick.appendChild(b);
       });
-      const price = document.createElement('em');
-      price.textContent = BOMB_COST + ' pts';
-      pick.appendChild(price);
       // the tricks row — the ones with a hand on the wheel
       const trickRow = document.createElement('div');
       trickRow.className = 'bomb-picker tricks';
@@ -4477,8 +4474,7 @@ function renderPlist() {
         b.title = t.name;
         b.addEventListener('click', ev => {
           ev.stopPropagation();
-          if (score < t.cost) { sfx.thud(); return; }
-          addScore(-t.cost, undefined, undefined, true);
+          if (!rateOk(trickLog, 30000, 2)) { flash('EASY, SUGAR — GIVE IT A BREATH', 1600, true); return; }
           myStats.bombs++; statsPush();
           net.sendEmote(t.i, p.name, t.e);
           flash(t.e + ' \u2192 ' + p.name.toUpperCase(), 1600);
@@ -4487,9 +4483,6 @@ function renderPlist() {
         });
         trickRow.appendChild(b);
       });
-      const tp2 = document.createElement('em');
-      tp2.textContent = 'tricks \u00b7 30 pts';
-      trickRow.appendChild(tp2);
       row.after(trickRow);
       row.after(pick);
     });
