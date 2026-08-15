@@ -11,7 +11,7 @@
 // literally plays a rising melody and a miss drops the needle. Rising pitch
 // under repeated success is the oldest reliable joy-circuit in games.
 
-let ctx = null, master = null;
+let ctx = null, master = null, wet = null;
 let muted = false;
 
 function ensure() {
@@ -19,8 +19,23 @@ function ensure() {
   try {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain();
-    master.gain.value = 0.09;          // an accent under the music, never a voice over it          // present, never competing with the track
+    master.gain.value = 0.09;          // an accent under the music, never a voice over it
     master.connect(ctx.destination);
+    // a small synthesized room: two cross-fed delays behind a dark lowpass.
+    // Dry sounds are effects; sounds with a tail are production.
+    wet = ctx.createGain();
+    wet.gain.value = 0.5;
+    const d1 = ctx.createDelay(0.5), d2 = ctx.createDelay(0.5);
+    d1.delayTime.value = 0.083; d2.delayTime.value = 0.127;
+    const f1 = ctx.createGain(), f2 = ctx.createGain();
+    f1.gain.value = 0.32; f2.gain.value = 0.28;
+    const dark = ctx.createBiquadFilter();
+    dark.type = 'lowpass'; dark.frequency.value = 2600;
+    wet.connect(d1); wet.connect(d2);
+    d1.connect(f1); f1.connect(d2);
+    d2.connect(f2); f2.connect(d1);
+    d1.connect(dark); d2.connect(dark);
+    dark.connect(master);
   } catch { return false; }
   return true;
 }
@@ -107,7 +122,13 @@ export function swoosh(kind = 'air') {
   g.gain.setValueAtTime(0.001, t);
   g.gain.exponentialRampToValueAtTime(P.gain, t + P.attack);
   g.gain.exponentialRampToValueAtTime(0.001, t + P.dur);
-  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(master);
+  // gentle stereo placement + the room tail — alive, not clinical
+  const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  const out = pan || g;
+  if (pan) { pan.pan.value = (Math.random() * 2 - 1) * 0.4; g.connect(pan); }
+  src.connect(bp); bp.connect(lp); lp.connect(g);
+  out.connect(master);
+  out.connect(wet);
   src.start(t); src.stop(t + P.dur);
   if (kind === 'bloom') {
     // a warm chord swell instead of chimes — pads, not pinball
@@ -118,7 +139,7 @@ export function swoosh(kind = 'air') {
       og.gain.setValueAtTime(0.001, t);
       og.gain.exponentialRampToValueAtTime(0.16, t + 0.25);
       og.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
-      o.connect(og); og.connect(master);
+      o.connect(og); og.connect(master); og.connect(wet);
       o.start(t + 0.1); o.stop(t + 1.2);
     });
   }

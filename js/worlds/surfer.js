@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=409';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=409';
-import { themePaint } from '../lib/themes.js?v=409';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=411';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=411';
+import { themePaint } from '../lib/themes.js?v=411';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -328,19 +328,23 @@ export function createSurfer() {
           // bright enough to cross the bloom threshold on peaks and beats;
           // the center "road" columns glow so the path reads
           const road = Math.exp(-Math.pow(c - COLS / 2, 2) / 16) * (0.1 + audio.volume * 0.12);
-          const lum = 0.2 + t * 0.5 + audio.beatIntensity * 0.15 + road;
+          // valleys run deep, peaks run bright — the contrast is the beauty
+          const lum = 0.16 + t * 0.56 + audio.beatIntensity * 0.15 + road;
           // theme paints the terrain: u = height (sunset stacks correctly),
           // v = depth so themes flow toward the horizon
           const jitv = Math.abs(Math.sin(c * 12.9898 + r * 78.233));
           themePaint(colorMode, hue / 360, t, r * 0.08 + time * 0.15, time, t, jitv, tp);
-          color.setHSL(tp[0], 0.9 * tp[1] + 0.1, Math.min(0.72, lum * Math.min(1.5, tp[2])));
+          // altitude grades the hue a touch — peaks lean warm, valleys lean
+          // cool — and saturation runs rich instead of safe
+          const gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
+          color.setHSL(gradedHue, Math.min(1, tp[1] * 1.12 + 0.05), Math.min(0.72, lum * Math.min(1.5, tp[2])));
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
       pos.needsUpdate = true;
       col.needsUpdate = true;
 
-      color.setHSL(((hue / 360) + 0.5) % 1, 0.6, 0.4 + audio.energy * 0.25);
+      color.setHSL(((hue / 360) + 0.5) % 1, 0.85, 0.36 + audio.energy * 0.3);
       sky.material.color.copy(color);
 
       // sun pulses with bass, hue-complementary so it pops against the grid
