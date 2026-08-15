@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=431';
-import { drawQR } from './lib/qr.js?v=431';
-import { WORLDS } from './worlds/registry.js?v=431';
-import { Net, PALETTE } from './net.js?v=431';
-import { Presence } from './lib/presence.js?v=431';
-import { Pulses } from './lib/pulse.js?v=431';
-import { BeatClock } from './lib/beatclock.js?v=431';
-import { BeatCue } from './lib/beatcue.js?v=431';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=431';
-import { Race, placeOf, standings } from './lib/race.js?v=431';
-import { Signals } from './lib/signals.js?v=431';
-import { pickShareLine, loadLines } from './lib/lines.js?v=431';
-import { RouteMap } from './lib/map.js?v=431';
-import * as sfx from './lib/sfx.js?v=431';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=431';
-import { glowTexture } from './lib/glow.js?v=431';
+import { AudioEngine } from './audio-engine.js?v=432';
+import { drawQR } from './lib/qr.js?v=432';
+import { WORLDS } from './worlds/registry.js?v=432';
+import { Net, PALETTE } from './net.js?v=432';
+import { Presence } from './lib/presence.js?v=432';
+import { Pulses } from './lib/pulse.js?v=432';
+import { BeatClock } from './lib/beatclock.js?v=432';
+import { BeatCue } from './lib/beatcue.js?v=432';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=432';
+import { Race, placeOf, standings } from './lib/race.js?v=432';
+import { Signals } from './lib/signals.js?v=432';
+import { pickShareLine, loadLines } from './lib/lines.js?v=432';
+import { RouteMap } from './lib/map.js?v=432';
+import * as sfx from './lib/sfx.js?v=432';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=432';
+import { glowTexture } from './lib/glow.js?v=432';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -417,6 +417,11 @@ fetch('audio/manifest.json?t=' + Date.now())
       $('track-select').appendChild(opt);
       trackList.push('audio/' + f);
     }
+    // test audio sticks per device, but only inside dev mode — a sofa test
+    // without ?dev=1 always hears the real songs
+    if (localStorage.getItem('fp_testaudio') === '1' && new URLSearchParams(location.search).has('dev')) {
+      setTestAudio(true);
+    }
     // if the room's already running and silent, start the music now
     if (autoWanted && !audio.el.src) playAuto(false);
     // ── today's song: one date-picked track, named at the front door ──
@@ -444,6 +449,34 @@ fetch('audio/manifest.json?t=' + Date.now())
 // finishes. Any deliberate choice takes over immediately.
 let trackList = [];
 let autoOrder = [], autoAt = 0;
+
+// ── test audio (dev only): a private playlist so testing doesn't wear out
+// the real songs. Files sit in /audio but never in manifest.json — visitors
+// can't see them; this switch is the only way in. Sticky per device.
+const TEST_TRACKS = ['sweetwater.mp3', 'mindflight.mp3', 'mindflight_2.mp3',
+  'diamond_sky.mp3', 'planet_of_the_bass.mp3'].map(f => 'audio/' + f);
+let publicTracks = null;                 // the real list, parked while testing
+let testAudio = false;
+function setTestAudio(on) {
+  testAudio = !!on;
+  localStorage.setItem('fp_testaudio', on ? '1' : '');
+  if (on) {
+    if (!publicTracks) publicTracks = trackList.slice();
+    trackList = TEST_TRACKS.slice();
+    // the picker lists them too, so a specific one is one tap away
+    for (const t of TEST_TRACKS) {
+      if (![...$('track-select').options].some(o => o.value === t)) {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = '🎧 ' + t.split('/').pop();
+        $('track-select').appendChild(opt);
+      }
+    }
+  } else if (publicTracks) {
+    trackList = publicTracks.slice();
+    [...$('track-select').options].filter(o => TEST_TRACKS.includes(o.value)).forEach(o => o.remove());
+  }
+  autoOrder = []; autoAt = 0;            // reshuffle from the new pool
+}
 function shuffled(a) {
   const b = a.slice();
   for (let i = b.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [b[i], b[j]] = [b[j], b[i]]; }
@@ -452,7 +485,7 @@ function shuffled(a) {
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
   window.__sunoShare = null;
-  if (!next) {
+  if (!next && !testAudio) {   // signatures are real songs — skip in test audio
     const sig = signatureFor(currentWorldKey);
     if (sig && !audio.el.src) {
       audio.loadURL(sig);
@@ -4249,6 +4282,17 @@ if (params.get('dev') === '1') (function devPanel() {
     paid.textContent = '\u2b50 pretend i paid for artist access: ' + (window.__devPaid ? 'YES' : 'NO');
   });
   body.appendChild(paid);
+  // \u2500\u2500 test audio: her ears get a break; the public never hears these \u2500\u2500
+  // The instrumentals live in /audio but NOT in manifest.json, so they are
+  // invisible to visitors \u2014 this toggle is the only door to them.
+  const taLabel = () => '\ud83c\udfa7 test audio (instrumentals): ' + (testAudio ? 'ON' : 'OFF');
+  const ta = BTN('', () => {
+    setTestAudio(!testAudio);
+    ta.textContent = taLabel();
+    playAuto(true);   // switch what's playing right now, not just eventually
+  });
+  ta.textContent = taLabel();
+  body.appendChild(ta);
 
 
   // ── the notebook: anything she notices becomes a note that knows where
