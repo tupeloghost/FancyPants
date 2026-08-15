@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=404';
+import { glowTexture } from '../lib/glow.js?v=405';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -483,7 +483,10 @@ export function createTunnel() {
           if (themed) weave = 1 + (weave - 1) * 0.45; // gentle texture only
 
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
-          const lum = 0.03 + 0.4 * (1 - Math.exp(-2.2 * drive));
+          // candy is a glossy rope — its stripes need to stay lit even on
+          // quiet frequencies, or the cane looks broken. Other looks keep
+          // their full contrast.
+          const lum = (colorMode === 'candy' ? 0.12 : 0.03) + 0.4 * (1 - Math.exp(-2.2 * drive));
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
 
           const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
@@ -491,6 +494,10 @@ export function createTunnel() {
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
           color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave);
+          if (colorMode === 'candy') {
+            const peak = Math.max(color.r, color.g, color.b);
+            if (peak > 0 && peak < 0.18) color.multiplyScalar(0.18 / peak);
+          }
           wall.setColorAt(idx, color);
           idx++;
         }
