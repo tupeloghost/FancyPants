@@ -279,6 +279,21 @@
     100% { filter: brightness(1) saturate(1); }
   }
   body.lookflash #canvas { animation: lookflash 1.15s ease-out; }
+  /* gentle lights: every big flash softened for light-sensitive players */
+  @keyframes lookflash-gentle {
+    0% { filter: brightness(1) saturate(1); }
+    35% { filter: brightness(1.3) saturate(1.4); }
+    100% { filter: brightness(1) saturate(1); }
+  }
+  body.gentle.lookflash #canvas { animation: lookflash-gentle 1.3s ease-out; }
+  @keyframes swallow-gentle {
+    0% { transform: translate(0,0); filter: brightness(1); }
+    35% { transform: translate(-5px,3px); filter: brightness(0.75); }
+    100% { transform: translate(0,0); filter: brightness(1); }
+  }
+  body.gentle.swallowed #canvas { animation: swallow-gentle 0.75s ease-out; }
+  body.gentle.peak #canvas { filter: saturate(1.12) brightness(1.04); }
+  body.gentle.peak::after { animation-duration: 2.2s; opacity: 0.5; }
   /* THE DROP: the whole frame runs hotter while the song surges */
   #canvas { transition: filter 0.7s ease; }
   body.peak #canvas { filter: saturate(1.3) brightness(1.1); }
@@ -2257,6 +2272,7 @@
           <input id="mq-artist" maxlength="40" placeholder="artist name" autocomplete="off">
           <button id="mq-card">MAKE AN ARTIST CARD</button>
           <button id="lyr-btn">LYRICS: ON</button>
+          <button id="gentle-btn" title="softens flashes &amp; pulses &mdash; for light-sensitive folks">GENTLE LIGHTS: OFF</button>
           <button id="mq-page">YOUR ARTIST PAGE</button>
         </div>
     <div id="suno-rights">paste a song YOU made or have rights to &mdash; artists&rsquo; rights matter &rsquo;round here</div>
@@ -2346,7 +2362,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 416</div>
+      <div id="build-stamp">build 417</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2388,6 +2404,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=416"></script>
+<script type="module" src="js/main.js?v=417"></script>
 </body>
 </html>

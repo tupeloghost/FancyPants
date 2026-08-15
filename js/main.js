@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=416';
-import { drawQR } from './lib/qr.js?v=416';
-import { WORLDS } from './worlds/registry.js?v=416';
-import { Net, PALETTE } from './net.js?v=416';
-import { Presence } from './lib/presence.js?v=416';
-import { Pulses } from './lib/pulse.js?v=416';
-import { BeatClock } from './lib/beatclock.js?v=416';
-import { BeatCue } from './lib/beatcue.js?v=416';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=416';
-import { Race, placeOf, standings } from './lib/race.js?v=416';
-import { Signals } from './lib/signals.js?v=416';
-import { pickShareLine, loadLines } from './lib/lines.js?v=416';
-import { RouteMap } from './lib/map.js?v=416';
-import * as sfx from './lib/sfx.js?v=416';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=416';
-import { glowTexture } from './lib/glow.js?v=416';
+import { AudioEngine } from './audio-engine.js?v=417';
+import { drawQR } from './lib/qr.js?v=417';
+import { WORLDS } from './worlds/registry.js?v=417';
+import { Net, PALETTE } from './net.js?v=417';
+import { Presence } from './lib/presence.js?v=417';
+import { Pulses } from './lib/pulse.js?v=417';
+import { BeatClock } from './lib/beatclock.js?v=417';
+import { BeatCue } from './lib/beatcue.js?v=417';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=417';
+import { Race, placeOf, standings } from './lib/race.js?v=417';
+import { Signals } from './lib/signals.js?v=417';
+import { pickShareLine, loadLines } from './lib/lines.js?v=417';
+import { RouteMap } from './lib/map.js?v=417';
+import * as sfx from './lib/sfx.js?v=417';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=417';
+import { glowTexture } from './lib/glow.js?v=417';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1575,6 +1575,18 @@ function pickPass(pool, who) {
 
 let passT = 0;
 let peakFast = 0, peakSlow = 0, peakLevel = 0, peakUntil = 0, peakCooldown = 0;
+const gentleDefault = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let gentleLights = localStorage.getItem('fp_gentle') === null
+  ? gentleDefault
+  : localStorage.getItem('fp_gentle') === '1';
+document.body.classList.toggle('gentle', gentleLights);
+function setGentle(on) {
+  gentleLights = on;
+  localStorage.setItem('fp_gentle', on ? '1' : '0');
+  document.body.classList.toggle('gentle', on);
+  const b = $('gentle-btn');
+  if (b) b.textContent = 'GENTLE LIGHTS: ' + (on ? 'ON' : 'OFF');
+}
 function updatePeak(dt, a) {
   const e = (a && a.volume) || 0;
   peakFast += (e - peakFast) * Math.min(1, dt * 2.5);
@@ -2524,6 +2536,8 @@ $('cc-copyedit').addEventListener('click', () => {
     .then(() => flash('EDIT KEY COPIED \u2014 SAVE IT SOMEWHERE SAFE', 2400)).catch(() => {});
 });
 
+$('gentle-btn').addEventListener('click', () => setGentle(!gentleLights));
+setGentle(gentleLights);   // paint the button to the saved state
 $('lyr-btn').addEventListener('click', () => {
   localStorage.setItem('fp_lyrics_off', localStorage.getItem('fp_lyrics_off') === '1' ? '0' : '1');
   lyrBtnPaint();
@@ -4580,6 +4594,7 @@ function frame(now) {
     worldShot = null;
   }
 
+  if (gentleLights) a.beatIntensity = Math.min(a.beatIntensity, 0.3);
   world.update(dt, a, participants, {
     reactivity: settings.reactivity,
     hue: hueEff,
