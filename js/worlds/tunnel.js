@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=401';
+import { glowTexture } from '../lib/glow.js?v=402';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -483,10 +483,11 @@ export function createTunnel() {
           if (themed) weave = 1 + (weave - 1) * 0.45; // gentle texture only
 
           const drive = level * 0.55 * Math.sqrt(reactivity) + audio.beatIntensity * 0.1 + tapFlash * 0.15;
-          const lum = 0.03 + 0.4 * (1 - Math.exp(-2.2 * drive));
+          // quiet rings glow dim, never black — a dark gap reads as a glitch
+          const lum = 0.085 + 0.36 * (1 - Math.exp(-2.2 * drive));
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
 
-          const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
+          const proximityDim = Math.min(1, Math.max(0.2, -z / 16));
           const rawDrive = Math.min(1.9, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
