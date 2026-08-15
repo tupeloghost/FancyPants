@@ -2,8 +2,8 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=392';
-import { themePaint } from '../lib/themes.js?v=392';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=395';
+import { themePaint } from '../lib/themes.js?v=395';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -128,11 +128,11 @@ export function createSurfer() {
       const surgeTarget = (opts.holding && !attract) ? (0.45 + sparkFuel * 0.75) : 0;
       surge += (surgeTarget - surge) * Math.min(1, dt * 5);
       if (opts.holding) sparkFuel = Math.max(0, sparkFuel - dt * 0.15);
-      camera.fov = 76 + surge * 9;
+      camera.fov = 76 + surge * 16;
       camera.updateProjectionMatrix();
 
       // push a new spectrum row at a fixed cadence; terrain scrolls between rows
-      rowTimer += dt * (0.6 + audio.volume * 1.2) * (1 + surge); // music (and the throttle) speed the world up
+      rowTimer += dt * (0.6 + audio.volume * 1.2) * (1 + surge * 1.6); // music (and the throttle) speed the world up
       while (rowTimer >= ROW_INTERVAL) {
         rowTimer -= ROW_INTERVAL;
         const row = history.pop();
@@ -156,10 +156,12 @@ export function createSurfer() {
       steer += (steerTarget - steer) * Math.min(1, dt * 3);
 
       // ── sparks: spawn on the beat, flow with the terrain, get caught ──
-      const flow = 77 * (0.6 + audio.volume * 1.2) * (1 + surge);
+      const flow = 77 * (0.6 + audio.volume * 1.2) * (1 + surge * 1.6);
       sparkTimer -= dt;
-      if (audio.beat && sparkTimer <= 0 && !attract) {
-        sparkTimer = 0.38;
+      // a steady stream regardless of the beat detector (some songs hide
+      // their beats from it) — detected beats just make it rain harder
+      if (!attract && (sparkTimer <= 0 || (audio.beat && sparkTimer <= 0.7))) {
+        sparkTimer = audio.beat ? 0.45 : 1.05;
         const sp = sparks.find(x => !x.alive);
         if (sp) {
           sparkN++;
@@ -185,11 +187,12 @@ export function createSurfer() {
         }
         sp.z += flow * dt;
         sp.m.position.set(sp.x, sp.y + Math.sin(time * 5 + sp.x) * 0.8, sp.z);
-        if (sp.look) color.setHSL((time * 0.5 + sp.x * 0.01) % 1, 1, 0.7);   // shimmer: it cycles the whole wheel
-        else color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.65);
+        if (sp.look) color.setHSL((time * 0.8 + sp.x * 0.01) % 1, 1, 0.72);   // rainbow: the rare repainter
+        else color.setHSL(((hue / 360) + (sp.high ? 0.5 : 0.12)) % 1, 1, 0.68);
         sp.m.material.color.copy(color);
-        sp.m.material.opacity = 0.85;
-        sp.m.scale.setScalar(sp.look ? 13 : sp.high ? 11 : 9);
+        sp.m.material.opacity = 1;
+        const pulse = 1 + audio.beatIntensity * 0.35;
+        sp.m.scale.setScalar((sp.look ? 20 : sp.high ? 16 : 13) * pulse);
         // the catch plane rides with the surfer
         if (sp.z > 30 && sp.z < 48) {
           const dx = Math.abs(sp.x - steer * 40);
@@ -210,6 +213,7 @@ export function createSurfer() {
         }
         if (sp.z > 60) { sp.alive = false; sp.m.visible = false; }
       }
+      window.__sparkInfo = { alive: sparks.filter(x => x.alive).length, n: sparkN, timer: +sparkTimer.toFixed(2), beat: audio.beat, sample: sparks.find(x => x.alive) ? { z: Math.round(sparks.find(x => x.alive).z), y: Math.round(sparks.find(x => x.alive).y), vis: sparks.find(x => x.alive).m.visible } : null };
       // the chain fades if the catching stops
       sparkDry += dt;
       if (sparkDry > 5 && sparkChain) { sparkChain = 0; if (window.__setFigure) window.__setFigure(null); }
