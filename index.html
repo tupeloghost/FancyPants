@@ -1401,6 +1401,10 @@
   }
   #score-badge em { font: 400 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); font-style: normal; margin-left: 4px; letter-spacing: 2px; }
   #score-badge.hidden { display: none; }
+  /* points run the engine quietly now — nobody needs the receipt */
+  #score-badge { display: none !important; }
+  #rs-pts-wrap { display: none !important; }
+  #standings .pt, #plist-rows > div span:last-child { display: none; }
   #score-badge.bump { animation: scorebump 0.3s ease-out; }
 
   /* standings — always on, no keyboard required */
@@ -2172,7 +2176,7 @@
     <div><b id="rs-acc">0%</b><em>accuracy</em></div>
     <div><b id="rs-streak">0</b><em>best streak</em></div>
     <div><b id="rs-notes">0</b><em>notes hit</em></div>
-    <div><b id="rs-pts">+0</b><em>points</em></div>
+    <div id="rs-pts-wrap"><b id="rs-pts">+0</b><em>points</em></div>
   </div>
 </div>
 
@@ -2326,7 +2330,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 398</div>
+      <div id="build-stamp">build 399</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2368,6 +2372,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=398"></script>
+<script type="module" src="js/main.js?v=399"></script>
 </body>
 </html>
