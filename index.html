@@ -525,7 +525,8 @@
      Hairlines draw outward from center, the title tracks in like a film
      credit, everything leaves as quietly as it came. */
   #annc {
-    position: fixed; z-index: 98; left: 0; right: 0; top: 62%;
+    /* above the panel — THE DROP does not hide behind a settings sheet */
+    position: fixed; z-index: 120; left: 0; right: 0; top: 62%;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
     pointer-events: none; opacity: 0;
   }
@@ -562,6 +563,10 @@
   #annc.leave { opacity: 0; transition: opacity 0.8s ease; }
   #annc.ember #annc-title { color: hsl(14, 75%, 76%); text-shadow: 0 1px 30px hsla(10, 85%, 45%, 0.4); }
   #annc.ember #annc-row i { background: linear-gradient(90deg, transparent, hsla(14, 70%, 62%, 0.8), transparent); }
+  /* the quiet voice: no title, no hairlines, just the whisper on a soft band */
+  #annc.quiet #annc-row { display: none; }
+  #annc.quiet::before { opacity: 0.85; top: -26px; bottom: -22px; }
+  #annc.quiet #annc-sub { font-size: clamp(15px, 2.4vw, 21px); text-shadow: 0 1px 14px rgba(2, 1, 8, 0.9); }
   @media (max-width: 620px) { #annc { top: 58%; } #annc-row { gap: 12px; } }
 
   /* ── Tuning panel (`) ── the game's feel as sliders, dragged mid-play ── */
@@ -2412,7 +2417,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 428</div>
+      <div id="build-stamp">build 429</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2454,6 +2459,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=428"></script>
+<script type="module" src="js/main.js?v=429"></script>
 </body>
 </html>

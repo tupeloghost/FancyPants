@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=428';
-import { drawQR } from './lib/qr.js?v=428';
-import { WORLDS } from './worlds/registry.js?v=428';
-import { Net, PALETTE } from './net.js?v=428';
-import { Presence } from './lib/presence.js?v=428';
-import { Pulses } from './lib/pulse.js?v=428';
-import { BeatClock } from './lib/beatclock.js?v=428';
-import { BeatCue } from './lib/beatcue.js?v=428';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=428';
-import { Race, placeOf, standings } from './lib/race.js?v=428';
-import { Signals } from './lib/signals.js?v=428';
-import { pickShareLine, loadLines } from './lib/lines.js?v=428';
-import { RouteMap } from './lib/map.js?v=428';
-import * as sfx from './lib/sfx.js?v=428';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=428';
-import { glowTexture } from './lib/glow.js?v=428';
+import { AudioEngine } from './audio-engine.js?v=429';
+import { drawQR } from './lib/qr.js?v=429';
+import { WORLDS } from './worlds/registry.js?v=429';
+import { Net, PALETTE } from './net.js?v=429';
+import { Presence } from './lib/presence.js?v=429';
+import { Pulses } from './lib/pulse.js?v=429';
+import { BeatClock } from './lib/beatclock.js?v=429';
+import { BeatCue } from './lib/beatcue.js?v=429';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=429';
+import { Race, placeOf, standings } from './lib/race.js?v=429';
+import { Signals } from './lib/signals.js?v=429';
+import { pickShareLine, loadLines } from './lib/lines.js?v=429';
+import { RouteMap } from './lib/map.js?v=429';
+import * as sfx from './lib/sfx.js?v=429';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=429';
+import { glowTexture } from './lib/glow.js?v=429';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -290,6 +290,7 @@ function _switchWorldNow(key) {
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
   if (window.__sig) window.__sig.enterWorld(key);
+  armNudge(key);
   if (lookBefore) { applyPreset(lookBefore); lookBefore = null; }   // your look comes home with you
   toyRound = null;   // switching worlds mid-song cancels a toy round quietly
   if (window.__touchSteer) { window.__touchSteer.x = 0; window.__touchSteer.y = 0; }
@@ -1641,6 +1642,37 @@ document.addEventListener('fp-swallowed', e => {
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 750);
 });
+// the first-minute nudge: a wandering world never ASKS anything of a new
+// player — twenty quiet seconds in, once ever per world, a whisper invites
+// the first tap. Touching the world first counts as already knowing.
+let nudgeT = null;
+function armNudge(key) {
+  clearTimeout(nudgeT);
+  const w = WORLDS[key];
+  if (!w || w.rhythm) return;                              // rounds explain themselves
+  if (localStorage.getItem('fp_nudged_' + key)) return;
+  nudgeT = setTimeout(function fire() {
+    // a covered whisper is a wasted whisper — if any card owns the screen
+    // (landing included), hold the thought and try again shortly
+    const busy = document.hidden
+      || $('round-intro').classList.contains('show')
+      || $('mode-card').classList.contains('show')
+      || $('results').classList.contains('show')
+      || !$('tap-to-start').classList.contains('gone')
+      // an open panel means their hands are on the controls, not lost —
+      // and it covers the spot where the whisper lands
+      || !$('panel').classList.contains('collapsed');
+    if (busy) { nudgeT = setTimeout(fire, 12000); return; }
+    localStorage.setItem('fp_nudged_' + key, '1');
+    announce('', 'tap anywhere — see what happens', 3800, 'quiet');
+  }, 20000);
+}
+document.getElementById('canvas').addEventListener('pointerdown', () => {
+  if (!nudgeT) return;
+  clearTimeout(nudgeT); nudgeT = null;                     // they found it on their own
+  if (currentWorldKey) localStorage.setItem('fp_nudged_' + currentWorldKey, '1');
+});
+
 // the annunciator: ceremonies get a title card — hairlines drawing outward,
 // a tracked serif title, an italic subline — never the corner popup.
 // tone 'ember' dresses bad news.
@@ -1648,14 +1680,14 @@ let anncT = null, anncT2 = null;
 function announce(title, sub = '', ms = 2600, tone = '') {
   const el = $('annc');
   clearTimeout(anncT); clearTimeout(anncT2);
-  el.classList.remove('show', 'leave', 'ember');
+  el.classList.remove('show', 'leave', 'ember', 'quiet');
   void el.offsetWidth;
   $('annc-title').textContent = title;
   $('annc-sub').textContent = sub;
   if (tone) el.classList.add(tone);
   el.classList.add('show');
   anncT = setTimeout(() => { el.classList.remove('show'); el.classList.add('leave'); }, ms);
-  anncT2 = setTimeout(() => el.classList.remove('leave', 'ember'), ms + 900);
+  anncT2 = setTimeout(() => el.classList.remove('leave', 'ember', 'quiet'), ms + 900);
 }
 
 // one flash pipe for every quick note — good news plain, bad news red
