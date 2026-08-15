@@ -77,6 +77,35 @@ export function pass(up = true) {
 }
 
 // a milestone or finish: a little fanfare climb
+// a swoosh: filtered noise sweeping upward — key-agnostic, so it compliments
+// any song instead of clashing with it. big=true doubles it into a whoosh-bloom
+// for the rainbow ceremony.
+export function swoosh(big = false) {
+  if (muted || !ensure()) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime;
+  const dur = big ? 0.7 : 0.35;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(big ? 300 : 500, t);
+  bp.frequency.exponentialRampToValueAtTime(big ? 4200 : 2600, t + dur * 0.85);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(big ? 1.1 : 0.55, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(bp); bp.connect(g); g.connect(master);
+  src.start(t); src.stop(t + dur);
+  if (big) {
+    // the shimmer on top: three soft pentatonic sines stacked like wind chimes
+    [4, 6, 8].forEach((step, i) => setTimeout(() => blip(stepFreq(step), 0.5, 'sine', 0.3), 90 + i * 110));
+  }
+}
+
 export function fanfare() {
   [0, 3, 5, 8].forEach((st, i) =>
     setTimeout(() => blip(stepFreq(st), 0.16, 'triangle', 0.65), i * 80));

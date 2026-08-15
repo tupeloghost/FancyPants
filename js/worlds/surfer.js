@@ -2,8 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=400';
-import { themePaint } from '../lib/themes.js?v=400';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=401';
+import { hit as sfxHit, swoosh as sfxSwoosh } from '../lib/sfx.js?v=401';
+import { themePaint } from '../lib/themes.js?v=401';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -123,7 +124,7 @@ export function createSurfer() {
     onTap() {
       // the wave does the throwing: jump ON a bass swell and it launches you
       // half again higher — the music is the trampoline, and you can feel it
-      if (jumpY <= 0.01) jumpVel = 17 + this._lastBass * 14;
+      if (jumpY <= 0.01) { jumpVel = 17 + this._lastBass * 14; if (this._lastBass > 0.45) sfxSwoosh(false); }
       waveR = 0;                        // + a shockwave ridge racing to the horizon
     },
 
@@ -248,7 +249,14 @@ export function createSurfer() {
             sparkChain++;
             sparkDry = 0;
             sparkFuel = Math.min(1, sparkFuel + 0.22);   // every catch feeds the throttle
-            if (sp.look && !attract) document.dispatchEvent(new CustomEvent('fp-lookspark'));
+            if (sp.look && !attract) {
+              document.dispatchEvent(new CustomEvent('fp-lookspark'));
+              sfxSwoosh(true);                    // the rainbow bloom
+            } else if (midair || sp.high) {
+              sfxSwoosh(false);                   // air catches whoosh
+            } else {
+              sfxHit(sparkChain, sparkChain >= 5); // ground catches climb the scale
+            }
             if (opts.addScore) opts.addScore((sp.look ? 5 : sp.high ? 3 : 2) * (midair ? 2 : 1) + (sparkChain >= 5 ? 2 : 0));
             if (opts.impact) opts.impact(sp.look ? 0.7 : midair ? 0.5 : 0.3);
             if (window.__setFigure && sparkChain >= 3) window.__setFigure('SPARKS \u00d7' + sparkChain + (midair ? ' \u00b7 MID-AIR' : ''), 0, 0);
