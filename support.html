@@ -3,52 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Support Fancy Britches</title>
+<title>Keep Fancy Britches Independent</title>
+<meta name="description" content="Fancy Britches is built by one person, an independent artist. No ads, no investors. Here is the story, and how you can help keep it free.">
+<meta property="og:title" content="Keep Fancy Britches Independent">
+<meta property="og:description" content="Part interactive playground, part music visualizer, built by one person so anybody can put their song in a world.">
+<meta property="og:site_name" content="Fancy Britches">
+<meta property="og:image" content="https://tupeloghost.github.io/FancyPants/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tupeloghost.github.io/FancyPants/og.jpg">
 <style>
   body { margin: 0; background: #0b0918; color: #d5ddf0; font: 17px/1.75 Georgia, 'Times New Roman', serif; }
-  main { max-width: 620px; margin: 0 auto; padding: 64px 24px 96px; }
-  h1 { font-family: 'Didot', 'Bodoni 72', Georgia, serif; font-weight: 400; letter-spacing: 4px; font-size: 34px; color: #e8edff; }
-  h2 { font-family: 'Didot', 'Bodoni 72', Georgia, serif; font-weight: 400; letter-spacing: 2px; font-size: 22px; color: #dfe6fb; margin-top: 44px; }
+  main { max-width: 620px; margin: 0 auto; padding: 64px 24px 40px; }
+  h1 {
+    font-family: 'Didot', 'Bodoni 72', Georgia, serif; font-weight: 400;
+    letter-spacing: 3px; font-size: 34px; line-height: 1.25; color: #e8edff;
+    margin: 0 0 8px;
+  }
+  h2 {
+    font-family: 'Didot', 'Bodoni 72', Georgia, serif; font-weight: 400;
+    letter-spacing: 2px; font-size: 22px; color: #dfe6fb; margin-top: 46px;
+  }
   em { color: #aeb9d8; }
   a { color: #9db8ff; }
-  .goal { border: 1px solid #33406b; border-radius: 14px; padding: 18px 22px; margin: 26px 0; background: #121030; }
+  /* the welcome sits a step above the story, in the game's own voice */
+  .lede {
+    font-family: 'Didot', 'Bodoni 72', Georgia, serif; font-size: 19px;
+    color: #c3cdea; font-style: italic; margin: 0 0 30px;
+  }
+  .rule { height: 1px; background: linear-gradient(90deg, transparent, #3a4573, transparent); margin: 40px 0; border: 0; }
   .small { font-size: 13px; color: #8a94b5; font-family: 'SF Mono', Menlo, monospace; letter-spacing: 0.4px; }
+  /* the ask: one clear place to give, and it says what it funds */
+  .tipjar { border: 1px solid #3a4573; border-radius: 16px; padding: 26px 24px; margin: 34px 0 10px;
+            background: linear-gradient(175deg, #171337, #100e26); text-align: center; }
+  .give {
+    display: inline-block; padding: 14px 30px; border-radius: 999px;
+    font: 13px 'SF Mono', Menlo, monospace; letter-spacing: 2px; color: #eef1ff;
+    background: rgba(120, 150, 255, 0.16); border: 1px solid rgba(150, 175, 255, 0.5);
+    text-decoration: none; transition: background 180ms ease, transform 180ms ease;
+  }
+  .give:hover { background: rgba(120, 150, 255, 0.3); transform: translateY(-1px); }
+  .give[aria-disabled="true"] { opacity: 0.55; pointer-events: none; }
+  .tipjar .small { display: block; margin-top: 14px; }
+  footer { max-width: 620px; margin: 0 auto; padding: 0 24px 90px; }
+  .note { max-width: 560px; margin: 30px auto 0; font: 13px/1.7 Georgia, serif; color: #b9b3d0; text-align: center; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Handmade, every pixel of it</h1>
-  <p><em>Fancy Britches</em> is built by one person &mdash; Tupelo Ghost, an independent artist &mdash;
-  so that music doesn&rsquo;t have to sit behind a static image ever again. Every world, every mechanic,
-  every line of it was made by hand &mdash; for the artists who release here, the streamers who host here,
-  the parties and weddings and celebrations that get a world of their own, and everyone who just shows up to play.</p>
+  <h1>Keep Fancy Britches Independent</h1>
+  <p class="lede">Welcome to Fancy Britches. It&rsquo;s part interactive playground, part music visualizer,
+  and entirely built to give folks a beautiful, fun space to experience and share music.</p>
 
-  <p>It&rsquo;s free while it grows. If it made you smile, made your song feel bigger,
-  or gave your stream a night to remember &mdash; you can help keep the lights on.</p>
+  <p>I grew up in a working-class family where money was tight, so pursuing the arts always felt like
+  a bit of a luxury we couldn&rsquo;t quite afford. Luckily, my dad loved bringing home computer tech
+  instead of regular toys. That sparked a lifelong obsession with audio, video games, and technology.
+  I couldn&rsquo;t afford to buy a massive music collection, so I was the kid spending hours building
+  the perfect digital mixtapes and hacking old media player skins to make them look cool.</p>
 
-  <div class="goal">
-    <strong>First goal: help me pay off my student loans.</strong><br>
-    <span class="small">Every donation goes to a real person, not a company. When the donation link is live it will appear right here.</span>
+  <p>As I got older and caught up in the daily hustle of the corporate world, I lost a good bit of that
+  creative energy. But when new digital tools started coming around, everything changed. I realized you
+  don&rsquo;t need a massive budget or fancy industry connections to build something amazing anymore.
+  I got my creative spark back, and I built Fancy Britches to share that exact feeling with y&rsquo;all.</p>
+
+  <hr class="rule">
+
+  <h2>Why your support matters</h2>
+  <p>Building a multiplayer world from the ground up takes real capital and every spare evening and
+  weekend I can find. I want to keep this space completely community-driven, which means no annoying ads
+  and no outside investors changing the vibe. Every dollar you toss in the tip jar goes straight back into
+  the platform to cover server costs, software licenses, and upgrading the development tools to make the
+  worlds even better.</p>
+
+  <p>I want to be absolutely clear on the platform&rsquo;s vision. Right now, if you are an artist wanting
+  to host your stream and share your music, getting started here is completely free. As Fancy Britches
+  grows, my long-term goal isn&rsquo;t just to give you a free stage, but to build the tools you need to
+  connect with your fans and eventually generate your own support. The mission is to empower independent
+  artists, not charge you a cover fee just to walk through the door.</p>
+
+  <p>Whether you are dropping a new track or just grabbing some friends to kick back in a digital
+  wonderland, there is a spot saved for you here. If you are enjoying the space and have a few dollars to
+  spare, supporting the project helps keep this playground open and free for everyone.</p>
+
+  <div class="tipjar">
+    <!-- when the donation link is live, put the URL in href and drop the aria-disabled line -->
+    <a class="give" href="#" aria-disabled="true">SUPPORT THE DEVELOPER</a>
+    <span class="small">the tip jar opens soon. every dollar goes to one person, not a company.</span>
   </div>
 
   <h2>Want your music in here?</h2>
-  <p>Artist features are coming &mdash; play inside your own songs, share them as playable links,
-  see your analytics, top plays and high scores per song. Join the waiting list on the front page
-  and you&rsquo;ll be first in when the doors open.</p>
+  <p>Artist features are on the way: play inside your own songs, share them as playable links, and see
+  your analytics, top plays, and high scores per song. Join the waiting list on the front page and
+  you&rsquo;ll be first in when the doors open.</p>
 
-  <h2>Rights &amp; takedowns</h2>
-  <p class="small">Fancy Britches doesn&rsquo;t host third-party music; pasted songs stream from their source, for play,
-  and are never stored. Paste songs you made or have rights to. If you&rsquo;re a rights holder and want
-  something removed, email <a href="mailto:rockypawart@gmail.com">rockypawart@gmail.com</a> and it&rsquo;ll be handled promptly.</p>
+  <h2>Rights and takedowns</h2>
+  <p class="small">Fancy Britches doesn&rsquo;t host third-party music. Pasted songs stream from their
+  source, for play, and are never stored. Paste songs you made or have the rights to. If you&rsquo;re a
+  rights holder and want something removed, email
+  <a href="mailto:rockypawart@gmail.com">rockypawart@gmail.com</a> and it&rsquo;ll be handled promptly.</p>
 
   <p class="small">&copy; Tupelo Ghost. All rights reserved. <a href="index.html">&larr; back to the game</a></p>
 </main>
-<section style="max-width:560px;margin:34px auto 0;font:13px/1.7 Georgia,serif;color:#b9b3d0;text-align:center;">
-  <b style="letter-spacing:1px;">a note on flashing lights</b><br>
-  fancy britches is a music visualizer &mdash; worlds pulse, flash, and move with the songs.
-  a small percentage of people may experience seizures from flashing lights, even with no history of epilepsy.
-  if you or anyone watching feels dizzy, disoriented, or unwell, stop playing right away.
-  a <b>gentle lights</b> setting (music tab) softens every flash and pulse.
-</section>
+<footer>
+  <div class="note">
+    <b style="letter-spacing:1px;">a note on flashing lights</b><br>
+    fancy britches is a music visualizer, so worlds pulse, flash, and move with the songs.
+    a small percentage of people may experience seizures from flashing lights, even with no history of epilepsy.
+    if you or anyone watching feels dizzy, disoriented, or unwell, stop playing right away.
+    a <b>gentle lights</b> setting (music tab) softens every flash and pulse.
+  </div>
+</footer>
 </body>
 </html>
