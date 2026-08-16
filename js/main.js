@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=445';
-import { drawQR } from './lib/qr.js?v=445';
-import { WORLDS } from './worlds/registry.js?v=445';
-import { Net, PALETTE } from './net.js?v=445';
-import { Presence } from './lib/presence.js?v=445';
-import { Pulses } from './lib/pulse.js?v=445';
-import { BeatClock } from './lib/beatclock.js?v=445';
-import { BeatCue } from './lib/beatcue.js?v=445';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=445';
-import { Race, placeOf, standings } from './lib/race.js?v=445';
-import { Signals } from './lib/signals.js?v=445';
-import { pickShareLine, loadLines } from './lib/lines.js?v=445';
-import { RouteMap } from './lib/map.js?v=445';
-import * as sfx from './lib/sfx.js?v=445';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=445';
-import { glowTexture } from './lib/glow.js?v=445';
+import { AudioEngine } from './audio-engine.js?v=446';
+import { drawQR } from './lib/qr.js?v=446';
+import { WORLDS } from './worlds/registry.js?v=446';
+import { Net, PALETTE } from './net.js?v=446';
+import { Presence } from './lib/presence.js?v=446';
+import { Pulses } from './lib/pulse.js?v=446';
+import { BeatClock } from './lib/beatclock.js?v=446';
+import { BeatCue } from './lib/beatcue.js?v=446';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=446';
+import { Race, placeOf, standings } from './lib/race.js?v=446';
+import { Signals } from './lib/signals.js?v=446';
+import { pickShareLine, loadLines } from './lib/lines.js?v=446';
+import { RouteMap } from './lib/map.js?v=446';
+import * as sfx from './lib/sfx.js?v=446';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=446';
+import { glowTexture } from './lib/glow.js?v=446';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2992,7 +2992,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is an experience now. step inside it free, no app";
+    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it free, no app";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3003,8 +3003,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "'. you can step inside songs here. free, no app"
-      : 'songs are experiences you can step inside here. free, no app';
+      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here. free, no app"
+      : 'songs are places you can get into here. free, no app';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -3035,11 +3035,11 @@ function shareCaption() {
   const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
   const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
   const PROMO = [
-    { t: 'i didn\u2019t listen to ' + st + '. i was in it, and it moved every time i did.', c: 'your turn \u2192' },
-    { t: st + ' is an experience now. the whole world moved with it and i got chills.', c: 'step inside \u2192' },
-    { t: 'this is what ' + st + ' looks like from the inside.', c: 'see for yourself \u2192' },
-    { t: wl + ' just ate three minutes of my life and i\u2019d give it three more.', c: 'go get lost \u2192' },
-    { t: 'no app, no login. one tap and i was inside the song.', c: 'tap yours \u2192' },
+    { t: 'i didn\u2019t listen to ' + st + '. i got in it.', c: 'your turn \u2192' },
+    { t: st + ' moved every time i did. i have chills and no explanation.', c: 'step inside \u2192' },
+    { t: 'this is ' + st + ' from the inside.', c: 'see for yourself \u2192' },
+    { t: wl + ' ate three minutes of my life. worth it.', c: 'go get lost \u2192' },
+    { t: 'no app, no login. one tap and i was in the song.', c: 'tap yours \u2192' },
   ];
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
   const line = l ? l.text : pf.t;
@@ -3769,7 +3769,7 @@ $('ac-share').addEventListener('click', () => {
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
-  const caption = ($('mq-title').value.trim() || 'my song') + ' is an experience you can step inside: ' + clipURL();
+  const caption = ($('mq-title').value.trim() || 'my song') + ', from the inside: ' + clipURL();
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text: caption }).catch(() => {});
   } else {
