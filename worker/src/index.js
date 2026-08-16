@@ -487,7 +487,7 @@ export default {
       const title = wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ');
       const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
         ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
-      return unfurl(title, 'don\u2019t just hear it. step inside it, free, no app, right in the browser.', dest, image);
+      return unfurl(title, 'don\u2019t just hear it. step inside and feel it move around you, free, no app.', dest, image);
     }
     // /p/{world}/{file} — the short front door for a house song: a clean
     // link that unfurls with the song's name instead of a query-string tail
@@ -498,7 +498,7 @@ export default {
       const image = ['tunnel', 'surfer', 'slide'].includes(pslug[1])
         ? SITE_URL + 'previews/' + pslug[1] + '.jpg' : null;
       return unfurl(title + ': an experience you can step inside',
-        'don’t just hear it. stand in it, free, no app, right in the browser.', dest, image);
+        'don’t just hear it. feel it move around you, free, no app, right in the browser.', dest, image);
     }
     // /c/{slug} — a creator's page: reachable only by its link, never listed
     const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);

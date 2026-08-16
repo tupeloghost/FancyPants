@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=444';
-import { drawQR } from './lib/qr.js?v=444';
-import { WORLDS } from './worlds/registry.js?v=444';
-import { Net, PALETTE } from './net.js?v=444';
-import { Presence } from './lib/presence.js?v=444';
-import { Pulses } from './lib/pulse.js?v=444';
-import { BeatClock } from './lib/beatclock.js?v=444';
-import { BeatCue } from './lib/beatcue.js?v=444';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=444';
-import { Race, placeOf, standings } from './lib/race.js?v=444';
-import { Signals } from './lib/signals.js?v=444';
-import { pickShareLine, loadLines } from './lib/lines.js?v=444';
-import { RouteMap } from './lib/map.js?v=444';
-import * as sfx from './lib/sfx.js?v=444';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=444';
-import { glowTexture } from './lib/glow.js?v=444';
+import { AudioEngine } from './audio-engine.js?v=445';
+import { drawQR } from './lib/qr.js?v=445';
+import { WORLDS } from './worlds/registry.js?v=445';
+import { Net, PALETTE } from './net.js?v=445';
+import { Presence } from './lib/presence.js?v=445';
+import { Pulses } from './lib/pulse.js?v=445';
+import { BeatClock } from './lib/beatclock.js?v=445';
+import { BeatCue } from './lib/beatcue.js?v=445';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=445';
+import { Race, placeOf, standings } from './lib/race.js?v=445';
+import { Signals } from './lib/signals.js?v=445';
+import { pickShareLine, loadLines } from './lib/lines.js?v=445';
+import { RouteMap } from './lib/map.js?v=445';
+import * as sfx from './lib/sfx.js?v=445';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=445';
+import { glowTexture } from './lib/glow.js?v=445';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3035,8 +3035,8 @@ function shareCaption() {
   const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
   const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
   const PROMO = [
-    { t: 'i didn\u2019t listen to ' + st + '. i stepped inside it.', c: 'your turn \u2192' },
-    { t: st + ' is an experience now, and i was just standing in it.', c: 'step inside \u2192' },
+    { t: 'i didn\u2019t listen to ' + st + '. i was in it, and it moved every time i did.', c: 'your turn \u2192' },
+    { t: st + ' is an experience now. the whole world moved with it and i got chills.', c: 'step inside \u2192' },
     { t: 'this is what ' + st + ' looks like from the inside.', c: 'see for yourself \u2192' },
     { t: wl + ' just ate three minutes of my life and i\u2019d give it three more.', c: 'go get lost \u2192' },
     { t: 'no app, no login. one tap and i was inside the song.', c: 'tap yours \u2192' },
