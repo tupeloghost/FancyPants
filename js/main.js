@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=439';
-import { drawQR } from './lib/qr.js?v=439';
-import { WORLDS } from './worlds/registry.js?v=439';
-import { Net, PALETTE } from './net.js?v=439';
-import { Presence } from './lib/presence.js?v=439';
-import { Pulses } from './lib/pulse.js?v=439';
-import { BeatClock } from './lib/beatclock.js?v=439';
-import { BeatCue } from './lib/beatcue.js?v=439';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=439';
-import { Race, placeOf, standings } from './lib/race.js?v=439';
-import { Signals } from './lib/signals.js?v=439';
-import { pickShareLine, loadLines } from './lib/lines.js?v=439';
-import { RouteMap } from './lib/map.js?v=439';
-import * as sfx from './lib/sfx.js?v=439';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=439';
-import { glowTexture } from './lib/glow.js?v=439';
+import { AudioEngine } from './audio-engine.js?v=441';
+import { drawQR } from './lib/qr.js?v=441';
+import { WORLDS } from './worlds/registry.js?v=441';
+import { Net, PALETTE } from './net.js?v=441';
+import { Presence } from './lib/presence.js?v=441';
+import { Pulses } from './lib/pulse.js?v=441';
+import { BeatClock } from './lib/beatclock.js?v=441';
+import { BeatCue } from './lib/beatcue.js?v=441';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=441';
+import { Race, placeOf, standings } from './lib/race.js?v=441';
+import { Signals } from './lib/signals.js?v=441';
+import { pickShareLine, loadLines } from './lib/lines.js?v=441';
+import { RouteMap } from './lib/map.js?v=441';
+import * as sfx from './lib/sfx.js?v=441';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=441';
+import { glowTexture } from './lib/glow.js?v=441';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -397,7 +397,7 @@ window.__pickerInit = () => {
   front.forEach(k => mk(k));
   const cap = document.createElement('div');
   cap.id = 'wchip-cap';
-  cap.textContent = '\u2605 this week\u2019s special \u2014 a new world on the menu every monday';
+  cap.textContent = '\u2605 this week\u2019s special: a new world on the menu every monday';
   chips.parentElement.insertBefore(cap, chips.nextSibling);
 };
 for (const [key, w] of Object.entries(WORLDS)) {
@@ -433,7 +433,7 @@ fetch('audio/manifest.json?t=' + Date.now())
       const el = $('today');
       if (el) {
         el.textContent = "today\u2019s song: " + prettyTrack(file)
-          + ' \u2014 tap to play it in this week\u2019s special, ' + WORLDS[window.__WEEK_KEY].label;
+          + '. tap to play it in this week\u2019s special, ' + WORLDS[window.__WEEK_KEY].label;
         el.classList.remove('hidden');
         el.onclick = () => {
           window.__shareTrack = file;
@@ -952,7 +952,7 @@ function showToyResults() {
   resultsShown = true;
   $('awards').innerHTML = '';
   $('results-place').textContent = 'THAT\u2019S THE SONG';
-  const subs = ["the song's done \u2014 look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
+  const subs = ["the song's done. look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
   $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
   $('results-board').innerHTML = '';
   // a toy world has no accuracy or streak \u2014 empty dashes just look broken
@@ -992,7 +992,7 @@ $('file-input').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
   const fl = $('file-label'); if (fl) fl.textContent = '♪ ' + f.name;
-  sunoSay('♪ ' + f.name + ' — loaded and yours', 'ok');
+  sunoSay('♪ ' + f.name + ' is loaded and yours', 'ok');
   $('mq-title').value = f.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ');
   $('mq-artist').value = '';
   $('marquee-edit').classList.remove('hidden');
@@ -1043,7 +1043,7 @@ function loadSuno() {
     .then(r => (r.ok ? r.json() : Promise.reject(new Error('no song'))))
     .then(info => {
       if (!info.id) throw new Error('no song');
-      sunoTrack = [info.title, info.artist].filter(Boolean).join(' — ') || 'a suno track';
+      sunoTrack = [info.title, info.artist].filter(Boolean).join(' \u00b7 ') || 'a suno track';
       $('mq-title').value = info.title || '';
       $('mq-artist').value = info.artist || '';
       $('marquee-edit').classList.remove('hidden');
@@ -1063,7 +1063,7 @@ function loadSuno() {
     .catch(() => {
       sunoLoading = null;
       sunoTrack = '';
-      sunoSay("couldn't find that song — use the Share link from Suno", 'err');
+      sunoSay("couldn't find that song. use the Share link from Suno", 'err');
     });
 }
 let sunoTrack = '';   // what's playing, for the guests' now-playing line
@@ -1149,8 +1149,8 @@ net.onSong = s => {
     $('track-select').value = isSuno ? '' : s.url;
   }
   $('guest-track').textContent = isSuno
-    ? (s.title ? `${s.title} — picked by the host` : 'a suno track — picked by the host')
-    : decodeURIComponent(s.url.split('/').pop()).replace(/\.\w+$/, '').replace(/_/g, ' ') + ' — picked by the host';
+    ? (s.title ? `${s.title}, picked by the host` : 'a suno track, picked by the host')
+    : decodeURIComponent(s.url.split('/').pop()).replace(/\.\w+$/, '').replace(/_/g, ' ') + ', picked by the host';
   const apply = () => {
     if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);
     if (s.playing && !audio.playing) audio.play().catch(showTapToPlay);
@@ -1174,7 +1174,7 @@ let tapPlayBtn = null;
 function showTapToPlay() {
   if (tapPlayBtn) return;
   tapPlayBtn = document.createElement('button');
-  tapPlayBtn.textContent = '▶ come on in — tap to join the music';
+  tapPlayBtn.textContent = '▶ come on in. tap to join the music';
   Object.assign(tapPlayBtn.style, {
     position: 'fixed', left: '50%', bottom: '18%', transform: 'translateX(-50%)',
     zIndex: 60, padding: '14px 26px', borderRadius: '999px',
@@ -1291,28 +1291,28 @@ const A3 = 'hsl(calc(var(--accent-h) + 120), 90%, 55%)';
 
 const COLOR_MODES = [
   ['__group', 'FOLLOW THE HUE SLIDER'],
-  ['rainbow', 'rainbow — full spectrum', 'linear-gradient(90deg,#f43,#fa0,#fe5,#3e6,#2cf,#55f,#c4f)'],
-  ['duotone', 'duotone — your hue & its complement', `linear-gradient(90deg,${A},${A2})`],
-  ['cycle', 'cycle — colors rotate over time', 'conic-gradient(#f43,#fe5,#3e6,#2cf,#55f,#c4f,#f43)'],
-  ['mono', 'mono — one hue', A],
-  ['duo', 'duo — hue + complement, hard split', `linear-gradient(90deg,${A} 50%,${A2} 50%)`],
-  ['triad', 'triad — three hues', `linear-gradient(90deg,${A} 33%,${A3} 33% 66%,${A2} 66%)`],
-  ['pastel', 'pastel — soft & dreamy', 'linear-gradient(90deg,#fbc,#cfe,#dfc,#fec)'],
-  ['neon', 'neon — maximum glow', 'linear-gradient(90deg,#f0f,#0ff,#ff0)'],
-  ['glitter', 'glitter — sparkles in your hue', `radial-gradient(circle at 30% 40%,#fff 5%,transparent 8%),radial-gradient(circle at 75% 60%,#fff 4%,transparent 7%),linear-gradient(120deg,hsl(var(--accent-h),60%,14%),hsl(var(--accent-h),50%,26%))`],
-  ['cosmos', 'cosmos — starfield, nebula in your hue', 'radial-gradient(circle at 25% 30%,#fff 4%,transparent 6%),radial-gradient(circle at 70% 65%,#fff 3%,transparent 5%),linear-gradient(120deg,#103,#527,#215)'],
+  ['rainbow', 'rainbow \u00b7 full spectrum', 'linear-gradient(90deg,#f43,#fa0,#fe5,#3e6,#2cf,#55f,#c4f)'],
+  ['duotone', 'duotone \u00b7 your hue & its complement', `linear-gradient(90deg,${A},${A2})`],
+  ['cycle', 'cycle \u00b7 colors rotate over time', 'conic-gradient(#f43,#fe5,#3e6,#2cf,#55f,#c4f,#f43)'],
+  ['mono', 'mono \u00b7 one hue', A],
+  ['duo', 'duo \u00b7 hue + complement, hard split', `linear-gradient(90deg,${A} 50%,${A2} 50%)`],
+  ['triad', 'triad \u00b7 three hues', `linear-gradient(90deg,${A} 33%,${A3} 33% 66%,${A2} 66%)`],
+  ['pastel', 'pastel \u00b7 soft & dreamy', 'linear-gradient(90deg,#fbc,#cfe,#dfc,#fec)'],
+  ['neon', 'neon \u00b7 maximum glow', 'linear-gradient(90deg,#f0f,#0ff,#ff0)'],
+  ['glitter', 'glitter \u00b7 sparkles in your hue', `radial-gradient(circle at 30% 40%,#fff 5%,transparent 8%),radial-gradient(circle at 75% 60%,#fff 4%,transparent 7%),linear-gradient(120deg,hsl(var(--accent-h),60%,14%),hsl(var(--accent-h),50%,26%))`],
+  ['cosmos', 'cosmos \u00b7 starfield, nebula in your hue', 'radial-gradient(circle at 25% 30%,#fff 4%,transparent 6%),radial-gradient(circle at 70% 65%,#fff 3%,transparent 5%),linear-gradient(120deg,#103,#527,#215)'],
   ['__group', 'THEMES WITH THEIR OWN COLORS'],
-  ['fire', 'fire — flickering flames', 'linear-gradient(0deg,#310,#d30,#fa0,#ff7)'],
-  ['ocean', 'ocean — rolling teal swells', 'linear-gradient(90deg,#036,#0af,#0fd,#08c)'],
-  ['sunset', 'sunset — orange below, violet above', 'linear-gradient(0deg,#f70,#f36,#a3c)'],
-  ['aurora', 'aurora — green curtains, violet night', 'linear-gradient(75deg,#0e5,#3fa,#65f,#0e5)'],
-  ['forest', 'forest — canopy & dappled light', 'linear-gradient(90deg,#031,#0a4,#fd6 65%,#0a4)'],
-  ['gold', 'gold — polished metal shine', 'linear-gradient(105deg,#640,#fc3,#fff,#fc3,#640)'],
-  ['candy', 'candy — glossy cane stripes', 'repeating-linear-gradient(45deg,#f6a 0 5px,#fff 5px 9px,#4de 9px 14px,#fd4 14px 18px)'],
-  ['vapor', 'vapor — pink & cyan haze', 'linear-gradient(90deg,#f9c,#8df,#caf,#fac)'],
-  ['midnight', 'midnight — deep blues', 'linear-gradient(90deg,#124,#36c,#89b,#236)'],
-  ['coral', 'coral — warm reef tones', 'linear-gradient(90deg,#f75,#fa8,#4cb,#f86)'],
-  ['random', 'random — confetti', 'conic-gradient(#f43 0 14%,#2cf 0 32%,#fe5 0 47%,#c4f 0 66%,#3e6 0 82%,#f70 0)'],
+  ['fire', 'fire \u00b7 flickering flames', 'linear-gradient(0deg,#310,#d30,#fa0,#ff7)'],
+  ['ocean', 'ocean \u00b7 rolling teal swells', 'linear-gradient(90deg,#036,#0af,#0fd,#08c)'],
+  ['sunset', 'sunset \u00b7 orange below, violet above', 'linear-gradient(0deg,#f70,#f36,#a3c)'],
+  ['aurora', 'aurora \u00b7 green curtains, violet night', 'linear-gradient(75deg,#0e5,#3fa,#65f,#0e5)'],
+  ['forest', 'forest \u00b7 canopy & dappled light', 'linear-gradient(90deg,#031,#0a4,#fd6 65%,#0a4)'],
+  ['gold', 'gold \u00b7 polished metal shine', 'linear-gradient(105deg,#640,#fc3,#fff,#fc3,#640)'],
+  ['candy', 'candy \u00b7 glossy cane stripes', 'repeating-linear-gradient(45deg,#f6a 0 5px,#fff 5px 9px,#4de 9px 14px,#fd4 14px 18px)'],
+  ['vapor', 'vapor \u00b7 pink & cyan haze', 'linear-gradient(90deg,#f9c,#8df,#caf,#fac)'],
+  ['midnight', 'midnight \u00b7 deep blues', 'linear-gradient(90deg,#124,#36c,#89b,#236)'],
+  ['coral', 'coral \u00b7 warm reef tones', 'linear-gradient(90deg,#f75,#fa8,#4cb,#f86)'],
+  ['random', 'random \u00b7 confetti', 'conic-gradient(#f43 0 14%,#2cf 0 32%,#fe5 0 47%,#c4f 0 66%,#3e6 0 82%,#f70 0)'],
 ];
 const PATTERNS = [
   ['spiral', 'spiral', 'conic-gradient(from 0deg,#69f,#123 25%,#69f 50%,#123 75%,#69f)'],
@@ -1322,7 +1322,7 @@ const PATTERNS = [
   ['paisley', 'paisley swirl', 'radial-gradient(circle at 30% 60%,#69f 15%,transparent 40%),radial-gradient(circle at 70% 30%,#4ad 15%,transparent 45%),#123'],
   ['polka', 'polka dot', 'radial-gradient(circle at 25% 30%,#69f 22%,transparent 26%),radial-gradient(circle at 75% 70%,#69f 22%,transparent 26%),#123'],
   ['waves', 'waves', 'repeating-radial-gradient(circle at 0% 50%,#69f 0 3px,#123 3px 9px)'],
-  ['kaleido', 'kaleido — counter-rotating', 'conic-gradient(#69f 0 12%,#123 0 25%,#4ad 0 37%,#123 0 50%,#69f 0 62%,#123 0 75%,#4ad 0 87%,#123 0)'],
+  ['kaleido', 'kaleido \u00b7 counter-rotating', 'conic-gradient(#69f 0 12%,#123 0 25%,#4ad 0 37%,#123 0 50%,#69f 0 62%,#123 0 75%,#4ad 0 87%,#123 0)'],
 ];
 const SHAPES = [
   ['slat', 'slat', '&#9644;'],
@@ -1359,11 +1359,11 @@ function buildChips(containerId, items, isGlyph, apply, initial, nameId) {
     c.addEventListener('click', () => {
       box.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
       c.classList.add('on');
-      if (nameId) $(nameId).textContent = label.split(' — ')[0];
+      if (nameId) $(nameId).textContent = label.split(' \u00b7 ')[0];
       apply(id);
     });
     box.appendChild(c);
-    if (nameId && id === initial) $(nameId).textContent = label.split(' — ')[0];
+    if (nameId && id === initial) $(nameId).textContent = label.split(' \u00b7 ')[0];
   }
 }
 buildChips('color-chips', COLOR_MODES, false, v => { settings.colorMode = v; refreshHueLock(); updateURL(); }, settings.colorMode, 'color-name');
@@ -1707,7 +1707,7 @@ function armNudge(key) {
       || !$('panel').classList.contains('collapsed');
     if (busy) { nudgeT = setTimeout(fire, 12000); return; }
     localStorage.setItem('fp_nudged_' + key, '1');
-    announce('', 'tap anywhere — see what happens', 3800, 'quiet');
+    announce('', 'tap anywhere and see what happens', 3800, 'quiet');
   }, 20000);
 }
 document.getElementById('canvas').addEventListener('pointerdown', () => {
@@ -2186,7 +2186,7 @@ function renderStandings() {
     row.className = 'st' + (p.local ? ' me' : '');
     const mark = RANK_MARK[rankOf(p.score)] || '';
     row.innerHTML = `<span class="rk">${mark}</span><span class="nm"></span><span class="pt">${p.score || 0}</span>`;
-    row.querySelector('.nm').textContent = p.name || '—';
+    row.querySelector('.nm').textContent = p.name || '\u2026';
     box.appendChild(row);
   }
 }
@@ -2552,7 +2552,7 @@ $('lyric-layer').addEventListener('click', () => {
   localStorage.setItem('fp_lyrics_off', '1');
   lyrBtnPaint();
   updateLyricLayer();
-  flash('LYRICS TUCKED AWAY \u2014 BRING \u2019EM BACK IN THE MUSIC TAB', 2200);
+  flash('LYRICS TUCKED AWAY. BRING \u2019EM BACK IN THE MUSIC TAB', 2200);
 });
 // ── the creator page editor ── slug + bio + links + what's-next; promoted
 // songs land on the page by themselves. Creating returns the private edit
@@ -2568,7 +2568,7 @@ function ccParseLink(v) {
 }
 function ccKey(slug) { return localStorage.getItem('fp_ck_' + slug) || ''; }
 async function openCreatorCard() {
-  const slug = ccSlugify($('cc-slug').value || $('mq-artist').value || sunoTrack.split(' \u2014 ')[1] || '');
+  const slug = ccSlugify($('cc-slug').value || $('mq-artist').value || sunoTrack.split(' \u00b7 ')[1] || '');
   $('cc-slug').value = slug;
   if (!$('cc-name').value) $('cc-name').value = $('mq-artist').value || '';
   $('creator-card').classList.remove('hidden');
@@ -2587,7 +2587,7 @@ async function openCreatorCard() {
         const plays = Object.entries(d.plays || {});
         if (plays.length) {
           $('cc-plays').innerHTML = '<b>your plays (only you see this)</b><br>'
-            + plays.map(([k, n]) => '\u266a ' + k.split('/')[1].replace(/-/g, ' ') + ' \u2014 ' + n + ' visit' + (n === 1 ? '' : 's')).join('<br>');
+            + plays.map(([k, n]) => '\u266a ' + k.split('/')[1].replace(/-/g, ' ') + ': ' + n + ' visit' + (n === 1 ? '' : 's')).join('<br>');
           $('cc-plays').classList.remove('hidden');
         }
       }
@@ -2614,23 +2614,23 @@ $('cc-save').addEventListener('click', async () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     const d = await r.json().catch(() => ({}));
-    if (r.status === 409) { $('cc-msg').textContent = 'that address is taken \u2014 try another'; return; }
-    if (!r.ok) { $('cc-msg').textContent = 'that didn\u2019t take \u2014 try again?'; return; }
+    if (r.status === 409) { $('cc-msg').textContent = 'that address is taken. try another'; return; }
+    if (!r.ok) { $('cc-msg').textContent = 'that didn\u2019t take. try again?'; return; }
     if (d.editKey) localStorage.setItem('fp_ck_' + slug, d.editKey);
     $('cc-save').textContent = 'SAVE CHANGES';
     $('cc-out').classList.remove('hidden');
     $('cc-msg').textContent = 'live at fancy-pants.tupeloghost.workers.dev/c/' + slug;
-  } catch (e) { $('cc-msg').textContent = 'no connection \u2014 try again in a spell'; }
+  } catch (e) { $('cc-msg').textContent = 'no connection. try again in a spell'; }
 });
 $('cc-copy').addEventListener('click', () => {
   const slug = ccSlugify($('cc-slug').value);
   navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug)
-    .then(() => flash('PAGE LINK COPIED \u2014 PUT IT IN YOUR BIO', 2200)).catch(() => {});
+    .then(() => flash('PAGE LINK COPIED. PUT IT IN YOUR BIO', 2200)).catch(() => {});
 });
 $('cc-copyedit').addEventListener('click', () => {
   const slug = ccSlugify($('cc-slug').value);
-  navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug + '  \u2014 edit key (KEEP PRIVATE): ' + ccKey(slug))
-    .then(() => flash('EDIT KEY COPIED \u2014 SAVE IT SOMEWHERE SAFE', 2400)).catch(() => {});
+  navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug + '  edit key (KEEP PRIVATE): ' + ccKey(slug))
+    .then(() => flash('EDIT KEY COPIED. SAVE IT SOMEWHERE SAFE', 2400)).catch(() => {});
 });
 
 $('gentle-btn').addEventListener('click', () => setGentle(!gentleLights));
@@ -2677,17 +2677,27 @@ function askMode() {
       askMode._t = setTimeout(askMode, 500);
       return;
     }
-    flash('THE MUSIC DIDN\u2019T LOAD \u2014 CHECK YOUR CONNECTION & REFRESH', 4000, true);
+    flash('THE MUSIC DIDN\u2019T LOAD. CHECK YOUR CONNECTION & REFRESH', 4000, true);
   }
   askMode._tries = 0;
   $('mode-card').classList.add('show');
 }
+$('opt-promote').addEventListener('click', () => {
+  $('pl-row').classList.add('hidden');
+  togglePromote();
+});
+$('mc-host').addEventListener('click', () => {
+  $('mode-card').classList.remove('show');
+  $('pl-row').classList.add('hidden');
+  startRoom(genCode(), ensureName(), true);
+});
 $('opt-vibe').addEventListener('click', () => {
   $('mode-card').classList.remove('show');
   $('pl-row').classList.add('hidden');
   endSet();
 });
 $('opt-play').addEventListener('click', () => {
+  $('promote-form').classList.add('hidden');
   $('pl-row').classList.remove('hidden');
   $('pl-input').focus();
 });
@@ -2711,7 +2721,7 @@ $('pl-go').addEventListener('click', () => {
         }
       }
       $('pl-pick').classList.remove('hidden');
-      $('pl-msg').textContent = 'one song \u2014 now where\u2019s it playin\u2019?';
+      $('pl-msg').textContent = 'one song. now where\u2019s it playin\u2019?';
       return;
     }
     $('pl-msg').textContent = 'we can only play suno links or mp3s for now';
@@ -2728,7 +2738,7 @@ $('pl-go').addEventListener('click', () => {
       // the night is exactly as long as the playlist: one world per song
       startPlaylistSet(info.songs);
     })
-    .catch(() => { $('pl-msg').textContent = 'could not reach that playlist \u2014 try again in a spell'; });
+    .catch(() => { $('pl-msg').textContent = 'could not reach that playlist. try again in a spell'; });
 });
 // the artist door, one doorway: open the paste slot (optionally pre-filled
 // and pre-loaded), used by the landing button, the set-list card, and links
@@ -2982,26 +2992,26 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a playable world now \u2014 free, no app, right in the browser";
+    text = "'" + (sunoTrack || 'my song') + "' is a playable world now. free, no app, right in the browser";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
     // their song outside the free three: the rope — and no link goes out
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "' \u2014 songs are playable worlds here. free, no app"
-      : 'songs are playable worlds here \u2014 free, no app, in the browser';
+      ? "i was just inside '" + prettyTrack(file) + "'. songs are playable worlds here. free, no app"
+      : 'songs are playable worlds here. free, no app, in the browser';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text + '\n' + url).then(() => {
       flash(shareThis._home
-        ? 'LINK COPIED \u2014 ' + shareThis._home + ' IS YOUR SONG\u2019S HOME NOW'
+        ? 'LINK COPIED. ' + shareThis._home + ' IS YOUR SONG\u2019S HOME NOW'
         : 'LINK COPIED, SUGAR', 1600);
       shareThis._home = null;
     }).catch(() => {});
@@ -3010,7 +3020,7 @@ function shareThis() {
 $('rb-share').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   }
   openShareCard();
@@ -3025,11 +3035,11 @@ function shareCaption() {
   const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
   const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
   const PROMO = [
-    { t: 'i just played ' + st + '. not listened \u2014 played.', c: 'your turn \u2192' },
+    { t: 'i just played ' + st + '. not listened. played.', c: 'your turn \u2192' },
     { t: st + ' has a world now. i was just in it.', c: 'get in there \u2192' },
     { t: 'songs are worlds here. ' + wl + ' just ate three minutes of my life.', c: 'feed it yours \u2192' },
     { t: 'this is what ' + st + ' looks like from the inside.', c: 'see for yourself \u2192' },
-    { t: 'no app, no login \u2014 i tapped a link and was INSIDE the song.', c: 'tap yours \u2192' },
+    { t: 'no app, no login. i tapped a link and was INSIDE the song.', c: 'tap yours \u2192' },
   ];
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
   const line = l ? l.text : pf.t;
@@ -3052,7 +3062,7 @@ function shareStill() {
   const run = sig.lastRun || {};
   const barText = ((run.songTitle || 'this song') + '  \u00b7  '
     + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : '')
-    + '  \u2014  PLAY IT FREE, IN THE BROWSER').toUpperCase();
+    + '  \u00b7  PLAY IT FREE, IN THE BROWSER').toUpperCase();
   let fs = Math.round(bh * 0.42);
   x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
   while (fs > 9 && x.measureText(barText).width > W - bh) {
@@ -3141,7 +3151,7 @@ $('shc-share').addEventListener('click', () => {
     a.href = URL.createObjectURL(media.blob); a.download = file.name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-    navigator.clipboard.writeText(caption).then(() => flash('SAVED \u2014 CAPTION COPIED, PASTE THEM TOGETHER', 2600)).catch(() => {});
+    navigator.clipboard.writeText(caption).then(() => flash('SAVED. CAPTION COPIED, PASTE THEM TOGETHER', 2600)).catch(() => {});
     return;
   }
   if (navigator.share) { navigator.share({ text: caption }).catch(() => {}); return; }
@@ -3205,7 +3215,7 @@ function clipBufStart() {
     ctx2.textBaseline = 'middle';
     // the QR floats ABOVE the bar; the words size themselves to fit the bar
     const q = bh * 1.5, m = Math.round(bh * 0.25);
-    const barText = title + '  \u00b7  ' + wlabel + '  \u2014  PLAY IT FREE, IN THE BROWSER';
+    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  PLAY IT FREE, IN THE BROWSER';
     let fs = Math.round(bh * 0.42);
     ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
     while (fs > 9 && ctx2.measureText(barText).width > W - bh) {
@@ -3288,15 +3298,15 @@ function deliverClip() {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
   }
-  flash('CLIP SAVED \u2014 POST IT, SUGAR', 2200);
+  flash('CLIP SAVED. POST IT, SUGAR', 2200);
 }
 $('rb-clip').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL) \u2014 ARTIST ACCESS OPENS ALL SEVENTEEN');
+    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
     return;
   }
   if (!clipSaved) {
-    flash('NOTHING ON THE REEL YET \u2014 PLAY A ROUND FIRST', 2200);
+    flash('NOTHING ON THE REEL YET. PLAY A ROUND FIRST', 2200);
     return;
   }
   deliverClip();
@@ -3372,7 +3382,7 @@ function drawRecap(data, handle) {
   x.fillRect(64, 178, 420, 2);
   x.font = 'italic 400 27px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(215,211,240,0.85)';
-  x.fillText('hosted a room on fancy britches \u2014 ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's')
+  x.fillText('hosted a room on fancy britches: ' + data.everyone.length + ' player' + (data.everyone.length === 1 ? '' : 's')
     + ' \u00b7 ' + (lastSetLen || '?') + ' round' + (lastSetLen === 1 ? '' : 's'), 64, 188);
   if (data.nextStream) {
     x.font = '400 22px Didot, "Bodoni 72", Georgia, serif';
@@ -3380,7 +3390,7 @@ function drawRecap(data, handle) {
     x.fillText(data.nextStream, 64, 620);
   }
   // winner, said plainly, dressed in gold
-  const wtxt = '\u2605  WINNER \u2014 ' + data.winner.toUpperCase();
+  const wtxt = '\u2605  WINNER: ' + data.winner.toUpperCase();
   x.font = '400 36px Didot, "Bodoni 72", Georgia, serif';
   const ww = x.measureText(wtxt).width;
   x.save();
@@ -3442,8 +3452,8 @@ function drawRecap(data, handle) {
   const run = sig.lastRun || {};
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(220,216,245,0.92)';
-  x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u2014 ' + run.artistName : '') + '     ' : '')
-    + 'scan to start your own room \u2014 free, in the browser', 64, 656);
+  x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
+    + 'scan to start your own room. free, in the browser', 64, 656);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -3453,13 +3463,13 @@ function drawRecap(data, handle) {
   return c;
 }
 function recapText(data, handle) {
-  const lines = [(handle || 'tonight\u2019s room') + ' hosted a room on fancy britches \u2014 '
+  const lines = [(handle || 'tonight\u2019s room') + ' hosted a room on fancy britches: '
     + data.everyone.length + ' players, ' + (lastSetLen || '?') + ' rounds'];
-  lines.push('\u2605 winner \u2014 ' + data.winner);
-  for (const sv of data.sups) lines.push(sv.label + ' \u2014 ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
+  lines.push('\u2605 winner: ' + data.winner);
+  for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
   if (data.nextStream) lines.push(data.nextStream);
-  lines.push('start your own \u2014 free, in the browser: ' + SITE);
+  lines.push('start your own, free, in the browser: ' + SITE);
   return lines.join('\n');
 }
 let lastSetLen = 0;
@@ -3498,7 +3508,7 @@ $('rc-close').addEventListener('click', () => $('recap-card').classList.add('hid
 $('rc-copy').addEventListener('click', () => {
   const d = $('recap-card')._data;
   navigator.clipboard.writeText(recapText(d, $('rc-handle').value.trim()))
-    .then(() => flash('RECAP COPIED \u2014 PASTE IT IN THE CHAT', 2200)).catch(() => {});
+    .then(() => flash('RECAP COPIED. PASTE IT IN THE CHAT', 2200)).catch(() => {});
 });
 $('rc-share').addEventListener('click', () => {
   const d = $('recap-card')._data;
@@ -3513,7 +3523,7 @@ $('rc-share').addEventListener('click', () => {
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 30000);
       navigator.clipboard.writeText(recapText(d, handle)).catch(() => {});
-      flash('RECAP SAVED \u2014 TEXT COPIED TOO', 2200);
+      flash('RECAP SAVED. TEXT COPIED TOO', 2200);
     }
   }, 'image/jpeg', 0.85);
 });
@@ -3614,7 +3624,7 @@ net.onPromo = showPromo;
 // are not editable; this row only ever appears for suno links and mp3s.
 function marqueeApply() {
   const t = $('mq-title').value.trim(), a = $('mq-artist').value.trim();
-  sunoTrack = [t, a].filter(Boolean).join(' — ') || sunoTrack;
+  sunoTrack = [t, a].filter(Boolean).join(' \u00b7 ') || sunoTrack;
   hostSong();   // push the new words to the room now, not in 4 seconds
 }
 $('mq-title').addEventListener('input', marqueeApply);
@@ -3636,8 +3646,8 @@ function drawArtistType(x, W, H, fmt) {
   grad.addColorStop(0, 'rgba(3,3,10,0)');
   grad.addColorStop(1, 'rgba(3,3,10,0.92)');
   x.fillStyle = grad; x.fillRect(0, 0, W, H);
-  const title = ($('mq-title').value.trim() || sunoTrack.split(' \u2014 ')[0] || 'a song');
-  const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u2014 ')[1] || '');
+  const title = ($('mq-title').value.trim() || sunoTrack.split(' \u00b7 ')[0] || 'a song');
+  const artist = ($('mq-artist').value.trim() || sunoTrack.split(' \u00b7 ')[1] || '');
   const hue = getComputedStyle(document.documentElement).getPropertyValue('--accent-h').trim() || '210';
   x.textAlign = 'center'; x.textBaseline = 'alphabetic';
   const base = fmt === 'l' ? H - 120 : H - 210;
@@ -3662,7 +3672,7 @@ function drawArtistType(x, W, H, fmt) {
   }
   x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(210,206,235,0.72)';
-  x.fillText('play it free \u2014 in the browser, no app', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
+  x.fillText('play it free, in the browser, no app', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
@@ -3712,7 +3722,7 @@ function startArtistRec(fmt) {
   try {
     acRec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined);
   } catch (e) {
-    $('ac-status').textContent = 'this browser can\u2019t record video \u2014 try chrome or safari';
+    $('ac-status').textContent = 'this browser can\u2019t record video. try chrome or safari';
     acDraw = false;
     return;
   }
@@ -3728,7 +3738,7 @@ function startArtistRec(fmt) {
     v.classList.remove('hidden');
     hushForCard();
     playCardVideo(v);
-    $('ac-status').textContent = 'twelve seconds of your world \u2014 ready to post';
+    $('ac-status').textContent = 'twelve seconds of your world, ready to post';
   };
   acRec.start(500);
   let left = 12;
@@ -3753,13 +3763,13 @@ $('ac-close').addEventListener('click', () => {
   unhushAfterCard();
 });
 $('ac-share').addEventListener('click', () => {
-  if (!acSaved) { flash('STILL RECORDING \u2014 GIVE IT A BREATH', 1800); return; }
+  if (!acSaved) { flash('STILL RECORDING. GIVE IT A BREATH', 1800); return; }
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
-  const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now \u2014 ' + clipURL();
+  const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now: ' + clipURL();
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text: caption }).catch(() => {});
   } else {
@@ -3768,7 +3778,7 @@ $('ac-share').addEventListener('click', () => {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
     navigator.clipboard.writeText(caption).catch(() => {});
-    flash('CARD SAVED \u2014 CAPTION COPIED TOO', 2200);
+    flash('CARD SAVED. CAPTION COPIED TOO', 2200);
   }
 });
 
@@ -3795,8 +3805,8 @@ audio.el.addEventListener('playing', () => {
 function runMeta(kind, extra = {}) {
   return {
     kind,
-    songTitle: window.__sunoShare ? (sunoTrack.split(' — ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
-    artistName: window.__sunoShare ? (sunoTrack.split(' — ')[1] || '') : 'Tupelo Ghost',
+    songTitle: window.__sunoShare ? (sunoTrack.split(' \u00b7 ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
+    artistName: window.__sunoShare ? (sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost',
     lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,
     ...extra,
   };
@@ -3819,8 +3829,8 @@ window.__previewLine = force => pickShareLine(sig.lastRun || {}, '', force || nu
 window.__signals = () => sig.snapshot({
   worldId: currentWorldKey,
   lookId: settings.colorMode + '/' + settings.pattern + '/' + settings.shape,
-  songTitle: window.__sunoShare ? (sunoTrack.split(' \u2014 ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
-  artistName: window.__sunoShare ? (sunoTrack.split(' \u2014 ')[1] || '') : 'Tupelo Ghost',
+  songTitle: window.__sunoShare ? (sunoTrack.split(' \u00b7 ')[0] || 'their song') : prettyTrack($('track-select').value || audio.el.currentSrc || ''),
+  artistName: window.__sunoShare ? (sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost',
 });
 
 $('custom-open').addEventListener('click', e => {
@@ -3841,9 +3851,9 @@ $('cw-send').addEventListener('click', () => {
     body: JSON.stringify({ email, occasion, vision,
       timeline: $('cw-timeline').value.trim(), budget: $('cw-budget').value }),
   }).then(r => {
-    $('cw-msg').textContent = r.ok ? "got it, sugar \u2014 we'll be in touch soon" : 'that did not take \u2014 try again?';
+    $('cw-msg').textContent = r.ok ? "got it, sugar. we'll be in touch soon" : 'that did not take. try again?';
     if (r.ok) setTimeout(() => $('custom-form').classList.add('hidden'), 2600);
-  }).catch(() => { $('cw-msg').textContent = 'no connection \u2014 try again in a spell'; });
+  }).catch(() => { $('cw-msg').textContent = 'no connection. try again in a spell'; });
 });
 $('wl-join').addEventListener('click', () => {
   const email = $('wl-email').value.trim();
@@ -3854,9 +3864,9 @@ $('wl-join').addEventListener('click', () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, note: 'artist waitlist' }),
   }).then(r => {
-    $('wl-msg').textContent = r.ok ? "you're on the list, sugar \u2014 we'll holler" : 'that did not take \u2014 try again?';
+    $('wl-msg').textContent = r.ok ? "you're on the list, sugar. we'll holler" : 'that did not take. try again?';
     if (r.ok) { $('wl-email').value = ''; setTimeout(() => $('waitlist-form').classList.add('hidden'), 2200); }
-  }).catch(() => { $('wl-msg').textContent = 'no connection \u2014 try again in a spell'; });
+  }).catch(() => { $('wl-msg').textContent = 'no connection. try again in a spell'; });
 });
 $('room-badge').addEventListener('click', () => {
   if (document.body.classList.contains('hosting')) $('stream-card').classList.toggle('hidden');
@@ -3876,10 +3886,7 @@ $('btn-join').addEventListener('click', () => {
   if (code.length < 4) { $('join-msg').textContent = "we'll need that room code, sugar"; return; }
   startRoom(code, $('join-name').value.trim(), false);
 });
-$('btn-host').addEventListener('click', () => {
-  startRoom(genCode(), ensureName(), true);
-  setTimeout(askMode, 400);
-});
+
 // a name nobody had to type — southern, friendly, never blocking the door
 // the name well — deep enough that the dice stay fun. Southern nouns,
 // porch critters, diner food, and things your memaw would holler.
@@ -3967,12 +3974,19 @@ function ensureName() {
   }
   return n;
 }
+// PLAY asks nothing: the house music starts and the visitor is already in.
+// Only the second door, for people who came with their own music or a room
+// to run, gets the question about whose music it is.
 $('btn-solo').addEventListener('click', () => {
   if (window.__joinIntent) {
     const code = window.__joinIntent; window.__joinIntent = null;
     startRoom(code, ensureName(), false);
     return;
   }
+  ensureName();
+  dismissOverlay();
+});
+$('btn-host-promote').addEventListener('click', () => {
   ensureName();
   dismissOverlay();
   setTimeout(askMode, 400);
@@ -4015,9 +4029,9 @@ let promoteWorld = null;   // remembered for the mp3 route
 // each open world gets one honest sentence, so an artist knows what
 // they're putting their song inside before they commit
 const WORLD_BLURBS = {
-  tunnel: 'drift through a tunnel of light \u2014 every click sends a shockwave through your song',
-  surfer: 'jump and hang \u2014 air time pays, and the jumps land on your song\u2019s beat',
-  slide: 'fly down a neon waterslide \u2014 steer through glowing rings to the beat of your song',
+  tunnel: 'drift through a tunnel of light. every click sends a shockwave through your song',
+  surfer: 'jump and hang. air time pays, and the jumps land on your song\u2019s beat',
+  slide: 'fly down a neon waterslide. steer through glowing rings to the beat of your song',
 };
 let prWorldPick = null;
 // ── the two side doors ── The front door is one button. Everything else a
@@ -4029,20 +4043,13 @@ $('open-party').addEventListener('click', e => {
   const party = $('party-block');
   const opening = party.classList.contains('folded');
   party.classList.toggle('folded', !opening);
-  $('open-party').textContent = opening ? 'never mind' : 'joining friends?';
+  $('open-party').textContent = opening ? 'never mind' : 'got a room code?';
   if (opening) {
     $('promote-form').classList.add('hidden');
     $('custom-form').classList.add('hidden');
     setTimeout(() => $('join-room').focus({ preventScroll: true }), 260);
   }
 });
-$('open-promote').addEventListener('click', e => {
-  e.preventDefault();
-  $('party-block').classList.add('folded');
-  $('open-party').textContent = 'joining friends?';
-  togglePromote();               // one promote flow, opened from the quiet link
-});
-
 function togglePromote() {
   $('custom-form').classList.add('hidden');
   const f = $('promote-form');
@@ -4082,7 +4089,7 @@ $('pr-go').addEventListener('click', () => {
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
   openArtistDoor(raw);
   $('promote-form').classList.add('hidden');
-  $('suno-rights').textContent = 'play your song in every world, free \u2014 share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play your song in every world, free. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
@@ -4098,9 +4105,9 @@ $('taste-join').addEventListener('click', () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, note: 'artist-access' }),
   }).then(r => {
-    $('taste-msg').textContent = r.ok ? "you're on the list, sugar \u2014 we'll holler" : 'that did not take \u2014 try again?';
+    $('taste-msg').textContent = r.ok ? "you're on the list, sugar. we'll holler" : 'that did not take. try again?';
     if (r.ok) setTimeout(() => { $('taste-card').classList.add('hidden'); }, 2000);
-  }).catch(() => { $('taste-msg').textContent = 'no connection \u2014 try again in a spell'; });
+  }).catch(() => { $('taste-msg').textContent = 'no connection. try again in a spell'; });
 });
 // the rope card's dynamic line: this week's guest world, by name
 const tw = document.getElementById('taste-week');
@@ -4172,7 +4179,7 @@ if (params.get('dev') === '1') (function devPanel() {
   };
 
   const headRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;gap:6px;');
-  const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;flex:1;', 'TESTING PANEL \u2014 tap to hide');
+  const head = mk('div', 'color:#ff8f8f;letter-spacing:1px;cursor:pointer;flex:1;', 'TESTING PANEL. tap to hide');
   // drag the right edge to size the panel however you like (remembered)
   const applySize = () => { el.style.width = (parseInt(localStorage.getItem('fp_dev_width') || '280', 10)) + 'px'; };
   const sizeBtn = mk('div', 'color:#8d87b5;font-size:9.5px;', '\u21d4 drag edge');
@@ -4210,7 +4217,7 @@ if (params.get('dev') === '1') (function devPanel() {
 
   // ── the jokes: walk each pool in order, thumb down the misses ──
   body.appendChild(H('\ud83d\ude06 REVIEW THE JOKES', '#eece78'));
-  body.appendChild(NOTE('pick a player type \u2014 jokes appear one by one, in order. \ud83d\udc4e saves a joke to your cut list.'));
+  body.appendChild(NOTE('pick a player type. jokes appear one by one, in order. \ud83d\udc4e saves a joke to your cut list.'));
   const sel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   body.appendChild(sel);
   let pool = [], poolAt = -1, poolArch = '';
@@ -4238,7 +4245,7 @@ if (params.get('dev') === '1') (function devPanel() {
     window.__forceArchetype = id || null;
   }
   async function fillArchetypes() {
-    sel.innerHTML = '<option value="">backup jokes \u2014 for runs that match no type</option>';
+    sel.innerHTML = '<option value="">backup jokes, for runs that match no type</option>';
     const spec = await loadLines(currentWorldKey);
     if (spec && spec.archetypes) for (const a2 of spec.archetypes) {
       const o = document.createElement('option');
@@ -4266,7 +4273,7 @@ if (params.get('dev') === '1') (function devPanel() {
   const copyBtn = BTN('\ud83d\udccb copy cut list (' + JSON.parse(localStorage.getItem('fp_cutlist') || '[]').length + ')', () => {
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
     navigator.clipboard.writeText('cut these lines:\n' + cuts.join('\n'))
-      .then(() => flash('CUT LIST COPIED \u2014 PASTE IT TO CLAUDE', 2200)).catch(() => {});
+      .then(() => flash('CUT LIST COPIED. PASTE IT TO CLAUDE', 2200)).catch(() => {});
   });
   cutBtn.style.flex = '1'; copyBtn.style.flex = '1.4';
   cutRow.appendChild(cutBtn); cutRow.appendChild(copyBtn);
@@ -4274,7 +4281,7 @@ if (params.get('dev') === '1') (function devPanel() {
 
   // ── the cards ──
   body.appendChild(H('\ud83c\udfac TEST THE SHARE CARDS', '#7cc4ff'));
-  body.appendChild(NOTE('opens each card filled with pretend data \u2014 nothing is posted anywhere.'));
+  body.appendChild(NOTE('opens each card filled with pretend data. nothing is posted anywhere.'));
   body.appendChild(BTN('\u25b6 player card (joke + clip)', async () => {
     if (!sig.lastRun) sig.endRun(runMeta('toy', { pointsGained: 230 }));
     window.__shareLine = await pickShareLine(sig.lastRun, '', window.__forceArchetype);
@@ -4334,7 +4341,7 @@ if (params.get('dev') === '1') (function devPanel() {
   // ── hear the sounds ── judging audio by playing a whole song is slow;
   // these fire each voice on demand so a verdict takes two seconds
   body.appendChild(H('\ud83d\udd0a HEAR THE SOUNDS', '#8affc1'));
-  body.appendChild(NOTE('tap to hear each one on its own \u2014 nothing else happens.'));
+  body.appendChild(NOTE('tap to hear each one on its own. nothing else happens.'));
   const SOUNDS = [
     ['catch a spark (small)', () => sfx.swoosh('soft')],
     ['catch a spark (bigger)', () => sfx.swoosh('air')],
@@ -4358,7 +4365,7 @@ if (params.get('dev') === '1') (function devPanel() {
   // ── the notebook: anything she notices becomes a note that knows where
   // it happened; one button copies the whole session's feedback for claude ──
   body.appendChild(H('\ud83d\udcdd NOTES FOR CLAUDE', '#ff9de2'));
-  body.appendChild(NOTE('type what you noticed \u2014 the note remembers the world, song & version by itself.'));
+  body.appendChild(NOTE('type what you noticed. the note remembers the world, song & version by itself.'));
   const noteIn = mk('input', 'padding:8px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
   noteIn.placeholder = 'e.g. the hoops feel too fast here';
   body.appendChild(noteIn);
@@ -4384,7 +4391,7 @@ if (params.get('dev') === '1') (function devPanel() {
     localStorage.setItem('fp_notes', JSON.stringify(notes));
     noteIn.value = '';
     saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
-    flash('NOTED \u2014 IT KNOWS WHERE YOU WERE', 1600);
+    flash('NOTED. IT KNOWS WHERE YOU WERE', 1600);
   });
   saveBtn.textContent = '\u2795 save note (' + savedNotes().length + ')';
   noteIn.addEventListener('keydown', e => { if (e.key === 'Enter') saveBtn.click(); });
@@ -4440,10 +4447,10 @@ if (params.get('dev') === '1') (function devPanel() {
       noteIn.value = '';
       noteIn.placeholder = 'what should this screenshot say?';
       noteIn.focus();
-      flash('SHOT UPLOADED \u2014 NOW TELL IT WHAT IT MEANS', 2400);
-    }).catch(() => flash('UPLOAD DIDN\u2019T TAKE \u2014 TRY AGAIN', 2000, true));
+      flash('SHOT UPLOADED. NOW TELL IT WHAT IT MEANS', 2400);
+    }).catch(() => flash('UPLOAD DIDN\u2019T TAKE. TRY AGAIN', 2000, true));
   }));
-  body.appendChild(NOTE('\ud83d\udcf8 first tap asks to share this tab \u2014 say yes and every shot captures EVERYTHING on screen, cards and menus included. (if the ask never appears, shots cover the game world only.)'));
+  body.appendChild(NOTE('\ud83d\udcf8 first tap asks to share this tab. say yes and every shot captures EVERYTHING on screen, cards and menus included. (if the ask never appears, shots cover the game world only.)'));
   const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
     const notes = savedNotes();
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
@@ -4452,7 +4459,7 @@ if (params.get('dev') === '1') (function devPanel() {
     if (cuts.length) out.push('CUT THESE LINES:\n' + cuts.join('\n'));
     if (!out.length) { flash('NOTHING SAVED YET', 1600); return; }
     navigator.clipboard.writeText(out.join('\n\n'))
-      .then(() => flash('COPIED \u2014 PASTE THE WHOLE THING TO CLAUDE', 2400)).catch(() => {});
+      .then(() => flash('COPIED. PASTE THE WHOLE THING TO CLAUDE', 2400)).catch(() => {});
   });
   body.appendChild(copyAll);
   const notesView = mk('div', 'display:none;color:#c9c3ec;line-height:1.5;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;');
@@ -4465,7 +4472,7 @@ if (params.get('dev') === '1') (function devPanel() {
   body.appendChild(BTN('\ud83d\uddd1 clear notes & cut list', () => {
     localStorage.removeItem('fp_notes'); localStorage.removeItem('fp_cutlist');
     saveBtn.textContent = '\u2795 save note (0)';
-    flash('CLEARED \u2014 FRESH PAGE', 1600);
+    flash('CLEARED. FRESH PAGE', 1600);
   }));
 
   // ── status: the facts you keep asking the console for ──
@@ -4479,7 +4486,7 @@ if (params.get('dev') === '1') (function devPanel() {
 
   // ── what fired ──
   const fired = mk('div', 'color:#9d97c2;line-height:1.45;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
-  fired.textContent = 'last joke came from: \u2014';
+  fired.textContent = 'last joke came from: none yet';
   body.appendChild(fired);
   setInterval(() => {
     const l = window.__shareLine;
@@ -4530,7 +4537,7 @@ function rateOk(log, windowMs, max) {
   while (log.length && now - log[0] > windowMs) log.shift();
   if (log.length >= max) {
     sfx.thud();
-    flash('EASY, SUGAR \u2014 GIVE IT A BREATH', 1600, true);
+    flash('EASY, SUGAR. GIVE IT A BREATH', 1600, true);
     return false;
   }
   log.push(now);
@@ -4636,7 +4643,7 @@ function renderPlist() {
         b.title = t.name;
         b.addEventListener('click', ev => {
           ev.stopPropagation();
-          if (!rateOk(trickLog, 30000, 2)) { flash('EASY, SUGAR — GIVE IT A BREATH', 1600, true); return; }
+          if (!rateOk(trickLog, 30000, 2)) { flash('EASY, SUGAR. GIVE IT A BREATH', 1600, true); return; }
           myStats.bombs++; statsPush();
           net.sendEmote(t.i, p.name, t.e);
           flash(t.e + ' \u2192 ' + p.name.toUpperCase(), 1600);

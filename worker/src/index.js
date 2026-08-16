@@ -484,10 +484,10 @@ export default {
       const dest = row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
         : SITE_URL;
-      const title = wslug[2].replace(/-/g, ' ') + ' — by ' + wslug[1].replace(/-/g, ' ');
+      const title = wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ');
       const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
         ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
-      return unfurl(title, 'this song is a playable 3D world — free, no app, in the browser.', dest, image);
+      return unfurl(title, 'this song is a playable 3D world. free, no app, in the browser.', dest, image);
     }
     // /p/{world}/{file} — the short front door for a house song: a clean
     // link that unfurls with the song's name instead of a query-string tail
@@ -497,8 +497,8 @@ export default {
       const title = pslug[2].replace(/\.mp3$/, '').replace(/[_-]+/g, ' ');
       const image = ['tunnel', 'surfer', 'slide'].includes(pslug[1])
         ? SITE_URL + 'previews/' + pslug[1] + '.jpg' : null;
-      return unfurl(title + ' — play it, don’t just hear it',
-        'a song you can be inside — free, no app, in the browser.', dest, image);
+      return unfurl(title + ', play it, don’t just hear it',
+        'a song you can be inside. free, no app, in the browser.', dest, image);
     }
     // /c/{slug} — a creator's page: reachable only by its link, never listed
     const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);
@@ -547,7 +547,7 @@ export default {
         + (pg.next ? '<p class="next">' + esc(pg.next) + '</p>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
-        + '<footer>every song here is a playable world \u2014 <a href="https://tupeloghost.github.io/FancyPants/">make yours free at fancy britches</a></footer>'
+        + '<footer>every song here is a playable world. <a href="https://tupeloghost.github.io/FancyPants/">make yours free at fancy britches</a></footer>'
         + '</div></body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }

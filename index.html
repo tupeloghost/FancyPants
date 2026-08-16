@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#02040c">
-<meta name="description" content="Fancy Britches — your music is a world. Paste a song, race it with friends on their phones, light up neon signs, chase comets. By Tupelo Ghost.">
-<meta property="og:title" content="Fancy Britches — your music is a world">
+<meta name="description" content="Fancy Britches: your music is a world. Paste a song, race it with friends on their phones, light up neon signs, chase comets. By Tupelo Ghost.">
+<meta property="og:title" content="Fancy Britches: your music is a world">
 <meta property="og:description" content="Paste a song and play inside it. Race friends on their phones, throw emoji storms, light the neon. Jackbox meets your playlist.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fancy Britches">
@@ -17,7 +17,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tupeloghost.github.io/FancyPants/og.jpg">
-<meta name="twitter:title" content="Fancy Britches — your music is a world">
+<meta name="twitter:title" content="Fancy Britches: your music is a world">
 <meta name="twitter:description" content="Paste a song and play inside it. Race friends on their phones, throw emoji storms, light the neon.">
 <meta name="author" content="RockyPaw Beats">
 <meta name="copyright" content="© 2026 RockyPaw Beats. All rights reserved.">
@@ -1321,6 +1321,14 @@
   #today.hidden { display: none; }
 
   /* the side doors: findable, never in the way */
+  #btn-host-promote { margin-top: 9px; }
+  #mc-host {
+    margin-top: 16px; width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
+    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
+    color: var(--ink-dim); background: transparent; border: 1px solid var(--accent-line);
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+  #mc-host:hover { color: var(--ink); border-color: hsla(var(--accent-h),80%,70%,0.6); background: var(--accent-soft); }
   #side-doors {
     display: flex; justify-content: center; align-items: center; gap: 10px;
     margin-top: 16px;
@@ -2026,50 +2034,43 @@
 
 <div id="tap-to-start">
   <div class="big">FANCY BRITCHES</div>
-  <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
+  <div id="tagline">every song is a world. play it, race it, share it</div>
   <div id="join-card">
-    <button id="btn-solo" class="cta">COME ON IN</button>
+    <!-- Two doors, and only one of them asks a question. PLAY drops a
+         visitor straight into the house music. The second door is for people
+         who arrived with intent, and those are the only ones asked whose
+         music it is. -->
+    <button id="btn-solo" class="cta">PLAY</button>
+    <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
     <div id="today" class="hidden"></div>
-    <!-- the two side doors: quiet text, not buttons. Most arrivals want
-         neither, and the people who do went looking on purpose. -->
     <div id="side-doors">
-      <a id="open-party" href="#">joining friends?</a>
-      <span class="sd-dot">&middot;</span>
-      <a id="open-promote" href="#">&#9834; promote your song</a>
+      <a id="open-party" href="#">got a room code?</a>
     </div>
     <div id="party-block" class="folded">
       <div id="name-row">
-        <input id="join-name" maxlength="14" placeholder="name &mdash; or tap &#127922;" autocomplete="off">
+        <input id="join-name" maxlength="14" placeholder="name, or tap &#127922;" autocomplete="off">
         <button id="name-dice" title="pick a name for me">&#127922;</button>
       </div>
       <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
       <div id="join-msg"></div>
       <div class="join-row">
         <button id="btn-join">JOIN</button>
-        <button id="btn-host">HOST A ROOM</button>
       </div>
-    </div>
-    <div id="promote-form" class="hidden">
-      <div id="pr-worlds"></div>
-      <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
-      <button id="pr-go">PUT IT IN THE WORLD</button>
-      <label id="pr-file" for="file-input">or load the mp3 instead</label>
-      <div id="pr-msg"></div>
     </div>
   </div>
   <div id="maker-line">
-    handmade worlds &mdash; for your songs, your celebrations, your people
+    handmade worlds, for your songs, your celebrations, your people
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
-    <span id="photo-note">contains flashing lights &amp; motion &mdash; a GENTLE LIGHTS setting lives in the music tab if you&rsquo;re light-sensitive</span>
+    <span id="photo-note">contains flashing lights &amp; motion. a GENTLE LIGHTS setting lives in the music tab if you&rsquo;re light-sensitive</span>
   </div>
   <div id="waitlist-form" class="hidden">
-    <div id="wl-lead">paste one of your songs and play it in every world, free. to share, your song rides TUNNEL, SURFER, or this week&rsquo;s special &mdash; a new world on the menu every monday, on the house &mdash; move it any time, links follow. <b>artist access</b> lets your song call any of the seventeen home, plus your own analytics &mdash; leave your email and you&rsquo;re first in line.</div>
+    <div id="wl-lead">paste one of your songs and play it in every world, free. to share, your song rides TUNNEL, SURFER, or this week&rsquo;s special, a new world on the menu every monday, on the house. move it any time, links follow. <b>artist access</b> lets your song call any of the seventeen home, plus your own analytics. leave your email and you&rsquo;re first in line.</div>
     <input id="wl-email" type="email" placeholder="your email, sugar" autocomplete="email">
     <button id="wl-join">JOIN</button>
     <div id="wl-msg"></div>
   </div>
   <div id="custom-form" class="hidden">
-    <div id="cw-lead">a world built for your moment &mdash; a wedding, a birthday, a release night, a stream. tell us what you&rsquo;re dreaming of.</div>
+    <div id="cw-lead">a world built for your moment: a wedding, a birthday, a release night, a stream. tell us what you&rsquo;re dreaming of.</div>
     <select id="cw-occasion">
       <option value="">what&rsquo;s the occasion?</option>
       <option>wedding</option>
@@ -2080,7 +2081,7 @@
       <option>brand or business</option>
       <option>something else</option>
     </select>
-    <textarea id="cw-vision" maxlength="1200" rows="3" placeholder="your vision &mdash; colors, feelings, songs, anything"></textarea>
+    <textarea id="cw-vision" maxlength="1200" rows="3" placeholder="your vision: colors, feelings, songs, anything"></textarea>
     <input id="cw-timeline" maxlength="80" placeholder="when&rsquo;s the big day? (a date, or &lsquo;no rush&rsquo;)" autocomplete="off">
     <select id="cw-budget">
       <option value="">budget in mind? (helps us tailor it)</option>
@@ -2102,7 +2103,7 @@
   <canvas id="sc-qr"></canvas>
   <div id="sc-url"></div>
   <div id="sc-code"></div>
-  <button id="sc-hide">HIDE — CLICK THE ROOM CODE TO SHOW</button>
+  <button id="sc-hide">HIDE. CLICK THE ROOM CODE TO SHOW</button>
 </div>
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
@@ -2116,12 +2117,12 @@
 <div id="creator-card" class="hidden">
   <div id="cc-inner">
     <div id="cc-title">your artist page</div>
-    <div id="cc-sub">one link with your songs, your socials, and what&rsquo;s next &mdash; every song you promote lands on it by itself.</div>
+    <div id="cc-sub">one link with your songs, your socials, and what&rsquo;s next. every song you promote lands on it by itself.</div>
     <input id="cc-slug" maxlength="30" placeholder="your page address (letters &amp; dashes)" autocomplete="off" spellcheck="false">
     <input id="cc-name" maxlength="60" placeholder="artist name" autocomplete="off">
     <textarea id="cc-bio" maxlength="500" rows="3" placeholder="a couple lines about you"></textarea>
     <input id="cc-next" maxlength="120" placeholder="what&rsquo;s next? show, single, stream (optional)" autocomplete="off">
-    <input id="cc-l1" maxlength="340" placeholder="link 1 &mdash; e.g. spotify | https://..." autocomplete="off">
+    <input id="cc-l1" maxlength="340" placeholder="link 1, e.g. spotify | https://..." autocomplete="off">
     <input id="cc-l2" maxlength="340" placeholder="link 2 (optional)" autocomplete="off">
     <input id="cc-l3" maxlength="340" placeholder="link 3 (optional)" autocomplete="off">
     <div id="cc-plays" class="hidden"></div>
@@ -2154,8 +2155,8 @@
 <div id="recap-card" class="hidden">
   <div id="rc-inner">
     <canvas id="rc-preview"></canvas>
-    <input id="rc-handle" maxlength="40" placeholder="your handle &mdash; @twitch, @tiktok, whoever you are" autocomplete="off">
-    <input id="rc-next" maxlength="80" placeholder="have something to promote? next stream, merch, a link &mdash; it goes on the card in gold" autocomplete="off">
+    <input id="rc-handle" maxlength="40" placeholder="your handle: @twitch, @tiktok, whoever you are" autocomplete="off">
+    <input id="rc-next" maxlength="80" placeholder="have something to promote? next stream, merch, a link. it goes on the card in gold" autocomplete="off">
     <div id="rc-actions">
       <button id="rc-share">SHARE IMAGE</button>
       <button id="rc-copy">COPY AS TEXT</button>
@@ -2184,11 +2185,11 @@
 
 <div id="taste-card" class="hidden">
   <div id="taste-lead">sharin&rsquo; that one&rsquo;s an artist thing.</div>
-  <div id="taste-sub">playin&rsquo; your song here? free, always. sharin&rsquo; is simple: your song&rsquo;s share link rides TUNNEL, SURFER, or <b>this week&rsquo;s special</b> &mdash; right now that&rsquo;s <b id="taste-week"></b>, and a new world hits the menu every monday. <b>artist access</b> lets your song call any of the seventeen home, any time, plus your own analytics &mdash; leave your email and you&rsquo;re first in line.</div>
+  <div id="taste-sub">playin&rsquo; your song here? free, always. sharin&rsquo; is simple: your song&rsquo;s share link rides TUNNEL, SURFER, or <b>this week&rsquo;s special</b>, and right now that&rsquo;s <b id="taste-week"></b>, and a new world hits the menu every monday. <b>artist access</b> lets your song call any of the seventeen home, any time, plus your own analytics. leave your email and you&rsquo;re first in line.</div>
   <input id="taste-email" type="email" placeholder="your email" autocomplete="email">
   <button id="taste-join">JOIN THE WAITING LIST</button>
   <div id="taste-msg"></div>
-  <button id="taste-close">keep playin&rsquo; &mdash; or go share from this week&rsquo;s world</button>
+  <button id="taste-close">keep playin&rsquo;, or go share from this week&rsquo;s world</button>
 </div>
 <div id="balls-quick" class="hidden">
   <span>balls</span>
@@ -2200,7 +2201,7 @@
   <div id="rivals-pick"></div>
 </div>
 <div id="plist" class="hidden">
-  <div class="plist-title">participants — click to hide a name</div>
+  <div class="plist-title">participants. click to hide a name</div>
   <div id="plist-rows"></div>
 </div>
 
@@ -2210,10 +2211,19 @@
     <p>you can change your mind whenever, sugar</p>
     <div id="mode-opts">
       <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs, y&rsquo;all just play.</em></div>
-      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round apiece &mdash; paste a suno link or load an mp3.</em></div>
+      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round apiece. paste a suno link or load an mp3.</em></div>
+      <div class="mode-opt" id="opt-promote"><b>PUT MY SONG IN A WORLD</b><em>pick its world, get a link that plays it. free for three worlds.</em></div>
+    </div>
+    <button id="mc-host">OPEN A ROOM SO FOLKS CAN JOIN</button>
+    <div id="promote-form" class="hidden">
+      <div id="pr-worlds"></div>
+      <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
+      <button id="pr-go">PUT IT IN THE WORLD</button>
+      <label id="pr-file" for="file-input">or load the mp3 instead</label>
+      <div id="pr-msg"></div>
     </div>
     <div id="pl-row" class="hidden">
-      <input id="pl-input" type="url" placeholder="paste a suno link &mdash; song or playlist" autocomplete="off" spellcheck="false">
+      <input id="pl-input" type="url" placeholder="paste a suno link: song or playlist" autocomplete="off" spellcheck="false">
       <button id="pl-go">START THE SET</button>
       <label id="pl-file" for="file-input">or load an mp3 you keep in your pocket</label>
       <div id="pl-pick" class="hidden">
@@ -2268,7 +2278,7 @@
 <div id="jump-flash"></div>
 
 <div id="results">
-  <div id="results-place">&mdash;</div>
+  <div id="results-place">&hellip;</div>
   <div id="results-sub"></div>
   <hr id="results-rule">
   <div id="results-board"></div>
@@ -2309,7 +2319,7 @@
   <button class="qb" id="qb-world" title="next world  W"><i>&#9670;</i><em>world</em></button>
   <button class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
   <span class="qsep"></span>
-  <button class="qb" id="qb-mute" title="silence your speakers — the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
+  <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
   <span class="qsep"></span>
 
 </div>
@@ -2344,15 +2354,15 @@
         </div>
         <div id="suno-status"></div>
         <div id="marquee-edit" class="hidden">
-          <div class="mini-label">on the marquee &mdash; edit it if you like</div>
+          <div class="mini-label">on the marquee. edit it if you like</div>
           <input id="mq-title" maxlength="60" placeholder="song title" autocomplete="off">
           <input id="mq-artist" maxlength="40" placeholder="artist name" autocomplete="off">
           <button id="mq-card">MAKE AN ARTIST CARD</button>
           <button id="lyr-btn">LYRICS: ON</button>
-          <button id="gentle-btn" title="softens flashes &amp; pulses &mdash; for light-sensitive folks">GENTLE LIGHTS: OFF</button>
+          <button id="gentle-btn" title="softens flashes &amp; pulses, for light-sensitive folks">GENTLE LIGHTS: OFF</button>
           <button id="mq-page">YOUR ARTIST PAGE</button>
         </div>
-    <div id="suno-rights">paste a song YOU made or have rights to &mdash; artists&rsquo; rights matter &rsquo;round here</div>
+    <div id="suno-rights">paste a song YOU made or have rights to. artists&rsquo; rights matter &rsquo;round here</div>
       </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
@@ -2364,7 +2374,7 @@
       <div class="row slider">
         <label>volume
           <span>
-            <button id="btn-mute" title="silence your own speakers — the visuals keep dancing">mute</button>
+            <button id="btn-mute" title="silence your own speakers. the visuals keep dancing">mute</button>
             <span class="val" id="vol-val">80</span>
           </span>
         </label>
@@ -2424,7 +2434,7 @@
           <label>beats <span class="val" id="beat-val">1.40</span></label>
           <input type="range" id="beat-sens" min="105" max="250" value="140">
         </div>
-        <div class="slider" title="softens the audio signal — high = dreamy, low = twitchy">
+        <div class="slider" title="softens the audio signal: high = dreamy, low = twitchy">
           <label>smoothing <span class="val" id="smooth-val">0.70</span></label>
           <input type="range" id="smoothing" min="0" max="95" value="70">
         </div>
@@ -2438,8 +2448,8 @@
         </div>
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
-      <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 439</div>
+      <div id="audio-stamp">audio: none yet</div>
+      <div id="build-stamp">build 441</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2472,7 +2482,7 @@
 })();
 </script>
 <div id="boot-trouble" style="display:none; position:fixed; inset:0; z-index:999; background:#0a0a14; color:#cfd8ee; font:15px/1.6 Georgia, serif; padding:80px 24px; text-align:center;">
-  Well, this is embarrassing &mdash; the game is having trouble loading.<br>
+  Well, this is embarrassing. The game is having trouble loading.<br>
   Try refreshing, or a different browser. If it keeps up, tell us: rockypawart@gmail.com
 </div>
 <script type="importmap">
@@ -2481,6 +2491,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=439"></script>
+<script type="module" src="js/main.js?v=441"></script>
 </body>
 </html>

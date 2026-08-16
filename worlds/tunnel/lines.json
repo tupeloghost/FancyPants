@@ -52,7 +52,7 @@
           "w": 8
         },
         {
-          "t": "back again — this round’s on the house.",
+          "t": "back again, and this round’s on the house.",
           "c": "come on in →",
           "w": 4
         }
@@ -152,7 +152,7 @@
         },
         {
           "t": "{seconds} seconds and still here. the tunnel’s startin’ to think it’s special.",
-          "c": "it is — tell it so →",
+          "c": "it is, so tell it so →",
           "w": 3
         }
       ]

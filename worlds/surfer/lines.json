@@ -1,6 +1,6 @@
 {
   "world": "surfer",
-  "note": "surfer is a TOY world — no feet, no accuracy, no note streak. It keeps its own tallies: sparksCaught, bestChain, midairCatches, rainbowSparks, jumps. Never reference race stats here. Register: real number + plain relatable observation + a dare.",
+  "note": "surfer is a TOY world with no feet, no accuracy, no note streak. It keeps its own tallies: sparksCaught, bestChain, midairCatches, rainbowSparks, jumps. Never reference race stats here. Register: real number + plain relatable observation + a dare.",
   "archetypes": [
     {
       "id": "spark-hoarder",
@@ -85,7 +85,7 @@
       "id": "window-shopper",
       "when": { "sparksCaught": ["<=", 2] },
       "lines": [
-        { "t": "the sparks were right there the whole time. steer into 'em — that's the whole game.", "c": "catch one →", "w": 10 },
+        { "t": "the sparks were right there the whole time. steer into 'em. that's the whole game.", "c": "catch one →", "w": 10 },
         { "t": "a whole song and the sparks went home hungry.", "c": "feed one →", "w": 6 },
         { "t": "pretty ride. now try touchin' somethin'.", "c": "touch somethin' →", "w": 3 }
       ]
