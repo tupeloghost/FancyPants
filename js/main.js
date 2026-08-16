@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=448';
-import { drawQR } from './lib/qr.js?v=448';
-import { WORLDS } from './worlds/registry.js?v=448';
-import { Net, PALETTE } from './net.js?v=448';
-import { Presence } from './lib/presence.js?v=448';
-import { Pulses } from './lib/pulse.js?v=448';
-import { BeatClock } from './lib/beatclock.js?v=448';
-import { BeatCue } from './lib/beatcue.js?v=448';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=448';
-import { Race, placeOf, standings } from './lib/race.js?v=448';
-import { Signals } from './lib/signals.js?v=448';
-import { pickShareLine, loadLines } from './lib/lines.js?v=448';
-import { RouteMap } from './lib/map.js?v=448';
-import * as sfx from './lib/sfx.js?v=448';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=448';
-import { glowTexture } from './lib/glow.js?v=448';
+import { AudioEngine } from './audio-engine.js?v=449';
+import { drawQR } from './lib/qr.js?v=449';
+import { WORLDS } from './worlds/registry.js?v=449';
+import { Net, PALETTE } from './net.js?v=449';
+import { Presence } from './lib/presence.js?v=449';
+import { Pulses } from './lib/pulse.js?v=449';
+import { BeatClock } from './lib/beatclock.js?v=449';
+import { BeatCue } from './lib/beatcue.js?v=449';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=449';
+import { Race, placeOf, standings } from './lib/race.js?v=449';
+import { Signals } from './lib/signals.js?v=449';
+import { pickShareLine, loadLines } from './lib/lines.js?v=449';
+import { RouteMap } from './lib/map.js?v=449';
+import * as sfx from './lib/sfx.js?v=449';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=449';
+import { glowTexture } from './lib/glow.js?v=449';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -456,7 +456,8 @@ let autoOrder = [], autoAt = 0;
 const TEST_TRACKS = ['sweetwater.mp3', 'mindflight.mp3', 'mindflight_2.mp3',
   'diamond_sky.mp3', 'planet_of_the_bass.mp3', 'nosebleed.mp3',
   'meet_the_purple_rain.mp3', 'sunburnt.mp3', 'green_planets.mp3',
-  'hello_goodbye.mp3', 'hello_goodbye_2.mp3'].map(f => 'audio/' + f);
+  'hello_goodbye.mp3', 'hello_goodbye_2.mp3',
+  'daydreamer.mp3', 'daydreamer_2.mp3'].map(f => 'audio/' + f);
 let publicTracks = null;                 // the real list, parked while testing
 let testAudio = false;
 function setTestAudio(on) {
