@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=437';
-import { drawQR } from './lib/qr.js?v=437';
-import { WORLDS } from './worlds/registry.js?v=437';
-import { Net, PALETTE } from './net.js?v=437';
-import { Presence } from './lib/presence.js?v=437';
-import { Pulses } from './lib/pulse.js?v=437';
-import { BeatClock } from './lib/beatclock.js?v=437';
-import { BeatCue } from './lib/beatcue.js?v=437';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=437';
-import { Race, placeOf, standings } from './lib/race.js?v=437';
-import { Signals } from './lib/signals.js?v=437';
-import { pickShareLine, loadLines } from './lib/lines.js?v=437';
-import { RouteMap } from './lib/map.js?v=437';
-import * as sfx from './lib/sfx.js?v=437';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=437';
-import { glowTexture } from './lib/glow.js?v=437';
+import { AudioEngine } from './audio-engine.js?v=439';
+import { drawQR } from './lib/qr.js?v=439';
+import { WORLDS } from './worlds/registry.js?v=439';
+import { Net, PALETTE } from './net.js?v=439';
+import { Presence } from './lib/presence.js?v=439';
+import { Pulses } from './lib/pulse.js?v=439';
+import { BeatClock } from './lib/beatclock.js?v=439';
+import { BeatCue } from './lib/beatcue.js?v=439';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=439';
+import { Race, placeOf, standings } from './lib/race.js?v=439';
+import { Signals } from './lib/signals.js?v=439';
+import { pickShareLine, loadLines } from './lib/lines.js?v=439';
+import { RouteMap } from './lib/map.js?v=439';
+import * as sfx from './lib/sfx.js?v=439';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=439';
+import { glowTexture } from './lib/glow.js?v=439';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4020,7 +4020,30 @@ const WORLD_BLURBS = {
   slide: 'fly down a neon waterslide \u2014 steer through glowing rings to the beat of your song',
 };
 let prWorldPick = null;
-$('btn-own').addEventListener('click', () => {
+// ── the two side doors ── The front door is one button. Everything else a
+// visitor might want is a quiet link that opens what it promises: most people
+// came to play, and the ones joining friends or promoting a song went looking
+// on purpose. Both fold the other away, so only one thing is ever open.
+$('open-party').addEventListener('click', e => {
+  e.preventDefault();
+  const party = $('party-block');
+  const opening = party.classList.contains('folded');
+  party.classList.toggle('folded', !opening);
+  $('open-party').textContent = opening ? 'never mind' : 'joining friends?';
+  if (opening) {
+    $('promote-form').classList.add('hidden');
+    $('custom-form').classList.add('hidden');
+    setTimeout(() => $('join-room').focus({ preventScroll: true }), 260);
+  }
+});
+$('open-promote').addEventListener('click', e => {
+  e.preventDefault();
+  $('party-block').classList.add('folded');
+  $('open-party').textContent = 'joining friends?';
+  togglePromote();               // one promote flow, opened from the quiet link
+});
+
+function togglePromote() {
   $('custom-form').classList.add('hidden');
   const f = $('promote-form');
   f.classList.toggle('hidden');
@@ -4043,7 +4066,7 @@ $('btn-own').addEventListener('click', () => {
     box.firstElementChild.click();   // tunnel pre-picked, never un-picked
   }
   $('pr-url').focus();
-});
+}
 $('pr-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('pr-go').click(); });
 $('pr-go').addEventListener('click', () => {
   const raw = $('pr-url').value.trim();

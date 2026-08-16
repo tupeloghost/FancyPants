@@ -1303,13 +1303,39 @@
   #promo-pill:hover { transform: scale(1.04); box-shadow: 0 0 34px hsla(var(--accent-h), 90%, 65%, 0.35); }
   #promo-pill.hidden { display: none; }
   #promo-pill i { font-style: normal; }
+  /* today's song is the most tempting thing on this screen — it sits right
+     under the door, not in the footer */
   #today {
-    margin-top: 10px; text-align: center; cursor: pointer;
-    font: italic 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
-    letter-spacing: 1.5px; color: var(--ink-dim);
+    margin-top: 14px; text-align: center; cursor: pointer;
+    font: italic 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1.4px; color: hsl(var(--accent-h), 45%, 82%);
+    padding: 9px 12px; border-radius: 12px;
+    border: 1px solid hsla(var(--accent-h), 70%, 65%, 0.22);
+    background: hsla(var(--accent-h), 70%, 60%, 0.07);
+    transition: border-color 180ms ease, background 180ms ease, transform 180ms var(--spring);
   }
-  #today:hover { color: var(--ink); }
+  #today:hover {
+    color: var(--ink); border-color: hsla(var(--accent-h), 80%, 70%, 0.5);
+    background: hsla(var(--accent-h), 70%, 60%, 0.13); transform: translateY(-1px);
+  }
   #today.hidden { display: none; }
+
+  /* the side doors: findable, never in the way */
+  #side-doors {
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+    margin-top: 16px;
+    font: 11px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.1px;
+  }
+  #side-doors a { color: var(--ink-faint); text-decoration: none; border-bottom: 1px solid transparent; }
+  #side-doors a:hover { color: var(--ink); border-bottom-color: hsla(var(--accent-h), 70%, 70%, 0.5); }
+  #side-doors .sd-dot { color: var(--ink-faint); opacity: 0.6; }
+  /* the party block unfolds — never a jump cut */
+  #party-block {
+    display: grid; gap: 8px; overflow: hidden;
+    margin-top: 12px; max-height: 320px; opacity: 1;
+    transition: max-height 380ms var(--spring), opacity 260ms ease, margin-top 380ms var(--spring);
+  }
+  #party-block.folded { max-height: 0; opacity: 0; margin-top: 0; pointer-events: none; }
   #maker-line {
     margin-top: 26px; text-align: center;
     font: italic 400 13px 'Didot', 'Bodoni 72', Georgia, serif;
@@ -2003,7 +2029,26 @@
   <div id="tagline">every song is a world &mdash; play it, race it, share it</div>
   <div id="join-card">
     <button id="btn-solo" class="cta">COME ON IN</button>
-    <button id="btn-own" class="cta-soft">&#9834; PROMOTE YOUR SONG IN 3D</button>
+    <div id="today" class="hidden"></div>
+    <!-- the two side doors: quiet text, not buttons. Most arrivals want
+         neither, and the people who do went looking on purpose. -->
+    <div id="side-doors">
+      <a id="open-party" href="#">joining friends?</a>
+      <span class="sd-dot">&middot;</span>
+      <a id="open-promote" href="#">&#9834; promote your song</a>
+    </div>
+    <div id="party-block" class="folded">
+      <div id="name-row">
+        <input id="join-name" maxlength="14" placeholder="name &mdash; or tap &#127922;" autocomplete="off">
+        <button id="name-dice" title="pick a name for me">&#127922;</button>
+      </div>
+      <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
+      <div id="join-msg"></div>
+      <div class="join-row">
+        <button id="btn-join">JOIN</button>
+        <button id="btn-host">HOST A ROOM</button>
+      </div>
+    </div>
     <div id="promote-form" class="hidden">
       <div id="pr-worlds"></div>
       <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
@@ -2011,17 +2056,6 @@
       <label id="pr-file" for="file-input">or load the mp3 instead</label>
       <div id="pr-msg"></div>
     </div>
-    <div id="name-row">
-      <input id="join-name" maxlength="14" placeholder="name &mdash; or tap &#127922;" autocomplete="off">
-      <button id="name-dice" title="pick a name for me">&#127922;</button>
-    </div>
-    <input id="join-room" maxlength="6" placeholder="room code" autocomplete="off">
-    <div id="join-msg"></div>
-    <div class="join-row">
-      <button id="btn-join">JOIN</button>
-      <button id="btn-host">HOST A ROOM</button>
-    </div>
-    <div id="today" class="hidden"></div>
   </div>
   <div id="maker-line">
     handmade worlds &mdash; for your songs, your celebrations, your people
@@ -2405,7 +2439,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: —</div>
-      <div id="build-stamp">build 437</div>
+      <div id="build-stamp">build 439</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2447,6 +2481,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=437"></script>
+<script type="module" src="js/main.js?v=439"></script>
 </body>
 </html>
