@@ -4,8 +4,8 @@
 // Worlds only supply placeGhost(participant, index, outVector3).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from './glow.js?v=452';
-import { PALETTE } from '../net.js?v=452';
+import { glowSprite, glowPoints } from './glow.js?v=455';
+import { PALETTE } from '../net.js?v=455';
 
 const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
 const RANK_AT = [0, 120, 350, 800, 1600];
@@ -25,6 +25,8 @@ export class Presence {
     this.group = null;
     this._ghosts = [];   // {core, halo, tag, dot, txt, id, flare}
     this._color = new THREE.Color();
+    this._hsl = { h: 0, s: 0, l: 0 };
+    this._haloColor = new THREE.Color();
     this._pos = new THREE.Vector3();
     this._proj = new THREE.Vector3();
     this._layer = null;
@@ -71,7 +73,17 @@ export class Presence {
   // world calls this once per frame after moving its own scene.
   // placeGhost(p, i, out) maps a participant to a world position.
   update(dt, participants, placeGhost, opts) {
-    const { beatIntensity = 0, camera = null } = opts || {};
+    const { beatIntensity = 0, camera = null, time = 0, beat = false, gentle = false } = opts || {};
+    // Everybody in the room dances, but nobody dances in lockstep: each orb
+    // carries its own phase, so a crowd reads as a party instead of a chorus
+    // line. Gentle lights keeps the moves and drops the colour flashing.
+    const swing = gentle ? 0.4 : 1;
+    // The engine's beat flag is too shy to dance to: measured, it fires about
+    // once a second while beatIntensity swings the whole range every few
+    // frames. So the downbeat is a rising edge on the intensity itself, and
+    // the flag just adds a hit when it does show up.
+    const hit = beat || (beatIntensity > 0.3 && (this._prevBI || 0) <= 0.3);
+    this._prevBI = beatIntensity;
     const pos = this._pos, proj = this._proj;
     const W = window.innerWidth, H = window.innerHeight;
     let gi = 0;
@@ -106,13 +118,44 @@ export class Presence {
       g.flare = Math.max(0, g.flare - dt);
 
       placeGhost(p, i - 1, pos);
+
+      // ── the dance ── a bounce that lands on the beat and settles, over a
+      // slow sway that never stops. The tail follows, so the move has a wake.
+      if (g.phase === undefined) g.phase = (gi * 2.3999) % 6.2832;   // golden-angle spread
+      if (hit) { g.bob = 1; g.flash = 1; }
+      g.bob = Math.max(0, (g.bob || 0) - dt * 3.4);
+      g.flash = Math.max(0, (g.flash || 0) - dt * 1.8);
+      const bounce = g.bob * g.bob;                    // sharp landing, soft rise
+      pos.y += (bounce * 0.6 + beatIntensity * 0.2 + Math.sin(time * 2.1 + g.phase) * 0.13) * swing;
+      pos.x += Math.sin(time * 1.27 + g.phase * 1.7) * 0.11 * swing;
+      pos.z += Math.cos(time * 1.09 + g.phase * 2.3) * 0.09 * swing;
+
       g.core.visible = true;
       g.core.position.copy(pos);
       const pulse = 1 + beatIntensity * 0.35 + (p.action === 'pulse' || p.action === 'tap' ? 1.1 : 0) + rk * 0.08;
       const flareBoost = 1 + g.flare * 2.2;
       g.core.scale.setScalar(pulse * flareBoost);
       this._color.setHex(colorHex);
+      // a flash of a neighbouring hue on every beat, always returning to the
+      // player's own colour, so the room flickers without anybody losing who
+      // they are. Off entirely in gentle lights.
+      // A real flash, not a tint: the hue swings most of the way around the
+      // wheel on a downbeat and falls back to the player's own colour between
+      // beats, so the room strobes with colour while everybody keeps their
+      // identity. Neighbours swing opposite ways, so a crowd looks like a
+      // dancefloor rather than one lamp.
+      const flashAmt = gentle ? 0 : Math.max(g.flash, beatIntensity * 0.8);
+      if (flashAmt > 0.01) {
+        this._color.getHSL(this._hsl);
+        const dir = (gi % 2) ? 1 : -1;
+        this._color.setHSL(
+          ((this._hsl.h + dir * flashAmt * 0.42) % 1 + 1) % 1,
+          Math.min(1, this._hsl.s * (1 + flashAmt * 0.3)),
+          Math.min(0.92, this._hsl.l * (1 + flashAmt * 0.3)),
+        );
+      }
       if (g.flare > 1.0) this._color.lerp(new THREE.Color(0xffffff), (g.flare - 1.0) / 0.6);
+      this._haloColor.copy(this._color);   // the halo wants the hue, not the boost
       this._color.multiplyScalar(1.2 + beatIntensity * 0.5 + rk * 0.14 + (p.action === 'tap' ? 0.8 : 0));
       g.core.material.color.copy(this._color);
 
@@ -142,7 +185,7 @@ export class Presence {
       g.halo.visible = true;
       g.halo.position.copy(pos);
       g.halo.scale.setScalar(3.4 * pulse * flareBoost);
-      g.halo.material.color.setHex(colorHex);
+      g.halo.material.color.copy(this._haloColor);
       g.halo.material.opacity = 0.62 + beatIntensity * 0.3 + g.flare * 0.4 + (p.action === 'tap' ? 0.3 : 0);
 
       // nameplate: project into screen space, sized by distance

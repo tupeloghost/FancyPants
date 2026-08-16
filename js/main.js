@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=452';
-import { drawQR } from './lib/qr.js?v=452';
-import { WORLDS } from './worlds/registry.js?v=452';
-import { Net, PALETTE } from './net.js?v=452';
-import { Presence } from './lib/presence.js?v=452';
-import { Pulses } from './lib/pulse.js?v=452';
-import { BeatClock } from './lib/beatclock.js?v=452';
-import { BeatCue } from './lib/beatcue.js?v=452';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=452';
-import { Race, placeOf, standings } from './lib/race.js?v=452';
-import { Signals } from './lib/signals.js?v=452';
-import { pickShareLine, loadLines } from './lib/lines.js?v=452';
-import { RouteMap } from './lib/map.js?v=452';
-import * as sfx from './lib/sfx.js?v=452';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=452';
-import { glowTexture } from './lib/glow.js?v=452';
+import { AudioEngine } from './audio-engine.js?v=455';
+import { drawQR } from './lib/qr.js?v=455';
+import { WORLDS } from './worlds/registry.js?v=455';
+import { Net, PALETTE } from './net.js?v=455';
+import { Presence } from './lib/presence.js?v=455';
+import { Pulses } from './lib/pulse.js?v=455';
+import { BeatClock } from './lib/beatclock.js?v=455';
+import { BeatCue } from './lib/beatcue.js?v=455';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=455';
+import { Race, placeOf, standings } from './lib/race.js?v=455';
+import { Signals } from './lib/signals.js?v=455';
+import { pickShareLine, loadLines } from './lib/lines.js?v=455';
+import { RouteMap } from './lib/map.js?v=455';
+import * as sfx from './lib/sfx.js?v=455';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=455';
+import { glowTexture } from './lib/glow.js?v=455';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1684,12 +1684,12 @@ document.addEventListener('fp-lookspark', () => {
   const cur = settings.colorMode;
   const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur);
   const [name, cfg] = pool[(Math.random() * pool.length) | 0];
+  // no banner: the world repainting itself IS the announcement, and saying so
+  // out loud only got in front of the thing worth looking at
   document.body.classList.remove('lookflash'); void document.body.offsetWidth;
   document.body.classList.add('lookflash');
-  announce('RAINBOW SPARK', '', 1000);
   setTimeout(() => {
     applyPreset(cfg);
-    announce('A NEW LOOK', name.toLowerCase(), 2800);
     setTimeout(() => document.body.classList.remove('lookflash'), 400);
   }, 750);
 });
@@ -4946,7 +4946,7 @@ function frame(now) {
 
   presence.update(dt, participants,
     world.placeGhost ? world.placeGhost.bind(world) : (p, i, out) => out.set(p.x, p.y, p.z),
-    { beatIntensity: a.beatIntensity, time, camera });
+    { beatIntensity: a.beatIntensity, time, camera, beat: a.beat, gentle: gentleLights });
 
   if (settings.broadcast) {
     // widen to frame the crowd, not the local player
