@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=443';
-import { drawQR } from './lib/qr.js?v=443';
-import { WORLDS } from './worlds/registry.js?v=443';
-import { Net, PALETTE } from './net.js?v=443';
-import { Presence } from './lib/presence.js?v=443';
-import { Pulses } from './lib/pulse.js?v=443';
-import { BeatClock } from './lib/beatclock.js?v=443';
-import { BeatCue } from './lib/beatcue.js?v=443';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=443';
-import { Race, placeOf, standings } from './lib/race.js?v=443';
-import { Signals } from './lib/signals.js?v=443';
-import { pickShareLine, loadLines } from './lib/lines.js?v=443';
-import { RouteMap } from './lib/map.js?v=443';
-import * as sfx from './lib/sfx.js?v=443';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=443';
-import { glowTexture } from './lib/glow.js?v=443';
+import { AudioEngine } from './audio-engine.js?v=444';
+import { drawQR } from './lib/qr.js?v=444';
+import { WORLDS } from './worlds/registry.js?v=444';
+import { Net, PALETTE } from './net.js?v=444';
+import { Presence } from './lib/presence.js?v=444';
+import { Pulses } from './lib/pulse.js?v=444';
+import { BeatClock } from './lib/beatclock.js?v=444';
+import { BeatCue } from './lib/beatcue.js?v=444';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=444';
+import { Race, placeOf, standings } from './lib/race.js?v=444';
+import { Signals } from './lib/signals.js?v=444';
+import { pickShareLine, loadLines } from './lib/lines.js?v=444';
+import { RouteMap } from './lib/map.js?v=444';
+import * as sfx from './lib/sfx.js?v=444';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=444';
+import { glowTexture } from './lib/glow.js?v=444';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2992,7 +2992,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a playable world now. free, no app, right in the browser";
+    text = "'" + (sunoTrack || 'my song') + "' is an experience now. step inside it free, no app";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3003,8 +3003,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "'. songs are playable worlds here. free, no app"
-      : 'songs are playable worlds here. free, no app, in the browser';
+      ? "i was just inside '" + prettyTrack(file) + "'. you can step inside songs here. free, no app"
+      : 'songs are experiences you can step inside here. free, no app';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -3035,11 +3035,11 @@ function shareCaption() {
   const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
   const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
   const PROMO = [
-    { t: 'i just played ' + st + '. not listened. played.', c: 'your turn \u2192' },
-    { t: st + ' has a world now. i was just in it.', c: 'get in there \u2192' },
-    { t: 'songs are worlds here. ' + wl + ' just ate three minutes of my life.', c: 'feed it yours \u2192' },
+    { t: 'i didn\u2019t listen to ' + st + '. i stepped inside it.', c: 'your turn \u2192' },
+    { t: st + ' is an experience now, and i was just standing in it.', c: 'step inside \u2192' },
     { t: 'this is what ' + st + ' looks like from the inside.', c: 'see for yourself \u2192' },
-    { t: 'no app, no login. i tapped a link and was INSIDE the song.', c: 'tap yours \u2192' },
+    { t: wl + ' just ate three minutes of my life and i\u2019d give it three more.', c: 'go get lost \u2192' },
+    { t: 'no app, no login. one tap and i was inside the song.', c: 'tap yours \u2192' },
   ];
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
   const line = l ? l.text : pf.t;
@@ -3062,7 +3062,7 @@ function shareStill() {
   const run = sig.lastRun || {};
   const barText = ((run.songTitle || 'this song') + '  \u00b7  '
     + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : '')
-    + '  \u00b7  PLAY IT FREE, IN THE BROWSER').toUpperCase();
+    + '  \u00b7  STEP INSIDE IT FREE, IN THE BROWSER').toUpperCase();
   let fs = Math.round(bh * 0.42);
   x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
   while (fs > 9 && x.measureText(barText).width > W - bh) {
@@ -3215,7 +3215,7 @@ function clipBufStart() {
     ctx2.textBaseline = 'middle';
     // the QR floats ABOVE the bar; the words size themselves to fit the bar
     const q = bh * 1.5, m = Math.round(bh * 0.25);
-    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  PLAY IT FREE, IN THE BROWSER';
+    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  STEP INSIDE IT FREE, IN THE BROWSER';
     let fs = Math.round(bh * 0.42);
     ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
     while (fs > 9 && ctx2.measureText(barText).width > W - bh) {
@@ -3453,7 +3453,7 @@ function drawRecap(data, handle) {
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(220,216,245,0.92)';
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
-    + 'scan to start your own room. free, in the browser', 64, 656);
+    + 'scan and step inside. free, in the browser', 64, 656);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -3469,7 +3469,7 @@ function recapText(data, handle) {
   for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
   if (data.nextStream) lines.push(data.nextStream);
-  lines.push('start your own, free, in the browser: ' + SITE);
+  lines.push('step inside one yourself, free, in the browser: ' + SITE);
   return lines.join('\n');
 }
 let lastSetLen = 0;
@@ -3672,7 +3672,7 @@ function drawArtistType(x, W, H, fmt) {
   }
   x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(210,206,235,0.72)';
-  x.fillText('play it free, in the browser, no app', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
+  x.fillText('step inside it free. no app, in the browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
@@ -3769,7 +3769,7 @@ $('ac-share').addEventListener('click', () => {
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
-  const caption = ($('mq-title').value.trim() || 'my song') + ' is a playable world now: ' + clipURL();
+  const caption = ($('mq-title').value.trim() || 'my song') + ' is an experience you can step inside: ' + clipURL();
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text: caption }).catch(() => {});
   } else {
