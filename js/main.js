@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=446';
-import { drawQR } from './lib/qr.js?v=446';
-import { WORLDS } from './worlds/registry.js?v=446';
-import { Net, PALETTE } from './net.js?v=446';
-import { Presence } from './lib/presence.js?v=446';
-import { Pulses } from './lib/pulse.js?v=446';
-import { BeatClock } from './lib/beatclock.js?v=446';
-import { BeatCue } from './lib/beatcue.js?v=446';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=446';
-import { Race, placeOf, standings } from './lib/race.js?v=446';
-import { Signals } from './lib/signals.js?v=446';
-import { pickShareLine, loadLines } from './lib/lines.js?v=446';
-import { RouteMap } from './lib/map.js?v=446';
-import * as sfx from './lib/sfx.js?v=446';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=446';
-import { glowTexture } from './lib/glow.js?v=446';
+import { AudioEngine } from './audio-engine.js?v=447';
+import { drawQR } from './lib/qr.js?v=447';
+import { WORLDS } from './worlds/registry.js?v=447';
+import { Net, PALETTE } from './net.js?v=447';
+import { Presence } from './lib/presence.js?v=447';
+import { Pulses } from './lib/pulse.js?v=447';
+import { BeatClock } from './lib/beatclock.js?v=447';
+import { BeatCue } from './lib/beatcue.js?v=447';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=447';
+import { Race, placeOf, standings } from './lib/race.js?v=447';
+import { Signals } from './lib/signals.js?v=447';
+import { pickShareLine, loadLines } from './lib/lines.js?v=447';
+import { RouteMap } from './lib/map.js?v=447';
+import * as sfx from './lib/sfx.js?v=447';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=447';
+import { glowTexture } from './lib/glow.js?v=447';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -454,7 +454,8 @@ let autoOrder = [], autoAt = 0;
 // the real songs. Files sit in /audio but never in manifest.json — visitors
 // can't see them; this switch is the only way in. Sticky per device.
 const TEST_TRACKS = ['sweetwater.mp3', 'mindflight.mp3', 'mindflight_2.mp3',
-  'diamond_sky.mp3', 'planet_of_the_bass.mp3'].map(f => 'audio/' + f);
+  'diamond_sky.mp3', 'planet_of_the_bass.mp3', 'nosebleed.mp3',
+  'meet_the_purple_rain.mp3', 'sunburnt.mp3', 'green_planets.mp3'].map(f => 'audio/' + f);
 let publicTracks = null;                 // the real list, parked while testing
 let testAudio = false;
 function setTestAudio(on) {
