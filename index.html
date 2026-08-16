@@ -1321,6 +1321,16 @@
   #today.hidden { display: none; }
 
   /* the side doors: findable, never in the way */
+  /* the two-flavour picker: one control, two homes */
+  .am-pick { display: flex; gap: 0; margin: 10px 0 2px; border-radius: 999px; overflow: hidden;
+             border: 1px solid var(--accent-line); }
+  .am-pick button {
+    flex: 1; padding: 9px 0; cursor: pointer; border: 0; background: transparent;
+    font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px; color: var(--ink-faint);
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .am-pick button:hover { color: var(--ink); }
+  .am-pick button.on { background: var(--accent-soft); color: var(--ink); }
   #btn-host-promote { margin-top: 9px; }
   #mc-host {
     margin-top: 16px; width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
@@ -2217,7 +2227,11 @@
     <h2>WHO&rsquo;S PICKIN&rsquo; THE MUSIC?</h2>
     <p>you can change your mind whenever, sugar</p>
     <div id="mode-opts">
-      <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs, y&rsquo;all just play.</em></div>
+      <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs, y&rsquo;all just play.</em>
+        <div class="am-pick" onclick="event.stopPropagation()">
+          <button id="mc-instr" class="on">INSTRUMENTAL</button><button id="mc-vocals">WITH VOCALS</button>
+        </div>
+      </div>
       <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round apiece. paste a suno link or load an mp3.</em></div>
       <div class="mode-opt" id="opt-promote"><b>MAKE MY SONG AN EXPERIENCE</b><em>pick its world, send the link, watch folks fall in. free for three worlds.</em></div>
     </div>
@@ -2349,6 +2363,9 @@
       <div id="guest-world"></div>
       <div id="guest-note">&#9834; <span id="guest-track">the host is driving the music</span></div>
       <div class="row host-only">
+        <div class="am-pick" id="am-row">
+          <button id="am-instr" class="on">INSTRUMENTAL</button><button id="am-vocals">WITH VOCALS</button>
+        </div>
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
       <div class="row host-only">
@@ -2456,7 +2473,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 449</div>
+      <div id="build-stamp">build 452</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2498,6 +2515,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=449"></script>
+<script type="module" src="js/main.js?v=452"></script>
 </body>
 </html>

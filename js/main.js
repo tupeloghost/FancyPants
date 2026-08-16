@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=449';
-import { drawQR } from './lib/qr.js?v=449';
-import { WORLDS } from './worlds/registry.js?v=449';
-import { Net, PALETTE } from './net.js?v=449';
-import { Presence } from './lib/presence.js?v=449';
-import { Pulses } from './lib/pulse.js?v=449';
-import { BeatClock } from './lib/beatclock.js?v=449';
-import { BeatCue } from './lib/beatcue.js?v=449';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=449';
-import { Race, placeOf, standings } from './lib/race.js?v=449';
-import { Signals } from './lib/signals.js?v=449';
-import { pickShareLine, loadLines } from './lib/lines.js?v=449';
-import { RouteMap } from './lib/map.js?v=449';
-import * as sfx from './lib/sfx.js?v=449';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=449';
-import { glowTexture } from './lib/glow.js?v=449';
+import { AudioEngine } from './audio-engine.js?v=452';
+import { drawQR } from './lib/qr.js?v=452';
+import { WORLDS } from './worlds/registry.js?v=452';
+import { Net, PALETTE } from './net.js?v=452';
+import { Presence } from './lib/presence.js?v=452';
+import { Pulses } from './lib/pulse.js?v=452';
+import { BeatClock } from './lib/beatclock.js?v=452';
+import { BeatCue } from './lib/beatcue.js?v=452';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=452';
+import { Race, placeOf, standings } from './lib/race.js?v=452';
+import { Signals } from './lib/signals.js?v=452';
+import { pickShareLine, loadLines } from './lib/lines.js?v=452';
+import { RouteMap } from './lib/map.js?v=452';
+import * as sfx from './lib/sfx.js?v=452';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=452';
+import { glowTexture } from './lib/glow.js?v=452';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -407,21 +407,23 @@ for (const [key, w] of Object.entries(WORLDS)) {
 }
 $('world-select').addEventListener('change', e => switchWorld(e.target.value));
 
-// tracks from /audio/manifest.json (optional file — silently skipped if absent)
+// The house catalogue comes in two flavours and the player picks: the songs
+// with vocals, or the instrumentals. Instrumental leads, because a voice
+// competes with a game for the same attention and these worlds are the show.
+// Each pool is a plain manifest, so adding music is a file drop and a line.
 fetch('audio/manifest.json?t=' + Date.now())
   .then(r => (r.ok ? r.json() : []))
   .then(list => {
-    for (const f of list) {
-      const opt = document.createElement('option');
-      opt.value = 'audio/' + f; opt.textContent = f;
-      $('track-select').appendChild(opt);
-      trackList.push('audio/' + f);
-    }
-    // test audio sticks per device, but only inside dev mode — a sofa test
-    // without ?dev=1 always hears the real songs
-    if (localStorage.getItem('fp_testaudio') === '1' && new URLSearchParams(location.search).has('dev')) {
-      setTestAudio(true);
-    }
+    vocalPool = list.map(f => 'audio/' + f);
+    return fetch('audio/instrumentals.json?t=' + Date.now())
+      .then(r => (r.ok ? r.json() : [])).catch(() => []);
+  })
+  .then(inst => {
+    instrPool = (inst || []).map(f => 'audio/' + f);
+    // never leave the room silent: with no instrumentals, the voices sing
+    if (!instrPool.length) wantVocals = true;
+    rebuildTrackPool();
+    syncAudioModeUI();
     // if the room's already running and silent, start the music now
     if (autoWanted && !audio.el.src) playAuto(false);
     // ── today's song: one date-picked track, named at the front door ──
@@ -453,32 +455,42 @@ let autoOrder = [], autoAt = 0;
 // ── test audio (dev only): a private playlist so testing doesn't wear out
 // the real songs. Files sit in /audio but never in manifest.json — visitors
 // can't see them; this switch is the only way in. Sticky per device.
-const TEST_TRACKS = ['sweetwater.mp3', 'mindflight.mp3', 'mindflight_2.mp3',
-  'diamond_sky.mp3', 'planet_of_the_bass.mp3', 'nosebleed.mp3',
-  'meet_the_purple_rain.mp3', 'sunburnt.mp3', 'green_planets.mp3',
-  'hello_goodbye.mp3', 'hello_goodbye_2.mp3',
-  'daydreamer.mp3', 'daydreamer_2.mp3'].map(f => 'audio/' + f);
-let publicTracks = null;                 // the real list, parked while testing
-let testAudio = false;
-function setTestAudio(on) {
-  testAudio = !!on;
-  localStorage.setItem('fp_testaudio', on ? '1' : '');
-  if (on) {
-    if (!publicTracks) publicTracks = trackList.slice();
-    trackList = TEST_TRACKS.slice();
-    // the picker lists them too, so a specific one is one tap away
-    for (const t of TEST_TRACKS) {
-      if (![...$('track-select').options].some(o => o.value === t)) {
-        const opt = document.createElement('option');
-        opt.value = t; opt.textContent = '🎧 ' + t.split('/').pop();
-        $('track-select').appendChild(opt);
-      }
-    }
-  } else if (publicTracks) {
-    trackList = publicTracks.slice();
-    [...$('track-select').options].filter(o => TEST_TRACKS.includes(o.value)).forEach(o => o.remove());
+let vocalPool = [], instrPool = [];
+// instrumental is the default: nobody has opted into vocals until they say so
+let wantVocals = localStorage.getItem('fp_vocals') === '1';
+
+function rebuildTrackPool() {
+  const pool = (wantVocals ? vocalPool : instrPool);
+  trackList = pool.slice();
+  const sel = $('track-select');
+  [...sel.options].filter(o => o.value.startsWith('audio/')).forEach(o => o.remove());
+  for (const t of pool) {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = prettyTrack(t);
+    sel.appendChild(opt);
   }
   autoOrder = []; autoAt = 0;            // reshuffle from the new pool
+}
+
+function setVocals(on) {
+  if (wantVocals === !!on) return;
+  wantVocals = !!on;
+  localStorage.setItem('fp_vocals', on ? '1' : '');
+  rebuildTrackPool();
+  syncAudioModeUI();
+  if (!document.body.classList.contains('guest')) playAuto(true);   // hear it now
+}
+
+// every control that shows the choice stays in step with the setting
+function syncAudioModeUI() {
+  for (const id of ['am-instr', 'mc-instr']) {
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle('on', !wantVocals);
+  }
+  for (const id of ['am-vocals', 'mc-vocals']) {
+    const b = document.getElementById(id);
+    if (b) b.classList.toggle('on', wantVocals);
+  }
 }
 function shuffled(a) {
   const b = a.slice();
@@ -488,7 +500,7 @@ function shuffled(a) {
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
   window.__sunoShare = null;
-  if (!next && !testAudio) {   // signatures are real songs — skip in test audio
+  if (!next && wantVocals) {   // a world's signature song is a vocal cut
     const sig = signatureFor(currentWorldKey);
     if (sig && !audio.el.src) {
       audio.loadURL(sig);
@@ -2685,6 +2697,13 @@ function askMode() {
   askMode._tries = 0;
   $('mode-card').classList.add('show');
 }
+// the flavour choice, wherever it appears
+for (const [id, on] of [['am-instr', false], ['am-vocals', true], ['mc-instr', false], ['mc-vocals', true]]) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', e => { e.stopPropagation(); setVocals(on); });
+}
+syncAudioModeUI();
+
 $('opt-promote').addEventListener('click', () => {
   $('pl-row').classList.add('hidden');
   togglePromote();
@@ -4329,17 +4348,6 @@ if (params.get('dev') === '1') (function devPanel() {
     paid.textContent = '\u2b50 pretend i paid for artist access: ' + (window.__devPaid ? 'YES' : 'NO');
   });
   body.appendChild(paid);
-  // \u2500\u2500 test audio: her ears get a break; the public never hears these \u2500\u2500
-  // The instrumentals live in /audio but NOT in manifest.json, so they are
-  // invisible to visitors \u2014 this toggle is the only door to them.
-  const taLabel = () => '\ud83c\udfa7 test audio (instrumentals): ' + (testAudio ? 'ON' : 'OFF');
-  const ta = BTN('', () => {
-    setTestAudio(!testAudio);
-    ta.textContent = taLabel();
-    playAuto(true);   // switch what's playing right now, not just eventually
-  });
-  ta.textContent = taLabel();
-  body.appendChild(ta);
 
   // ── hear the sounds ── judging audio by playing a whole song is slow;
   // these fire each voice on demand so a verdict takes two seconds
