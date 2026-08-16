@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=434';
-import { drawQR } from './lib/qr.js?v=434';
-import { WORLDS } from './worlds/registry.js?v=434';
-import { Net, PALETTE } from './net.js?v=434';
-import { Presence } from './lib/presence.js?v=434';
-import { Pulses } from './lib/pulse.js?v=434';
-import { BeatClock } from './lib/beatclock.js?v=434';
-import { BeatCue } from './lib/beatcue.js?v=434';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=434';
-import { Race, placeOf, standings } from './lib/race.js?v=434';
-import { Signals } from './lib/signals.js?v=434';
-import { pickShareLine, loadLines } from './lib/lines.js?v=434';
-import { RouteMap } from './lib/map.js?v=434';
-import * as sfx from './lib/sfx.js?v=434';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=434';
-import { glowTexture } from './lib/glow.js?v=434';
+import { AudioEngine } from './audio-engine.js?v=436';
+import { drawQR } from './lib/qr.js?v=436';
+import { WORLDS } from './worlds/registry.js?v=436';
+import { Net, PALETTE } from './net.js?v=436';
+import { Presence } from './lib/presence.js?v=436';
+import { Pulses } from './lib/pulse.js?v=436';
+import { BeatClock } from './lib/beatclock.js?v=436';
+import { BeatCue } from './lib/beatcue.js?v=436';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=436';
+import { Race, placeOf, standings } from './lib/race.js?v=436';
+import { Signals } from './lib/signals.js?v=436';
+import { pickShareLine, loadLines } from './lib/lines.js?v=436';
+import { RouteMap } from './lib/map.js?v=436';
+import * as sfx from './lib/sfx.js?v=436';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=436';
+import { glowTexture } from './lib/glow.js?v=436';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4296,6 +4296,22 @@ if (params.get('dev') === '1') (function devPanel() {
   });
   ta.textContent = taLabel();
   body.appendChild(ta);
+
+  // ── hear the sounds ── judging audio by playing a whole song is slow;
+  // these fire each voice on demand so a verdict takes two seconds
+  body.appendChild(H('\ud83d\udd0a HEAR THE SOUNDS', '#8affc1'));
+  body.appendChild(NOTE('tap to hear each one on its own \u2014 nothing else happens.'));
+  const SOUNDS = [
+    ['catch a spark (small)', () => sfx.swoosh('soft')],
+    ['catch a spark (bigger)', () => sfx.swoosh('air')],
+    ['rainbow spark', () => sfx.swoosh('bloom')],
+    ['hit on the beat', () => sfx.hit(6, true)],
+    ['a miss', () => sfx.thud()],
+    ['a clear', () => sfx.clear(3)],
+    ['someone passes you', () => sfx.pass(false)],
+    ['the finish', () => sfx.fanfare()],
+  ];
+  for (const [label, play] of SOUNDS) body.appendChild(BTN('\u25b6 ' + label, play));
 
 
   // ── the notebook: anything she notices becomes a note that knows where
