@@ -96,6 +96,8 @@ function wake() {
 }
 
 export function setSfxMuted(m) { muted = m; }
+// a read-only handle so a test can confirm the front-door gate actually holds
+export const isSfxMuted = () => muted;
 
 export function setSfxLevel(v) {
   if (ensure()) master.gain.value = BASE * Math.max(0, Math.min(2, v));

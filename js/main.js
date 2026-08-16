@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=436';
-import { drawQR } from './lib/qr.js?v=436';
-import { WORLDS } from './worlds/registry.js?v=436';
-import { Net, PALETTE } from './net.js?v=436';
-import { Presence } from './lib/presence.js?v=436';
-import { Pulses } from './lib/pulse.js?v=436';
-import { BeatClock } from './lib/beatclock.js?v=436';
-import { BeatCue } from './lib/beatcue.js?v=436';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=436';
-import { Race, placeOf, standings } from './lib/race.js?v=436';
-import { Signals } from './lib/signals.js?v=436';
-import { pickShareLine, loadLines } from './lib/lines.js?v=436';
-import { RouteMap } from './lib/map.js?v=436';
-import * as sfx from './lib/sfx.js?v=436';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=436';
-import { glowTexture } from './lib/glow.js?v=436';
+import { AudioEngine } from './audio-engine.js?v=437';
+import { drawQR } from './lib/qr.js?v=437';
+import { WORLDS } from './worlds/registry.js?v=437';
+import { Net, PALETTE } from './net.js?v=437';
+import { Presence } from './lib/presence.js?v=437';
+import { Pulses } from './lib/pulse.js?v=437';
+import { BeatClock } from './lib/beatclock.js?v=437';
+import { BeatCue } from './lib/beatcue.js?v=437';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=437';
+import { Race, placeOf, standings } from './lib/race.js?v=437';
+import { Signals } from './lib/signals.js?v=437';
+import { pickShareLine, loadLines } from './lib/lines.js?v=437';
+import { RouteMap } from './lib/map.js?v=437';
+import * as sfx from './lib/sfx.js?v=437';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=437';
+import { glowTexture } from './lib/glow.js?v=437';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1458,9 +1458,18 @@ function stepLook(dir = 1) {
   applyPreset(PRESETS[lookIdx][1]);
 }
 
+// The world runs live behind the front door — which meant it played its own
+// catch sounds at a visitor who had not come in yet. Nothing the GAME does
+// makes a sound until the door is open; the audition buttons in dev mode ask
+// directly and are exempt.
+let entered = false;
+function syncSfxMute() { sfx.setSfxMuted(audio.muted || !entered); }
+window.__enterSfx = () => { entered = true; syncSfxMute(); };
+syncSfxMute();
+
 function toggleMute() {
   audio.setMuted(!audio.muted);
-  sfx.setSfxMuted(audio.muted);
+  syncSfxMute();
   $('btn-mute').classList.toggle('on', audio.muted);
   $('btn-mute').textContent = audio.muted ? 'muted' : 'mute';
   $('qb-mute').classList.toggle('on', audio.muted);
@@ -1875,6 +1884,7 @@ function buildTunePanel() {
   });
 }
 sfx.setSfxLevel(TUNE.sfx);   // saved level applies from boot
+syncSfxMute();               // ...and silence still holds until entry
 
 // hotkeys
 window.addEventListener('keydown', e => {
@@ -2394,6 +2404,7 @@ function dismissOverlay() {
     if (!audio.el.src) setTimeout(() => playAuto(false), 200);
   }
   tap.classList.add('gone');
+  window.__enterSfx();   // now the game may speak
   showWorldIntro(currentWorldKey); // the greeting belongs AFTER the join card, not behind it
   // iOS: tilt controls need explicit permission, and the request must come
   // from a user gesture — this tap is our one chance
@@ -4311,7 +4322,14 @@ if (params.get('dev') === '1') (function devPanel() {
     ['someone passes you', () => sfx.pass(false)],
     ['the finish', () => sfx.fanfare()],
   ];
-  for (const [label, play] of SOUNDS) body.appendChild(BTN('\u25b6 ' + label, play));
+  // asking to hear a sound counts as asking — the front-door gate steps aside
+  // for the length of the sound, then closes again
+  const audition = play => () => {
+    sfx.setSfxMuted(false);
+    play();
+    setTimeout(syncSfxMute, 7000);
+  };
+  for (const [label, play] of SOUNDS) body.appendChild(BTN('\u25b6 ' + label, audition(play)));
 
 
   // ── the notebook: anything she notices becomes a note that knows where
