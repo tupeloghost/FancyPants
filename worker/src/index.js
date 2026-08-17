@@ -549,7 +549,7 @@ export default {
         + (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
-        + '<footer>every song here is a place you can get into. <a href="https://tupeloghost.github.io/FancyPants/">make yours free at fancy britches</a></footer>'
+        + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'
         + '</div>'        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent="going live "+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')        + '</body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
