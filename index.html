@@ -1344,6 +1344,29 @@
   .am-pick button:hover { color: var(--ink); }
   .am-pick button.on { background: var(--accent-soft); color: var(--ink); }
   #btn-host-promote { margin-top: 9px; }
+  #host-when { display: flex; gap: 8px; margin-top: 10px; }
+  #host-when.hidden, #sched-form.hidden, #sc-done.hidden { display: none; }
+  #host-when button {
+    flex: 1; padding: 12px 0; cursor: pointer; border-radius: 999px;
+    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
+    color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-line);
+  }
+  #host-when button:hover { border-color: hsla(var(--accent-h),80%,70%,0.7); }
+  #sched-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; text-align: left; }
+  #sched-form input {
+    padding: 11px 12px; border-radius: 11px; border: 1px solid var(--accent-line);
+    background: var(--glass); color: var(--ink);
+    font: 13px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+  }
+  #sched-form input:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
+  #sched-form button {
+    padding: 12px 0; cursor: pointer; border-radius: 999px;
+    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
+    color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-line);
+  }
+  #sc-msg { font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); text-align: center; }
+  #sc-done { display: flex; gap: 8px; }
+  #sc-done button { flex: 1; }
   #mc-host {
     margin-top: 16px; width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
     font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
@@ -2296,6 +2319,24 @@
       <div class="mode-opt" id="opt-promote"><b>PROMOTE MY SONG</b><em>pick its world, share the link.</em></div>
     </div>
     <button id="mc-host">OPEN A ROOM</button>
+    <!-- Hosting splits in two, and only here: going live now is the old
+         behaviour untouched, while scheduling writes the date onto the host's
+         own page so the announcement outlives this tab. -->
+    <div id="host-when" class="hidden">
+      <button id="hw-now">STREAMING NOW</button>
+      <button id="hw-later">SCHEDULE IT</button>
+    </div>
+    <div id="sched-form" class="hidden">
+      <input id="sc-when" type="datetime-local">
+      <input id="sc-where" type="url" placeholder="where folks watch: twitch, youtube, wherever" autocomplete="off">
+      <input id="sc-name" maxlength="30" placeholder="your name" autocomplete="off">
+      <button id="sc-go">SAVE AND GET MY LINK</button>
+      <div id="sc-msg"></div>
+      <div id="sc-done" class="hidden">
+        <button id="sc-copy">COPY THE LINK</button>
+        <button id="sc-set">BUILD THE SET LIST NOW</button>
+      </div>
+    </div>
     <div id="promote-form" class="hidden">
       <div id="pr-worlds"></div>
       <input id="pr-url" type="url" placeholder="paste your song link" autocomplete="off" spellcheck="false">
@@ -2533,7 +2574,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 467</div>
+      <div id="build-stamp">build 468</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2575,6 +2616,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=467"></script>
+<script type="module" src="js/main.js?v=468"></script>
 </body>
 </html>

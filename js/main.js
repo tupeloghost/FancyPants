@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=467';
-import { drawQR } from './lib/qr.js?v=467';
-import { WORLDS } from './worlds/registry.js?v=467';
-import { Net, PALETTE } from './net.js?v=467';
-import { Presence } from './lib/presence.js?v=467';
-import { Pulses } from './lib/pulse.js?v=467';
-import { BeatClock } from './lib/beatclock.js?v=467';
-import { BeatCue } from './lib/beatcue.js?v=467';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=467';
-import { Race, placeOf, standings } from './lib/race.js?v=467';
-import { Signals } from './lib/signals.js?v=467';
-import { pickShareLine, loadLines } from './lib/lines.js?v=467';
-import { RouteMap } from './lib/map.js?v=467';
-import * as sfx from './lib/sfx.js?v=467';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=467';
-import { glowTexture } from './lib/glow.js?v=467';
+import { AudioEngine } from './audio-engine.js?v=468';
+import { drawQR } from './lib/qr.js?v=468';
+import { WORLDS } from './worlds/registry.js?v=468';
+import { Net, PALETTE } from './net.js?v=468';
+import { Presence } from './lib/presence.js?v=468';
+import { Pulses } from './lib/pulse.js?v=468';
+import { BeatClock } from './lib/beatclock.js?v=468';
+import { BeatCue } from './lib/beatcue.js?v=468';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=468';
+import { Race, placeOf, standings } from './lib/race.js?v=468';
+import { Signals } from './lib/signals.js?v=468';
+import { pickShareLine, loadLines } from './lib/lines.js?v=468';
+import { RouteMap } from './lib/map.js?v=468';
+import * as sfx from './lib/sfx.js?v=468';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=468';
+import { glowTexture } from './lib/glow.js?v=468';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2737,10 +2737,69 @@ $('opt-promote').addEventListener('click', () => {
   $('pl-row').classList.add('hidden');
   togglePromote();
 });
+// ── hosting: now, or a date ──
+// Going live now is one tap and unchanged. Scheduling writes the date onto
+// the host's own creator page, so the announcement is a real URL that works
+// when this tab is closed. Private to whoever they send it to: a public
+// what's-on list with three entries reads as abandoned.
 $('mc-host').addEventListener('click', () => {
-  $('mode-card').classList.remove('show');
   $('pl-row').classList.add('hidden');
+  $('promote-form').classList.add('hidden');
+  $('host-when').classList.toggle('hidden');
+});
+$('hw-now').addEventListener('click', () => {
+  $('mode-card').classList.remove('show');
   startRoom(genCode(), ensureName(), true);
+});
+$('hw-later').addEventListener('click', () => {
+  $('host-when').classList.add('hidden');
+  $('sched-form').classList.remove('hidden');
+  if (!$('sc-name').value) $('sc-name').value = $('join-name').value || '';
+  $('sc-when').focus();
+});
+$('sc-go').addEventListener('click', async () => {
+  const when = $('sc-when').value, where = $('sc-where').value.trim();
+  const who = $('sc-name').value.trim() || $('join-name').value.trim();
+  if (!when) { $('sc-msg').textContent = 'pick a date and time'; return; }
+  if (!who) { $('sc-msg').textContent = 'what should we call you?'; return; }
+  const slug = ccSlugify(who);
+  if (slug.length < 3) { $('sc-msg').textContent = 'that name is a touch short'; return; }
+  // a friendly sentence, not a timestamp: this is read by fans, not machines
+  const d = new Date(when);
+  const nice = d.toLocaleString(undefined,
+    { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const next = 'going live ' + nice + (where ? ' \u00b7 ' + where : '');
+  $('sc-msg').textContent = 'saving\u2026';
+  try {
+    const body = { slug, name: who, next, links: where ? [{ label: 'watch the stream', url: where }] : [] };
+    let r = await fetch(`${SUNO_PROXY}c-create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (r.status === 409) {
+      // the page is already theirs, or the name is taken by somebody else
+      const key = ccKey(slug);
+      if (!key) { $('sc-msg').textContent = 'that name is taken. try another'; return; }
+      r = await fetch(`${SUNO_PROXY}c-update`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, key }),
+      });
+    } else if (r.ok) {
+      const j = await r.json().catch(() => ({}));
+      if (j.editKey) localStorage.setItem('fp_ck_' + slug, j.editKey);
+    }
+    if (!r.ok) { $('sc-msg').textContent = 'that didn\u2019t save. try again'; return; }
+    window.__schedLink = `${SUNO_PROXY}c/${slug}`;
+    $('sc-msg').textContent = nice + '. your link is ready';
+    $('sc-done').classList.remove('hidden');
+  } catch (e) { $('sc-msg').textContent = 'no connection. try again'; }
+});
+$('sc-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText(window.__schedLink || '')
+    .then(() => flash('LINK COPIED. POST IT WHEREVER YOUR PEOPLE ARE', 2400)).catch(() => {});
+});
+$('sc-set').addEventListener('click', () => {
+  $('sched-form').classList.add('hidden');
+  $('opt-play').click();          // straight into building the set list
 });
 $('opt-vibe').addEventListener('click', () => {
   $('mode-card').classList.remove('show');
