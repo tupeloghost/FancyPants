@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=460';
-import { drawQR } from './lib/qr.js?v=460';
-import { WORLDS } from './worlds/registry.js?v=460';
-import { Net, PALETTE } from './net.js?v=460';
-import { Presence } from './lib/presence.js?v=460';
-import { Pulses } from './lib/pulse.js?v=460';
-import { BeatClock } from './lib/beatclock.js?v=460';
-import { BeatCue } from './lib/beatcue.js?v=460';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=460';
-import { Race, placeOf, standings } from './lib/race.js?v=460';
-import { Signals } from './lib/signals.js?v=460';
-import { pickShareLine, loadLines } from './lib/lines.js?v=460';
-import { RouteMap } from './lib/map.js?v=460';
-import * as sfx from './lib/sfx.js?v=460';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=460';
-import { glowTexture } from './lib/glow.js?v=460';
+import { AudioEngine } from './audio-engine.js?v=461';
+import { drawQR } from './lib/qr.js?v=461';
+import { WORLDS } from './worlds/registry.js?v=461';
+import { Net, PALETTE } from './net.js?v=461';
+import { Presence } from './lib/presence.js?v=461';
+import { Pulses } from './lib/pulse.js?v=461';
+import { BeatClock } from './lib/beatclock.js?v=461';
+import { BeatCue } from './lib/beatcue.js?v=461';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=461';
+import { Race, placeOf, standings } from './lib/race.js?v=461';
+import { Signals } from './lib/signals.js?v=461';
+import { pickShareLine, loadLines } from './lib/lines.js?v=461';
+import { RouteMap } from './lib/map.js?v=461';
+import * as sfx from './lib/sfx.js?v=461';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=461';
+import { glowTexture } from './lib/glow.js?v=461';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1078,7 +1078,7 @@ function loadSuno() {
     .catch(() => {
       sunoLoading = null;
       sunoTrack = '';
-      sunoSay("couldn't find that song. use the Share link from Suno", 'err');
+      sunoSay("couldn't find that song. use Suno's Share link", 'err');
     });
 }
 let sunoTrack = '';   // what's playing, for the guests' now-playing line
@@ -1722,7 +1722,7 @@ function armNudge(key) {
       || !$('panel').classList.contains('collapsed');
     if (busy) { nudgeT = setTimeout(fire, 12000); return; }
     localStorage.setItem('fp_nudged_' + key, '1');
-    announce('', 'tap anywhere and see what happens', 3800, 'quiet');
+    announce('', 'tap anywhere', 3800, 'quiet');
   }, 20000);
 }
 document.getElementById('canvas').addEventListener('pointerdown', () => {
@@ -2567,7 +2567,7 @@ $('lyric-layer').addEventListener('click', () => {
   localStorage.setItem('fp_lyrics_off', '1');
   lyrBtnPaint();
   updateLyricLayer();
-  flash('LYRICS TUCKED AWAY. BRING \u2019EM BACK IN THE MUSIC TAB', 2200);
+  flash('LYRICS OFF. TURN THEM BACK ON IN THE MUSIC TAB', 2200);
 });
 // ── the creator page editor ── slug + bio + links + what's-next; promoted
 // songs land on the page by themselves. Creating returns the private edit
@@ -2629,23 +2629,23 @@ $('cc-save').addEventListener('click', async () => {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     const d = await r.json().catch(() => ({}));
-    if (r.status === 409) { $('cc-msg').textContent = 'that address is taken. try another'; return; }
-    if (!r.ok) { $('cc-msg').textContent = 'that didn\u2019t take. try again?'; return; }
+    if (r.status === 409) { $('cc-msg').textContent = 'that address is taken'; return; }
+    if (!r.ok) { $('cc-msg').textContent = 'that didn\u2019t send. try again'; return; }
     if (d.editKey) localStorage.setItem('fp_ck_' + slug, d.editKey);
     $('cc-save').textContent = 'SAVE CHANGES';
     $('cc-out').classList.remove('hidden');
     $('cc-msg').textContent = 'live at fancy-pants.tupeloghost.workers.dev/c/' + slug;
-  } catch (e) { $('cc-msg').textContent = 'no connection. try again in a spell'; }
+  } catch (e) { $('cc-msg').textContent = 'no connection. try again'; }
 });
 $('cc-copy').addEventListener('click', () => {
   const slug = ccSlugify($('cc-slug').value);
   navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug)
-    .then(() => flash('PAGE LINK COPIED. PUT IT IN YOUR BIO', 2200)).catch(() => {});
+    .then(() => flash('LINK COPIED. PUT IT IN YOUR BIO', 2200)).catch(() => {});
 });
 $('cc-copyedit').addEventListener('click', () => {
   const slug = ccSlugify($('cc-slug').value);
   navigator.clipboard.writeText('https://fancy-pants.tupeloghost.workers.dev/c/' + slug + '  edit key (KEEP PRIVATE): ' + ccKey(slug))
-    .then(() => flash('EDIT KEY COPIED. SAVE IT SOMEWHERE SAFE', 2400)).catch(() => {});
+    .then(() => flash('EDIT KEY COPIED. KEEP IT SAFE', 2400)).catch(() => {});
 });
 
 $('gentle-btn').addEventListener('click', () => setGentle(!gentleLights));
@@ -2692,7 +2692,7 @@ function askMode() {
       askMode._t = setTimeout(askMode, 500);
       return;
     }
-    flash('THE MUSIC DIDN\u2019T LOAD. CHECK YOUR CONNECTION & REFRESH', 4000, true);
+    flash('MUSIC DIDN\u2019T LOAD. CHECK YOUR CONNECTION', 4000, true);
   }
   askMode._tries = 0;
   $('mode-card').classList.add('show');
@@ -2727,7 +2727,7 @@ $('pl-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('pl-go
 $('pl-go').addEventListener('click', () => {
   const raw = $('pl-input').value.trim();
   if (/spotify\.com|spotify:|youtube\.com|youtu\.be/i.test(raw)) {
-    $('pl-msg').textContent = 'we can only play suno links or mp3s for now';
+    $('pl-msg').textContent = 'suno links and mp3s only';
     return;
   }
   const pl = raw.match(/playlist\/([0-9a-fA-F-]{36})/);
@@ -2743,7 +2743,7 @@ $('pl-go').addEventListener('click', () => {
         }
       }
       $('pl-pick').classList.remove('hidden');
-      $('pl-msg').textContent = 'one song. now where\u2019s it playin\u2019?';
+      $('pl-msg').textContent = 'one song. where\u2019s it playin\u2019?';
       return;
     }
     $('pl-msg').textContent = 'we can only play suno links or mp3s for now';
@@ -2760,7 +2760,7 @@ $('pl-go').addEventListener('click', () => {
       // the night is exactly as long as the playlist: one world per song
       startPlaylistSet(info.songs);
     })
-    .catch(() => { $('pl-msg').textContent = 'could not reach that playlist. try again in a spell'; });
+    .catch(() => { $('pl-msg').textContent = 'couldn\u2019t reach that playlist. try again'; });
 });
 // the artist door, one doorway: open the paste slot (optionally pre-filled
 // and pre-loaded), used by the landing button, the set-list card, and links
@@ -3173,7 +3173,7 @@ $('shc-share').addEventListener('click', () => {
     a.href = URL.createObjectURL(media.blob); a.download = file.name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-    navigator.clipboard.writeText(caption).then(() => flash('SAVED. CAPTION COPIED, PASTE THEM TOGETHER', 2600)).catch(() => {});
+    navigator.clipboard.writeText(caption).then(() => flash('SAVED. CAPTION COPIED TOO', 2600)).catch(() => {});
     return;
   }
   if (navigator.share) { navigator.share({ text: caption }).catch(() => {}); return; }
@@ -3328,7 +3328,7 @@ $('rb-clip').addEventListener('click', () => {
     return;
   }
   if (!clipSaved) {
-    flash('NOTHING ON THE REEL YET. PLAY A ROUND FIRST', 2200);
+    flash('NOTHING TO CLIP YET. PLAY A ROUND FIRST', 2200);
     return;
   }
   deliverClip();
@@ -3530,7 +3530,7 @@ $('rc-close').addEventListener('click', () => $('recap-card').classList.add('hid
 $('rc-copy').addEventListener('click', () => {
   const d = $('recap-card')._data;
   navigator.clipboard.writeText(recapText(d, $('rc-handle').value.trim()))
-    .then(() => flash('RECAP COPIED. PASTE IT IN THE CHAT', 2200)).catch(() => {});
+    .then(() => flash('RECAP COPIED. PASTE IN CHAT', 2200)).catch(() => {});
 });
 $('rc-share').addEventListener('click', () => {
   const d = $('recap-card')._data;
@@ -3785,7 +3785,7 @@ $('ac-close').addEventListener('click', () => {
   unhushAfterCard();
 });
 $('ac-share').addEventListener('click', () => {
-  if (!acSaved) { flash('STILL RECORDING. GIVE IT A BREATH', 1800); return; }
+  if (!acSaved) { flash('STILL RECORDING, HANG ON', 1800); return; }
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();
   }
@@ -3873,7 +3873,7 @@ $('cw-send').addEventListener('click', () => {
     body: JSON.stringify({ email, occasion, vision,
       timeline: $('cw-timeline').value.trim(), budget: $('cw-budget').value }),
   }).then(r => {
-    $('cw-msg').textContent = r.ok ? "got it, sugar. we'll be in touch soon" : 'that did not take. try again?';
+    $('cw-msg').textContent = r.ok ? "got it. we'll be in touch" : 'that didn\u2019t send. try again';
     if (r.ok) setTimeout(() => $('custom-form').classList.add('hidden'), 2600);
   }).catch(() => { $('cw-msg').textContent = 'no connection. try again in a spell'; });
 });
@@ -3886,7 +3886,7 @@ $('wl-join').addEventListener('click', () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, note: 'artist waitlist' }),
   }).then(r => {
-    $('wl-msg').textContent = r.ok ? "you're on the list, sugar. we'll holler" : 'that did not take. try again?';
+    $('wl-msg').textContent = r.ok ? "you're on the list" : 'that did not take. try again?';
     if (r.ok) { $('wl-email').value = ''; setTimeout(() => $('waitlist-form').classList.add('hidden'), 2200); }
   }).catch(() => { $('wl-msg').textContent = 'no connection. try again in a spell'; });
 });
@@ -4051,9 +4051,9 @@ let promoteWorld = null;   // remembered for the mp3 route
 // each open world gets one honest sentence, so an artist knows what
 // they're putting their song inside before they commit
 const WORLD_BLURBS = {
-  tunnel: 'drift through a tunnel of light. every click sends a shockwave through your song',
-  surfer: 'jump and hang. air time pays, and the jumps land on your song\u2019s beat',
-  slide: 'fly down a neon waterslide. steer through glowing rings to the beat of your song',
+  tunnel: 'drift through a tunnel of light. click to send shockwaves',
+  surfer: 'catch sparks and jump. air time pays',
+  slide: 'fly a neon waterslide. steer through the rings',
 };
 let prWorldPick = null;
 // ── the two side doors ── The front door is one button. Everything else a
@@ -4102,7 +4102,7 @@ $('pr-go').addEventListener('click', () => {
   if (!/suno\.com\/(song|s|playlist)\//.test(raw)) {
     $('pr-msg').textContent = raw && /spotify|youtu/i.test(raw)
       ? 'we can only play suno links or mp3s for now'
-      : 'paste a suno link, or load the mp3 below';
+      : 'paste a suno link, or load an mp3';
     return;
   }
   const key = prWorldPick;
@@ -4111,7 +4111,7 @@ $('pr-go').addEventListener('click', () => {
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
   openArtistDoor(raw);
   $('promote-form').classList.add('hidden');
-  $('suno-rights').textContent = 'play your song in every world, free. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play it in every world, free. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
@@ -4295,7 +4295,7 @@ if (params.get('dev') === '1') (function devPanel() {
   const copyBtn = BTN('\ud83d\udccb copy cut list (' + JSON.parse(localStorage.getItem('fp_cutlist') || '[]').length + ')', () => {
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
     navigator.clipboard.writeText('cut these lines:\n' + cuts.join('\n'))
-      .then(() => flash('CUT LIST COPIED. PASTE IT TO CLAUDE', 2200)).catch(() => {});
+      .then(() => flash('CUT LIST COPIED', 2200)).catch(() => {});
   });
   cutBtn.style.flex = '1'; copyBtn.style.flex = '1.4';
   cutRow.appendChild(cutBtn); cutRow.appendChild(copyBtn);
@@ -4402,7 +4402,7 @@ if (params.get('dev') === '1') (function devPanel() {
     localStorage.setItem('fp_notes', JSON.stringify(notes));
     noteIn.value = '';
     saveBtn.textContent = '\u2795 save note (' + notes.length + ')';
-    flash('NOTED. IT KNOWS WHERE YOU WERE', 1600);
+    flash('NOTED', 1600);
   });
   saveBtn.textContent = '\u2795 save note (' + savedNotes().length + ')';
   noteIn.addEventListener('keydown', e => { if (e.key === 'Enter') saveBtn.click(); });
@@ -4458,8 +4458,8 @@ if (params.get('dev') === '1') (function devPanel() {
       noteIn.value = '';
       noteIn.placeholder = 'what should this screenshot say?';
       noteIn.focus();
-      flash('SHOT UPLOADED. NOW TELL IT WHAT IT MEANS', 2400);
-    }).catch(() => flash('UPLOAD DIDN\u2019T TAKE. TRY AGAIN', 2000, true));
+      flash('SHOT UPLOADED. ADD A NOTE', 2400);
+    }).catch(() => flash('UPLOAD FAILED. TRY AGAIN', 2000, true));
   }));
   body.appendChild(NOTE('\ud83d\udcf8 first tap asks to share this tab. say yes and every shot captures EVERYTHING on screen, cards and menus included. (if the ask never appears, shots cover the game world only.)'));
   const copyAll = BTN('\ud83d\udce4 copy EVERYTHING for claude', () => {
@@ -4470,7 +4470,7 @@ if (params.get('dev') === '1') (function devPanel() {
     if (cuts.length) out.push('CUT THESE LINES:\n' + cuts.join('\n'));
     if (!out.length) { flash('NOTHING SAVED YET', 1600); return; }
     navigator.clipboard.writeText(out.join('\n\n'))
-      .then(() => flash('COPIED. PASTE THE WHOLE THING TO CLAUDE', 2400)).catch(() => {});
+      .then(() => flash('COPIED', 2400)).catch(() => {});
   });
   body.appendChild(copyAll);
   const notesView = mk('div', 'display:none;color:#c9c3ec;line-height:1.5;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;max-height:160px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;');
@@ -4548,7 +4548,7 @@ function rateOk(log, windowMs, max) {
   while (log.length && now - log[0] > windowMs) log.shift();
   if (log.length >= max) {
     sfx.thud();
-    flash('EASY, SUGAR. GIVE IT A BREATH', 1600, true);
+    flash('EASY, SUGAR. ONE SEC', 1600, true);
     return false;
   }
   log.push(now);

@@ -2136,18 +2136,18 @@
     </div>
   </div>
   <div id="maker-line">
-    handmade worlds, for your songs, your celebrations, your people
+    handmade worlds for your music, your events, and your community.
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
-    <span id="photo-note">contains flashing lights &amp; motion. a GENTLE LIGHTS setting lives in the music tab if you&rsquo;re light-sensitive</span>
+    <span id="photo-note">contains flashing lights &amp; motion. toggle GENTLE LIGHTS in the music tab if needed.</span>
   </div>
   <div id="waitlist-form" class="hidden">
     <div id="wl-lead">paste one of your songs and play it in every world, free. to share, your song rides TUNNEL, SURFER, or this week&rsquo;s special, a new world on the menu every monday, on the house. move it any time, links follow. <b>artist access</b> lets your song call any of the seventeen home, plus your own analytics. leave your email and you&rsquo;re first in line.</div>
-    <input id="wl-email" type="email" placeholder="your email, sugar" autocomplete="email">
+    <input id="wl-email" type="email" placeholder="your email" autocomplete="email">
     <button id="wl-join">JOIN</button>
     <div id="wl-msg"></div>
   </div>
   <div id="custom-form" class="hidden">
-    <div id="cw-lead">a world built for your moment: a wedding, a birthday, a release night, a stream. tell us what you&rsquo;re dreaming of.</div>
+    <div id="cw-lead">a world built for your moment: a wedding, a release night, a stream. tell us what you want.</div>
     <select id="cw-occasion">
       <option value="">what&rsquo;s the occasion?</option>
       <option>wedding</option>
@@ -2158,7 +2158,7 @@
       <option>brand or business</option>
       <option>something else</option>
     </select>
-    <textarea id="cw-vision" maxlength="1200" rows="3" placeholder="your vision: colors, feelings, songs, anything"></textarea>
+    <textarea id="cw-vision" maxlength="1200" rows="3" placeholder="colors, feelings, songs, anything"></textarea>
     <input id="cw-timeline" maxlength="80" placeholder="when&rsquo;s the big day? (a date, or &lsquo;no rush&rsquo;)" autocomplete="off">
     <select id="cw-budget">
       <option value="">budget in mind? (helps us tailor it)</option>
@@ -2180,7 +2180,7 @@
   <canvas id="sc-qr"></canvas>
   <div id="sc-url"></div>
   <div id="sc-code"></div>
-  <button id="sc-hide">HIDE. CLICK THE ROOM CODE TO SHOW</button>
+  <button id="sc-hide">HIDE ROOM CODE</button>
 </div>
 <div id="score-badge" class="hidden"><span id="score-val">0</span><em>pts</em></div>
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
@@ -2194,12 +2194,12 @@
 <div id="creator-card" class="hidden">
   <div id="cc-inner">
     <div id="cc-title">your artist page</div>
-    <div id="cc-sub">one link with your songs, your socials, and what&rsquo;s next. every song you promote lands on it by itself.</div>
+    <div id="cc-sub">one link with your songs, socials, and what&rsquo;s next. promoted songs land on it automatically.</div>
     <input id="cc-slug" maxlength="30" placeholder="your page address (letters &amp; dashes)" autocomplete="off" spellcheck="false">
     <input id="cc-name" maxlength="60" placeholder="artist name" autocomplete="off">
     <textarea id="cc-bio" maxlength="500" rows="3" placeholder="a couple lines about you"></textarea>
     <input id="cc-next" maxlength="120" placeholder="what&rsquo;s next? show, single, stream (optional)" autocomplete="off">
-    <input id="cc-l1" maxlength="340" placeholder="link 1, e.g. spotify | https://..." autocomplete="off">
+    <input id="cc-l1" maxlength="340" placeholder="spotify | https://..." autocomplete="off">
     <input id="cc-l2" maxlength="340" placeholder="link 2 (optional)" autocomplete="off">
     <input id="cc-l3" maxlength="340" placeholder="link 3 (optional)" autocomplete="off">
     <div id="cc-plays" class="hidden"></div>
@@ -2232,8 +2232,8 @@
 <div id="recap-card" class="hidden">
   <div id="rc-inner">
     <canvas id="rc-preview"></canvas>
-    <input id="rc-handle" maxlength="40" placeholder="your handle: @twitch, @tiktok, whoever you are" autocomplete="off">
-    <input id="rc-next" maxlength="80" placeholder="have something to promote? next stream, merch, a link. it goes on the card in gold" autocomplete="off">
+    <input id="rc-handle" maxlength="40" placeholder="your handle, e.g. @twitch" autocomplete="off">
+    <input id="rc-next" maxlength="80" placeholder="promoting something? next stream, merch, a link" autocomplete="off">
     <div id="rc-actions">
       <button id="rc-share">SHARE IMAGE</button>
       <button id="rc-copy">COPY AS TEXT</button>
@@ -2278,35 +2278,35 @@
   <div id="rivals-pick"></div>
 </div>
 <div id="plist" class="hidden">
-  <div class="plist-title">participants. click to hide a name</div>
+  <div class="plist-title">participants, tap to hide a name</div>
   <div id="plist-rows"></div>
 </div>
 
 <div id="mode-card">
   <div id="mode-inner">
-    <h2>WHO&rsquo;S PICKIN&rsquo; THE MUSIC?</h2>
-    <p>you can change your mind whenever, sugar</p>
+    <h2>WHOSE MUSIC?</h2>
+    <p>change it any time</p>
     <div id="mode-opts">
-      <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs, y&rsquo;all just play.</em>
+      <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs.</em>
         <div class="am-pick" onclick="event.stopPropagation()">
           <button id="mc-instr" class="on">INSTRUMENTAL</button><button id="mc-vocals">WITH VOCALS</button>
         </div>
       </div>
-      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round apiece. paste a suno link or load an mp3.</em></div>
-      <div class="mode-opt" id="opt-promote"><b>MAKE MY SONG AN EXPERIENCE</b><em>pick its world, send the link, watch folks fall in. free for three worlds.</em></div>
+      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round each.</em></div>
+      <div class="mode-opt" id="opt-promote"><b>PROMOTE MY SONG</b><em>pick its world, share the link. free for three worlds.</em></div>
     </div>
-    <button id="mc-host">OPEN A ROOM SO FOLKS CAN JOIN</button>
+    <button id="mc-host">OPEN A ROOM</button>
     <div id="promote-form" class="hidden">
       <div id="pr-worlds"></div>
       <input id="pr-url" type="url" placeholder="paste your suno link" autocomplete="off" spellcheck="false">
       <button id="pr-go">PUT IT IN THE WORLD</button>
-      <label id="pr-file" for="file-input">or load the mp3 instead</label>
+      <label id="pr-file" for="file-input">or load an mp3</label>
       <div id="pr-msg"></div>
     </div>
     <div id="pl-row" class="hidden">
-      <input id="pl-input" type="url" placeholder="paste a suno link: song or playlist" autocomplete="off" spellcheck="false">
+      <input id="pl-input" type="url" placeholder="suno link: song or playlist" autocomplete="off" spellcheck="false">
       <button id="pl-go">START THE SET</button>
-      <label id="pl-file" for="file-input">or load an mp3 you keep in your pocket</label>
+      <label id="pl-file" for="file-input">or load an mp3</label>
       <div id="pl-pick" class="hidden">
         <select id="pl-world"></select>
         <button id="pl-world-go">PLAY IT THERE</button>
@@ -2438,7 +2438,7 @@
         </div>
         <div id="suno-status"></div>
         <div id="marquee-edit" class="hidden">
-          <div class="mini-label">on the marquee. edit it if you like</div>
+          <div class="mini-label">on the marquee, edit if you like</div>
           <input id="mq-title" maxlength="60" placeholder="song title" autocomplete="off">
           <input id="mq-artist" maxlength="40" placeholder="artist name" autocomplete="off">
           <button id="mq-card">MAKE AN ARTIST CARD</button>
@@ -2446,7 +2446,7 @@
           <button id="gentle-btn" title="softens flashes &amp; pulses, for light-sensitive folks">GENTLE LIGHTS: OFF</button>
           <button id="mq-page">YOUR ARTIST PAGE</button>
         </div>
-    <div id="suno-rights">paste a song YOU made or have rights to. artists&rsquo; rights matter &rsquo;round here</div>
+    <div id="suno-rights">paste a song you made or have rights to.</div>
       </div>
       <div id="transport">
         <button id="btn-play" title="play/pause">&#9654;</button>
@@ -2533,7 +2533,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 460</div>
+      <div id="build-stamp">build 461</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2575,6 +2575,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=460"></script>
+<script type="module" src="js/main.js?v=461"></script>
 </body>
 </html>
