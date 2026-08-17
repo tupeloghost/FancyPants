@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=471';
-import { drawQR } from './lib/qr.js?v=471';
-import { WORLDS } from './worlds/registry.js?v=471';
-import { Net, PALETTE } from './net.js?v=471';
-import { Presence } from './lib/presence.js?v=471';
-import { Pulses } from './lib/pulse.js?v=471';
-import { BeatClock } from './lib/beatclock.js?v=471';
-import { BeatCue } from './lib/beatcue.js?v=471';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=471';
-import { Race, placeOf, standings } from './lib/race.js?v=471';
-import { Signals } from './lib/signals.js?v=471';
-import { pickShareLine, loadLines } from './lib/lines.js?v=471';
-import { RouteMap } from './lib/map.js?v=471';
-import * as sfx from './lib/sfx.js?v=471';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=471';
-import { glowTexture } from './lib/glow.js?v=471';
+import { AudioEngine } from './audio-engine.js?v=473';
+import { drawQR } from './lib/qr.js?v=473';
+import { WORLDS } from './worlds/registry.js?v=473';
+import { Net, PALETTE } from './net.js?v=473';
+import { Presence } from './lib/presence.js?v=473';
+import { Pulses } from './lib/pulse.js?v=473';
+import { BeatClock } from './lib/beatclock.js?v=473';
+import { BeatCue } from './lib/beatcue.js?v=473';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=473';
+import { Race, placeOf, standings } from './lib/race.js?v=473';
+import { Signals } from './lib/signals.js?v=473';
+import { pickShareLine, loadLines } from './lib/lines.js?v=473';
+import { RouteMap } from './lib/map.js?v=473';
+import * as sfx from './lib/sfx.js?v=473';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=473';
+import { glowTexture } from './lib/glow.js?v=473';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1720,10 +1720,15 @@ document.addEventListener('fp-lookspark', () => {
   // out loud only got in front of the thing worth looking at
   document.body.classList.remove('lookflash'); void document.body.offsetWidth;
   document.body.classList.add('lookflash');
+  const ring = $('look-ring');
+  ring.classList.remove('go'); void ring.offsetWidth;
+  ring.classList.add('go');
+  // the swap lands at the DRAINED point of the breath, so the new palette
+  // arrives as the colour floods back — a reveal, never a stutter
   setTimeout(() => {
     applyPreset(cfg);
-    setTimeout(() => document.body.classList.remove('lookflash'), 400);
-  }, 750);
+    setTimeout(() => { document.body.classList.remove('lookflash'); ring.classList.remove('go'); }, 1200);
+  }, 480);
 });
 document.addEventListener('fp-swallowed', e => {
   const n = (e.detail && e.detail.n) || 2;

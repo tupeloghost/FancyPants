@@ -280,16 +280,43 @@
   }
   body.swallowed #canvas { animation: swallow-shake 0.75s ease-out; }
   /* rainbow spark caught: the world blooms white-hot, then the new look lands */
+  /* the repaint ceremony: the world holds its breath (colour drains out),
+     the ring sweeps, and the NEW palette floods back richer than life before
+     settling. The swap happens at the drained point, so the fresh colours
+     arrive as the flood — a reveal, never a stutter. */
   @keyframes lookflash {
     0% { filter: brightness(1) saturate(1); }
-    35% { filter: brightness(1.8) saturate(1.5); }
+    30% { filter: brightness(1.55) saturate(0.05); }
+    45% { filter: brightness(1.35) saturate(0.3); }
+    70% { filter: brightness(1.08) saturate(1.75); }
     100% { filter: brightness(1) saturate(1); }
   }
-  body.lookflash #canvas { animation: lookflash 1.15s ease-out; }
+  body.lookflash #canvas { animation: lookflash 1.6s cubic-bezier(0.3, 0, 0.3, 1); }
+  /* the shockring: a rainbow rim racing out from the middle of the world */
+  #look-ring {
+    position: fixed; z-index: 96; left: 50%; top: 50%;
+    width: 30vmax; height: 30vmax; margin: -15vmax 0 0 -15vmax;
+    border-radius: 50%; pointer-events: none; opacity: 0;
+    background: conic-gradient(#f43, #fa0, #fe5, #3e6, #2cf, #55f, #c4f, #f43);
+    -webkit-mask: radial-gradient(closest-side, transparent 78%, #000 84%, transparent 96%);
+    mask: radial-gradient(closest-side, transparent 78%, #000 84%, transparent 96%);
+    transform: scale(0.1);
+  }
+  #look-ring.go {
+    animation: lookring 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  }
+  @keyframes lookring {
+    0% { transform: scale(0.1) rotate(0deg); opacity: 0; }
+    12% { opacity: 0.95; }
+    100% { transform: scale(3.4) rotate(40deg); opacity: 0; }
+  }
+  /* gentle lights: the reveal without the strobe — a slow crossfade and the
+     ring at half voice, nothing pulsing */
+  body.gentle #look-ring.go { animation-duration: 1.6s; opacity: 0.5; }
   /* gentle lights: every big flash softened for light-sensitive players */
   @keyframes lookflash-gentle {
     0% { filter: brightness(1) saturate(1); }
-    35% { filter: brightness(1.3) saturate(1.4); }
+    40% { filter: brightness(1.12) saturate(0.6); }
     100% { filter: brightness(1) saturate(1); }
   }
   body.gentle.lookflash #canvas { animation: lookflash-gentle 1.3s ease-out; }
@@ -2396,6 +2423,7 @@
 </div>
 
 <div id="pass-flash"></div>
+<div id="look-ring"></div>
 <div id="annc"><div id="annc-row"><i></i><b id="annc-title"></b><i></i></div><em id="annc-sub"></em></div>
 <div id="jump-flash"></div>
 
@@ -2574,7 +2602,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 471</div>
+      <div id="build-stamp">build 473</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2616,6 +2644,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=471"></script>
+<script type="module" src="js/main.js?v=473"></script>
 </body>
 </html>

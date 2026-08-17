@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=471';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=471';
-import { themePaint, richHSL } from '../lib/themes.js?v=471';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=473';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=473';
+import { themePaint, richHSL } from '../lib/themes.js?v=473';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -358,24 +358,16 @@ export function createSurfer() {
           // theme paints the terrain: u = height (sunset stacks correctly),
           // v = depth so themes flow toward the horizon
           const jitv = Math.abs(Math.sin(c * 12.9898 + r * 78.233));
-          themePaint(colorMode, hue / 360, t, r * 0.08 + time * 0.15, time, t, jitv, tp);
+          // height feeds the theme COMPRESSED: full height used to sweep the
+          // whole hue wheel, so a noisy audio-driven surface wore a different
+          // colour on every triangle — confetti, not landscape. A third of
+          // the wheel per frame reads as one weather system, and the slow
+          // depth drift still walks the family around over time.
+          themePaint(colorMode, hue / 360, t * 0.34, r * 0.08 + time * 0.11, time, t, jitv, tp);
           // altitude grades the hue a touch — peaks lean warm, valleys lean
           // cool — and saturation runs rich instead of safe. The acid-yellow
           // band is off the menu: it slides to amber-coral like the sun does.
-          let gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
-          // The yellow ban, CONTINUOUSLY. The old clamp had a cliff at the
-          // band edge: a hue a hair inside mapped 42 degrees away from a hue
-          // a hair outside, and because the hue drifts with altitude and
-          // time, that seam slid across the terrain as flickering stripes.
-          // This is the same ban as a smooth squeeze-and-stretch: yellow
-          // [0.05..0.14] compresses into amber [0.05..0.075], green
-          // [0.14..0.30] stretches back to meet the identity at 0.30.
-          // Monotonic and seam-free, so neighbours always get neighbours.
-          if (gradedHue > 0.05 && gradedHue < 0.30) {
-            gradedHue = gradedHue < 0.14
-              ? 0.05 + (gradedHue - 0.05) * (0.025 / 0.09)
-              : 0.075 + (gradedHue - 0.14) * (0.225 / 0.16);
-          }
+          let gradedHue = ((tp[0] + (t - 0.45) * 0.05) % 1 + 1) % 1;
           // the center road takes the sun's color — a lit path to the horizon
           const roadMix = Math.exp(-Math.pow(c - COLS / 2, 2) / 16);
           let dh = this._sunHue !== undefined ? this._sunHue - gradedHue : 0;
@@ -383,9 +375,20 @@ export function createSurfer() {
           gradedHue = ((gradedHue + dh * roadMix * 0.5) % 1 + 1) % 1;
           // warm hues bleach toward acid under the bloom — hold them dimmer,
           // easing the cap in and out so brightness never steps either
-          const warm = Math.max(0, 1 - Math.abs(gradedHue - 0.075) / 0.09);
-          const lumCap = 0.66 - 0.08 * warm;
+          // The yellow ban, done in RGB. Any continuous hue detour must PASS
+          // THROUGH yellow on its way around the wheel (there is no hole in a
+          // continuous path), which is how the last fix leaked. So the hue
+          // stays honest and continuous, and any colour that LANDS in the
+          // yellow band gets pulled toward deep amber by a smooth weight:
+          // zero at the band's edges, strongest at pure yellow. No seams,
+          // and a saturated yellow cannot reach the screen.
+          const yw = Math.max(0, 1 - Math.abs(gradedHue - 0.145) / 0.075);
+          const lumCap = 0.66 - 0.1 * yw;
           richHSL(color, gradedHue, Math.min(1, tp[1] * 1.1 + 0.05), Math.min(lumCap, lum * Math.min(1.45, tp[2])));
+          if (yw > 0.01) {
+            this._amber || (this._amber = new THREE.Color().setHSL(0.055, 0.92, 0.34));
+            color.lerp(this._amber, yw * 0.75);
+          }
           col.setXYZ(i, color.r, color.g, color.b);
         }
       }
