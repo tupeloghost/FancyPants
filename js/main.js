@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=465';
-import { drawQR } from './lib/qr.js?v=465';
-import { WORLDS } from './worlds/registry.js?v=465';
-import { Net, PALETTE } from './net.js?v=465';
-import { Presence } from './lib/presence.js?v=465';
-import { Pulses } from './lib/pulse.js?v=465';
-import { BeatClock } from './lib/beatclock.js?v=465';
-import { BeatCue } from './lib/beatcue.js?v=465';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=465';
-import { Race, placeOf, standings } from './lib/race.js?v=465';
-import { Signals } from './lib/signals.js?v=465';
-import { pickShareLine, loadLines } from './lib/lines.js?v=465';
-import { RouteMap } from './lib/map.js?v=465';
-import * as sfx from './lib/sfx.js?v=465';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=465';
-import { glowTexture } from './lib/glow.js?v=465';
+import { AudioEngine } from './audio-engine.js?v=467';
+import { drawQR } from './lib/qr.js?v=467';
+import { WORLDS } from './worlds/registry.js?v=467';
+import { Net, PALETTE } from './net.js?v=467';
+import { Presence } from './lib/presence.js?v=467';
+import { Pulses } from './lib/pulse.js?v=467';
+import { BeatClock } from './lib/beatclock.js?v=467';
+import { BeatCue } from './lib/beatcue.js?v=467';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=467';
+import { Race, placeOf, standings } from './lib/race.js?v=467';
+import { Signals } from './lib/signals.js?v=467';
+import { pickShareLine, loadLines } from './lib/lines.js?v=467';
+import { RouteMap } from './lib/map.js?v=467';
+import * as sfx from './lib/sfx.js?v=467';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=467';
+import { glowTexture } from './lib/glow.js?v=467';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1036,15 +1036,44 @@ function sunoSay(msg, kind) {
   st.className = kind || '';
 }
 let sunoLoading = null;
+// A link we cannot play is still worth having. Spotify, YouTube and the rest
+// run their audio inside a cross-origin frame, so no page on earth can read a
+// sample of it and no world could dance to it. Rather than refuse the paste,
+// the link becomes the room's shout-out: a pill anybody can tap to go listen
+// where the artist already gets paid. Play stays with the house music, and
+// the message says exactly that, so nobody waits for a song that isn't coming.
+function promoteLink(raw) {
+  const url = raw.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    sunoSay("that doesn't look like a link", 'err');
+    return false;
+  }
+  sunoSay('looking it up\u2026');
+  fetch(`${SUNO_PROXY}link-meta?url=` + encodeURIComponent(url))
+    .then(r => (r.ok ? r.json() : { ok: false }))
+    .catch(() => ({ ok: false }))
+    .then(m => {
+      const provider = (m && m.provider) || 'the link';
+      const title = (m && m.title) || '';
+      const label = (title ? '\u266a ' + title + '  \u00b7  ' : '') + 'listen on ' + provider;
+      showPromo({ label, url });
+      if (net.sendPromo) net.sendPromo(label, url);
+      window.__promoLink = { label, url };
+      sunoSay('up for the room. we can\u2019t read ' + provider + '\u2019s audio, so the worlds keep their own music', 'ok');
+    });
+  return true;
+}
+
 function loadSuno() {
   const el = $('suno-input');
   if (!el.value.trim()) return;
   const path = sunoPathFrom(el.value);
   if (!path || !SUNO_PROXY) {
-    // leave what they pasted alone — wiping it looks like paste is broken
+    // not a playable source: hand it to the room as a link instead of refusing
+    if (SUNO_PROXY && promoteLink(el.value)) return;
     el.classList.add('bad');
     setTimeout(() => el.classList.remove('bad'), 1400);
-    sunoSay("can't read that link. suno links and mp3 files work", 'err');
+    sunoSay("that doesn't look like a link", 'err');
     return;
   }
   if (sunoLoading === path) return;      // don't re-fire on the same link
@@ -3066,7 +3095,9 @@ function shareCaption() {
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
   const line = l ? l.text : pf.t;
   const cta = l ? l.cta : pf.c;
-  return line + ' ' + cta + '\n' + clipURL();
+  const promo = window.__promoLink;
+  return line + ' ' + cta + '\n' + clipURL()
+    + (promo ? '\n' + promo.label.replace(/^\u266a /, '') + ': ' + promo.url : '');
 }
 function shareStill() {
   // a burned-credit still of the world, matching the clip's framing
@@ -4100,9 +4131,19 @@ $('pr-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('pr-go')
 $('pr-go').addEventListener('click', () => {
   const raw = $('pr-url').value.trim();
   if (!/suno\.com\/(song|s|playlist)\//.test(raw)) {
-    $('pr-msg').textContent = raw && /spotify|youtu/i.test(raw)
-      ? 'that one won\u2019t play here. suno links and mp3 files work'
-      : 'paste your song link, or load an mp3';
+    // a link we cannot play still gets a home: it goes in the world as the
+    // room's shout-out and the house music carries the dancing
+    if (/^https?:\/\//i.test(raw)) {
+      const key = prWorldPick;
+      ensureName();
+      dismissOverlay();
+      if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
+      promoteLink(raw);
+      $('promote-form').classList.add('hidden');
+      $('mode-card').classList.remove('show');   // the card's job is done
+      return;
+    }
+    $('pr-msg').textContent = 'paste your song link, or load an mp3';
     return;
   }
   const key = prWorldPick;

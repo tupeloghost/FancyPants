@@ -552,6 +552,36 @@ export default {
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
+    // ── /link-meta ── a pasted link we cannot play, made presentable.
+    // Every big platform publishes oEmbed, so one server-side lookup turns a
+    // bare URL into a real title. Done here rather than in the page because
+    // most of these endpoints refuse cross-origin reads.
+    if (url.pathname === '/link-meta') {
+      const target = url.searchParams.get('url') || '';
+      let host = '';
+      const reply = o => new Response(JSON.stringify(o), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      try { host = new URL(target).hostname.replace(/^www\./, ''); } catch { return reply({ ok: false }); }
+      const PROVIDERS = [
+        [/(^|\.)youtube\.com$|(^|\.)youtu\.be$|(^|\.)music\.youtube\.com$/, 'YouTube', 'https://www.youtube.com/oembed?format=json&url='],
+        [/(^|\.)spotify\.com$/, 'Spotify', 'https://open.spotify.com/oembed?url='],
+        [/(^|\.)soundcloud\.com$/, 'SoundCloud', 'https://soundcloud.com/oembed?format=json&url='],
+        [/(^|\.)bandcamp\.com$/, 'Bandcamp', 'https://bandcamp.com/api/mobile/24/oembed?url='],
+        [/(^|\.)music\.apple\.com$|(^|\.)apple\.com$/, 'Apple Music', ''],
+        [/(^|\.)tidal\.com$/, 'Tidal', ''],
+        [/(^|\.)deezer\.com$/, 'Deezer', ''],
+      ];
+      let provider = host, endpoint = '';
+      for (const [re, name, ep] of PROVIDERS) if (re.test(host)) { provider = name; endpoint = ep; break; }
+      let title = '';
+      if (endpoint) {
+        try {
+          const r = await fetch(endpoint + encodeURIComponent(target), { cf: { cacheTtl: 3600 } });
+          if (r.ok) { const j = await r.json(); title = String(j.title || '').slice(0, 90); }
+        } catch { /* a missing title is not a failure; the provider still is one */ }
+      }
+      return reply({ ok: true, provider, title });
+    }
+
     // /thisweek — wherever the special is right now
     if (url.pathname === '/thisweek') {
       const FEATURED = ['tunnel', 'surfer'];
