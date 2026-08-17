@@ -591,10 +591,12 @@ export default {
                    'orbit', 'paint', 'plasma', 'river', 'signal', 'slide', 'slinky',
                    'surfer', 'trail', 'tunnel'];
       const pool = ALL.filter(k => !FEATURED.includes(k)).sort();
-      // monday-aligned weeks, anchored: monday-week 2953 = slide (matches client)
-      const week = Math.floor((Date.now() - 4 * 86400000) / 604800000);
-      const anchor = pool.indexOf('slide') - 2953;
-      const wk = pool[((week + anchor) % pool.length + pool.length) % pool.length];
+      // slide leads the parade from the week of Mon Aug 17 2026 (matches client)
+      const i = pool.indexOf('slide');
+      const rot = [...pool.slice(i), ...pool.slice(0, i)];
+      const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 17) - 4 * 86400000) / 604800000);
+      const weeksIn = Math.max(0, Math.floor((Date.now() - 4 * 86400000) / 604800000) - LAUNCH_WEEK);
+      const wk = rot[weeksIn % rot.length];
       return Response.redirect(SITE_URL + '?world=' + wk, 302);
     }
 

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=469';
-import { drawQR } from './lib/qr.js?v=469';
-import { WORLDS } from './worlds/registry.js?v=469';
-import { Net, PALETTE } from './net.js?v=469';
-import { Presence } from './lib/presence.js?v=469';
-import { Pulses } from './lib/pulse.js?v=469';
-import { BeatClock } from './lib/beatclock.js?v=469';
-import { BeatCue } from './lib/beatcue.js?v=469';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=469';
-import { Race, placeOf, standings } from './lib/race.js?v=469';
-import { Signals } from './lib/signals.js?v=469';
-import { pickShareLine, loadLines } from './lib/lines.js?v=469';
-import { RouteMap } from './lib/map.js?v=469';
-import * as sfx from './lib/sfx.js?v=469';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=469';
-import { glowTexture } from './lib/glow.js?v=469';
+import { AudioEngine } from './audio-engine.js?v=470';
+import { drawQR } from './lib/qr.js?v=470';
+import { WORLDS } from './worlds/registry.js?v=470';
+import { Net, PALETTE } from './net.js?v=470';
+import { Presence } from './lib/presence.js?v=470';
+import { Pulses } from './lib/pulse.js?v=470';
+import { BeatClock } from './lib/beatclock.js?v=470';
+import { BeatCue } from './lib/beatcue.js?v=470';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=470';
+import { Race, placeOf, standings } from './lib/race.js?v=470';
+import { Signals } from './lib/signals.js?v=470';
+import { pickShareLine, loadLines } from './lib/lines.js?v=470';
+import { RouteMap } from './lib/map.js?v=470';
+import * as sfx from './lib/sfx.js?v=470';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=470';
+import { glowTexture } from './lib/glow.js?v=470';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -395,9 +395,12 @@ window.__pickerInit = () => {
     chips.appendChild(b);
   };
   front.forEach(k => mk(k));
+  // the library: past specials, home for good. Absent in week one — an empty
+  // shelf is a worse look than no shelf.
+  (window.__GRADUATED || []).forEach(k => mk(k, 'alum'));
   const cap = document.createElement('div');
   cap.id = 'wchip-cap';
-  cap.textContent = '\u2605 this week\u2019s special: a new world on the menu every monday';
+  cap.textContent = '\u2605 this week\u2019s special: a new world joins the library every monday';
   chips.parentElement.insertBefore(cap, chips.nextSibling);
 };
 for (const [key, w] of Object.entries(WORLDS)) {
@@ -1486,7 +1489,7 @@ const WORLD_KEYS = Object.keys(WORLDS);
 
 // the walkable circuit: the featured pair + this week's guest. The other
 // fourteen are reachable on purpose (SEE ALL), never by accident.
-function openWorlds() { return [...FEATURED, WEEK_WORLD].filter(k => WORLDS[k]); }
+function openWorlds() { return [...FEATURED, WEEK_WORLD, ...GRADUATED].filter((k, i, a) => WORLDS[k] && a.indexOf(k) === i); }
 function stepWorld(dir = 1) {
   if (document.body.classList.contains('guest')) return; // the host drives the world
   const ring = openWorlds();
@@ -4117,19 +4120,28 @@ $('btn-host-promote').addEventListener('click', () => {
 // (they're always around — the guest spot belongs to the others), anchored
 // so week 2953 = SLIDE and it advances every Monday from there.
 const FEATURED = ['tunnel', 'surfer'];
-const WEEK_WORLD = (() => {
+// The schedule starts the week of Monday, Aug 17 2026, with SLIDE. Every
+// world that has finished its week GRADUATES: it joins the library for good,
+// so the menu grows by one world every Monday until all seventeen are home.
+// Weeks turn on MONDAYS (epoch shifted 4 days — raw epoch weeks flip on
+// thursdays, which is nobody's menu day).
+const WEEK_POOL = (() => {
   const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k)).sort();
-  // weeks turn on MONDAYS (epoch shifted 4 days — raw epoch weeks flip on
-  // thursdays, which is nobody's menu day). Anchored: monday-week 2953 = slide.
-  const week = Math.floor((Date.now() - 4 * 86400000) / 604800000);
-  const anchor = pool.indexOf('slide') - 2953;
-  return pool[((week + anchor) % pool.length + pool.length) % pool.length];
+  const i = pool.indexOf('slide');           // slide leads the parade
+  return [...pool.slice(i), ...pool.slice(0, i)];
 })();
+const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 17) - 4 * 86400000) / 604800000);
+const WEEKS_IN = Math.max(0, Math.floor((Date.now() - 4 * 86400000) / 604800000) - LAUNCH_WEEK);
+const WEEK_WORLD = WEEK_POOL[WEEKS_IN % WEEK_POOL.length];
+// the alumni: every special whose week is over, permanent residents now
+const GRADUATED = WEEK_POOL.slice(0, Math.min(WEEKS_IN, WEEK_POOL.length))
+  .filter(k => k !== WEEK_WORLD);
 // free share worlds = the showcase pair + this week's guest — exactly the
 // three the picker leads with. Artist access opens the other fourteen.
 const shareableFree = k => window.__devPaid || FEATURED.includes(k) || k === WEEK_WORLD;
 window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
+window.__GRADUATED = GRADUATED;
 window.__pickerInit();
 let ropeShown = false;   // the explainer card appears once per session
 // the rope: the full card once per session, a quick flash after
