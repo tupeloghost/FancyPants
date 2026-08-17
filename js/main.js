@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=463';
-import { drawQR } from './lib/qr.js?v=463';
-import { WORLDS } from './worlds/registry.js?v=463';
-import { Net, PALETTE } from './net.js?v=463';
-import { Presence } from './lib/presence.js?v=463';
-import { Pulses } from './lib/pulse.js?v=463';
-import { BeatClock } from './lib/beatclock.js?v=463';
-import { BeatCue } from './lib/beatcue.js?v=463';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=463';
-import { Race, placeOf, standings } from './lib/race.js?v=463';
-import { Signals } from './lib/signals.js?v=463';
-import { pickShareLine, loadLines } from './lib/lines.js?v=463';
-import { RouteMap } from './lib/map.js?v=463';
-import * as sfx from './lib/sfx.js?v=463';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=463';
-import { glowTexture } from './lib/glow.js?v=463';
+import { AudioEngine } from './audio-engine.js?v=464';
+import { drawQR } from './lib/qr.js?v=464';
+import { WORLDS } from './worlds/registry.js?v=464';
+import { Net, PALETTE } from './net.js?v=464';
+import { Presence } from './lib/presence.js?v=464';
+import { Pulses } from './lib/pulse.js?v=464';
+import { BeatClock } from './lib/beatclock.js?v=464';
+import { BeatCue } from './lib/beatcue.js?v=464';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=464';
+import { Race, placeOf, standings } from './lib/race.js?v=464';
+import { Signals } from './lib/signals.js?v=464';
+import { pickShareLine, loadLines } from './lib/lines.js?v=464';
+import { RouteMap } from './lib/map.js?v=464';
+import * as sfx from './lib/sfx.js?v=464';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=464';
+import { glowTexture } from './lib/glow.js?v=464';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3014,7 +3014,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app, no sign-up";
+    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app needed";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3025,8 +3025,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here. no app, no sign-up"
-      : 'songs are places you can get into here. no app, no sign-up';
+      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here, no app needed"
+      : 'songs are places you can get into here. no app needed';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -3061,7 +3061,7 @@ function shareCaption() {
     { t: st + ' moved every time i did. i have chills and no explanation.', c: 'step inside \u2192' },
     { t: 'this is ' + st + ' from the inside.', c: 'see for yourself \u2192' },
     { t: wl + ' ate three minutes of my life. worth it.', c: 'go get lost \u2192' },
-    { t: 'no app, no login. one tap and i was in the song.', c: 'tap yours \u2192' },
+    { t: 'no download, nothing. one tap and i was in the song.', c: 'tap yours \u2192' },
   ];
   const pf = PROMO[(Math.random() * PROMO.length) | 0];
   const line = l ? l.text : pf.t;
@@ -3475,7 +3475,7 @@ function drawRecap(data, handle) {
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(220,216,245,0.92)';
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
-    + 'scan and step inside. no app, no sign-up', 64, 656);
+    + 'scan and step inside. no app, just a browser', 64, 656);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -3694,7 +3694,7 @@ function drawArtistType(x, W, H, fmt) {
   }
   x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(210,206,235,0.72)';
-  x.fillText('step inside it. no app, no sign-up', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
+  x.fillText('step inside it. no app, just a browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
