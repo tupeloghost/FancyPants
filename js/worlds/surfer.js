@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=470';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=470';
-import { themePaint, richHSL } from '../lib/themes.js?v=470';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=471';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=471';
+import { themePaint, richHSL } from '../lib/themes.js?v=471';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -363,16 +363,28 @@ export function createSurfer() {
           // cool — and saturation runs rich instead of safe. The acid-yellow
           // band is off the menu: it slides to amber-coral like the sun does.
           let gradedHue = ((tp[0] + (t - 0.45) * 0.11) % 1 + 1) % 1;
-          if (gradedHue > 0.08 && gradedHue < 0.22) {
-            gradedHue = 0.055 + (gradedHue - 0.08) * 0.35;   // amber, never acid — lime included
+          // The yellow ban, CONTINUOUSLY. The old clamp had a cliff at the
+          // band edge: a hue a hair inside mapped 42 degrees away from a hue
+          // a hair outside, and because the hue drifts with altitude and
+          // time, that seam slid across the terrain as flickering stripes.
+          // This is the same ban as a smooth squeeze-and-stretch: yellow
+          // [0.05..0.14] compresses into amber [0.05..0.075], green
+          // [0.14..0.30] stretches back to meet the identity at 0.30.
+          // Monotonic and seam-free, so neighbours always get neighbours.
+          if (gradedHue > 0.05 && gradedHue < 0.30) {
+            gradedHue = gradedHue < 0.14
+              ? 0.05 + (gradedHue - 0.05) * (0.025 / 0.09)
+              : 0.075 + (gradedHue - 0.14) * (0.225 / 0.16);
           }
           // the center road takes the sun's color — a lit path to the horizon
           const roadMix = Math.exp(-Math.pow(c - COLS / 2, 2) / 16);
           let dh = this._sunHue !== undefined ? this._sunHue - gradedHue : 0;
           if (dh > 0.5) dh -= 1; else if (dh < -0.5) dh += 1;
           gradedHue = ((gradedHue + dh * roadMix * 0.5) % 1 + 1) % 1;
-          // warm hues bleach toward acid under the bloom — hold them dimmer
-          const lumCap = gradedHue < 0.12 ? 0.58 : 0.66;
+          // warm hues bleach toward acid under the bloom — hold them dimmer,
+          // easing the cap in and out so brightness never steps either
+          const warm = Math.max(0, 1 - Math.abs(gradedHue - 0.075) / 0.09);
+          const lumCap = 0.66 - 0.08 * warm;
           richHSL(color, gradedHue, Math.min(1, tp[1] * 1.1 + 0.05), Math.min(lumCap, lum * Math.min(1.45, tp[2])));
           col.setXYZ(i, color.r, color.g, color.b);
         }
