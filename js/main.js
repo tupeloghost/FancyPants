@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=462';
-import { drawQR } from './lib/qr.js?v=462';
-import { WORLDS } from './worlds/registry.js?v=462';
-import { Net, PALETTE } from './net.js?v=462';
-import { Presence } from './lib/presence.js?v=462';
-import { Pulses } from './lib/pulse.js?v=462';
-import { BeatClock } from './lib/beatclock.js?v=462';
-import { BeatCue } from './lib/beatcue.js?v=462';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=462';
-import { Race, placeOf, standings } from './lib/race.js?v=462';
-import { Signals } from './lib/signals.js?v=462';
-import { pickShareLine, loadLines } from './lib/lines.js?v=462';
-import { RouteMap } from './lib/map.js?v=462';
-import * as sfx from './lib/sfx.js?v=462';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=462';
-import { glowTexture } from './lib/glow.js?v=462';
+import { AudioEngine } from './audio-engine.js?v=463';
+import { drawQR } from './lib/qr.js?v=463';
+import { WORLDS } from './worlds/registry.js?v=463';
+import { Net, PALETTE } from './net.js?v=463';
+import { Presence } from './lib/presence.js?v=463';
+import { Pulses } from './lib/pulse.js?v=463';
+import { BeatClock } from './lib/beatclock.js?v=463';
+import { BeatCue } from './lib/beatcue.js?v=463';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=463';
+import { Race, placeOf, standings } from './lib/race.js?v=463';
+import { Signals } from './lib/signals.js?v=463';
+import { pickShareLine, loadLines } from './lib/lines.js?v=463';
+import { RouteMap } from './lib/map.js?v=463';
+import * as sfx from './lib/sfx.js?v=463';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=463';
+import { glowTexture } from './lib/glow.js?v=463';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3014,7 +3014,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it free, no app";
+    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app, no sign-up";
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3025,8 +3025,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here. free, no app"
-      : 'songs are places you can get into here. free, no app';
+      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here. no app, no sign-up"
+      : 'songs are places you can get into here. no app, no sign-up';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -3084,7 +3084,7 @@ function shareStill() {
   const run = sig.lastRun || {};
   const barText = ((run.songTitle || 'this song') + '  \u00b7  '
     + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : '')
-    + '  \u00b7  STEP INSIDE IT FREE, IN THE BROWSER').toUpperCase();
+    + '  \u00b7  STEP INSIDE IT, NO APP').toUpperCase();
   let fs = Math.round(bh * 0.42);
   x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
   while (fs > 9 && x.measureText(barText).width > W - bh) {
@@ -3237,7 +3237,7 @@ function clipBufStart() {
     ctx2.textBaseline = 'middle';
     // the QR floats ABOVE the bar; the words size themselves to fit the bar
     const q = bh * 1.5, m = Math.round(bh * 0.25);
-    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  STEP INSIDE IT FREE, IN THE BROWSER';
+    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  STEP INSIDE IT, NO APP';
     let fs = Math.round(bh * 0.42);
     ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
     while (fs > 9 && ctx2.measureText(barText).width > W - bh) {
@@ -3475,7 +3475,7 @@ function drawRecap(data, handle) {
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(220,216,245,0.92)';
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
-    + 'scan and step inside. free, in the browser', 64, 656);
+    + 'scan and step inside. no app, no sign-up', 64, 656);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -3491,7 +3491,7 @@ function recapText(data, handle) {
   for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
   if (data.nextStream) lines.push(data.nextStream);
-  lines.push('step inside one yourself, free, in the browser: ' + SITE);
+  lines.push('step inside one yourself, no app needed: ' + SITE);
   return lines.join('\n');
 }
 let lastSetLen = 0;
@@ -3694,7 +3694,7 @@ function drawArtistType(x, W, H, fmt) {
   }
   x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(210,206,235,0.72)';
-  x.fillText('step inside it free. no app, in the browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
+  x.fillText('step inside it. no app, no sign-up', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
@@ -4111,7 +4111,7 @@ $('pr-go').addEventListener('click', () => {
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
   openArtistDoor(raw);
   $('promote-form').classList.add('hidden');
-  $('suno-rights').textContent = 'play it in every world, free. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play it in every world, on the house. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
