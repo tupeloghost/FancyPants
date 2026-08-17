@@ -46,6 +46,28 @@
   .tipjar .small { display: block; margin-top: 14px; }
   footer { max-width: 620px; margin: 0 auto; padding: 0 24px 90px; }
   .note { max-width: 560px; margin: 30px auto 0; font: 13px/1.7 Georgia, serif; color: #b9b3d0; text-align: center; }
+
+  /* ── Phones ── The column already reflows on its own; what needs tuning is
+     the type. A 34px display face with 3px of tracking wants three lines on a
+     narrow screen, and the generous desktop padding wastes a third of it. */
+  @media (max-width: 620px) {
+    main { padding: 40px 20px 32px; }
+    h1 { font-size: 27px; letter-spacing: 1.5px; }
+    h2 { font-size: 20px; margin-top: 36px; }
+    body { font-size: 16px; line-height: 1.7; }
+    .lede { font-size: 17px; margin-bottom: 24px; }
+    .rule { margin: 32px 0; }
+    .tipjar { padding: 22px 16px; margin: 28px 0 8px; }
+    .give { display: block; padding: 15px 18px; }   /* full width, thumb-sized */
+    footer { padding: 0 20px 64px; }
+  }
+  @media (max-width: 380px) {
+    main { padding: 32px 16px 28px; }
+    h1 { font-size: 23px; letter-spacing: 1px; }
+    .lede { font-size: 16px; }
+    .small { font-size: 12px; letter-spacing: 0.2px; }
+    .give { letter-spacing: 1.2px; font-size: 12px; }
+  }
 </style>
 </head>
 <body>

@@ -193,6 +193,12 @@
   #mode-card, #round-intro {
     position: fixed; z-index: 150; inset: 0;
     display: flex; align-items: center; justify-content: center;
+    /* A tall card on a short phone used to lose its heading off the top and
+       its last button off the bottom, with no way to reach either. Centre it
+       when it fits, scroll it when it doesn't. */
+    align-items: safe center;
+    overflow-y: auto; overscroll-behavior: contain;
+    padding: 16px 0; -webkit-overflow-scrolling: touch;
     opacity: 0; pointer-events: none;
     transition: opacity var(--dur-out) var(--spring);
     /* light veil, not a wall: the world visibly plays behind the card, so the
@@ -554,6 +560,7 @@
   #annc.quiet::before { opacity: 0.85; top: -26px; bottom: -22px; }
   #annc.quiet #annc-sub { font-size: clamp(15px, 2.4vw, 21px); text-shadow: 0 1px 14px rgba(2, 1, 8, 0.9); }
   @media (max-width: 620px) { #annc { top: 58%; } #annc-row { gap: 12px; } }
+
 
   /* ── Tuning panel (`) ── the game's feel as sliders, dragged mid-play ── */
   #tune-panel {
@@ -1214,6 +1221,11 @@
   #tap-to-start {
     position: fixed; inset: 0; z-index: 200;
     display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+    /* same rule as the cards: with the room-code panel open on a small phone
+       the title and the footer both fell outside the viewport */
+    justify-content: safe center;
+    overflow-y: auto; overscroll-behavior: contain;
+    padding: 14px 12px; -webkit-overflow-scrolling: touch;
     background: radial-gradient(ellipse at center, rgba(2,4,12,0.35), rgba(0,0,0,0.75));
     color: var(--ink-dim); cursor: pointer;
     font: 13px/1.6 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 3px;
@@ -2041,6 +2053,54 @@
     #hud-sub { font-size: 14px; }
     #hud-unit { font-size: 12px; }
   }
+  /* ── Short phones ── An iPhone SE is 568px tall, and the landing plus an
+     open room-code panel wants more than that. Rather than rely on scrolling
+     to rescue it, the whole front door tightens so it still fits in one
+     screen: smaller wordmark, closer gaps, shorter buttons. */
+  @media (max-height: 700px) {
+    #tap-to-start { gap: 10px; }
+    #tap-to-start .big { font-size: 26px; letter-spacing: 7px; }
+    #tagline { font-size: 12px; }
+    #today { margin-top: 10px; padding: 7px 10px; font-size: 13.5px; }
+    #side-doors { margin-top: 10px; }
+    #maker-line { margin-top: 14px; font-size: 12px; }
+    #photo-note { font-size: 9.5px; }
+    .cta { padding: 13px 0; }
+    #join-card { gap: 7px; }
+    #mode-inner h2 { font-size: clamp(20px, 5.4vw, 26px); letter-spacing: 3px; margin: 0 0 4px; }
+    #mode-inner p { margin-top: 5px; font-size: 10px; }
+    #mode-opts { gap: 8px; margin-top: 14px; }
+    .mode-opt { padding: 11px 14px 10px; border-radius: 13px; }
+    .mode-opt b { font-size: 17px; letter-spacing: 2px; }
+    .mode-opt em { margin-top: 4px; font-size: 11.5px; line-height: 1.45; }
+    #mc-host { margin-top: 10px; padding: 9px 0; }
+    /* tightened, but never below a thumb: an open panel may scroll, a button
+       that is hard to hit may not */
+    #join-card input { padding: 12px 12px; }
+    .join-row button { padding: 13px 0; }
+  }
+  @media (max-height: 600px) {
+    #tap-to-start .big { font-size: 22px; letter-spacing: 5px; }
+    #maker-line span { margin-top: 3px; }
+    #photo-note { display: none; }   /* the same notice lives on the support page */
+    #tap-to-start { gap: 7px; padding: 8px 12px; }
+    #tagline { font-size: 11.5px; }
+    #today { margin-top: 7px; padding: 6px 10px; font-size: 12.5px; }
+    #side-doors { margin-top: 7px; }
+    #maker-line { margin-top: 9px; font-size: 11px; }
+    .cta { padding: 11px 0; font-size: 15px; }
+    #btn-host-promote { margin-top: 6px; padding: 9px 0; }
+  }
+
+  /* ── Narrow phones ── 320px wide is the floor; nothing may spill past it. */
+  @media (max-width: 360px) {
+    #tap-to-start { padding: 12px 8px; }
+    #tap-to-start .big { letter-spacing: 5px; word-break: break-word; }
+    #join-card { width: min(300px, 92vw); }
+    #mode-inner { width: 94vw; }
+    .am-pick button { letter-spacing: 1px; font-size: 10px; }
+    #side-doors { font-size: 10.5px; }
+  }
 </style>
 </head>
 <body>
@@ -2473,7 +2533,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 455</div>
+      <div id="build-stamp">build 460</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2515,6 +2575,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=455"></script>
+<script type="module" src="js/main.js?v=460"></script>
 </body>
 </html>
