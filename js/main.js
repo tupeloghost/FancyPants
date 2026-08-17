@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=464';
-import { drawQR } from './lib/qr.js?v=464';
-import { WORLDS } from './worlds/registry.js?v=464';
-import { Net, PALETTE } from './net.js?v=464';
-import { Presence } from './lib/presence.js?v=464';
-import { Pulses } from './lib/pulse.js?v=464';
-import { BeatClock } from './lib/beatclock.js?v=464';
-import { BeatCue } from './lib/beatcue.js?v=464';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=464';
-import { Race, placeOf, standings } from './lib/race.js?v=464';
-import { Signals } from './lib/signals.js?v=464';
-import { pickShareLine, loadLines } from './lib/lines.js?v=464';
-import { RouteMap } from './lib/map.js?v=464';
-import * as sfx from './lib/sfx.js?v=464';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=464';
-import { glowTexture } from './lib/glow.js?v=464';
+import { AudioEngine } from './audio-engine.js?v=465';
+import { drawQR } from './lib/qr.js?v=465';
+import { WORLDS } from './worlds/registry.js?v=465';
+import { Net, PALETTE } from './net.js?v=465';
+import { Presence } from './lib/presence.js?v=465';
+import { Pulses } from './lib/pulse.js?v=465';
+import { BeatClock } from './lib/beatclock.js?v=465';
+import { BeatCue } from './lib/beatcue.js?v=465';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=465';
+import { Race, placeOf, standings } from './lib/race.js?v=465';
+import { Signals } from './lib/signals.js?v=465';
+import { pickShareLine, loadLines } from './lib/lines.js?v=465';
+import { RouteMap } from './lib/map.js?v=465';
+import * as sfx from './lib/sfx.js?v=465';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=465';
+import { glowTexture } from './lib/glow.js?v=465';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1044,7 +1044,7 @@ function loadSuno() {
     // leave what they pasted alone — wiping it looks like paste is broken
     el.classList.add('bad');
     setTimeout(() => el.classList.remove('bad'), 1400);
-    sunoSay("that doesn't look like a suno link", 'err');
+    sunoSay("can't read that link. suno links and mp3 files work", 'err');
     return;
   }
   if (sunoLoading === path) return;      // don't re-fire on the same link
@@ -1058,7 +1058,7 @@ function loadSuno() {
     .then(r => (r.ok ? r.json() : Promise.reject(new Error('no song'))))
     .then(info => {
       if (!info.id) throw new Error('no song');
-      sunoTrack = [info.title, info.artist].filter(Boolean).join(' \u00b7 ') || 'a suno track';
+      sunoTrack = [info.title, info.artist].filter(Boolean).join(' \u00b7 ') || 'their song';
       $('mq-title').value = info.title || '';
       $('mq-artist').value = info.artist || '';
       $('marquee-edit').classList.remove('hidden');
@@ -1078,7 +1078,7 @@ function loadSuno() {
     .catch(() => {
       sunoLoading = null;
       sunoTrack = '';
-      sunoSay("couldn't find that song. use Suno's Share link", 'err');
+      sunoSay("couldn't find that song. use its share link, not the page url", 'err');
     });
 }
 let sunoTrack = '';   // what's playing, for the guests' now-playing line
@@ -1164,7 +1164,7 @@ net.onSong = s => {
     $('track-select').value = isSuno ? '' : s.url;
   }
   $('guest-track').textContent = isSuno
-    ? (s.title ? `${s.title}, picked by the host` : 'a suno track, picked by the host')
+    ? (s.title ? `${s.title}, picked by the host` : 'a song, picked by the host')
     : decodeURIComponent(s.url.split('/').pop()).replace(/\.\w+$/, '').replace(/_/g, ' ') + ', picked by the host';
   const apply = () => {
     if (Math.abs(audio.currentTime - s.pos) > 2) audio.seek(s.pos);
@@ -2727,7 +2727,7 @@ $('pl-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('pl-go
 $('pl-go').addEventListener('click', () => {
   const raw = $('pl-input').value.trim();
   if (/spotify\.com|spotify:|youtube\.com|youtu\.be/i.test(raw)) {
-    $('pl-msg').textContent = 'suno links and mp3s only';
+    $('pl-msg').textContent = 'that one won\u2019t play here. suno links and mp3 files work';
     return;
   }
   const pl = raw.match(/playlist\/([0-9a-fA-F-]{36})/);
@@ -2746,7 +2746,7 @@ $('pl-go').addEventListener('click', () => {
       $('pl-msg').textContent = 'one song. where\u2019s it playin\u2019?';
       return;
     }
-    $('pl-msg').textContent = 'we can only play suno links or mp3s for now';
+    $('pl-msg').textContent = 'that one won\u2019t play here. suno links and mp3 files work';
     return;
   }
   $('pl-msg').textContent = 'reading the playlist\u2026';
@@ -4101,8 +4101,8 @@ $('pr-go').addEventListener('click', () => {
   const raw = $('pr-url').value.trim();
   if (!/suno\.com\/(song|s|playlist)\//.test(raw)) {
     $('pr-msg').textContent = raw && /spotify|youtu/i.test(raw)
-      ? 'we can only play suno links or mp3s for now'
-      : 'paste a suno link, or load an mp3';
+      ? 'that one won\u2019t play here. suno links and mp3 files work'
+      : 'paste your song link, or load an mp3';
     return;
   }
   const key = prWorldPick;
