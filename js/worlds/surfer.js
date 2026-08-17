@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=473';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=473';
-import { themePaint, richHSL } from '../lib/themes.js?v=473';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=474';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=474';
+import { themePaint, richHSL } from '../lib/themes.js?v=474';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -375,19 +375,18 @@ export function createSurfer() {
           gradedHue = ((gradedHue + dh * roadMix * 0.5) % 1 + 1) % 1;
           // warm hues bleach toward acid under the bloom — hold them dimmer,
           // easing the cap in and out so brightness never steps either
-          // The yellow ban, done in RGB. Any continuous hue detour must PASS
-          // THROUGH yellow on its way around the wheel (there is no hole in a
-          // continuous path), which is how the last fix leaked. So the hue
-          // stays honest and continuous, and any colour that LANDS in the
-          // yellow band gets pulled toward deep amber by a smooth weight:
-          // zero at the band's edges, strongest at pure yellow. No seams,
-          // and a saturated yellow cannot reach the screen.
+          // Yellow is welcome; HEAVY yellow was the problem. Old builds let
+          // big fields of it run bright and saturated until the bloom
+          // bleached them, which read as cheap. So yellow keeps its hue and
+          // just carries less weight: the brightness cap dips smoothly
+          // through the band, and a light pull toward a deeper gold keeps it
+          // rich instead of fluorescent. Smooth weights, so no seams.
           const yw = Math.max(0, 1 - Math.abs(gradedHue - 0.145) / 0.075);
-          const lumCap = 0.66 - 0.1 * yw;
+          const lumCap = 0.66 - 0.09 * yw;
           richHSL(color, gradedHue, Math.min(1, tp[1] * 1.1 + 0.05), Math.min(lumCap, lum * Math.min(1.45, tp[2])));
           if (yw > 0.01) {
-            this._amber || (this._amber = new THREE.Color().setHSL(0.055, 0.92, 0.34));
-            color.lerp(this._amber, yw * 0.75);
+            this._gold || (this._gold = new THREE.Color().setHSL(0.115, 0.95, 0.42));
+            color.lerp(this._gold, yw * 0.3);
           }
           col.setXYZ(i, color.r, color.g, color.b);
         }
