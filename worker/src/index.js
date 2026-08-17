@@ -145,6 +145,7 @@ export class FancyPantsRoom {
           label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
         })).filter(l => l.label && /^https?:\/\//.test(l.url)),
         next: String(b.next || '').slice(0, 120),
+        nextAt: String(b.nextAt || '').slice(0, 30),
         hidden: [],
         at: Date.now(),
       };
@@ -161,6 +162,7 @@ export class FancyPantsRoom {
       if ('name' in b) page.name = String(b.name || page.slug).slice(0, 60);
       if ('bio' in b) page.bio = String(b.bio || '').slice(0, 500);
       if ('next' in b) page.next = String(b.next || '').slice(0, 120);
+      if ('nextAt' in b) page.nextAt = String(b.nextAt || '').slice(0, 30);
       if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
@@ -180,7 +182,7 @@ export class FancyPantsRoom {
         const path = k.slice(2);
         if (!page.hidden.includes(path)) songs.push(path);
       }
-      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, songs };
+      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -519,7 +521,7 @@ export default {
         + '<meta name="robots" content="noindex">'
         + '<title>' + esc(pg.name) + '</title>'
         + '<meta property="og:title" content="' + esc(pg.name) + '">'
-        + '<meta property="og:description" content="' + esc(pg.bio || 'songs you can step inside, right in the browser') + '">'
+        + '<meta property="og:description" content="' + esc(pg.nextAt && pg.next ? pg.next : (pg.bio || 'songs you can step inside, right in the browser')) + '">'
         + '<meta property="og:site_name" content="Fancy Britches">'
         + '<meta property="og:image" content="' + SITE_URL + 'og.jpg">'
         + '<meta name="twitter:card" content="summary_large_image">'
@@ -544,11 +546,11 @@ export default {
         + '</style></head><body><div class="card">'
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
-        + (pg.next ? '<p class="next">' + esc(pg.next) + '</p>' : '')
+        + (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + '<footer>every song here is a place you can get into. <a href="https://tupeloghost.github.io/FancyPants/">make yours free at fancy britches</a></footer>'
-        + '</div></body></html>';
+        + '</div>'        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent="going live "+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')        + '</body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 

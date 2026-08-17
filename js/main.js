@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=468';
-import { drawQR } from './lib/qr.js?v=468';
-import { WORLDS } from './worlds/registry.js?v=468';
-import { Net, PALETTE } from './net.js?v=468';
-import { Presence } from './lib/presence.js?v=468';
-import { Pulses } from './lib/pulse.js?v=468';
-import { BeatClock } from './lib/beatclock.js?v=468';
-import { BeatCue } from './lib/beatcue.js?v=468';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=468';
-import { Race, placeOf, standings } from './lib/race.js?v=468';
-import { Signals } from './lib/signals.js?v=468';
-import { pickShareLine, loadLines } from './lib/lines.js?v=468';
-import { RouteMap } from './lib/map.js?v=468';
-import * as sfx from './lib/sfx.js?v=468';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=468';
-import { glowTexture } from './lib/glow.js?v=468';
+import { AudioEngine } from './audio-engine.js?v=469';
+import { drawQR } from './lib/qr.js?v=469';
+import { WORLDS } from './worlds/registry.js?v=469';
+import { Net, PALETTE } from './net.js?v=469';
+import { Presence } from './lib/presence.js?v=469';
+import { Pulses } from './lib/pulse.js?v=469';
+import { BeatClock } from './lib/beatclock.js?v=469';
+import { BeatCue } from './lib/beatcue.js?v=469';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=469';
+import { Race, placeOf, standings } from './lib/race.js?v=469';
+import { Signals } from './lib/signals.js?v=469';
+import { pickShareLine, loadLines } from './lib/lines.js?v=469';
+import { RouteMap } from './lib/map.js?v=469';
+import * as sfx from './lib/sfx.js?v=469';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=469';
+import { glowTexture } from './lib/glow.js?v=469';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2766,12 +2766,15 @@ $('sc-go').addEventListener('click', async () => {
   if (slug.length < 3) { $('sc-msg').textContent = 'that name is a touch short'; return; }
   // a friendly sentence, not a timestamp: this is read by fans, not machines
   const d = new Date(when);
+  // labelled with the host's zone so it is never ambiguous, and the UTC
+  // instant rides along so the page can re-say it in the VIEWER's zone
   const nice = d.toLocaleString(undefined,
-    { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  const next = 'going live ' + nice + (where ? ' \u00b7 ' + where : '');
+    { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  const next = 'going live ' + nice;
   $('sc-msg').textContent = 'saving\u2026';
   try {
-    const body = { slug, name: who, next, links: where ? [{ label: 'watch the stream', url: where }] : [] };
+    const body = { slug, name: who, next, nextAt: d.toISOString(),
+      links: where ? [{ label: 'watch the stream', url: where }] : [] };
     let r = await fetch(`${SUNO_PROXY}c-create`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
@@ -2781,7 +2784,7 @@ $('sc-go').addEventListener('click', async () => {
       if (!key) { $('sc-msg').textContent = 'that name is taken. try another'; return; }
       r = await fetch(`${SUNO_PROXY}c-update`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...body, key }),
+        body: JSON.stringify({ ...body, editKey: key }),
       });
     } else if (r.ok) {
       const j = await r.json().catch(() => ({}));
@@ -2789,7 +2792,7 @@ $('sc-go').addEventListener('click', async () => {
     }
     if (!r.ok) { $('sc-msg').textContent = 'that didn\u2019t save. try again'; return; }
     window.__schedLink = `${SUNO_PROXY}c/${slug}`;
-    $('sc-msg').textContent = nice + '. your link is ready';
+    $('sc-msg').textContent = 'set for ' + nice + '. your link is ready';
     $('sc-done').classList.remove('hidden');
   } catch (e) { $('sc-msg').textContent = 'no connection. try again'; }
 });
