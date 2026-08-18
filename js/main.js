@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=474';
-import { drawQR } from './lib/qr.js?v=474';
-import { WORLDS } from './worlds/registry.js?v=474';
-import { Net, PALETTE } from './net.js?v=474';
-import { Presence } from './lib/presence.js?v=474';
-import { Pulses } from './lib/pulse.js?v=474';
-import { BeatClock } from './lib/beatclock.js?v=474';
-import { BeatCue } from './lib/beatcue.js?v=474';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=474';
-import { Race, placeOf, standings } from './lib/race.js?v=474';
-import { Signals } from './lib/signals.js?v=474';
-import { pickShareLine, loadLines } from './lib/lines.js?v=474';
-import { RouteMap } from './lib/map.js?v=474';
-import * as sfx from './lib/sfx.js?v=474';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=474';
-import { glowTexture } from './lib/glow.js?v=474';
+import { AudioEngine } from './audio-engine.js?v=476';
+import { drawQR } from './lib/qr.js?v=476';
+import { WORLDS } from './worlds/registry.js?v=476';
+import { Net, PALETTE } from './net.js?v=476';
+import { Presence } from './lib/presence.js?v=476';
+import { Pulses } from './lib/pulse.js?v=476';
+import { BeatClock } from './lib/beatclock.js?v=476';
+import { BeatCue } from './lib/beatcue.js?v=476';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=476';
+import { Race, placeOf, standings } from './lib/race.js?v=476';
+import { Signals } from './lib/signals.js?v=476';
+import { pickShareLine, loadLines } from './lib/lines.js?v=476';
+import { RouteMap } from './lib/map.js?v=476';
+import * as sfx from './lib/sfx.js?v=476';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=476';
+import { glowTexture } from './lib/glow.js?v=476';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -433,7 +433,11 @@ fetch('audio/manifest.json?t=' + Date.now())
     if (trackList.length) {
       const d = new Date();
       const dayN = d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
-      const file = trackList[dayN % trackList.length];
+      // a name ending in a bare numeral reads as a version number on the
+      // front door ("hello goodbye 2"), so today's pick prefers a clean title
+      const clean = trackList.filter(f => !/_\d+\.mp3$/i.test(f));
+      const pickFrom = clean.length ? clean : trackList;
+      const file = pickFrom[dayN % pickFrom.length];
       const wkey = Object.keys(WORLD_TRACKS).find(k => 'audio/' + WORLD_TRACKS[k] === file);
       const el = $('today');
       if (el) {
@@ -2465,9 +2469,14 @@ function dismissOverlay() {
     DeviceOrientationEvent.requestPermission().catch(() => {});
   }
   // phones: start with the panel collapsed — the world is the point
-  if (IS_MOBILE) { panel.classList.remove('hidden'); panel.classList.add('collapsed'); }
+  // Everybody gets the phone's model now: the world is the screen, and the
+  // controls wait in a slim bar until asked. A settings sheet sitting open
+  // over a visualizer was the desktop reading as a control room.
+  panel.classList.remove('hidden');
+  panel.classList.add('collapsed');
+  document.body.classList.add('inside');
 }
-if (IS_MOBILE) panel.classList.add('hidden'); // hidden behind the join card
+panel.classList.add('hidden'); // no controls before the door opens, any device
 function startRoom(code, name, asOwner) {
   if (!validName(name)) { $('join-msg').textContent = 'name: 3-14 letters, numbers, _'; return; }
   // signals: was this a return trip? (same room seen before on this device)
@@ -4267,6 +4276,7 @@ const params = new URLSearchParams(location.search);
 // ── DEV MODE (?dev=1) ── audition the whole share system without grinding
 // rounds: force archetypes, preview lines, open all three cards on fake
 // signals, skip to the end of a run, toggle the paid gate.
+if (params.get('dev') === '1') document.body.classList.add('devmode');
 if (params.get('dev') === '1') (function devPanel() {
   // friendly names for the numbers behind a joke
   const FIELD_WORDS = {

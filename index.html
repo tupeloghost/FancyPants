@@ -126,14 +126,17 @@
     display: flex; align-items: stretch; gap: 2px;
     padding: 6px 8px;
     border-radius: 999px;
-    background: hsla(var(--accent-h), 30%, 6%, 0.52);
-    border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.16);
+    background: hsla(var(--accent-h), 30%, 5%, 0.74);
+    border: 1px solid hsla(var(--accent-h), 60%, 75%, 0.3);
     box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 hsla(var(--accent-h),70%,80%,0.07);
     backdrop-filter: blur(16px) saturate(1.3);
     -webkit-backdrop-filter: blur(16px) saturate(1.3);
     opacity: 1; transition: opacity 700ms ease, transform 260ms ease;
   }
-  #qbar.dim { opacity: 0.16; }
+  /* resting, not vanished: at 16 percent a first-timer cannot find the
+     controls at all, and you cannot use what you cannot see */
+  #qbar.dim { opacity: 0.42; }
+  #qbar.dim:hover { opacity: 1; }
   /* mid-round the transport is a hazard, not a convenience: a thumb grazing
      NEXT or WORLD torpedoes the race. It returns the moment the round ends. */
   body.playing-round #qbar { opacity: 0 !important; pointer-events: none; }
@@ -143,9 +146,10 @@
   #qbar .qb {
     -webkit-appearance: none; appearance: none;
     background: none; border: 0; cursor: pointer;
-    color: var(--ink-dim);
+    color: hsl(var(--accent-h), 35%, 88%);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; min-width: 44px; padding: 5px 9px;
+    gap: 2px; min-width: 46px; padding: 7px 10px;
     border-radius: 999px;
     font: 11px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
     transition: color 160ms ease, background 160ms ease, transform 160ms ease;
@@ -1401,6 +1405,26 @@
     transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
   #mc-host:hover { color: var(--ink); border-color: hsla(var(--accent-h),80%,70%,0.6); background: var(--accent-soft); }
+  /* ── the chrome waits for the door ── nothing but the invitation shows
+     until somebody comes in, on every device */
+  body:not(.inside) #qbar,
+  body:not(.inside) #panel { display: none !important; }
+  /* fps and player count are a developer's numbers */
+  #panel-stats { display: none; }
+  body.devmode #panel-stats { display: inline; }
+
+  /* ── a wide screen gets a bigger door ── the landing was built to a phone's
+     measure and read timid on a desktop, a small card adrift in a dark field */
+  @media (min-width: 900px) {
+    #tap-to-start .big { font-size: 46px; letter-spacing: 12px; }
+    #tagline { font-size: 16px; letter-spacing: 2px; }
+    #join-card { width: 340px; gap: 11px; }
+    .cta { padding: 17px 0; font-size: 19px; letter-spacing: 4px; }
+    .cta-soft { padding: 13px 0; font-size: 13px; }
+    #today { font-size: 16px; padding: 12px 16px; }
+    #maker-line { font-size: 14px; }
+  }
+
   #side-doors {
     display: flex; justify-content: center; align-items: center; gap: 10px;
     margin-top: 16px;
@@ -2602,7 +2626,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 474</div>
+      <div id="build-stamp">build 476</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2644,6 +2668,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=474"></script>
+<script type="module" src="js/main.js?v=476"></script>
 </body>
 </html>
