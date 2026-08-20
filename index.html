@@ -223,7 +223,7 @@
     transform: translateY(0) scale(1);
     transition-duration: var(--dur-in);
   }
-  #mode-inner { width: min(440px, 88vw); text-align: center; }
+  #mode-inner { width: min(460px, 90vw); text-align: center; }
   #mode-inner h2 {
     font: 400 clamp(26px, 6vw, 34px)/1.1 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 5px; color: hsl(var(--accent-h), 55%, 94%); font-weight: 400;
@@ -232,21 +232,29 @@
     margin-top: 8px; font: 11px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2px; text-transform: uppercase; color: var(--ink-faint);
   }
-  #mode-opts { display: flex; gap: 12px; margin-top: 26px; }
+  #mode-opts { display: flex; flex-direction: column; gap: 11px; margin-top: 24px; }
   .mode-opt {
-    flex: 1; padding: 20px 16px 18px; cursor: pointer;
+    padding: 16px 20px 15px; cursor: pointer;
     border-radius: 15px; border: 1px solid var(--accent-line);
-    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.08), var(--glass));
-    transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+    background: linear-gradient(175deg, hsla(var(--accent-h),60%,55%,0.1), var(--glass));
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: transform 200ms var(--spring), border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
+  }
+  .mode-opt:hover {
+    transform: translateY(-2px);
+    border-color: hsla(var(--accent-h), 85%, 72%, 0.65);
+    background: linear-gradient(175deg, hsla(var(--accent-h),65%,58%,0.2), var(--glass));
+    box-shadow: 0 8px 30px hsla(var(--accent-h), 80%, 50%, 0.18);
   }
   .mode-opt:hover { transform: translateY(-3px); border-color: hsla(var(--accent-h),80%,70%,0.6); }
   .mode-opt b {
-    display: block; font: 400 20px 'Didot', 'Bodoni 72', Georgia, serif;
-    letter-spacing: 3.4px; color: hsl(var(--accent-h), 55%, 93%);
+    display: block; font: 400 21px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 3px; color: hsl(var(--accent-h), 55%, 95%);
+    white-space: nowrap;
   }
   .mode-opt em {
-    display: block; margin-top: 7px; font-style: normal;
-    font: 13px/1.55 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+    display: block; margin-top: 5px; font-style: normal;
+    font: 12px/1.5 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
   }
   #pl-row { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   #pl-row.hidden { display: none; }
@@ -1365,11 +1373,12 @@
 
   /* the side doors: findable, never in the way */
   /* the two-flavour picker: one control, two homes */
-  .am-pick { display: flex; gap: 0; margin: 10px 0 2px; border-radius: 999px; overflow: hidden;
-             border: 1px solid var(--accent-line); }
+  .am-pick { display: flex; gap: 0; margin: 11px auto 2px; border-radius: 999px; overflow: hidden;
+             border: 1px solid var(--accent-line); max-width: 320px; }
   .am-pick button {
-    flex: 1; padding: 9px 0; cursor: pointer; border: 0; background: transparent;
-    font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px; color: var(--ink-faint);
+    flex: 1; padding: 10px 4px; cursor: pointer; border: 0; background: transparent;
+    font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px; color: var(--ink-faint);
+    white-space: nowrap;
     transition: background 160ms ease, color 160ms ease;
   }
   .am-pick button:hover { color: var(--ink); }
@@ -2112,7 +2121,7 @@
      never smaller — a phone is read at arm's length from a sofa ── */
   @media (max-width: 620px) {
     #ri-rules { font-size: 17px; line-height: 1.65; }
-    #mode-opts { flex-direction: column; gap: 10px; }
+    #mode-opts { gap: 10px; }
     .mode-opt { padding: 18px 16px; }
     #ri-play { width: min(320px, 80vw); padding: 17px 0; font-size: 19px; }
     #ri-mode { font-size: 20px; }
@@ -2626,7 +2635,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 476</div>
+      <div id="build-stamp">build 477</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2668,6 +2677,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=476"></script>
+<script type="module" src="js/main.js?v=477"></script>
 </body>
 </html>
