@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=511';
-import { drawQR } from './lib/qr.js?v=511';
-import { WORLDS } from './worlds/registry.js?v=511';
-import { Net, PALETTE } from './net.js?v=511';
-import { Presence } from './lib/presence.js?v=511';
-import { Pulses } from './lib/pulse.js?v=511';
-import { BeatClock } from './lib/beatclock.js?v=511';
-import { BeatCue } from './lib/beatcue.js?v=511';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=511';
-import { Race, placeOf, standings } from './lib/race.js?v=511';
-import { Signals } from './lib/signals.js?v=511';
-import { pickShareLine, loadLines } from './lib/lines.js?v=511';
-import { RouteMap } from './lib/map.js?v=511';
-import * as sfx from './lib/sfx.js?v=511';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=511';
-import { glowTexture } from './lib/glow.js?v=511';
+import { AudioEngine } from './audio-engine.js?v=512';
+import { drawQR } from './lib/qr.js?v=512';
+import { WORLDS } from './worlds/registry.js?v=512';
+import { Net, PALETTE } from './net.js?v=512';
+import { Presence } from './lib/presence.js?v=512';
+import { Pulses } from './lib/pulse.js?v=512';
+import { BeatClock } from './lib/beatclock.js?v=512';
+import { BeatCue } from './lib/beatcue.js?v=512';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=512';
+import { Race, placeOf, standings } from './lib/race.js?v=512';
+import { Signals } from './lib/signals.js?v=512';
+import { pickShareLine, loadLines } from './lib/lines.js?v=512';
+import { RouteMap } from './lib/map.js?v=512';
+import * as sfx from './lib/sfx.js?v=512';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=512';
+import { glowTexture } from './lib/glow.js?v=512';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -925,6 +925,7 @@ function startRaceIfReady() {
     const pb = getBest();
     $('ri-state').textContent = pb > 0 ? "your best 'round here: " + pb.toLocaleString() : "fixin' to start";
     setPhase = 'intro';
+    $('world-intro').classList.add('gone');   // the old world's greeting yields
     $('round-intro').classList.add('show');
     bestBeaten = false;
     if (document.body.classList.contains('guest')) {
@@ -2488,6 +2489,9 @@ $('show-me').addEventListener('click', e => { e.stopPropagation(); runWorldDemo(
 function showWorldIntro(key) {
   const w = WORLDS[key];
   if (!w) return;
+  // a new world's name must never share the screen with the last one's
+  clearTimeout(introTimer);
+  $('world-intro').classList.add('gone');
   // Two screens must never talk at once. Mid-set the round card already
   // names the world — the floating greeting on top of it was the overlap.
   if ($('round-intro').classList.contains('show') ||
@@ -3165,6 +3169,7 @@ function nextRound() {
     (WORLDS[r.world].mode === 'RACE' && WORLDS[r.world].cue !== 'world') ? '' : 'none';
   $('ri-track').textContent = r.label || prettyTrack(r.track);
   $('ri-state').textContent = "fixin' to start";
+  $('world-intro').classList.add('gone');   // the old world's greeting yields
   $('round-intro').classList.add('show');
 
   switchWorld(r.world);
