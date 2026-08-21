@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=489';
-import { drawQR } from './lib/qr.js?v=489';
-import { WORLDS } from './worlds/registry.js?v=489';
-import { Net, PALETTE } from './net.js?v=489';
-import { Presence } from './lib/presence.js?v=489';
-import { Pulses } from './lib/pulse.js?v=489';
-import { BeatClock } from './lib/beatclock.js?v=489';
-import { BeatCue } from './lib/beatcue.js?v=489';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=489';
-import { Race, placeOf, standings } from './lib/race.js?v=489';
-import { Signals } from './lib/signals.js?v=489';
-import { pickShareLine, loadLines } from './lib/lines.js?v=489';
-import { RouteMap } from './lib/map.js?v=489';
-import * as sfx from './lib/sfx.js?v=489';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=489';
-import { glowTexture } from './lib/glow.js?v=489';
+import { AudioEngine } from './audio-engine.js?v=490';
+import { drawQR } from './lib/qr.js?v=490';
+import { WORLDS } from './worlds/registry.js?v=490';
+import { Net, PALETTE } from './net.js?v=490';
+import { Presence } from './lib/presence.js?v=490';
+import { Pulses } from './lib/pulse.js?v=490';
+import { BeatClock } from './lib/beatclock.js?v=490';
+import { BeatCue } from './lib/beatcue.js?v=490';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=490';
+import { Race, placeOf, standings } from './lib/race.js?v=490';
+import { Signals } from './lib/signals.js?v=490';
+import { pickShareLine, loadLines } from './lib/lines.js?v=490';
+import { RouteMap } from './lib/map.js?v=490';
+import * as sfx from './lib/sfx.js?v=490';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=490';
+import { glowTexture } from './lib/glow.js?v=490';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3267,25 +3267,6 @@ function socialTag() {
   return '\n' + (/^https?:\/\//i.test(v) ? v : v);
 }
 
-function shareCaption() {
-  const l = window.__shareLine;
-  const run = sig.lastRun || {};
-  const wl = run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : 'a world';
-  const st = run.songTitle ? '\u2018' + run.songTitle + '\u2019' : 'this song';
-  const PROMO = [
-    { t: 'i didn\u2019t listen to ' + st + '. i got in it.', c: 'your turn \u2192' },
-    { t: st + ' moved every time i did. i have chills and no explanation.', c: 'step inside \u2192' },
-    { t: 'this is ' + st + ' from the inside.', c: 'see for yourself \u2192' },
-    { t: wl + ' ate three minutes of my life. worth it.', c: 'go get lost \u2192' },
-    { t: 'no download, nothing. one tap and i was in the song.', c: 'tap yours \u2192' },
-  ];
-  const pf = PROMO[(Math.random() * PROMO.length) | 0];
-  const line = l ? l.text : pf.t;
-  const cta = l ? l.cta : pf.c;
-  const promo = window.__promoLink;
-  return line + ' ' + cta + '\n' + clipURL() + socialTag()
-    + (promo ? '\n' + promo.label.replace(/^\u266a /, '') + ': ' + promo.url : '');
-}
 function shareStill(words) {
   // a burned-credit still of the world, matching the clip's framing
   const g = document.getElementById('canvas');
@@ -3420,6 +3401,26 @@ function openShareCard() {
   }
   $('share-card').classList.remove('hidden');
 }
+// the emoji tray: tap to drop one at the cursor. Canvas text renders colour
+// emoji, so they burn onto the film like any other character.
+{
+  const TRAY = ['\u2728','\u2764\uFE0F','\ud83d\udd25','\ud83c\udf08','\ud83c\udfb6','\ud83c\udfa7','\ud83e\ude69','\ud83d\udc7b','\ud83c\udf19','\ud83c\udf52','\u2b50','\ud83d\udc8e','\ud83c\udf0a','\u26a1','\ud83d\ude08','\ud83d\ude2d','\ud83d\udc80','\ud83d\ude4c','\ud83d\udcab','\ud83c\udf88','\ud83e\udd29','\ud83d\udc83','\ud83d\udd7a','\ud83c\udf83','\ud83d\ude80','\ud83d\udc51','\ud83e\udd18','\ud83d\udca5'];
+  const tray = $('shc-emoji');
+  for (const e of TRAY) {
+    const b = document.createElement('button');
+    b.textContent = e;
+    b.addEventListener('click', () => {
+      const say = $('shc-say');
+      const at = say.selectionStart ?? say.value.length;
+      say.value = say.value.slice(0, at) + e + say.value.slice(say.selectionEnd ?? at);
+      say.selectionStart = say.selectionEnd = at + e.length;
+      say.focus();
+      say.dispatchEvent(new Event('input'));
+    });
+    tray.appendChild(b);
+  }
+}
+
 // typing paints the frame live: overlay for the eye, and the still is
 // actually re-burned so what you see is literally the file
 let sayT = null;
@@ -3444,7 +3445,7 @@ $('shc-close').addEventListener('click', () => {
 });
 $('shc-share').addEventListener('click', async () => {
   const words = $('shc-say').value.trim();
-  const caption = (words ? words + '\n' : 'step inside \u2192\n') + clipURL() + socialTag();
+  const caption = (words ? words + '\n' : 'step inside \u2192\n') + clipURL() + socialTag() + '\n#FancyBritches';
   // a clip with words on it gets pressed first: the playback IS the preview,
   // and the burned copy is ready when the song stops
   if (clipSaved && words) {
@@ -4094,7 +4095,7 @@ $('ac-share').addEventListener('click', () => {
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
-  const caption = ($('mq-title').value.trim() || 'my song') + ', from the inside: ' + clipURL() + socialTag();
+  const caption = ($('mq-title').value.trim() || 'my song') + ', from the inside: ' + clipURL() + socialTag() + '\n#FancyBritches';
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text: caption }).catch(() => {});
   } else {

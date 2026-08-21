@@ -1843,6 +1843,18 @@
     outline: none;
   }
   #shc-say:focus { border-color: hsla(var(--accent-h), 80%, 70%, 0.55); }
+  /* the emoji tray: one swipeable row, no chrome */
+  #shc-emoji {
+    display: flex; gap: 2px; overflow-x: auto; padding: 2px 0;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  #shc-emoji::-webkit-scrollbar { display: none; }
+  #shc-emoji button {
+    flex: none; width: 34px; height: 34px; border: 0; background: transparent;
+    font-size: 19px; line-height: 34px; cursor: pointer; border-radius: 9px;
+    transition: transform 120ms ease, background 120ms ease;
+  }
+  #shc-emoji button:hover { transform: scale(1.25); background: rgba(255,255,255,0.08); }
   #shc-video, #shc-still {
     /* contain, never cover: the preview IS the post — cropping the burned
        bar and QR out of the preview lied about what gets shared */
@@ -2402,6 +2414,7 @@
       <div id="shc-words" class="hidden"></div>
     </div>
     <textarea id="shc-say" maxlength="120" rows="2" placeholder="say somethin&rsquo;, sugar. your words go right on the picture"></textarea>
+    <div id="shc-emoji"></div>
     <div id="shc-actions">
       <button id="shc-share">SHARE THIS POST</button>
     </div>
@@ -2707,7 +2720,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 489</div>
+      <div id="build-stamp">build 490</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2749,6 +2762,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=489"></script>
+<script type="module" src="js/main.js?v=490"></script>
 </body>
 </html>
