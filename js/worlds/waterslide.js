@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=493';
-import { themePaint } from '../lib/themes.js?v=493';
-import { TUNE } from '../lib/tune.js?v=493';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=494';
+import { themePaint } from '../lib/themes.js?v=494';
+import { TUNE } from '../lib/tune.js?v=494';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -225,8 +225,19 @@ export function createWaterslide() {
             // whole game — green means through, red means never — and it gives
             // the flume the tension the green-only version had none of.
             h.red = (hoopCount % 4) === 0;
+            // the wonder hole: rare, never where a black hole is, and a size
+            // bigger — a swirling rainbow door. Enter it and the whole world
+            // changes clothes.
+            h.wonder = !h.red && (hoopCount % 22) === 13;
+            h.mesh.scale.setScalar(h.wonder ? 1.18 : 1);
             h.mesh.visible = true;
           }
+        }
+        {
+          const w = hoops.find(x => x.alive && x.wonder);
+          window.__slideInfo = { hoops: hoops.filter(x => x.alive).length,
+            wonderUp: !!w, wonderSide: w ? w.side : null,
+            wonderAhead: w ? Math.round(w.t - travel) : null, count: hoopCount };
         }
         for (const h of hoops) {
           if (!h.alive) continue;
@@ -236,11 +247,22 @@ export function createWaterslide() {
           h.mesh.rotation.y = Math.atan2(curveX(t - 6) - curveX(t + 6), 12);
           // green means through; a BLACK HOLE means around — dark core,
           // white-violet rim, slowly turning. unmistakable at speed
-          if (h.red) {
+          if (h.wonder) {
+            // the door: full-spectrum rim turning slow, a bright breathing
+            // heart in the middle. Reads as invitation the way the black
+            // hole reads as threat.
+            color.setHSL((time * 0.22 + t * 0.03) % 1, 0.95, 0.6 + audio.volume * 0.12);
+            h.core.visible = true;
+            h.core.material.color.setHSL((time * 0.22 + 0.5) % 1, 0.6, 0.82);
+            h.core.scale.setScalar(0.55 + Math.sin(time * 2.2 + t) * 0.12);
+            h.mesh.rotation.z = -time * 0.9;
+            h.gl.material.opacity = 0.5 + audio.volume * 0.3;
+          } else if (h.red) {
             // ember accretion rim, flickering like it's feeding
             const flicker = Math.max(0, Math.sin(time * 13 + t * 7)) * 0.18 + audio.bass * 0.15;
             color.setHSL(0.04, 0.95, 0.42 + flicker);
             h.core.visible = true;
+            h.core.material.color.setHSL(0, 0, 0.02);
             h.core.scale.setScalar(1 + Math.sin(time * 3 + t) * 0.08);
             h.mesh.rotation.z = time * 1.6;
             h.gl.material.opacity = 0.05;
@@ -257,7 +279,25 @@ export function createWaterslide() {
             const gap = Math.abs(h.side - steer);
             const through = gap < 0.42;
             const flooring = wThrottle > 0.6;
-            if (through && h.red) {
+            if (through && h.wonder) {
+              // through the door: the whole world repaints (the same
+              // ceremony a rainbow spark earns in surfer), and the ride pays
+              race.collect(3);
+              hoopBoost = 1;
+              if (opts.impact) opts.impact(0.8);
+              document.dispatchEvent(new CustomEvent('fp-lookspark'));
+              let wi = 0;
+              for (const b of bursts) {
+                if (b.visible || wi >= 3) continue;
+                wi++;
+                b.visible = true;
+                b.userData.life = 1 + wi * 0.2;
+                b.userData.inward = false;
+                b.material.color.setHSL((wi * 0.33) % 1, 0.9, 0.65);
+                b.position.copy(h.mesh.position);
+                b.rotation.copy(h.mesh.rotation);
+              }
+            } else if (through && h.red) {
               // SWALLOWED: the void takes rings, speed, and a full second —
               // and everyone gets to feel it
               race.drop(flooring ? 3 : 2);
@@ -289,6 +329,10 @@ export function createWaterslide() {
               const b = bursts.find(x => !x.visible) || bursts[0];
               b.visible = true;
               b.userData.life = 1;
+              // bursts share materials with the swallow and the wonder door:
+              // claim the gold back or this bloom wears their leftovers
+              b.material.color.setHSL(0.12, 0.9, 0.6);
+              b.userData.inward = false;
               b.position.copy(h.mesh.position);
               b.rotation.copy(h.mesh.rotation);
             } else if (!h.red) {

@@ -10,8 +10,8 @@
 // room draws a larger figure.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=493';
-import { themePaint } from '../lib/themes.js?v=493';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=494';
+import { themePaint } from '../lib/themes.js?v=494';
 
 // Figures are drawn in three depths: 1 outline, 2 body, 3 heart.
 const FIGURES = [

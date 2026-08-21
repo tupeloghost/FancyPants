@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=493';
-import { drawQR } from './lib/qr.js?v=493';
-import { WORLDS } from './worlds/registry.js?v=493';
-import { Net, PALETTE } from './net.js?v=493';
-import { Presence } from './lib/presence.js?v=493';
-import { Pulses } from './lib/pulse.js?v=493';
-import { BeatClock } from './lib/beatclock.js?v=493';
-import { BeatCue } from './lib/beatcue.js?v=493';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=493';
-import { Race, placeOf, standings } from './lib/race.js?v=493';
-import { Signals } from './lib/signals.js?v=493';
-import { pickShareLine, loadLines } from './lib/lines.js?v=493';
-import { RouteMap } from './lib/map.js?v=493';
-import * as sfx from './lib/sfx.js?v=493';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=493';
-import { glowTexture } from './lib/glow.js?v=493';
+import { AudioEngine } from './audio-engine.js?v=494';
+import { drawQR } from './lib/qr.js?v=494';
+import { WORLDS } from './worlds/registry.js?v=494';
+import { Net, PALETTE } from './net.js?v=494';
+import { Presence } from './lib/presence.js?v=494';
+import { Pulses } from './lib/pulse.js?v=494';
+import { BeatClock } from './lib/beatclock.js?v=494';
+import { BeatCue } from './lib/beatcue.js?v=494';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=494';
+import { Race, placeOf, standings } from './lib/race.js?v=494';
+import { Signals } from './lib/signals.js?v=494';
+import { pickShareLine, loadLines } from './lib/lines.js?v=494';
+import { RouteMap } from './lib/map.js?v=494';
+import * as sfx from './lib/sfx.js?v=494';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=494';
+import { glowTexture } from './lib/glow.js?v=494';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2124,7 +2124,19 @@ canvas.addEventListener('touchstart', e => {
   touchSteer.lastX = e.touches[0].clientX;
   touchSteer.lastY = e.touches[0].clientY;
 }, { passive: true });
-window.addEventListener('touchend', () => { touchSteer.active = false; });
+window.addEventListener('touchend', () => {
+  touchSteer.active = false;
+  if (!FULL_TURN.has(currentWorldKey)) {
+    const home = () => {
+      if (touchSteer.active) return;              // a new finger takes over
+      touchSteer.x *= 0.86;
+      if (Math.abs(touchSteer.x) < 0.02) touchSteer.x = 0;
+      if (world && world.setInput) world.setInput(touchSteer.x, touchSteer.y);
+      if (touchSteer.x !== 0) requestAnimationFrame(home);
+    };
+    requestAnimationFrame(home);
+  }
+});
 
 // click/tap interaction — part of the world contract, works in both modes
 let clickPulse = 0;
@@ -2346,6 +2358,10 @@ function runWorldDemo() {
   hand.classList.remove('hidden');
   $('show-me').classList.add('hidden');
   const t0 = performance.now(), D = 8000;
+  const steerWord = IS_MOBILE ? 'slide your finger to steer' : 'move the mouse to steer';
+  const tapWord = IS_MOBILE ? 'tap to jump' : 'click to jump';
+  announce('', steerWord, 3600, 'quiet');
+  if (world.onTap) setTimeout(() => { if (demoRunning) announce('', tapWord, 3400, 'quiet'); }, 4200);
   const land = () => {
     demoRunning = false;
     hand.classList.add('hidden');
@@ -2363,13 +2379,15 @@ function runWorldDemo() {
     if (world && world.setInput) world.setInput(x);
     requestAnimationFrame(frame);
   })(t0);
-  demoTapIv = setInterval(() => {
-    if (!demoRunning) { clearInterval(demoTapIv); return; }
-    const hand2 = $('demo-hand');
-    hand2.classList.remove('tapping'); void hand2.offsetWidth;
-    hand2.classList.add('tapping');
-    if (world && world.onTap) world.onTap();
-  }, 1700);
+  setTimeout(() => {
+    demoTapIv = setInterval(() => {
+      if (!demoRunning) { clearInterval(demoTapIv); return; }
+      const hand2 = $('demo-hand');
+      hand2.classList.remove('tapping'); void hand2.offsetWidth;
+      hand2.classList.add('tapping');
+      if (world && world.onTap) world.onTap();
+    }, 1400);
+  }, 4200);
   // a real touch takes the wheel back instantly — the tutor never wrestles
   setTimeout(() => {
     if (demoRunning) window.addEventListener('pointerdown', () => { demoRunning = false; }, { once: true });
