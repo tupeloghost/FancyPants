@@ -2282,6 +2282,28 @@
     #side-doors { font-size: 10.5px; }
   }
 
+  /* ── The countdown ── three serif beats, same fashion-plate voice as the
+     world titles. Pointer-through: it announces, it never blocks. */
+  #countdown {
+    position: fixed; inset: 0; z-index: 97;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    font: 400 110px 'Didot', 'Bodoni 72', 'Cormorant Garamond', 'Playfair Display',
+          'Hoefler Text', Baskerville, Georgia, serif;
+    color: hsl(var(--accent-h), 70%, 93%);
+    text-shadow:
+      0 2px 6px rgba(0,0,0,0.9),
+      0 0 40px hsla(var(--accent-h), 90%, 70%, 0.6);
+  }
+  #countdown.hidden { display: none; }
+  #countdown.pop { animation: cdpop 700ms ease-out; }
+  @keyframes cdpop {
+    0% { opacity: 0; transform: scale(1.5); }
+    30% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.1; transform: scale(0.9); }
+  }
+  @media (max-width: 620px) { #countdown { font-size: 76px; } }
+
   /* ── In-world offer position, phones ── lives at the END of the sheet so it
      outranks the base #show-me bottom above. The tutor's pill rides ABOVE the
      qbar (which itself rides above the collapsed sheet), never on its buttons. */
@@ -2689,6 +2711,7 @@
     </div>
 
     <div id="standings" class="hidden"></div>
+    <div id="countdown" class="hidden" aria-hidden="true"></div>
 
     <div class="tab-page" id="page-worlds">
       <div id="world-chips"></div>
@@ -2755,7 +2778,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 501</div>
+      <div id="build-stamp">build 504</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2797,6 +2820,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=501"></script>
+<script type="module" src="js/main.js?v=504"></script>
 </body>
 </html>

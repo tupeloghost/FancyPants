@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=501';
-import { drawQR } from './lib/qr.js?v=501';
-import { WORLDS } from './worlds/registry.js?v=501';
-import { Net, PALETTE } from './net.js?v=501';
-import { Presence } from './lib/presence.js?v=501';
-import { Pulses } from './lib/pulse.js?v=501';
-import { BeatClock } from './lib/beatclock.js?v=501';
-import { BeatCue } from './lib/beatcue.js?v=501';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=501';
-import { Race, placeOf, standings } from './lib/race.js?v=501';
-import { Signals } from './lib/signals.js?v=501';
-import { pickShareLine, loadLines } from './lib/lines.js?v=501';
-import { RouteMap } from './lib/map.js?v=501';
-import * as sfx from './lib/sfx.js?v=501';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=501';
-import { glowTexture } from './lib/glow.js?v=501';
+import { AudioEngine } from './audio-engine.js?v=504';
+import { drawQR } from './lib/qr.js?v=504';
+import { WORLDS } from './worlds/registry.js?v=504';
+import { Net, PALETTE } from './net.js?v=504';
+import { Presence } from './lib/presence.js?v=504';
+import { Pulses } from './lib/pulse.js?v=504';
+import { BeatClock } from './lib/beatclock.js?v=504';
+import { BeatCue } from './lib/beatcue.js?v=504';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=504';
+import { Race, placeOf, standings } from './lib/race.js?v=504';
+import { Signals } from './lib/signals.js?v=504';
+import { pickShareLine, loadLines } from './lib/lines.js?v=504';
+import { RouteMap } from './lib/map.js?v=504';
+import * as sfx from './lib/sfx.js?v=504';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=504';
+import { glowTexture } from './lib/glow.js?v=504';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -505,6 +505,27 @@ function shuffled(a) {
   for (let i = b.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [b[i], b[j]] = [b[j], b[i]]; }
   return b;
 }
+// ── the countdown ── three serif beats before a round begins. Chill mode
+// skips it: nothing interrupts a lean-back. The first song of a session
+// skips it too — stepping inside should sound like something immediately.
+let cdT = null;
+function countdown(fn) {
+  if (chillRoll || document.body.classList.contains('guest')) { fn(); return; }
+  const el = $('countdown');
+  if (!el) { fn(); return; }
+  clearTimeout(cdT);
+  let n = 3;
+  el.classList.remove('hidden');
+  const tick = () => {
+    if (n === 0) { el.classList.add('hidden'); el.textContent = ''; fn(); return; }
+    el.textContent = n;
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    n--;
+    cdT = setTimeout(tick, 700);
+  };
+  tick();
+}
+
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
   window.__sunoShare = null;
@@ -534,7 +555,8 @@ function playAuto(next) {
   const url = autoOrder[autoAt];
   audio.loadURL(url);
   $('track-select').value = url;
-  audio.play().catch(() => {});
+  if (next) countdown(() => { audio.play().catch(() => {}); updatePlayBtn(); });
+  else { audio.play().catch(() => {}); }
   updatePlayBtn();
 }
 // "back" means the track before this one — but a few seconds in, it means
@@ -975,7 +997,7 @@ function startToyRound() {
   hideResults();
   toyRound = { score0: score, src: audio.el.currentSrc || audio.el.src };
   audio.el.currentTime = 0;
-  audio.play().catch(() => {});
+  countdown(() => { audio.play().catch(() => {}); });
   clipBufStart();
 }
 function showToyResults() {
@@ -1729,12 +1751,20 @@ function updatePeak(dt, a) {
 // first the flash and the announcement, THEN the new look sweeps in, so
 // the change reads as earned, never random
 let lookBefore = null;   // the player's own look, saved before the first rainbow
-document.addEventListener('fp-lookspark', () => {
-  if (!lookBefore) lookBefore = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
-  preDarkLook = null;   // the door is the rescue: whatever it deals, the dark is over
+// the next look is dealt IN ADVANCE so the door that delivers it can wear
+// its colors — the rim IS the preview. Worlds read window.__nextLook.
+function dealNextLook() {
   const cur = settings.colorMode;
   const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur && cfg.colorMode !== 'midnight');
   const [name, cfg] = pool[(Math.random() * pool.length) | 0];
+  window.__nextLook = { name, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
+}
+dealNextLook();
+document.addEventListener('fp-lookspark', () => {
+  if (!lookBefore) lookBefore = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
+  preDarkLook = null;   // the door is the rescue: whatever it deals, the dark is over
+  if (!window.__nextLook) dealNextLook();
+  const { name, cfg } = window.__nextLook;
   // no banner: the world repainting itself IS the announcement, and saying so
   // out loud only got in front of the thing worth looking at
   document.body.classList.remove('lookflash'); void document.body.offsetWidth;
@@ -1746,16 +1776,16 @@ document.addEventListener('fp-lookspark', () => {
   // arrives as the colour floods back — a reveal, never a stutter
   setTimeout(() => {
     applyPreset(cfg);
+    dealNextLook();   // deal the NEXT door's look the moment this one lands
     setTimeout(() => { document.body.classList.remove('lookflash'); ring.classList.remove('go'); }, 1200);
   }, 480);
 });
 // The black hole takes the LIGHT: the world falls into its darkest look and
 // stays there. The next wonder door is the rescue — it already deals a fresh
 // bright look — so the flume plays fall and salvation off each other.
-let preDarkLook = null;
-document.addEventListener('fp-swallowed', e => {
-  const n = (e.detail && e.detail.n) || 2;
-  announce('BLACK HOLE', n + ' rings, gone', 2400, 'ember');
+let preDarkLook = null, darkBackT = null;
+document.addEventListener('fp-swallowed', () => {
+  announce('BLACK HOLE', 'the light finds its way back', 2400, 'ember');
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 750);
@@ -1764,6 +1794,15 @@ document.addEventListener('fp-swallowed', e => {
     // the fall lands as the shake ends: colours collapse into midnight
     setTimeout(() => applyPreset({ colorMode: 'midnight', pattern: settings.pattern, shape: settings.shape, hue: 250 }), 600);
   }
+  // the dark is a spell, not a sentence: eight seconds on, the light climbs
+  // back out on its own (a wonder door still cuts the wait)
+  clearTimeout(darkBackT);
+  darkBackT = setTimeout(() => {
+    if (settings.colorMode === 'midnight' && preDarkLook) {
+      applyPreset(preDarkLook);
+      preDarkLook = null;
+    }
+  }, 8000);
 });
 // the first-minute nudge: a wandering world never ASKS anything of a new
 // player — twenty quiet seconds in, once ever per world, a whisper invites

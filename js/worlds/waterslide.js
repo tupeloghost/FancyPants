@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=501';
-import { themePaint } from '../lib/themes.js?v=501';
-import { TUNE } from '../lib/tune.js?v=501';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=504';
+import { themePaint } from '../lib/themes.js?v=504';
+import { TUNE } from '../lib/tune.js?v=504';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -46,8 +46,24 @@ export function createWaterslide() {
   let sprayLife = 0;
 
   const R = 7;
-  const curveX = t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20;
-  const dropY = t => -t * DROP + Math.sin(t * 0.02) * 4;
+  // ── the flume's wardrobe: a bender ring re-bends the whole pipe. Every
+  // shape is pure sines so the morph between any two is butter. ──
+  const SHAPES = [
+    { x: t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20, y: t => Math.sin(t * 0.02) * 4 },    // the winding river
+    { x: t => Math.sin(t * 0.05) * 9 + Math.sin(t * 0.021) * 9,   y: t => Math.sin(t * 0.045) * 6 },   // corkscrew: tight and rolling
+    { x: t => Math.sin(t * 0.013) * 26,                           y: t => Math.sin(t * 0.031) * 8 },   // one giant lazy S, big swells
+    { x: t => Math.sin(t * 0.024) * 16 + Math.sin(t * 0.007) * 24, y: t => Math.sin(t * 0.012) * 10 }, // canyon: wide wander, deep breath
+  ];
+  let shapeA = 0, shapeB = 0, shapeMix = 1;
+  const curveX = t => { const a = SHAPES[shapeA].x(t), b = SHAPES[shapeB].x(t); return a + (b - a) * shapeMix; };
+  const dropY = t => { const a = SHAPES[shapeA].y(t), b = SHAPES[shapeB].y(t); return -t * DROP + (a + (b - a) * shapeMix); };
+  const bendWorld = () => {
+    shapeA = shapeMix < 1 ? shapeB : shapeA;   // never snap mid-morph
+    let next = (Math.random() * SHAPES.length) | 0;
+    if (next === shapeA) next = (next + 1) % SHAPES.length;
+    shapeB = next; shapeMix = 0;
+  };
+  let gulp = 0;   // the swallow's camera kick
 
   return {
     name: 'SLIDE',
@@ -118,18 +134,50 @@ export function createWaterslide() {
 
     setInput(x) { steerTarget = x; },
 
+    _loopGeos() {
+      if (this.__geos) return this.__geos;
+      // shape is grammar: circle = pace, star = new look, diamond = new pipe.
+      // Built from closed tubes so every loop reads as a ring, not a cutout.
+      const tube = (pts, tension) => new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3(pts.map(([x, y]) => new THREE.Vector3(x, y, 0)), true, 'catmullrom', tension),
+        72, 0.22, 8, true);
+      const star = [];
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        const rr = i % 2 ? 1.9 : 3.0;
+        star.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+      }
+      const diamond = [[0, 2.9], [2.9, 0], [0, -2.9], [-2.9, 0]];
+      this.__geos = {
+        circle: new THREE.TorusGeometry(2.6, 0.22, 10, 30),
+        star: tube(star, 0.02),
+        diamond: tube(diamond, 0.02),
+      };
+      return this.__geos;
+    },
+
     _buildHoops() {
       if (hoops.length) return;
       for (let i = 0; i < MAX_HOOPS; i++) {
         const grp = new THREE.Group();
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(2.6, 0.22, 10, 30),
+          this._loopGeos().circle,
           new THREE.MeshBasicMaterial({
             toneMapped: false, transparent: true, opacity: 0.9,
             blending: THREE.AdditiveBlending, depthWrite: false,
           })
         );
         const gl = glowSprite(7);
+        // the accretion disk: a tilted hot ring spinning around the void —
+        // only a black hole wears one
+        const disk = new THREE.Mesh(
+          new THREE.TorusGeometry(1.5, 0.09, 8, 40),
+          new THREE.MeshBasicMaterial({
+            toneMapped: false, transparent: true, opacity: 0.85,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+          })
+        );
+        disk.visible = false;
         // the void core: a black disc that eats the tube behind it — only
         // shown on hazard rings, where the torus becomes the accretion rim
         const core = new THREE.Mesh(
@@ -137,10 +185,10 @@ export function createWaterslide() {
           new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.94, side: THREE.DoubleSide })
         );
         core.visible = false;
-        grp.add(ring, gl, core);
+        grp.add(ring, gl, core, disk);
         grp.visible = false;
         group.add(grp);
-        hoops.push({ mesh: grp, ring, gl, core, alive: false, t: 0, side: 0, red: false });
+        hoops.push({ mesh: grp, ring, gl, core, disk, alive: false, t: 0, side: 0, red: false });
       }
       // catch-bursts: a golden ring blooms where you threaded a hoop
       bursts = [];
@@ -228,8 +276,13 @@ export function createWaterslide() {
             // the wonder hole: rare, never where a black hole is, and a size
             // bigger — a swirling rainbow door. Enter it and the whole world
             // changes clothes.
-            h.wonder = !h.red && (hoopCount % 22) === 13;
-            h.mesh.scale.setScalar(h.wonder ? 1.18 : 1);
+            h.wonder = !h.red && (hoopCount % 16) === 13;
+            // the bender: same rarity as the wonder door, offset half a lap —
+            // enter it and the PIPE ITSELF re-bends into a new shape
+            h.bend = !h.red && !h.wonder && (hoopCount % 16) === 5;
+            const geos = this._loopGeos();
+            h.ring.geometry = h.wonder ? geos.star : h.bend ? geos.diamond : geos.circle;
+            h.mesh.scale.setScalar(h.wonder || h.bend ? 1.18 : 1);
             h.mesh.visible = true;
           }
         }
@@ -247,28 +300,56 @@ export function createWaterslide() {
           h.mesh.rotation.y = Math.atan2(curveX(t - 6) - curveX(t + 6), 12);
           // green means through; a BLACK HOLE means around — dark core,
           // white-violet rim, slowly turning. unmistakable at speed
-          if (h.wonder) {
-            // the door: full-spectrum rim turning slow, a bright breathing
-            // heart in the middle. Reads as invitation the way the black
-            // hole reads as threat.
-            color.setHSL((time * 0.22 + t * 0.03) % 1, 0.95, 0.6 + audio.volume * 0.12);
+          if (h.bend) {
+            // soap-film lens, electric white-cyan, tumbling slow — reads as
+            // a doorway to somewhere with different walls
+            color.setHSL(0.5 + Math.sin(time * 1.7 + t) * 0.06, 0.85, 0.68 + audio.volume * 0.15);
             h.core.visible = true;
-            h.core.material.color.setHSL((time * 0.22 + 0.5) % 1, 0.6, 0.82);
+            h.core.material.opacity = 0.3;
+            h.core.material.color.setHSL(0.52, 0.7, 0.8);
+            h.core.scale.setScalar(0.9 + Math.sin(time * 1.4 + t) * 0.08);
+            h.disk.visible = false;
+            h.mesh.rotation.z = Math.sin(time * 0.8) * 0.7;
+            h.gl.material.opacity = 0.45 + audio.volume * 0.3;
+          } else if (h.wonder) {
+            // the star door wears the NEXT look's own color — the rim is the
+            // preview. A rainbow destination gets the full-spectrum rim.
+            const nl = window.__nextLook;
+            if (nl && nl.colorMode !== 'rainbow') {
+              const nh = nl.hue / 360;
+              color.setHSL(nh, 0.92, 0.55 + Math.sin(time * 2.6 + t) * 0.08 + audio.volume * 0.12);
+              h.core.material.color.setHSL(nh, 0.65, 0.82);
+            } else {
+              color.setHSL((time * 0.22 + t * 0.03) % 1, 0.95, 0.6 + audio.volume * 0.12);
+              h.core.material.color.setHSL((time * 0.22 + 0.5) % 1, 0.6, 0.82);
+            }
+            h.core.visible = true;
+            h.core.material.opacity = 0.94;
+            h.disk.visible = false;
             h.core.scale.setScalar(0.55 + Math.sin(time * 2.2 + t) * 0.12);
-            h.mesh.rotation.z = -time * 0.9;
+            h.mesh.rotation.z = -time * 0.55;
             h.gl.material.opacity = 0.5 + audio.volume * 0.3;
           } else if (h.red) {
             // ember accretion rim, flickering like it's feeding
             const flicker = Math.max(0, Math.sin(time * 13 + t * 7)) * 0.18 + audio.bass * 0.15;
-            color.setHSL(0.04, 0.95, 0.42 + flicker);
+            // the closer you get, the harder it feeds: rim spins up, the
+            // disk glows white-hot, the void itself swells
+            const feed = Math.min(1, Math.max(0, 1 - (t - travel) / 46));
+            color.setHSL(0.04, 0.95, 0.42 + flicker + feed * 0.1);
             h.core.visible = true;
+            h.core.material.opacity = 0.94;
             h.core.material.color.setHSL(0, 0, 0.02);
-            h.core.scale.setScalar(1 + Math.sin(time * 3 + t) * 0.08);
-            h.mesh.rotation.z = time * 1.6;
-            h.gl.material.opacity = 0.05;
+            h.core.scale.setScalar((1 + Math.sin(time * 3 + t) * 0.08) * (1 + feed * 0.35));
+            h.disk.visible = true;
+            h.disk.rotation.set(1.25, time * 0.35, time * 4.2);
+            h.disk.scale.setScalar(1 + feed * 0.5 + audio.bass * 0.2);
+            h.disk.material.color.setHSL(0.06 + feed * 0.05, 1, 0.45 + feed * 0.3 + flicker);
+            h.mesh.rotation.z = time * (1.6 + feed * 3.4);
+            h.gl.material.opacity = 0.1 + feed * 0.3;
           } else {
             color.setHSL(0.36, 0.95, 0.5 + Math.sin(time * 5 + t) * 0.08 + audio.volume * 0.12);
             h.core.visible = false;
+            h.disk.visible = false;
             h.gl.material.opacity = 0.3 + audio.volume * 0.25;
           }
           h.ring.material.color.copy(color);
@@ -279,7 +360,25 @@ export function createWaterslide() {
             const gap = Math.abs(h.side - steer);
             const through = gap < 0.42;
             const flooring = wThrottle > 0.6;
-            if (through && h.wonder) {
+            if (through && h.bend) {
+              // through the lens: the pipe re-bends under everyone at once
+              race.collect(2);
+              hoopBoost = 1;
+              gulp = Math.max(gulp, 0.5);
+              if (opts.impact) opts.impact(0.6);
+              bendWorld();
+              let ci = 0;
+              for (const b of bursts) {
+                if (b.visible || ci >= 3) continue;
+                ci++;
+                b.visible = true;
+                b.userData.life = 1 + ci * 0.2;
+                b.userData.inward = false;
+                b.material.color.setHSL(0.52, 0.8, 0.72);
+                b.position.copy(h.mesh.position);
+                b.rotation.copy(h.mesh.rotation);
+              }
+            } else if (through && h.wonder) {
               // through the door: the whole world repaints (the same
               // ceremony a rainbow spark earns in surfer), and the ride pays
               race.collect(3);
@@ -298,13 +397,11 @@ export function createWaterslide() {
                 b.rotation.copy(h.mesh.rotation);
               }
             } else if (through && h.red) {
-              // SWALLOWED: the void takes rings, speed, and a full second —
-              // and everyone gets to feel it
-              race.drop(flooring ? 3 : 2);
-              hoopBoost = 0;
-              wStun = flooring ? 1.2 : 0.5; wThrottle *= 0.2;
+              // SWALLOWED: no toll, no stun — the void's only price is the
+              // LIGHT. The world goes black for a spell and that IS the event.
+              gulp = 1;   // the lens lurches — being eaten is a full-body event
               if (opts.impact) opts.impact(1.0);
-              document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: flooring ? 3 : 2 } }));
+              document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } }));
               // shockrings collapse INTO the hole — violet, staggered
               let bi = 0;
               for (const b of bursts) {
@@ -351,6 +448,9 @@ export function createWaterslide() {
         travel += speed * dt;
       }
 
+      if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.45);
+      gulp *= Math.pow(0.05, dt);
+
       if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
       steer += (steerTarget - steer) * Math.min(1, dt * 9);   // snappy — the tube answers the hand
       if (participants && participants[0]) {
@@ -362,7 +462,7 @@ export function createWaterslide() {
       const ahead = curveX(travel + 30) - curveX(travel);
       const bank = ahead * 0.03 + steer * 0.35;
       // the lens widens as the throttle opens — speed you can SEE
-      camera.fov += ((76 + wThrottle * 14 + boost * 4) - camera.fov) * Math.min(1, dt * 4);
+      camera.fov += ((76 + wThrottle * 14 + boost * 4 + gulp * 24) - camera.fov) * Math.min(1, dt * 4);
 
       // camera rides low in the flume
       camera.position.set(
@@ -371,7 +471,7 @@ export function createWaterslide() {
         -travel
       );
       camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6, -(travel + 34));
-      camera.rotation.z += -bank;
+      camera.rotation.z += -bank + Math.sin(time * 34) * 0.06 * gulp;
 
       for (const b of bursts) {
         if (!b.visible) continue;
@@ -470,7 +570,7 @@ export function createWaterslide() {
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
       sky.material.color.setHSL(tp[0], tp[1] * 0.5, 0.24 + audio.energy * 0.15);
 
-      const fovT = 76 + speed * 0.16 + boost * 10;
+      const fovT = 76 + speed * 0.16 + boost * 10 + gulp * 24;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
     },
