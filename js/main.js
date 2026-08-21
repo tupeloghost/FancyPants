@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=504';
-import { drawQR } from './lib/qr.js?v=504';
-import { WORLDS } from './worlds/registry.js?v=504';
-import { Net, PALETTE } from './net.js?v=504';
-import { Presence } from './lib/presence.js?v=504';
-import { Pulses } from './lib/pulse.js?v=504';
-import { BeatClock } from './lib/beatclock.js?v=504';
-import { BeatCue } from './lib/beatcue.js?v=504';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=504';
-import { Race, placeOf, standings } from './lib/race.js?v=504';
-import { Signals } from './lib/signals.js?v=504';
-import { pickShareLine, loadLines } from './lib/lines.js?v=504';
-import { RouteMap } from './lib/map.js?v=504';
-import * as sfx from './lib/sfx.js?v=504';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=504';
-import { glowTexture } from './lib/glow.js?v=504';
+import { AudioEngine } from './audio-engine.js?v=505';
+import { drawQR } from './lib/qr.js?v=505';
+import { WORLDS } from './worlds/registry.js?v=505';
+import { Net, PALETTE } from './net.js?v=505';
+import { Presence } from './lib/presence.js?v=505';
+import { Pulses } from './lib/pulse.js?v=505';
+import { BeatClock } from './lib/beatclock.js?v=505';
+import { BeatCue } from './lib/beatcue.js?v=505';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=505';
+import { Race, placeOf, standings } from './lib/race.js?v=505';
+import { Signals } from './lib/signals.js?v=505';
+import { pickShareLine, loadLines } from './lib/lines.js?v=505';
+import { RouteMap } from './lib/map.js?v=505';
+import * as sfx from './lib/sfx.js?v=505';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=505';
+import { glowTexture } from './lib/glow.js?v=505';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1794,7 +1794,7 @@ document.addEventListener('fp-swallowed', () => {
     // the fall lands as the shake ends: colours collapse into midnight
     setTimeout(() => applyPreset({ colorMode: 'midnight', pattern: settings.pattern, shape: settings.shape, hue: 250 }), 600);
   }
-  // the dark is a spell, not a sentence: eight seconds on, the light climbs
+  // the dark is a spell, not a sentence: sixteen seconds on, the light climbs
   // back out on its own (a wonder door still cuts the wait)
   clearTimeout(darkBackT);
   darkBackT = setTimeout(() => {
@@ -1802,7 +1802,7 @@ document.addEventListener('fp-swallowed', () => {
       applyPreset(preDarkLook);
       preDarkLook = null;
     }
-  }, 8000);
+  }, 16000);
 });
 // the first-minute nudge: a wandering world never ASKS anything of a new
 // player — twenty quiet seconds in, once ever per world, a whisper invites

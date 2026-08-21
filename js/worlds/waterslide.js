@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=504';
-import { themePaint } from '../lib/themes.js?v=504';
-import { TUNE } from '../lib/tune.js?v=504';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=505';
+import { themePaint } from '../lib/themes.js?v=505';
+import { TUNE } from '../lib/tune.js?v=505';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -48,15 +48,21 @@ export function createWaterslide() {
   const R = 7;
   // ── the flume's wardrobe: a bender ring re-bends the whole pipe. Every
   // shape is pure sines so the morph between any two is butter. ──
+  // each shape carries its own STEEPNESS too — a new pipe should feel like
+  // a different ride, not a different wallpaper
   const SHAPES = [
-    { x: t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20, y: t => Math.sin(t * 0.02) * 4 },    // the winding river
-    { x: t => Math.sin(t * 0.05) * 9 + Math.sin(t * 0.021) * 9,   y: t => Math.sin(t * 0.045) * 6 },   // corkscrew: tight and rolling
-    { x: t => Math.sin(t * 0.013) * 26,                           y: t => Math.sin(t * 0.031) * 8 },   // one giant lazy S, big swells
-    { x: t => Math.sin(t * 0.024) * 16 + Math.sin(t * 0.007) * 24, y: t => Math.sin(t * 0.012) * 10 }, // canyon: wide wander, deep breath
+    { slope: 1,    x: t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20, y: t => Math.sin(t * 0.02) * 4 },   // the winding river
+    { slope: 1.5,  x: t => Math.sin(t * 0.07) * 11,                            y: t => Math.sin(t * 0.05) * 7 },   // corkscrew: tight, fast, steep
+    { slope: 0.55, x: t => Math.sin(t * 0.008) * 34,                           y: t => Math.sin(t * 0.03) * 10 },  // one giant lazy S, a near-flat glide
+    { slope: 1.15, x: t => Math.sin(t * 0.04) * 28 + Math.sin(t * 0.013) * 10, y: t => Math.sin(t * 0.012) * 12 },// switchback canyon, wide and deep
   ];
   let shapeA = 0, shapeB = 0, shapeMix = 1;
   const curveX = t => { const a = SHAPES[shapeA].x(t), b = SHAPES[shapeB].x(t); return a + (b - a) * shapeMix; };
-  const dropY = t => { const a = SHAPES[shapeA].y(t), b = SHAPES[shapeB].y(t); return -t * DROP + (a + (b - a) * shapeMix); };
+  const dropY = t => {
+    const A = SHAPES[shapeA], B = SHAPES[shapeB];
+    const slope = A.slope + (B.slope - A.slope) * shapeMix;
+    return -t * DROP * slope + A.y(t) + (B.y(t) - A.y(t)) * shapeMix;
+  };
   const bendWorld = () => {
     shapeA = shapeMix < 1 ? shapeB : shapeA;   // never snap mid-morph
     let next = (Math.random() * SHAPES.length) | 0;
