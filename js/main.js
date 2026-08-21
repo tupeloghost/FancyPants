@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=500';
-import { drawQR } from './lib/qr.js?v=500';
-import { WORLDS } from './worlds/registry.js?v=500';
-import { Net, PALETTE } from './net.js?v=500';
-import { Presence } from './lib/presence.js?v=500';
-import { Pulses } from './lib/pulse.js?v=500';
-import { BeatClock } from './lib/beatclock.js?v=500';
-import { BeatCue } from './lib/beatcue.js?v=500';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=500';
-import { Race, placeOf, standings } from './lib/race.js?v=500';
-import { Signals } from './lib/signals.js?v=500';
-import { pickShareLine, loadLines } from './lib/lines.js?v=500';
-import { RouteMap } from './lib/map.js?v=500';
-import * as sfx from './lib/sfx.js?v=500';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=500';
-import { glowTexture } from './lib/glow.js?v=500';
+import { AudioEngine } from './audio-engine.js?v=501';
+import { drawQR } from './lib/qr.js?v=501';
+import { WORLDS } from './worlds/registry.js?v=501';
+import { Net, PALETTE } from './net.js?v=501';
+import { Presence } from './lib/presence.js?v=501';
+import { Pulses } from './lib/pulse.js?v=501';
+import { BeatClock } from './lib/beatclock.js?v=501';
+import { BeatCue } from './lib/beatcue.js?v=501';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=501';
+import { Race, placeOf, standings } from './lib/race.js?v=501';
+import { Signals } from './lib/signals.js?v=501';
+import { pickShareLine, loadLines } from './lib/lines.js?v=501';
+import { RouteMap } from './lib/map.js?v=501';
+import * as sfx from './lib/sfx.js?v=501';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=501';
+import { glowTexture } from './lib/glow.js?v=501';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -401,7 +401,7 @@ window.__pickerInit = () => {
   (window.__GRADUATED || []).forEach(k => mk(k, 'alum'));
   const cap = document.createElement('div');
   cap.id = 'wchip-cap';
-  cap.textContent = '\u2605 this week\u2019s special: a new world joins the library every monday';
+  cap.textContent = '\u2605 sunday\u2019s best: a brand-new world joins the library every sunday';
   chips.parentElement.insertBefore(cap, chips.nextSibling);
 };
 for (const [key, w] of Object.entries(WORLDS)) {
@@ -3272,8 +3272,8 @@ function shareThis() {
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
     // their song outside the free three: the rope — and no link goes out
-    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
+    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 ' + WORLDS[WEEK_WORLD].label
+      + ' (SUNDAY\u2019S BEST). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
@@ -3294,8 +3294,8 @@ function shareThis() {
 }
 $('rb-share').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
+    ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 ' + WORLDS[WEEK_WORLD].label
+      + ' (SUNDAY\u2019S BEST). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   }
   openShareCard();
@@ -3678,7 +3678,7 @@ function deliverClip() {
 }
 $('rb-clip').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
+    ropeGate('CLIPS RIDE TUNNEL \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (SUNDAY\u2019S BEST). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   }
   if (!clipSaved) {
@@ -4372,24 +4372,22 @@ $('btn-host-promote').addEventListener('click', () => {
 // ── the artist door: paste and share all you want. Your song rides
 // three worlds free; the other fourteen play the house catalog — the
 // demo IS her music, and every share is marketing ──
-// ── the showcase pair and the world of the week ──
-// FEATURED: the front-porch worlds, always up top in the picker.
-// The week world rotates through everything EXCEPT the featured pair
-// (they're always around — the guest spot belongs to the others), anchored
-// so week 2953 = SLIDE and it advances every Monday from there.
-const FEATURED = ['tunnel', 'surfer'];
-// The schedule starts the week of Monday, Aug 17 2026, with SLIDE. Every
-// world that has finished its week GRADUATES: it joins the library for good,
-// so the menu grows by one world every Monday until all seventeen are home.
-// Weeks turn on MONDAYS (epoch shifted 4 days — raw epoch weeks flip on
-// thursdays, which is nobody's menu day).
+// ── the flagship and Sunday's best ──
+// FEATURED: the front-porch world, always up top in the picker. Everything
+// else takes turns as SUNDAY'S BEST — a new world every Sunday, starting
+// launch Sunday (Aug 23 2026) with SLIDE, then SURFER the week after.
+const FEATURED = ['tunnel'];
+// Every world that has finished its Sunday GRADUATES: it joins the library
+// for good, so the menu grows by one world a week — two worlds at launch,
+// nobody drowning in options on day one.
+// Weeks turn on SUNDAYS (epoch shifted 3 days — raw epoch weeks flip on
+// thursdays, which is nobody's church day).
 const WEEK_POOL = (() => {
-  const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k)).sort();
-  const i = pool.indexOf('slide');           // slide leads the parade
-  return [...pool.slice(i), ...pool.slice(0, i)];
+  const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer').sort();
+  return ['slide', 'surfer', ...pool];
 })();
-const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 17) - 4 * 86400000) / 604800000);
-const WEEKS_IN = Math.max(0, Math.floor((Date.now() - 4 * 86400000) / 604800000) - LAUNCH_WEEK);
+const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 23) - 3 * 86400000) / 604800000);
+const WEEKS_IN = Math.max(0, Math.floor((Date.now() - 3 * 86400000) / 604800000) - LAUNCH_WEEK);
 const WEEK_WORLD = WEEK_POOL[WEEKS_IN % WEEK_POOL.length];
 // the alumni: every special whose week is over, permanent residents now
 const GRADUATED = WEEK_POOL.slice(0, Math.min(WEEKS_IN, WEEK_POOL.length))
@@ -4447,7 +4445,7 @@ function togglePromote() {
       b.className = 'pr-opt';
       b.dataset.key = k;
       b.innerHTML = '<img class="pr-thumb" src="previews/' + k + '.jpg" alt="">'
-        + '<span><b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 THIS WEEK\u2019S SPECIAL' : '') + '</b>'
+        + '<span><b>' + WORLDS[k].label + (k === WEEK_WORLD ? ' \u2605 SUNDAY\u2019S BEST' : '') + '</b>'
         + '<em>' + (WORLD_BLURBS[k] || WORLDS[k].goal || '') + '</em></span>';
       b.addEventListener('click', () => {
         prWorldPick = k;
@@ -4484,7 +4482,7 @@ $('pr-go').addEventListener('click', () => {
   if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
   openArtistDoor(raw);
   $('promote-form').classList.add('hidden');
-  $('suno-rights').textContent = 'play it in every world, on the house. share from TUNNEL, SURFER, or this week\u2019s special: ' + WORLDS[WEEK_WORLD].label;
+  $('suno-rights').textContent = 'play it in every world, on the house. share from TUNNEL or this sunday\u2019s best: ' + WORLDS[WEEK_WORLD].label;
 });
 // the mp3 route remembers the chosen world and rides the same file input
 $('pr-file').addEventListener('click', () => {
@@ -4864,7 +4862,7 @@ if (params.get('dev') === '1') (function devPanel() {
   const status = mk('div', 'color:#8d87b5;line-height:1.5;border-top:1px solid rgba(255,255,255,0.1);padding-top:7px;');
   const ver = document.querySelector('script[src*="main.js"]')?.src.match(/v=(\d+)/)?.[1] || '?';
   setInterval(() => {
-    status.textContent = 'v' + ver + ' \u00b7 this week\u2019s special: ' + WORLDS[WEEK_WORLD].label
+    status.textContent = 'v' + ver + ' \u00b7 sunday\u2019s best: ' + WORLDS[WEEK_WORLD].label
       + (devErrors.length ? '\n\u26a0 ' + devErrors[devErrors.length - 1] : '');
   }, 2000);
   body.appendChild(status);

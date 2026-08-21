@@ -592,16 +592,15 @@ export default {
 
     // /thisweek — wherever the special is right now
     if (url.pathname === '/thisweek') {
-      const FEATURED = ['tunnel', 'surfer'];
+      const FEATURED = ['tunnel'];
       const ALL = ['blacktop', 'bloom', 'cherry', 'comets', 'funhouse', 'garden', 'lava',
                    'orbit', 'paint', 'plasma', 'river', 'signal', 'slide', 'slinky',
                    'surfer', 'trail', 'tunnel'];
-      const pool = ALL.filter(k => !FEATURED.includes(k)).sort();
-      // slide leads the parade from the week of Mon Aug 17 2026 (matches client)
-      const i = pool.indexOf('slide');
-      const rot = [...pool.slice(i), ...pool.slice(0, i)];
-      const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 17) - 4 * 86400000) / 604800000);
-      const weeksIn = Math.max(0, Math.floor((Date.now() - 4 * 86400000) / 604800000) - LAUNCH_WEEK);
+      // sunday's best: slide leads from launch Sunday Aug 23 2026, surfer next (matches client)
+      const pool = ALL.filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer').sort();
+      const rot = ['slide', 'surfer', ...pool];
+      const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 23) - 3 * 86400000) / 604800000);
+      const weeksIn = Math.max(0, Math.floor((Date.now() - 3 * 86400000) / 604800000) - LAUNCH_WEEK);
       const wk = rot[weeksIn % rot.length];
       return Response.redirect(SITE_URL + '?world=' + wk, 302);
     }
