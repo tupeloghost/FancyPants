@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=508';
+import { glowTexture } from '../lib/glow.js?v=509';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -35,6 +35,9 @@ export function createTunnel() {
   const sparkAngle = new Float32Array(SPARKS);
   const sparkDepth = new Float32Array(SPARKS);
   let meteors = [];          // shooting stars
+  // ── the look door ── a star loop drifting in the tube, rim tinted with
+  // the NEXT look (the preview). Thread it and the world changes clothes.
+  let door = null, doorZ = 0, doorOn = false, doorNextAt = 500, doorPop = 0;
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -207,6 +210,30 @@ export function createTunnel() {
         meteors.push(m);
       }
 
+      {
+        const pts = [];
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+          const rr = i % 2 ? 1.5 : 2.4;
+          pts.push(new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr, 0));
+        }
+        const starGeo = new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.02), 72, 0.16, 8, true);
+        door = new THREE.Group();
+        const rim = new THREE.Mesh(starGeo, new THREE.MeshBasicMaterial({
+          toneMapped: false, transparent: true, opacity: 0.95,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }));
+        const heart = new THREE.Mesh(new THREE.CircleGeometry(1.6, 24),
+          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3, side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+        door.add(rim, heart);
+        door.userData = { rim, heart };
+        door.visible = false;
+        group.add(door);
+      }
+      doorOn = false; doorNextAt = 500; doorPop = 0;
+
       travel = 0;
       camera.position.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
@@ -254,6 +281,53 @@ export function createTunnel() {
       }
       steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 4);
       steer.y += (steerTarget.y - steer.y) * Math.min(1, dt * 4);
+
+      // ── the look door rides the tube toward you ──
+      if (!doorOn && travel > doorNextAt) {
+        doorOn = true;
+        doorZ = -150;
+        const a = Math.random() * Math.PI * 2;
+        door.userData.dx = Math.cos(a) * 2.2;
+        door.userData.dy = Math.sin(a) * 1.6;
+        door.visible = true;
+      }
+      if (doorOn) {
+        doorZ += speed * dt;
+        const zc = doorZ;
+        const cx = Math.sin((travel - zc) * 0.02) * 3 + Math.sin((travel - zc) * 0.007) * 5 - curveX;
+        const cy = Math.cos((travel - zc) * 0.016) * 2.2 - curveY;
+        door.position.set(cx + door.userData.dx, cy + door.userData.dy, zc);
+        door.rotation.z = -time * 0.55;
+        const nl = window.__nextLook;
+        const spectral = !nl || nl.colorMode === 'rainbow' || nl.colorMode === 'cycle' || nl.colorMode === 'random';
+        if (spectral) color.setHSL((time * 0.22) % 1, 0.95, 0.6 + audio.volume * 0.12);
+        else color.setHSL(nl.hue / 360, 0.92, 0.55 + Math.sin(time * 2.6) * 0.08 + audio.volume * 0.12);
+        door.userData.rim.material.color.copy(color);
+        door.userData.heart.material.color.copy(color);
+        door.userData.heart.material.opacity = 0.22 + Math.sin(time * 2.2) * 0.08 + audio.volume * 0.15;
+        const pulse = 1 + Math.sin(time * 2.4) * 0.05;
+        door.scale.setScalar(pulse * (doorPop > 0 ? 1 + (1 - doorPop) * 0 : 1));
+        if (doorZ > -0.5) {
+          const px = steer.x * 3.2, py = steer.y * 2.4;
+          const hit = Math.hypot(door.position.x - px, door.position.y - py) < 2.6;
+          if (hit) {
+            document.dispatchEvent(new CustomEvent('fp-lookspark'));
+            if (opts.impact) opts.impact(0.7);
+            doorPop = 1;
+          }
+          doorOn = false;
+          if (!hit) door.visible = false;
+          doorNextAt = travel + 650 + Math.random() * 500;
+        }
+      } else if (doorPop > 0) {
+        // the pop: the door blooms open around you as the new look floods in
+        doorPop = Math.max(0, doorPop - dt * 1.6);
+        door.position.z = 1.5;
+        door.scale.setScalar(1 + (1 - doorPop) * 5);
+        door.userData.rim.material.opacity = doorPop * 0.95;
+        door.userData.heart.material.opacity = 0;
+        if (doorPop === 0) { door.visible = false; door.userData.rim.material.opacity = 0.95; }
+      }
 
       const baseRadius = 6;
       const radius = baseRadius * (1 + audio.bass * 0.5 * reactivity + audio.beatIntensity * 0.25 * reactivity);
