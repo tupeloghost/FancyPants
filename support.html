@@ -43,7 +43,12 @@
   }
   .give:hover { background: rgba(120, 150, 255, 0.3); transform: translateY(-1px); }
   .give[aria-disabled="true"] { opacity: 0.55; pointer-events: none; }
-  .tipjar .small { display: block; margin-top: 14px; }
+  .biscuit {
+    display: block; margin-top: 10px;
+    font: italic 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1px; color: #c9c2e8;
+  }
+  .tipjar .small { display: block; margin-top: 12px; }
   footer { max-width: 620px; margin: 0 auto; padding: 0 24px 90px; }
   .note { max-width: 560px; margin: 30px auto 0; font: 13px/1.7 Georgia, serif; color: #b9b3d0; text-align: center; }
 
@@ -112,6 +117,7 @@
   <div class="tipjar">
     <!-- when the donation link is live, put the URL in href and drop the aria-disabled line -->
     <a class="give" href="#" aria-disabled="true">SUPPORT THE DEVELOPER</a>
+    <span class="biscuit">(butter my biscuit)</span>
     <span class="small">the tip jar opens soon. every dollar goes to one person, not a company.</span>
   </div>
 
