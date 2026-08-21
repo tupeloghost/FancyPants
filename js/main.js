@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=477';
-import { drawQR } from './lib/qr.js?v=477';
-import { WORLDS } from './worlds/registry.js?v=477';
-import { Net, PALETTE } from './net.js?v=477';
-import { Presence } from './lib/presence.js?v=477';
-import { Pulses } from './lib/pulse.js?v=477';
-import { BeatClock } from './lib/beatclock.js?v=477';
-import { BeatCue } from './lib/beatcue.js?v=477';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=477';
-import { Race, placeOf, standings } from './lib/race.js?v=477';
-import { Signals } from './lib/signals.js?v=477';
-import { pickShareLine, loadLines } from './lib/lines.js?v=477';
-import { RouteMap } from './lib/map.js?v=477';
-import * as sfx from './lib/sfx.js?v=477';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=477';
-import { glowTexture } from './lib/glow.js?v=477';
+import { AudioEngine } from './audio-engine.js?v=480';
+import { drawQR } from './lib/qr.js?v=480';
+import { WORLDS } from './worlds/registry.js?v=480';
+import { Net, PALETTE } from './net.js?v=480';
+import { Presence } from './lib/presence.js?v=480';
+import { Pulses } from './lib/pulse.js?v=480';
+import { BeatClock } from './lib/beatclock.js?v=480';
+import { BeatCue } from './lib/beatcue.js?v=480';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=480';
+import { Race, placeOf, standings } from './lib/race.js?v=480';
+import { Signals } from './lib/signals.js?v=480';
+import { pickShareLine, loadLines } from './lib/lines.js?v=480';
+import { RouteMap } from './lib/map.js?v=480';
+import * as sfx from './lib/sfx.js?v=480';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=480';
+import { glowTexture } from './lib/glow.js?v=480';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -936,7 +936,20 @@ audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 // when a track runs out, roll straight into the next one — unless a toy
 // round is on: those END, with a tally and a share moment, like a real round
 audio.el.addEventListener('ended', () => {
-  if (toyRound) { showToyResults(); return; }
+  if (toyRound) {
+    if (chillRoll && !setList && !document.body.classList.contains('guest')) {
+      // lean-back: the run still goes in the ledger, but no card interrupts —
+      // the next song starts itself, in the next world if the drift is on
+      const gained = Math.max(0, score - toyRound.score0);
+      recordRun(runMeta('toy', { pointsGained: gained }));
+      toyRound = null;
+      clipBufStop(true);
+      if (chillWander) driftWorld();
+      playAuto(true);
+      return;
+    }
+    showToyResults(); return;
+  }
   // a free round's results card is a question, and questions wait — rolling
   // to the next song here buried the card under the next round's intro
   if (!setList && !resultsShown) playAuto(true);
@@ -2322,6 +2335,47 @@ window.__setFigure = (name, done, total) => {
 
 // ── World intro: name + the one line that explains the whole game ──
 let introTimer = 0;
+// ── the tutor ── eight seconds of the ghost hand playing the world: it
+// sweeps like a finger steering and squeezes on its taps, driving the real
+// inputs, so what the player sees is exactly what their own hand would do.
+let demoRunning = false, demoTapIv = null;
+function runWorldDemo() {
+  if (demoRunning || !world) return;
+  demoRunning = true;
+  const hand = $('demo-hand');
+  hand.classList.remove('hidden');
+  $('show-me').classList.add('hidden');
+  const t0 = performance.now(), D = 8000;
+  (function frame(now) {
+    if (!demoRunning) return;
+    const t = (now - t0) / 1000;
+    if (now - t0 > D) {
+      demoRunning = false;
+      hand.classList.add('hidden');
+      clearInterval(demoTapIv);
+      if (world && world.setInput) world.setInput(0);
+      return;
+    }
+    const x = Math.sin(t * 0.85) * 0.72;             // an easy figure of steering
+    const px = innerWidth * (0.5 + x * 0.33);
+    const py = innerHeight * 0.60 + Math.sin(t * 1.6) * innerHeight * 0.05;
+    hand.style.transform = `translate(${px}px, ${py}px)`;
+    if (world && world.setInput) world.setInput(x);
+    requestAnimationFrame(frame);
+  })(t0);
+  demoTapIv = setInterval(() => {
+    if (!demoRunning) { clearInterval(demoTapIv); return; }
+    const hand2 = $('demo-hand');
+    hand2.classList.remove('tapping'); void hand2.offsetWidth;
+    hand2.classList.add('tapping');
+    if (world && world.onTap) world.onTap();
+  }, 1700);
+  // a real touch takes the wheel back instantly — the tutor never wrestles
+  const stop = () => { demoRunning = false; };
+  window.addEventListener('pointerdown', stop, { once: true });
+}
+$('show-me').addEventListener('click', e => { e.stopPropagation(); runWorldDemo(); });
+
 function showWorldIntro(key) {
   const w = WORLDS[key];
   if (!w) return;
@@ -2336,6 +2390,11 @@ function showWorldIntro(key) {
   $('intro-name').textContent = w.label;
   $('intro-goal').textContent = w.goal || '';
   el.classList.toggle('long', (w.label || '').length > 10);
+  // "show me" appears where showing helps: a world you steer or tap, watched
+  // by somebody who is actually playing (never in lean-back, never a guest)
+  const teachable = (world && (world.setInput || world.onTap)) && !w.rhythm
+    && !chillRoll && !document.body.classList.contains('guest');
+  $('show-me').classList.toggle('hidden', !teachable);
   el.classList.remove('gone');
   clearTimeout(introTimer);
   // hold time scales with how much there is to read (~65ms a character,
@@ -2743,6 +2802,42 @@ function askMode() {
   askMode._tries = 0;
   $('mode-card').classList.add('show');
 }
+// ── lean back ── two switches for the watchers: NONSTOP keeps the songs
+// rolling with no card asking anything between them, and DRIFT walks to the
+// next wandering world each time a song ends. Off, everything works the way
+// a player expects. Both stick per device.
+let chillRoll = localStorage.getItem('fp_roll') === '1';
+let chillWander = localStorage.getItem('fp_wander') === '1';
+function syncChillUI() {
+  const r = document.getElementById('mc-roll'), w = document.getElementById('mc-wander');
+  if (r) r.classList.toggle('on', chillRoll);
+  if (w) w.classList.toggle('on', chillWander);
+}
+document.getElementById('mc-roll').addEventListener('click', e => {
+  e.stopPropagation();
+  chillRoll = !chillRoll;
+  localStorage.setItem('fp_roll', chillRoll ? '1' : '');
+  syncChillUI();
+});
+document.getElementById('mc-wander').addEventListener('click', e => {
+  e.stopPropagation();
+  chillWander = !chillWander;
+  // drifting implies rolling: you cannot wander if every song ends on a question
+  if (chillWander && !chillRoll) { chillRoll = true; localStorage.setItem('fp_roll', '1'); }
+  localStorage.setItem('fp_wander', chillWander ? '1' : '');
+  syncChillUI();
+});
+syncChillUI();
+
+// the next wandering world in the ring: rounds ask things of you, so the
+// drift only visits worlds that don't
+function driftWorld() {
+  const ring = openWorlds().filter(k => !WORLDS[k].rhythm);
+  if (ring.length < 2) return;
+  const i = ring.indexOf(currentWorldKey);
+  switchWorld(ring[(i + 1 + ring.length) % ring.length]);
+}
+
 // the flavour choice, wherever it appears
 for (const [id, on] of [['am-instr', false], ['am-vocals', true], ['mc-instr', false], ['mc-vocals', true]]) {
   const el = document.getElementById(id);

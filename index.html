@@ -555,6 +555,36 @@
   /* ── The annunciator ── the big moments get a title card, not a popup.
      Hairlines draw outward from center, the title tracks in like a film
      credit, everything leaves as quietly as it came. */
+  /* ── the ghost hand ── */
+  #demo-hand {
+    position: fixed; z-index: 94; left: 0; top: 0; pointer-events: none;
+    width: 52px; height: 52px; margin: -26px 0 0 -26px;
+    transition: opacity 400ms ease;
+  }
+  #demo-hand.hidden { opacity: 0; }
+  #demo-hand i {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid hsla(var(--accent-h), 90%, 80%, 0.9);
+    background: radial-gradient(circle, hsla(var(--accent-h), 90%, 75%, 0.35), transparent 65%);
+    box-shadow: 0 0 24px hsla(var(--accent-h), 90%, 65%, 0.7);
+  }
+  #demo-hand.tapping i { animation: demotap 500ms ease-out; }
+  @keyframes demotap {
+    0% { transform: scale(1); }
+    30% { transform: scale(0.55); box-shadow: 0 0 48px hsla(var(--accent-h), 95%, 70%, 1); }
+    100% { transform: scale(1); }
+  }
+  #show-me {
+    margin-top: 14px; padding: 9px 22px; cursor: pointer; pointer-events: auto;
+    border-radius: 999px; border: 1px solid hsla(var(--accent-h), 75%, 70%, 0.45);
+    background: hsla(var(--accent-h), 70%, 55%, 0.14);
+    font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
+    color: hsl(var(--accent-h), 45%, 90%);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  #show-me:hover { background: hsla(var(--accent-h), 80%, 60%, 0.28); border-color: hsla(var(--accent-h), 85%, 75%, 0.7); }
+  #show-me.hidden { display: none; }
+
   #annc {
     /* above the panel — THE DROP does not hide behind a settings sheet */
     position: fixed; z-index: 120; left: 0; right: 0; top: 62%;
@@ -1373,6 +1403,16 @@
 
   /* the side doors: findable, never in the way */
   /* the two-flavour picker: one control, two homes */
+  /* the chill chips: independent switches, lit when on */
+  .chill-row { display: flex; gap: 7px; margin: 9px auto 2px; max-width: 360px; }
+  .chip {
+    flex: 1; padding: 9px 6px; cursor: pointer; border-radius: 999px;
+    border: 1px solid var(--accent-line); background: transparent;
+    font: 10px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint);
+    white-space: nowrap; transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+  .chip:hover { color: var(--ink); }
+  .chip.on { background: var(--accent-soft); color: var(--ink); border-color: hsla(var(--accent-h),80%,70%,0.55); }
   .am-pick { display: flex; gap: 0; margin: 11px auto 2px; border-radius: 999px; overflow: hidden;
              border: 1px solid var(--accent-line); max-width: 320px; }
   .am-pick button {
@@ -2269,7 +2309,11 @@
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
 <div id="zoom-badge"></div>
 
-<div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
+<div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span>
+  <button id="show-me" class="hidden">&#9655; show me</button></div>
+<!-- the tutor: a ghost hand that plays the world for a few seconds so the
+     verb is SEEN, not read. Summoned by "show me", never forced. -->
+<div id="demo-hand" class="hidden"><i></i></div>
 
 
 <div id="promo-pill" class="hidden"><i>&#9834;</i><span id="promo-pill-text"></span></div>
@@ -2374,9 +2418,14 @@
         <div class="am-pick" onclick="event.stopPropagation()">
           <button id="mc-instr" class="on">INSTRUMENTAL</button><button id="mc-vocals">WITH VOCALS</button>
         </div>
+        <!-- the lean-back switches: for the folks who want to watch, not steer -->
+        <div class="chill-row" onclick="event.stopPropagation()">
+          <button id="mc-roll" class="chip">&#9834; NONSTOP SONGS</button>
+          <button id="mc-wander" class="chip">&#9670; DRIFT BETWEEN WORLDS</button>
+        </div>
       </div>
       <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round each.</em></div>
-      <div class="mode-opt" id="opt-promote"><b>PROMOTE MY SONG</b><em>pick its world, share the link.</em></div>
+      <div class="mode-opt" id="opt-promote"><b>PROMOTE YOUR SONG</b><em>pick its world, share the link.</em></div>
     </div>
     <button id="mc-host">OPEN A ROOM</button>
     <!-- Hosting splits in two, and only here: going live now is the old
@@ -2635,7 +2684,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 477</div>
+      <div id="build-stamp">build 480</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2677,6 +2726,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=477"></script>
+<script type="module" src="js/main.js?v=480"></script>
 </body>
 </html>
