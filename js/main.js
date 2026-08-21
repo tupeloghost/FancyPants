@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=498';
-import { drawQR } from './lib/qr.js?v=498';
-import { WORLDS } from './worlds/registry.js?v=498';
-import { Net, PALETTE } from './net.js?v=498';
-import { Presence } from './lib/presence.js?v=498';
-import { Pulses } from './lib/pulse.js?v=498';
-import { BeatClock } from './lib/beatclock.js?v=498';
-import { BeatCue } from './lib/beatcue.js?v=498';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=498';
-import { Race, placeOf, standings } from './lib/race.js?v=498';
-import { Signals } from './lib/signals.js?v=498';
-import { pickShareLine, loadLines } from './lib/lines.js?v=498';
-import { RouteMap } from './lib/map.js?v=498';
-import * as sfx from './lib/sfx.js?v=498';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=498';
-import { glowTexture } from './lib/glow.js?v=498';
+import { AudioEngine } from './audio-engine.js?v=499';
+import { drawQR } from './lib/qr.js?v=499';
+import { WORLDS } from './worlds/registry.js?v=499';
+import { Net, PALETTE } from './net.js?v=499';
+import { Presence } from './lib/presence.js?v=499';
+import { Pulses } from './lib/pulse.js?v=499';
+import { BeatClock } from './lib/beatclock.js?v=499';
+import { BeatCue } from './lib/beatcue.js?v=499';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=499';
+import { Race, placeOf, standings } from './lib/race.js?v=499';
+import { Signals } from './lib/signals.js?v=499';
+import { pickShareLine, loadLines } from './lib/lines.js?v=499';
+import { RouteMap } from './lib/map.js?v=499';
+import * as sfx from './lib/sfx.js?v=499';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=499';
+import { glowTexture } from './lib/glow.js?v=499';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2278,7 +2278,7 @@ function renderStandings() {
     row.className = 'st' + (p.local ? ' me' : '');
     const mark = RANK_MARK[rankOf(p.score)] || '';
     row.innerHTML = `<span class="rk">${mark}</span><span class="nm"></span><span class="pt">${p.score || 0}</span>`;
-    row.querySelector('.nm').textContent = p.name || '\u2026';
+    row.querySelector('.nm').textContent = (p.name || '\u2026') + (p.local ? ' (you)' : '');
     box.appendChild(row);
   }
 }
