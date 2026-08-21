@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=488';
-import { drawQR } from './lib/qr.js?v=488';
-import { WORLDS } from './worlds/registry.js?v=488';
-import { Net, PALETTE } from './net.js?v=488';
-import { Presence } from './lib/presence.js?v=488';
-import { Pulses } from './lib/pulse.js?v=488';
-import { BeatClock } from './lib/beatclock.js?v=488';
-import { BeatCue } from './lib/beatcue.js?v=488';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=488';
-import { Race, placeOf, standings } from './lib/race.js?v=488';
-import { Signals } from './lib/signals.js?v=488';
-import { pickShareLine, loadLines } from './lib/lines.js?v=488';
-import { RouteMap } from './lib/map.js?v=488';
-import * as sfx from './lib/sfx.js?v=488';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=488';
-import { glowTexture } from './lib/glow.js?v=488';
+import { AudioEngine } from './audio-engine.js?v=489';
+import { drawQR } from './lib/qr.js?v=489';
+import { WORLDS } from './worlds/registry.js?v=489';
+import { Net, PALETTE } from './net.js?v=489';
+import { Presence } from './lib/presence.js?v=489';
+import { Pulses } from './lib/pulse.js?v=489';
+import { BeatClock } from './lib/beatclock.js?v=489';
+import { BeatCue } from './lib/beatcue.js?v=489';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=489';
+import { Race, placeOf, standings } from './lib/race.js?v=489';
+import { Signals } from './lib/signals.js?v=489';
+import { pickShareLine, loadLines } from './lib/lines.js?v=489';
+import { RouteMap } from './lib/map.js?v=489';
+import * as sfx from './lib/sfx.js?v=489';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=489';
+import { glowTexture } from './lib/glow.js?v=489';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3286,7 +3286,7 @@ function shareCaption() {
   return line + ' ' + cta + '\n' + clipURL() + socialTag()
     + (promo ? '\n' + promo.label.replace(/^\u266a /, '') + ': ' + promo.url : '');
 }
-function shareStill() {
+function shareStill(words) {
   // a burned-credit still of the world, matching the clip's framing
   const g = document.getElementById('canvas');
   const W = 1280, H = Math.round(1280 * g.height / Math.max(1, g.width));
@@ -3317,6 +3317,7 @@ function shareStill() {
     x.fillRect(W - q - m - 4, H - bh - q - m - 4, q + 8, q + 8);
     x.drawImage(qrc, W - q - m, H - bh - q - m, q, q);
   }
+  drawWords(x, W, H, words);
   return c;
 }
 let shareStillBlob = null;
@@ -3335,8 +3336,70 @@ function playCardVideo(v) {
   v.volume = 1;
   v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
 }
+// draws the typed words onto a frame the same way the live overlay shows
+// them: italic Didot near the top, wrapped, with a soft shadow for legibility
+function drawWords(x, W, H, words) {
+  if (!words) return;
+  const fs = Math.round(Math.min(W, H) * 0.055);
+  x.save();
+  x.font = 'italic 400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
+  x.textAlign = 'center';
+  x.textBaseline = 'top';
+  x.shadowColor = 'rgba(0,0,0,0.85)';
+  x.shadowBlur = fs * 0.8;
+  x.fillStyle = '#fff';
+  // wrap to the frame
+  const maxW = W * 0.88;
+  const lines = [];
+  let line = '';
+  for (const word of String(words).split(/\s+/)) {
+    const t = line ? line + ' ' + word : word;
+    if (x.measureText(t).width > maxW && line) { lines.push(line); line = word; }
+    else line = t;
+  }
+  if (line) lines.push(line);
+  let y = H * 0.09;
+  for (const l of lines.slice(0, 4)) { x.fillText(l, W / 2, y); y += fs * 1.35; }
+  x.restore();
+}
+
+// re-press the film: play the recorded clip once, draw every frame plus the
+// words to a canvas, and record THAT. The playback is the preview and the
+// wait at the same time; when it ends, the burned copy is ready.
+function burnWords(videoEl, srcBlob, words, mimeType) {
+  return new Promise((resolve, reject) => {
+    const W2 = videoEl.videoWidth || 1280, H2 = videoEl.videoHeight || 720;
+    const c = document.createElement('canvas');
+    c.width = W2; c.height = H2;
+    const x = c.getContext('2d');
+    const out = c.captureStream(30);
+    const elStream = videoEl.captureStream ? videoEl.captureStream() : null;
+    if (elStream) elStream.getAudioTracks().forEach(t => out.addTrack(t));
+    const mime = mimeType && MediaRecorder.isTypeSupported(mimeType) ? mimeType : undefined;
+    const rec = new MediaRecorder(out, mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : { videoBitsPerSecond: 6_000_000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => resolve(new Blob(chunks, { type: rec.mimeType }));
+    rec.onerror = reject;
+    let raf;
+    const draw = () => {
+      x.drawImage(videoEl, 0, 0, W2, H2);
+      drawWords(x, W2, H2, words);
+      raf = requestAnimationFrame(draw);
+    };
+    videoEl.onended = () => { cancelAnimationFrame(raf); try { rec.stop(); } catch (e) { reject(e); } };
+    videoEl.loop = false;
+    videoEl.currentTime = 0;
+    videoEl.play().then(() => { rec.start(250); draw(); }).catch(reject);
+  });
+}
+
 function openShareCard() {
-  $('shc-cap').textContent = shareCaption();
+  $('shc-say').value = '';
+  $('shc-words').textContent = '';
+  $('shc-words').classList.add('hidden');
+  $('shc-share').disabled = false;
+  $('shc-share').textContent = 'SHARE THIS POST';
   const v = $('shc-video');
   const im = $('shc-still');
   shareStillBlob = null;
@@ -3357,22 +3420,44 @@ function openShareCard() {
   }
   $('share-card').classList.remove('hidden');
 }
+// typing paints the frame live: overlay for the eye, and the still is
+// actually re-burned so what you see is literally the file
+let sayT = null;
+$('shc-say').addEventListener('input', () => {
+  const words = $('shc-say').value.trim();
+  $('shc-words').textContent = words;
+  $('shc-words').classList.toggle('hidden', !words);
+  clearTimeout(sayT);
+  if (!clipSaved) {
+    sayT = setTimeout(() => {
+      const still = shareStill(words);
+      $('shc-still').src = still.toDataURL('image/jpeg', 0.85);
+      still.toBlob(b => { shareStillBlob = b; }, 'image/jpeg', 0.88);
+    }, 250);
+  }
+});
+
 $('shc-close').addEventListener('click', () => {
   $('share-card').classList.add('hidden');
   $('shc-video').pause();
   unhushAfterCard();
 });
-$('shc-reroll').addEventListener('click', () => {
-  const cur = window.__shareLine && window.__shareLine.text;
-  const spin = tries => pickShareLine(sig.lastRun || {}, '', window.__forceArchetype).then(l => {
-    if (l.text === cur && tries > 0) return spin(tries - 1);
-    window.__shareLine = l;
-    $('shc-cap').textContent = shareCaption();
-  });
-  spin(4);
-});
-$('shc-share').addEventListener('click', () => {
-  const caption = $('shc-cap').textContent || shareCaption();
+$('shc-share').addEventListener('click', async () => {
+  const words = $('shc-say').value.trim();
+  const caption = (words ? words + '\n' : 'step inside \u2192\n') + clipURL() + socialTag();
+  // a clip with words on it gets pressed first: the playback IS the preview,
+  // and the burned copy is ready when the song stops
+  if (clipSaved && words) {
+    const btn = $('shc-share');
+    btn.disabled = true;
+    btn.textContent = 'PRESSING YOUR WORDS IN\u2026';
+    try {
+      const burned = await burnWords($('shc-video'), clipSaved.blob, words, clipSaved.type);
+      clipSaved = { blob: burned, type: burned.type };
+    } catch (e) { /* the unburned clip still shares; their words ride the text */ }
+    btn.disabled = false;
+    btn.textContent = 'SHARE THIS POST';
+  }
   // the artist's song claims its home world when a link goes out from here
   if (window.__sunoShare && shareableFree(currentWorldKey)) {
     claimHome();

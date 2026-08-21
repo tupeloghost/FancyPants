@@ -1824,6 +1824,25 @@
     background: linear-gradient(178deg, hsla(var(--accent-h),50%,40%,0.2), rgba(6,6,14,0.94));
     box-shadow: 0 0 60px hsla(var(--accent-h), 80%, 60%, 0.22), 0 24px 60px rgba(0,0,0,0.5);
   }
+  #shc-frame { position: relative; }
+  /* their words, floating on the footage exactly where they will be burned */
+  #shc-words {
+    position: absolute; left: 6%; right: 6%; top: 9%;
+    text-align: center; pointer-events: none;
+    font: italic 400 clamp(17px, 4.2vw, 26px)/1.35 'Didot', 'Bodoni 72', Georgia, serif;
+    color: #fff; letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 22px rgba(0,0,0,0.75);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  #shc-words.hidden { display: none; }
+  #shc-say {
+    width: 100%; box-sizing: border-box; resize: none;
+    padding: 11px 13px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05);
+    color: rgba(240,238,255,0.95); font: 14px/1.5 -apple-system, 'Helvetica Neue', sans-serif;
+    outline: none;
+  }
+  #shc-say:focus { border-color: hsla(var(--accent-h), 80%, 70%, 0.55); }
   #shc-video, #shc-still {
     /* contain, never cover: the preview IS the post — cropping the burned
        bar and QR out of the preview lied about what gets shared */
@@ -2376,12 +2395,15 @@
 
 <div id="share-card" class="hidden">
   <div id="shc-inner">
-    <video id="shc-video" playsinline loop class="hidden"></video>
-    <img id="shc-still" class="hidden" alt="">
-    <div id="shc-cap"></div>
+    <!-- the frame: footage below, their words floating on it, live -->
+    <div id="shc-frame">
+      <video id="shc-video" playsinline loop class="hidden"></video>
+      <img id="shc-still" class="hidden" alt="">
+      <div id="shc-words" class="hidden"></div>
+    </div>
+    <textarea id="shc-say" maxlength="120" rows="2" placeholder="say somethin&rsquo;, sugar. your words go right on the picture"></textarea>
     <div id="shc-actions">
       <button id="shc-share">SHARE THIS POST</button>
-      <button id="shc-reroll" title="different caption">&#8635; caption</button>
     </div>
     <button id="shc-close">close</button>
   </div>
@@ -2685,7 +2707,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 488</div>
+      <div id="build-stamp">build 489</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2727,6 +2749,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=488"></script>
+<script type="module" src="js/main.js?v=489"></script>
 </body>
 </html>
