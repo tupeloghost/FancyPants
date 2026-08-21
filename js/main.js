@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=507';
-import { drawQR } from './lib/qr.js?v=507';
-import { WORLDS } from './worlds/registry.js?v=507';
-import { Net, PALETTE } from './net.js?v=507';
-import { Presence } from './lib/presence.js?v=507';
-import { Pulses } from './lib/pulse.js?v=507';
-import { BeatClock } from './lib/beatclock.js?v=507';
-import { BeatCue } from './lib/beatcue.js?v=507';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=507';
-import { Race, placeOf, standings } from './lib/race.js?v=507';
-import { Signals } from './lib/signals.js?v=507';
-import { pickShareLine, loadLines } from './lib/lines.js?v=507';
-import { RouteMap } from './lib/map.js?v=507';
-import * as sfx from './lib/sfx.js?v=507';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=507';
-import { glowTexture } from './lib/glow.js?v=507';
+import { AudioEngine } from './audio-engine.js?v=508';
+import { drawQR } from './lib/qr.js?v=508';
+import { WORLDS } from './worlds/registry.js?v=508';
+import { Net, PALETTE } from './net.js?v=508';
+import { Presence } from './lib/presence.js?v=508';
+import { Pulses } from './lib/pulse.js?v=508';
+import { BeatClock } from './lib/beatclock.js?v=508';
+import { BeatCue } from './lib/beatcue.js?v=508';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=508';
+import { Race, placeOf, standings } from './lib/race.js?v=508';
+import { Signals } from './lib/signals.js?v=508';
+import { pickShareLine, loadLines } from './lib/lines.js?v=508';
+import { RouteMap } from './lib/map.js?v=508';
+import * as sfx from './lib/sfx.js?v=508';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=508';
+import { glowTexture } from './lib/glow.js?v=508';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1753,11 +1753,28 @@ function updatePeak(dt, a) {
 let lookBefore = null;   // the player's own look, saved before the first rainbow
 // the next look is dealt IN ADVANCE so the door that delivers it can wear
 // its colors — the rim IS the preview. Worlds read window.__nextLook.
+// Doors deal from the WHOLE wardrobe — every color mode, pattern, and shape
+// in the picker, not a short list of presets — so no two doors feel alike.
+const OUTFIT_MODES = COLOR_MODES.filter(c => c[0] !== '__group' && c[0] !== 'midnight').map(c => c[0]);
+const OUTFIT_PATTERNS = PATTERNS.map(x => x[0]);
+const OUTFIT_SHAPES = SHAPES.map(x => x[0]);
+// themed modes ignore the hue slider, so the door's rim would lie about
+// them — each carries its signature hue for the preview instead
+const MODE_SIG_HUE = { fire: 20, ocean: 190, sunset: 15, aurora: 150, forest: 130,
+  gold: 45, candy: 330, vapor: 300, coral: 10, cosmos: 230, pastel: 340 };
+function randomOutfit(notMode) {
+  let mode = OUTFIT_MODES[(Math.random() * OUTFIT_MODES.length) | 0];
+  if (mode === notMode) mode = OUTFIT_MODES[(OUTFIT_MODES.indexOf(mode) + 1) % OUTFIT_MODES.length];
+  return {
+    colorMode: mode,
+    pattern: OUTFIT_PATTERNS[(Math.random() * OUTFIT_PATTERNS.length) | 0],
+    shape: OUTFIT_SHAPES[(Math.random() * OUTFIT_SHAPES.length) | 0],
+    hue: MODE_SIG_HUE[mode] != null ? MODE_SIG_HUE[mode] : (Math.random() * 360) | 0,
+  };
+}
 function dealNextLook() {
-  const cur = settings.colorMode;
-  const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur && cfg.colorMode !== 'midnight');
-  const [name, cfg] = pool[(Math.random() * pool.length) | 0];
-  window.__nextLook = { name, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
+  const cfg = randomOutfit(settings.colorMode);
+  window.__nextLook = { name: cfg.colorMode, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
 }
 dealNextLook();
 document.addEventListener('fp-lookspark', () => {
@@ -1803,7 +1820,9 @@ document.addEventListener('fp-swallowed', () => {
   clearTimeout(darkBackT);
   darkBackT = setTimeout(() => {
     if (settings.colorMode === 'midnight' && preDarkLook) {
-      applyPreset(preDarkLook);
+      // the light never comes back the same: climbing out of a black hole
+      // deals a fresh outfit every time
+      applyPreset(randomOutfit('midnight'));
       preDarkLook = null;
     }
   }, 16000);
