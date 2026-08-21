@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=509';
+import { glowTexture } from '../lib/glow.js?v=510';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -38,6 +38,9 @@ export function createTunnel() {
   // ── the look door ── a star loop drifting in the tube, rim tinted with
   // the NEXT look (the preview). Thread it and the world changes clothes.
   let door = null, doorZ = 0, doorOn = false, doorNextAt = 500, doorPop = 0;
+  // ── the rush ── shots of speed, same grammar as the slide: a tap surges,
+  // a door SURGES, and every beat gives the tube a pulse of forward motion
+  let rush = 0, baseFov = 70;
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -234,7 +237,8 @@ export function createTunnel() {
       }
       doorOn = false; doorNextAt = 500; doorPop = 0;
 
-      travel = 0;
+      travel = 0; rush = 0;
+      baseFov = camera.fov;
       camera.position.set(0, 0, 0);
       camera.rotation.set(0, 0, 0);
     },
@@ -249,6 +253,7 @@ export function createTunnel() {
     onTap() {
       tapFlash = 1;
       tapQueued = true;
+      rush = Math.max(rush, 1);      // a tap is a shot of speed
     },
 
     update(dt, audio, participants, opts) {
@@ -262,8 +267,13 @@ export function createTunnel() {
       }
       const isSlat = shape === 'slat';
 
-      const speed = (10 + audio.volume * 55 * reactivity);
+      rush *= Math.pow(0.2, dt);
+      if (audio.beat) rush = Math.max(rush, 0.3 + audio.beatIntensity * 0.35);
+      const speed = (10 + audio.volume * 55 * reactivity) + rush * 45;
       travel += speed * dt;
+      // speed you can SEE: the lens opens with the rush
+      camera.fov += ((baseFov + rush * 13) - camera.fov) * Math.min(1, dt * 5);
+      camera.updateProjectionMatrix();
 
       // local participant state = our steer (what remotes render)
       if (participants && participants[0]) {
@@ -313,6 +323,7 @@ export function createTunnel() {
           if (hit) {
             document.dispatchEvent(new CustomEvent('fp-lookspark'));
             if (opts.impact) opts.impact(0.7);
+            rush = 1.6;              // the door flings you forward
             doorPop = 1;
           }
           doorOn = false;
