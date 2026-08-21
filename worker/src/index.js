@@ -146,6 +146,7 @@ export class FancyPantsRoom {
         })).filter(l => l.label && /^https?:\/\//.test(l.url)),
         next: String(b.next || '').slice(0, 120),
         nextAt: String(b.nextAt || '').slice(0, 30),
+        tip: /^https?:\/\//.test(String(b.tip || '')) ? String(b.tip).slice(0, 300) : '',
         hidden: [],
         at: Date.now(),
       };
@@ -163,6 +164,7 @@ export class FancyPantsRoom {
       if ('bio' in b) page.bio = String(b.bio || '').slice(0, 500);
       if ('next' in b) page.next = String(b.next || '').slice(0, 120);
       if ('nextAt' in b) page.nextAt = String(b.nextAt || '').slice(0, 30);
+      if ('tip' in b) page.tip = /^https?:\/\//.test(String(b.tip || '')) ? String(b.tip).slice(0, 300) : '';
       if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
@@ -182,7 +184,7 @@ export class FancyPantsRoom {
         const path = k.slice(2);
         if (!page.hidden.includes(path)) songs.push(path);
       }
-      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', songs };
+      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -537,6 +539,9 @@ export default {
         + '.pill{display:inline-block;margin:5px;padding:11px 20px;border:1px solid rgba(180,170,230,0.35);'
         + 'border-radius:24px;color:#e6e2fa;text-decoration:none;background:rgba(255,255,255,0.05);}'
         + '.pill:hover{border-color:#a99ce8;}'
+        + '.tip{display:inline-block;margin:2px 0 18px;padding:13px 30px;border-radius:999px;color:#1b1430;'
+        + 'background:linear-gradient(175deg,#ffe9a8,#eece78);font-weight:600;text-decoration:none;'
+        + 'box-shadow:0 4px 22px rgba(238,206,120,0.35);}'
         + '.songs{margin:30px 0 0;display:flex;flex-direction:column;gap:9px;}'
         + '.song{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-radius:14px;'
         + 'background:rgba(255,255,255,0.055);border:1px solid rgba(180,170,230,0.22);color:#f0eefc;text-decoration:none;}'
@@ -547,6 +552,7 @@ export default {
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
         + (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : '')
+        + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=495';
-import { drawQR } from './lib/qr.js?v=495';
-import { WORLDS } from './worlds/registry.js?v=495';
-import { Net, PALETTE } from './net.js?v=495';
-import { Presence } from './lib/presence.js?v=495';
-import { Pulses } from './lib/pulse.js?v=495';
-import { BeatClock } from './lib/beatclock.js?v=495';
-import { BeatCue } from './lib/beatcue.js?v=495';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=495';
-import { Race, placeOf, standings } from './lib/race.js?v=495';
-import { Signals } from './lib/signals.js?v=495';
-import { pickShareLine, loadLines } from './lib/lines.js?v=495';
-import { RouteMap } from './lib/map.js?v=495';
-import * as sfx from './lib/sfx.js?v=495';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=495';
-import { glowTexture } from './lib/glow.js?v=495';
+import { AudioEngine } from './audio-engine.js?v=496';
+import { drawQR } from './lib/qr.js?v=496';
+import { WORLDS } from './worlds/registry.js?v=496';
+import { Net, PALETTE } from './net.js?v=496';
+import { Presence } from './lib/presence.js?v=496';
+import { Pulses } from './lib/pulse.js?v=496';
+import { BeatClock } from './lib/beatclock.js?v=496';
+import { BeatCue } from './lib/beatcue.js?v=496';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=496';
+import { Race, placeOf, standings } from './lib/race.js?v=496';
+import { Signals } from './lib/signals.js?v=496';
+import { pickShareLine, loadLines } from './lib/lines.js?v=496';
+import { RouteMap } from './lib/map.js?v=496';
+import * as sfx from './lib/sfx.js?v=496';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=496';
+import { glowTexture } from './lib/glow.js?v=496';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2731,6 +2731,7 @@ async function openCreatorCard() {
         $('cc-name').value = d.name || '';
         $('cc-bio').value = d.bio || '';
         $('cc-next').value = d.next || '';
+        $('cc-tip').value = d.tip || '';
         (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
         $('cc-save').textContent = 'SAVE CHANGES';
         $('cc-out').classList.remove('hidden');
@@ -2753,7 +2754,7 @@ $('cc-save').addEventListener('click', async () => {
   const links = ['cc-l1', 'cc-l2', 'cc-l3'].map(id => ccParseLink($(id).value)).filter(Boolean);
   const body = {
     slug, name: $('cc-name').value.trim() || slug,
-    bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), links,
+    bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), tip: $('cc-tip').value.trim(), links,
   };
   const key = ccKey(slug);
   $('cc-msg').textContent = 'savin\u2019\u2026';
