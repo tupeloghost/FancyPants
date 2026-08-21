@@ -189,11 +189,9 @@
   @media (max-width: 620px) {
     /* the collapsed sheet sits on the bottom edge — ride just above its lip */
     #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px); padding: 7px 9px; max-width: 96vw; }
-    /* icons alone below 430px — BACK and SHARE were hanging off both edges */
-    #qbar .qb { min-width: 38px; padding: 8px 6px; }
-    #qbar .qb em { display: none; }
-    #qbar .qb i { font-size: 16px; }
-    #qbar .qb { min-width: 54px; padding: 12px 11px; font-size: 12px; }  /* a true thumb target */
+    /* thumb targets with tiny labels — a bare ♦ or ✦ explains nothing */
+    #qbar .qb { min-width: 50px; padding: 10px 7px 8px; font-size: 12px; }
+    #qbar .qb em { display: block; font-size: 8px; letter-spacing: 0.6px; margin-top: 2px; }
     #qbar .qb i { font-size: 16px; }
     /* the sheet owns the bottom of the screen while it's open */
     body:has(#panel:not(.collapsed)) #qbar { display: none; }
@@ -588,10 +586,14 @@
     bottom: calc(max(20px, env(safe-area-inset-bottom)) + 64px);
     z-index: 96; opacity: 0; transition: opacity 500ms ease;
     padding: 10px 24px; cursor: pointer; pointer-events: auto;
+    width: auto;   /* the global input rule stretches buttons to 100% — not this pill */
     border-radius: 999px; border: 1px solid hsla(var(--accent-h), 75%, 70%, 0.45);
-    background: hsla(var(--accent-h), 70%, 55%, 0.14);
+    background: hsla(var(--accent-h), 35%, 8%, 0.78);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45);
     font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
-    color: hsl(var(--accent-h), 45%, 90%);
+    color: hsl(var(--accent-h), 45%, 92%);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     transition: background 160ms ease, border-color 160ms ease;
   }
   #show-me:hover { background: hsla(var(--accent-h), 80%, 60%, 0.28); border-color: hsla(var(--accent-h), 85%, 75%, 0.7); }
@@ -2049,6 +2051,10 @@
     display: flex; flex-direction: column; align-items: center; gap: 6px;
     pointer-events: none; text-align: center;
     transition: opacity 0.6s, transform 0.6s;
+    /* a soft pool of dark behind the caption so it reads over ANY world,
+       including full-bright rainbows */
+    padding: 20px 48px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.4), rgba(0,0,0,0.18) 55%, transparent 72%);
   }
   #world-intro.gone { opacity: 0; transform: translateX(-50%) translateY(-12px); }
   /* the title: a high-contrast display serif, set wide — fashion-plate,
@@ -2061,6 +2067,8 @@
     max-width: 96vw;
     color: hsl(var(--accent-h), 70%, 93%);
     text-shadow:
+      0 2px 5px rgba(0,0,0,0.9),
+      0 0 2px rgba(0,0,0,0.7),
       0 0 30px hsla(var(--accent-h), 90%, 70%, 0.55),
       0 0 80px hsla(var(--accent-h), 90%, 60%, 0.3);
   }
@@ -2076,8 +2084,11 @@
     font: italic 300 19px 'Didot', 'Bodoni 72', 'Cormorant Garamond',
           'Hoefler Text', Baskerville, Georgia, serif;
     letter-spacing: 3.5px;
-    color: hsla(var(--accent-h), 35%, 88%, 0.86);
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.95);
+    color: hsla(var(--accent-h), 35%, 92%, 0.96);
+    text-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.95),
+      0 0 12px rgba(0, 0, 0, 0.9),
+      0 0 26px rgba(0, 0, 0, 0.6);
   }
   @media (max-width: 620px) {
     #world-intro b { font-size: 26px; letter-spacing: 6px; text-indent: 6px; }
@@ -2269,6 +2280,14 @@
     #mode-inner { width: 94vw; }
     .am-pick button { letter-spacing: 1px; font-size: 10px; }
     #side-doors { font-size: 10.5px; }
+  }
+
+  /* ── In-world offer position, phones ── lives at the END of the sheet so it
+     outranks the base #show-me bottom above. The tutor's pill rides ABOVE the
+     qbar (which itself rides above the collapsed sheet), never on its buttons. */
+  @media (max-width: 620px) {
+    #show-me { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px + 64px); }
+    body:has(#panel.hidden) #show-me { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4px + 64px); }
   }
 </style>
 </head>
@@ -2736,7 +2755,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 499</div>
+      <div id="build-stamp">build 500</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2778,6 +2797,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=499"></script>
+<script type="module" src="js/main.js?v=500"></script>
 </body>
 </html>
