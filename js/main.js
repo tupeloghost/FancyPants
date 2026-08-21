@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=494';
-import { drawQR } from './lib/qr.js?v=494';
-import { WORLDS } from './worlds/registry.js?v=494';
-import { Net, PALETTE } from './net.js?v=494';
-import { Presence } from './lib/presence.js?v=494';
-import { Pulses } from './lib/pulse.js?v=494';
-import { BeatClock } from './lib/beatclock.js?v=494';
-import { BeatCue } from './lib/beatcue.js?v=494';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=494';
-import { Race, placeOf, standings } from './lib/race.js?v=494';
-import { Signals } from './lib/signals.js?v=494';
-import { pickShareLine, loadLines } from './lib/lines.js?v=494';
-import { RouteMap } from './lib/map.js?v=494';
-import * as sfx from './lib/sfx.js?v=494';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=494';
-import { glowTexture } from './lib/glow.js?v=494';
+import { AudioEngine } from './audio-engine.js?v=495';
+import { drawQR } from './lib/qr.js?v=495';
+import { WORLDS } from './worlds/registry.js?v=495';
+import { Net, PALETTE } from './net.js?v=495';
+import { Presence } from './lib/presence.js?v=495';
+import { Pulses } from './lib/pulse.js?v=495';
+import { BeatClock } from './lib/beatclock.js?v=495';
+import { BeatCue } from './lib/beatcue.js?v=495';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=495';
+import { Race, placeOf, standings } from './lib/race.js?v=495';
+import { Signals } from './lib/signals.js?v=495';
+import { pickShareLine, loadLines } from './lib/lines.js?v=495';
+import { RouteMap } from './lib/map.js?v=495';
+import * as sfx from './lib/sfx.js?v=495';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=495';
+import { glowTexture } from './lib/glow.js?v=495';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -289,6 +289,7 @@ function _switchWorldNow(key) {
   if (world) world.dispose();
   currentWorldKey = key;
   window.__worldKey = key;   // read-only debug handle for tests
+  window.__settings = settings; // same purpose
   if (window.__sig) window.__sig.enterWorld(key);
   armNudge(key);
   if (lookBefore) { applyPreset(lookBefore); lookBefore = null; }   // your look comes home with you
@@ -1730,8 +1731,9 @@ function updatePeak(dt, a) {
 let lookBefore = null;   // the player's own look, saved before the first rainbow
 document.addEventListener('fp-lookspark', () => {
   if (!lookBefore) lookBefore = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
+  preDarkLook = null;   // the door is the rescue: whatever it deals, the dark is over
   const cur = settings.colorMode;
-  const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur);
+  const pool = PRESETS.filter(([, cfg]) => cfg.colorMode !== cur && cfg.colorMode !== 'midnight');
   const [name, cfg] = pool[(Math.random() * pool.length) | 0];
   // no banner: the world repainting itself IS the announcement, and saying so
   // out loud only got in front of the thing worth looking at
@@ -1747,12 +1749,21 @@ document.addEventListener('fp-lookspark', () => {
     setTimeout(() => { document.body.classList.remove('lookflash'); ring.classList.remove('go'); }, 1200);
   }, 480);
 });
+// The black hole takes the LIGHT: the world falls into its darkest look and
+// stays there. The next wonder door is the rescue — it already deals a fresh
+// bright look — so the flume plays fall and salvation off each other.
+let preDarkLook = null;
 document.addEventListener('fp-swallowed', e => {
   const n = (e.detail && e.detail.n) || 2;
   announce('BLACK HOLE', n + ' rings, gone', 2400, 'ember');
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 750);
+  if (settings.colorMode !== 'midnight') {
+    if (!preDarkLook) preDarkLook = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
+    // the fall lands as the shake ends: colours collapse into midnight
+    setTimeout(() => applyPreset({ colorMode: 'midnight', pattern: settings.pattern, shape: settings.shape, hue: 250 }), 600);
+  }
 });
 // the first-minute nudge: a wandering world never ASKS anything of a new
 // player — twenty quiet seconds in, once ever per world, a whisper invites
