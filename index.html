@@ -137,6 +137,15 @@
      controls at all, and you cannot use what you cannot see */
   #qbar.dim { opacity: 0.42; }
   #qbar.dim:hover { opacity: 1; }
+  /* a thumb has no hover: on touch the bar rests at full readability and
+     every control is a real target */
+  @media (pointer: coarse) {
+    #qbar.dim { opacity: 0.92; }
+    #qbar { gap: 4px; padding: 8px 10px; }
+    #qbar .qb i { font-size: 17px; }
+    .rbtn { padding: 14px 16px; font-size: 13px; }
+    #show-me { padding: 12px 28px; font-size: 12px; }
+  }
   /* mid-round the transport is a hazard, not a convenience: a thumb grazing
      NEXT or WORLD torpedoes the race. It returns the moment the round ends. */
   body.playing-round #qbar { opacity: 0 !important; pointer-events: none; }
@@ -184,7 +193,7 @@
     #qbar .qb { min-width: 38px; padding: 8px 6px; }
     #qbar .qb em { display: none; }
     #qbar .qb i { font-size: 16px; }
-    #qbar .qb { min-width: 50px; padding: 9px 10px; }  /* 44px tall — thumb-sized */
+    #qbar .qb { min-width: 54px; padding: 12px 11px; font-size: 12px; }  /* a true thumb target */
     #qbar .qb i { font-size: 16px; }
     /* the sheet owns the bottom of the screen while it's open */
     body:has(#panel:not(.collapsed)) #qbar { display: none; }
@@ -2720,7 +2729,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 491</div>
+      <div id="build-stamp">build 493</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2762,6 +2771,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=491"></script>
+<script type="module" src="js/main.js?v=493"></script>
 </body>
 </html>

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=491';
-import { drawQR } from './lib/qr.js?v=491';
-import { WORLDS } from './worlds/registry.js?v=491';
-import { Net, PALETTE } from './net.js?v=491';
-import { Presence } from './lib/presence.js?v=491';
-import { Pulses } from './lib/pulse.js?v=491';
-import { BeatClock } from './lib/beatclock.js?v=491';
-import { BeatCue } from './lib/beatcue.js?v=491';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=491';
-import { Race, placeOf, standings } from './lib/race.js?v=491';
-import { Signals } from './lib/signals.js?v=491';
-import { pickShareLine, loadLines } from './lib/lines.js?v=491';
-import { RouteMap } from './lib/map.js?v=491';
-import * as sfx from './lib/sfx.js?v=491';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=491';
-import { glowTexture } from './lib/glow.js?v=491';
+import { AudioEngine } from './audio-engine.js?v=493';
+import { drawQR } from './lib/qr.js?v=493';
+import { WORLDS } from './worlds/registry.js?v=493';
+import { Net, PALETTE } from './net.js?v=493';
+import { Presence } from './lib/presence.js?v=493';
+import { Pulses } from './lib/pulse.js?v=493';
+import { BeatClock } from './lib/beatclock.js?v=493';
+import { BeatCue } from './lib/beatcue.js?v=493';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=493';
+import { Race, placeOf, standings } from './lib/race.js?v=493';
+import { Signals } from './lib/signals.js?v=493';
+import { pickShareLine, loadLines } from './lib/lines.js?v=493';
+import { RouteMap } from './lib/map.js?v=493';
+import * as sfx from './lib/sfx.js?v=493';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=493';
+import { glowTexture } from './lib/glow.js?v=493';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -34,7 +34,7 @@ window.__LITE = IS_MOBILE;   // worlds thin their heaviest layers when set
 // world previews draw from the canvas, and without it they read black
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance', preserveDrawingBuffer: true });
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));   // aliased wireframes read as cheap; LITE worlds thin geometry instead
 renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000208);
@@ -2346,16 +2346,16 @@ function runWorldDemo() {
   hand.classList.remove('hidden');
   $('show-me').classList.add('hidden');
   const t0 = performance.now(), D = 8000;
+  const land = () => {
+    demoRunning = false;
+    hand.classList.add('hidden');
+    clearInterval(demoTapIv);
+    if (world && world.setInput) world.setInput(0);
+  };
   (function frame(now) {
-    if (!demoRunning) return;
+    if (!demoRunning) { land(); return; }
     const t = (now - t0) / 1000;
-    if (now - t0 > D) {
-      demoRunning = false;
-      hand.classList.add('hidden');
-      clearInterval(demoTapIv);
-      if (world && world.setInput) world.setInput(0);
-      return;
-    }
+    if (now - t0 > D) { land(); return; }
     const x = Math.sin(t * 0.85) * 0.72;             // an easy figure of steering
     const px = innerWidth * (0.5 + x * 0.33);
     const py = innerHeight * 0.60 + Math.sin(t * 1.6) * innerHeight * 0.05;
@@ -2371,8 +2371,9 @@ function runWorldDemo() {
     if (world && world.onTap) world.onTap();
   }, 1700);
   // a real touch takes the wheel back instantly — the tutor never wrestles
-  const stop = () => { demoRunning = false; };
-  window.addEventListener('pointerdown', stop, { once: true });
+  setTimeout(() => {
+    if (demoRunning) window.addEventListener('pointerdown', () => { demoRunning = false; }, { once: true });
+  }, 400);
 }
 $('show-me').addEventListener('click', e => { e.stopPropagation(); runWorldDemo(); });
 
