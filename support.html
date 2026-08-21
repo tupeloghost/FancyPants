@@ -43,10 +43,13 @@
   }
   .give:hover { background: rgba(120, 150, 255, 0.3); transform: translateY(-1px); }
   .give[aria-disabled="true"] { opacity: 0.55; pointer-events: none; }
-  .biscuit {
-    display: block; margin-top: 10px;
-    font: italic 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
-    letter-spacing: 1px; color: #c9c2e8;
+  .biscuit-art { width: 118px; height: auto; display: block; margin: 0 auto 10px;
+                 filter: drop-shadow(0 4px 14px rgba(255, 214, 130, 0.18)); }
+  .give b { display: block; font-weight: 400; letter-spacing: 2px; }
+  .give i {
+    display: block; margin-top: 3px;
+    font: italic 400 13.5px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1px; color: #cfc8ea; text-transform: none;
   }
   .tipjar .small { display: block; margin-top: 12px; }
   footer { max-width: 620px; margin: 0 auto; padding: 0 24px 90px; }
@@ -116,8 +119,32 @@
 
   <div class="tipjar">
     <!-- when the donation link is live, put the URL in href and drop the aria-disabled line -->
-    <a class="give" href="#" aria-disabled="true">SUPPORT THE DEVELOPER</a>
-    <span class="biscuit">(butter my biscuit)</span>
+    <!-- the biscuit, mid-butter: hand-drawn SVG so the page stays self-contained -->
+    <svg class="biscuit-art" viewBox="0 0 140 104" role="img" aria-label="a biscuit getting buttered">
+      <!-- steam -->
+      <path d="M52 26c-3-5 3-8 0-13" fill="none" stroke="#d9c9a8" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>
+      <path d="M70 22c-3-5 3-8 0-13" fill="none" stroke="#d9c9a8" stroke-width="2.4" stroke-linecap="round" opacity="0.4"/>
+      <!-- biscuit: two flaky layers -->
+      <ellipse cx="62" cy="78" rx="44" ry="16" fill="#c98f4e"/>
+      <ellipse cx="62" cy="70" rx="44" ry="16" fill="#e8b878"/>
+      <path d="M18 70c0 6 8 12 20 14M106 70c0 6-8 12-20 14" fill="none" stroke="#b57f42" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      <ellipse cx="62" cy="62" rx="40" ry="13" fill="#f3cf94"/>
+      <!-- golden top freckles -->
+      <circle cx="44" cy="60" r="1.6" fill="#d9a45e"/><circle cx="76" cy="58" r="1.6" fill="#d9a45e"/>
+      <circle cx="60" cy="65" r="1.4" fill="#d9a45e"/><circle cx="88" cy="63" r="1.3" fill="#d9a45e"/>
+      <!-- the pat of butter, melting -->
+      <rect x="48" y="42" width="28" height="16" rx="4" fill="#ffe08a"/>
+      <rect x="48" y="42" width="28" height="7" rx="3.5" fill="#fff0b8"/>
+      <path d="M50 56c0 5 2 8 2 11 0 2.6-3.6 2.6-3.6 0" fill="#ffe08a"/>
+      <path d="M74 57c0 4 1.6 6 1.6 8.6 0 2.4-3.2 2.4-3.2 0" fill="#ffe08a"/>
+      <!-- the knife, spreading in -->
+      <g transform="rotate(-24 108 34)">
+        <rect x="100" y="30" width="34" height="7" rx="3.5" fill="#cfd6e6"/>
+        <rect x="128" y="28.5" width="12" height="10" rx="3" fill="#8f86c9"/>
+      </g>
+      <path d="M96 44c4 2 7 5 8 8" fill="none" stroke="#ffe08a" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+    <a class="give" href="#" aria-disabled="true"><b>SUPPORT THE DEVELOPER</b><i>(butter my biscuit)</i></a>
     <span class="small">the tip jar opens soon. every dollar goes to one person, not a company.</span>
   </div>
 
