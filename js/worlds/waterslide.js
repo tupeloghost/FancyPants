@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=505';
-import { themePaint } from '../lib/themes.js?v=505';
-import { TUNE } from '../lib/tune.js?v=505';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=507';
+import { themePaint } from '../lib/themes.js?v=507';
+import { TUNE } from '../lib/tune.js?v=507';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -56,6 +56,16 @@ export function createWaterslide() {
     { slope: 0.55, x: t => Math.sin(t * 0.008) * 34,                           y: t => Math.sin(t * 0.03) * 10 },  // one giant lazy S, a near-flat glide
     { slope: 1.15, x: t => Math.sin(t * 0.04) * 28 + Math.sin(t * 0.013) * 10, y: t => Math.sin(t * 0.012) * 12 },// switchback canyon, wide and deep
   ];
+  // and the SURFACE has a wardrobe of its own: what the pipe is tiled with,
+  // and how far around you the wall wraps. The bender changes both.
+  const SURFS = [
+    { geo: 'box',  start: Math.PI,        span: Math.PI },        // classic half-pipe of tiles
+    { geo: 'gem',  start: Math.PI * 1.1,  span: Math.PI * 0.8 },  // a trough of cut gems, steep walls
+    { geo: 'slat', start: Math.PI * 1.22, span: Math.PI * 0.56 }, // a flat ribbon of planks, open air
+    { geo: 'box',  start: Math.PI * 0.72, span: Math.PI * 1.56 }, // the storm drain: walls wrap overhead
+  ];
+  let surfA = 0, surfB = 0;
+  let surfGeos = null;
   let shapeA = 0, shapeB = 0, shapeMix = 1;
   const curveX = t => { const a = SHAPES[shapeA].x(t), b = SHAPES[shapeB].x(t); return a + (b - a) * shapeMix; };
   const dropY = t => {
@@ -68,8 +78,13 @@ export function createWaterslide() {
     let next = (Math.random() * SHAPES.length) | 0;
     if (next === shapeA) next = (next + 1) % SHAPES.length;
     shapeB = next; shapeMix = 0;
+    surfA = surfB;
+    let ns = (Math.random() * SURFS.length) | 0;
+    if (ns === surfA) ns = (ns + 1) % SURFS.length;
+    surfB = ns;
   };
   let gulp = 0;   // the swallow's camera kick
+  window.__slideBend = bendWorld;   // dev handle: audition surface+path changes
 
   return {
     name: 'SLIDE',
@@ -80,18 +95,24 @@ export function createWaterslide() {
       scene.add(group);
       scene.fog = new THREE.FogExp2(0x02060a, 0.011);
 
-      const geo = new THREE.BoxGeometry(1, 0.4, RING_SPACING * 0.9);
-      {
+      const shade = (geo, h) => {
         const pa = geo.attributes.position;
         const vc = new Float32Array(pa.count * 3);
         for (let i = 0; i < pa.count; i++) {
-          const t = 0.6 + (pa.getY(i) / 0.4 + 0.5) * 0.5;
+          const t = 0.6 + (pa.getY(i) / h + 0.5) * 0.5;
           vc[i * 3] = t; vc[i * 3 + 1] = t; vc[i * 3 + 2] = t;
         }
         geo.setAttribute('color', new THREE.BufferAttribute(vc, 3));
-      }
+        return geo;
+      };
+      surfGeos = {
+        box: shade(new THREE.BoxGeometry(1, 0.4, RING_SPACING * 0.9), 0.4),
+        gem: shade(new THREE.OctahedronGeometry(0.72), 1.44),
+        slat: shade(new THREE.BoxGeometry(1, 0.1, RING_SPACING * 1.2), 0.1),
+      };
+      surfA = 0; surfB = 0;
       wall = new THREE.InstancedMesh(
-        geo,
+        surfGeos.box,
         new THREE.MeshBasicMaterial({ toneMapped: false, vertexColors: true }),
         RINGS * SEGS
       );
@@ -405,7 +426,7 @@ export function createWaterslide() {
             } else if (through && h.red) {
               // SWALLOWED: no toll, no stun — the void's only price is the
               // LIGHT. The world goes black for a spell and that IS the event.
-              gulp = 1;   // the lens lurches — being eaten is a full-body event
+              gulp = 1.5; // the lens lurches — being eaten is a full-body event
               if (opts.impact) opts.impact(1.0);
               document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } }));
               // shockrings collapse INTO the hole — violet, staggered
@@ -497,6 +518,13 @@ export function createWaterslide() {
 
       // half-pipe rings recycle ahead. ringZ is the ring's ABSOLUTE world z
       // (camera lives at z = -travel), and -ringZ is its path parameter.
+      // the wall's arc blends between the two surface styles as the bend
+      // lands; the tiles themselves swap under cover of the halfway point
+      const sfA = SURFS[surfA], sfB = SURFS[surfB];
+      const arcStart = sfA.start + (sfB.start - sfA.start) * shapeMix;
+      const arcSpan = sfA.span + (sfB.span - sfA.span) * shapeMix;
+      const wantGeo = surfGeos[(shapeMix >= 0.5 ? sfB : sfA).geo];
+      if (wall.geometry !== wantGeo) wall.geometry = wantGeo;
       let idx = 0;
       for (let r = 0; r < RINGS; r++) {
         // Recycle by however many spans it takes, not one per frame. Stepping
@@ -515,8 +543,7 @@ export function createWaterslide() {
         const cy = dropY(t) + R; // ring center sits R above the floor
 
         for (let s2 = 0; s2 < SEGS; s2++) {
-          // arc across the LOWER half only — open-top flume
-          const a = Math.PI + (s2 / (SEGS - 1)) * Math.PI;
+          const a = arcStart + (s2 / (SEGS - 1)) * arcSpan;
           const level = audio[['bass', 'lowMid', 'mid', 'high', 'treble'][s2 % 5]];
           dummy.position.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, ringZ[r]);
           dummy.rotation.set(0, 0, a + Math.PI / 2);
@@ -583,6 +610,7 @@ export function createWaterslide() {
 
     dispose() {
       scene.fog = null;
+      if (surfGeos) { for (const k in surfGeos) surfGeos[k].dispose(); surfGeos = null; }
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       scene.remove(group);
     },

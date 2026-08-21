@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=505';
-import { drawQR } from './lib/qr.js?v=505';
-import { WORLDS } from './worlds/registry.js?v=505';
-import { Net, PALETTE } from './net.js?v=505';
-import { Presence } from './lib/presence.js?v=505';
-import { Pulses } from './lib/pulse.js?v=505';
-import { BeatClock } from './lib/beatclock.js?v=505';
-import { BeatCue } from './lib/beatcue.js?v=505';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=505';
-import { Race, placeOf, standings } from './lib/race.js?v=505';
-import { Signals } from './lib/signals.js?v=505';
-import { pickShareLine, loadLines } from './lib/lines.js?v=505';
-import { RouteMap } from './lib/map.js?v=505';
-import * as sfx from './lib/sfx.js?v=505';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=505';
-import { glowTexture } from './lib/glow.js?v=505';
+import { AudioEngine } from './audio-engine.js?v=507';
+import { drawQR } from './lib/qr.js?v=507';
+import { WORLDS } from './worlds/registry.js?v=507';
+import { Net, PALETTE } from './net.js?v=507';
+import { Presence } from './lib/presence.js?v=507';
+import { Pulses } from './lib/pulse.js?v=507';
+import { BeatClock } from './lib/beatclock.js?v=507';
+import { BeatCue } from './lib/beatcue.js?v=507';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=507';
+import { Race, placeOf, standings } from './lib/race.js?v=507';
+import { Signals } from './lib/signals.js?v=507';
+import { pickShareLine, loadLines } from './lib/lines.js?v=507';
+import { RouteMap } from './lib/map.js?v=507';
+import * as sfx from './lib/sfx.js?v=507';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=507';
+import { glowTexture } from './lib/glow.js?v=507';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1785,10 +1785,14 @@ document.addEventListener('fp-lookspark', () => {
 // bright look — so the flume plays fall and salvation off each other.
 let preDarkLook = null, darkBackT = null;
 document.addEventListener('fp-swallowed', () => {
-  announce('BLACK HOLE', 'the light finds its way back', 2400, 'ember');
+  // the banner is a one-time caption — after that the swallow speaks for itself
+  if (!localStorage.getItem('fp_bh_seen')) {
+    localStorage.setItem('fp_bh_seen', '1');
+    announce('BLACK HOLE', 'the light finds its way back', 2400, 'ember');
+  }
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
-  setTimeout(() => document.body.classList.remove('swallowed'), 750);
+  setTimeout(() => document.body.classList.remove('swallowed'), 1450);
   if (settings.colorMode !== 'midnight') {
     if (!preDarkLook) preDarkLook = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
     // the fall lands as the shake ends: colours collapse into midnight
