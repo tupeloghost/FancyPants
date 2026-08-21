@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=497';
-import { drawQR } from './lib/qr.js?v=497';
-import { WORLDS } from './worlds/registry.js?v=497';
-import { Net, PALETTE } from './net.js?v=497';
-import { Presence } from './lib/presence.js?v=497';
-import { Pulses } from './lib/pulse.js?v=497';
-import { BeatClock } from './lib/beatclock.js?v=497';
-import { BeatCue } from './lib/beatcue.js?v=497';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=497';
-import { Race, placeOf, standings } from './lib/race.js?v=497';
-import { Signals } from './lib/signals.js?v=497';
-import { pickShareLine, loadLines } from './lib/lines.js?v=497';
-import { RouteMap } from './lib/map.js?v=497';
-import * as sfx from './lib/sfx.js?v=497';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=497';
-import { glowTexture } from './lib/glow.js?v=497';
+import { AudioEngine } from './audio-engine.js?v=498';
+import { drawQR } from './lib/qr.js?v=498';
+import { WORLDS } from './worlds/registry.js?v=498';
+import { Net, PALETTE } from './net.js?v=498';
+import { Presence } from './lib/presence.js?v=498';
+import { Pulses } from './lib/pulse.js?v=498';
+import { BeatClock } from './lib/beatclock.js?v=498';
+import { BeatCue } from './lib/beatcue.js?v=498';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=498';
+import { Race, placeOf, standings } from './lib/race.js?v=498';
+import { Signals } from './lib/signals.js?v=498';
+import { pickShareLine, loadLines } from './lib/lines.js?v=498';
+import { RouteMap } from './lib/map.js?v=498';
+import * as sfx from './lib/sfx.js?v=498';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=498';
+import { glowTexture } from './lib/glow.js?v=498';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2369,6 +2369,7 @@ function runWorldDemo() {
   hand.classList.remove('hidden');
   $('show-me').classList.add('hidden');
   const t0 = performance.now(), D = 8000;
+  let demoX = 0;
   const steerWord = IS_MOBILE ? 'slide your finger to steer' : 'move the mouse to steer';
   const tapWord = IS_MOBILE ? 'tap to jump' : 'click to jump';
   announce('', steerWord, 3600, 'quiet');
@@ -2378,12 +2379,19 @@ function runWorldDemo() {
     hand.classList.add('hidden');
     clearInterval(demoTapIv);
     if (world && world.setInput) world.setInput(0);
+    offerShowMe(false);
+    announce('', 'your turn', 2600, 'quiet');
   };
   (function frame(now) {
     if (!demoRunning) { land(); return; }
     const t = (now - t0) / 1000;
     if (now - t0 > D) { land(); return; }
-    const x = Math.sin(t * 0.85) * 0.72;             // an easy figure of steering
+    // a world that knows where its treats are steers the lesson at them, so
+    // the demo visibly SUCCEEDS; otherwise an easy figure of steering
+    const tgt = world && world.demoTarget ? world.demoTarget() : null;
+    const wanted = (tgt !== null && tgt !== undefined) ? tgt : Math.sin(t * 0.85) * 0.72;
+    demoX += (wanted - demoX) * 0.07;
+    const x = demoX;
     const px = innerWidth * (0.5 + x * 0.33);
     const py = innerHeight * 0.60 + Math.sin(t * 1.6) * innerHeight * 0.05;
     hand.style.transform = `translate(${px}px, ${py}px)`;
@@ -2404,6 +2412,15 @@ function runWorldDemo() {
     if (demoRunning) window.addEventListener('pointerdown', () => { demoRunning = false; }, { once: true });
   }, 400);
 }
+let showMeT = null;
+function offerShowMe(on) {
+  const sm = $('show-me');
+  clearTimeout(showMeT);
+  if (!on) { sm.classList.add('hidden'); sm.classList.remove('on'); return; }
+  sm.classList.remove('hidden');
+  requestAnimationFrame(() => sm.classList.add('on'));
+  showMeT = setTimeout(() => { sm.classList.remove('on'); setTimeout(() => sm.classList.add('hidden'), 600); }, 40000);
+}
 $('show-me').addEventListener('click', e => { e.stopPropagation(); runWorldDemo(); });
 
 function showWorldIntro(key) {
@@ -2420,11 +2437,13 @@ function showWorldIntro(key) {
   $('intro-name').textContent = w.label;
   $('intro-goal').textContent = w.goal || '';
   el.classList.toggle('long', (w.label || '').length > 10);
-  // "show me" appears where showing helps: a world you steer or tap, watched
-  // by somebody who is actually playing (never in lean-back, never a guest)
+  // "show me how" appears where showing helps: a world you steer or tap,
+  // watched by somebody actually playing (never lean-back, never a guest).
+  // It waits on its own clock instead of dying with this greeting: a first
+  // visit deserves longer than three seconds to notice the offer.
   const teachable = (world && (world.setInput || world.onTap)) && !w.rhythm
     && !chillRoll && !document.body.classList.contains('guest');
-  $('show-me').classList.toggle('hidden', !teachable);
+  offerShowMe(teachable);
   el.classList.remove('gone');
   clearTimeout(introTimer);
   // hold time scales with how much there is to read (~65ms a character,

@@ -584,7 +584,10 @@
     100% { transform: scale(1); }
   }
   #show-me {
-    margin-top: 14px; padding: 9px 22px; cursor: pointer; pointer-events: auto;
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 64px);
+    z-index: 96; opacity: 0; transition: opacity 500ms ease;
+    padding: 10px 24px; cursor: pointer; pointer-events: auto;
     border-radius: 999px; border: 1px solid hsla(var(--accent-h), 75%, 70%, 0.45);
     background: hsla(var(--accent-h), 70%, 55%, 0.14);
     font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
@@ -592,6 +595,7 @@
     transition: background 160ms ease, border-color 160ms ease;
   }
   #show-me:hover { background: hsla(var(--accent-h), 80%, 60%, 0.28); border-color: hsla(var(--accent-h), 85%, 75%, 0.7); }
+  #show-me.on { opacity: 1; }
   #show-me.hidden { display: none; }
 
   #annc {
@@ -2351,8 +2355,8 @@
 <div id="figure-label" class="hidden"><b id="fig-name"></b><span id="fig-progress"></span></div>
 <div id="zoom-badge"></div>
 
-<div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span>
-  <button id="show-me" class="hidden">&#9655; show me</button></div>
+<div id="world-intro" class="gone"><b id="intro-name"></b><i></i><span id="intro-goal"></span></div>
+<button id="show-me" class="hidden">&#9655; show me how</button>
 <!-- the tutor: a ghost hand that plays the world for a few seconds so the
      verb is SEEN, not read. Summoned by "show me", never forced. -->
 <div id="demo-hand" class="hidden"><i></i></div>
@@ -2732,7 +2736,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 497</div>
+      <div id="build-stamp">build 498</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2774,6 +2778,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=497"></script>
+<script type="module" src="js/main.js?v=498"></script>
 </body>
 </html>

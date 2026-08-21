@@ -2,9 +2,9 @@
 // spectrum, so the terrain IS the waveform. One-button jump. Glowing wireframe.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=497';
-import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=497';
-import { themePaint, richHSL } from '../lib/themes.js?v=497';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=498';
+import { swoosh as sfxSwoosh } from '../lib/sfx.js?v=498';
+import { themePaint, richHSL } from '../lib/themes.js?v=498';
 
 
 const COLS = 64;            // one column per spectrum bin
@@ -118,6 +118,20 @@ export function createSurfer() {
       camera.rotation.set(0, 0, 0);
       camera.fov = 75;
       camera.updateProjectionMatrix();
+    },
+
+    // the tutor asks where to steer: the nearest catchable spark, in input
+    // units, so the demonstration visibly catches instead of wandering
+    demoTarget() {
+      // the nearest ground spark still ahead of the board: z grows toward
+      // the player and the catch happens around z 30-40, so chase the
+      // largest z that has not passed yet
+      let best = null;
+      for (const sp of sparks) {
+        if (!sp.alive || sp.look || sp.high || sp.z > 32) continue;
+        if (!best || sp.z > best.z) best = sp;
+      }
+      return best ? Math.max(-1, Math.min(1, best.x / 36)) : null;
     },
 
     // the ledger only needs the totals; cheap enough to send on every event
