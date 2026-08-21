@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=510';
+import { glowTexture } from '../lib/glow.js?v=511';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -37,7 +37,7 @@ export function createTunnel() {
   let meteors = [];          // shooting stars
   // ── the look door ── a star loop drifting in the tube, rim tinted with
   // the NEXT look (the preview). Thread it and the world changes clothes.
-  let door = null, doorZ = 0, doorOn = false, doorNextAt = 500, doorPop = 0;
+  let door = null, doorGeos = null, doorZ = 0, doorOn = false, doorNextAt = 500, doorPop = 0;
   // ── the rush ── shots of speed, same grammar as the slide: a tap surges,
   // a door SURGES, and every beat gives the tube a pulse of forward motion
   let rush = 0, baseFov = 70;
@@ -214,16 +214,26 @@ export function createTunnel() {
       }
 
       {
-        const pts = [];
+        // the door's SILHOUETTE previews the tile shape it deals, the way
+        // its rim previews the color — one loop per shape in the picker
+        const tube = pts => new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3(pts.map(([x, y]) => new THREE.Vector3(x, y, 0)), true, 'catmullrom', 0.02),
+          72, 0.16, 8, true);
+        const star = [];
         for (let i = 0; i < 10; i++) {
           const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
           const rr = i % 2 ? 1.5 : 2.4;
-          pts.push(new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr, 0));
+          star.push([Math.cos(a) * rr, Math.sin(a) * rr]);
         }
-        const starGeo = new THREE.TubeGeometry(
-          new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.02), 72, 0.16, 8, true);
+        doorGeos = {
+          circle: new THREE.TorusGeometry(2.2, 0.16, 8, 40),
+          star: tube(star),
+          diamond: tube([[0, 2.6], [2.6, 0], [0, -2.6], [-2.6, 0]]),
+          square: tube([[2.1, 2.1], [2.1, -2.1], [-2.1, -2.1], [-2.1, 2.1]]),
+          slat: tube([[3.1, 1.1], [3.1, -1.1], [-3.1, -1.1], [-3.1, 1.1]]),
+        };
         door = new THREE.Group();
-        const rim = new THREE.Mesh(starGeo, new THREE.MeshBasicMaterial({
+        const rim = new THREE.Mesh(doorGeos.star, new THREE.MeshBasicMaterial({
           toneMapped: false, transparent: true, opacity: 0.95,
           blending: THREE.AdditiveBlending, depthWrite: false,
         }));
@@ -296,6 +306,8 @@ export function createTunnel() {
       if (!doorOn && travel > doorNextAt) {
         doorOn = true;
         doorZ = -150;
+        const dealt = window.__nextLook && window.__nextLook.cfg && doorGeos[window.__nextLook.cfg.shape];
+        door.userData.rim.geometry = dealt || doorGeos.star;
         const a = Math.random() * Math.PI * 2;
         door.userData.dx = Math.cos(a) * 2.2;
         door.userData.dy = Math.sin(a) * 1.6;

@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=510';
-import { themePaint } from '../lib/themes.js?v=510';
-import { TUNE } from '../lib/tune.js?v=510';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=511';
+import { themePaint } from '../lib/themes.js?v=511';
+import { TUNE } from '../lib/tune.js?v=511';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -174,11 +174,15 @@ export function createWaterslide() {
         const rr = i % 2 ? 1.9 : 3.0;
         star.push([Math.cos(a) * rr, Math.sin(a) * rr]);
       }
-      const diamond = [[0, 2.9], [2.9, 0], [0, -2.9], [-2.9, 0]];
       this.__geos = {
         circle: new THREE.TorusGeometry(2.6, 0.22, 10, 30),
         star: tube(star, 0.02),
-        diamond: tube(diamond, 0.02),
+        diamond: tube([[0, 2.9], [2.9, 0], [0, -2.9], [-2.9, 0]], 0.02),
+        square: tube([[2.3, 2.3], [2.3, -2.3], [-2.3, -2.3], [-2.3, 2.3]], 0.02),
+        slat: tube([[3.4, 1.2], [3.4, -1.2], [-3.4, -1.2], [-3.4, 1.2]], 0.02),
+        // the bender is a TRIANGLE: no dealt look wears one, so it can never
+        // be mistaken for a look door's shape preview
+        tri: tube([[0, 3.1], [2.8, -2], [-2.8, -2]], 0.02),
       };
       return this.__geos;
     },
@@ -308,7 +312,9 @@ export function createWaterslide() {
             // enter it and the PIPE ITSELF re-bends into a new shape
             h.bend = !h.red && !h.wonder && (hoopCount % 16) === 5;
             const geos = this._loopGeos();
-            h.ring.geometry = h.wonder ? geos.star : h.bend ? geos.diamond : geos.circle;
+            // the look door's silhouette previews the tile shape it deals
+            const dealtShape = window.__nextLook && window.__nextLook.cfg && geos[window.__nextLook.cfg.shape];
+            h.ring.geometry = h.wonder ? (dealtShape || geos.star) : h.bend ? geos.tri : geos.circle;
             h.mesh.scale.setScalar(h.wonder || h.bend ? 1.18 : 1);
             h.mesh.visible = true;
           }
