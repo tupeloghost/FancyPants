@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=480';
-import { drawQR } from './lib/qr.js?v=480';
-import { WORLDS } from './worlds/registry.js?v=480';
-import { Net, PALETTE } from './net.js?v=480';
-import { Presence } from './lib/presence.js?v=480';
-import { Pulses } from './lib/pulse.js?v=480';
-import { BeatClock } from './lib/beatclock.js?v=480';
-import { BeatCue } from './lib/beatcue.js?v=480';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=480';
-import { Race, placeOf, standings } from './lib/race.js?v=480';
-import { Signals } from './lib/signals.js?v=480';
-import { pickShareLine, loadLines } from './lib/lines.js?v=480';
-import { RouteMap } from './lib/map.js?v=480';
-import * as sfx from './lib/sfx.js?v=480';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=480';
-import { glowTexture } from './lib/glow.js?v=480';
+import { AudioEngine } from './audio-engine.js?v=486';
+import { drawQR } from './lib/qr.js?v=486';
+import { WORLDS } from './worlds/registry.js?v=486';
+import { Net, PALETTE } from './net.js?v=486';
+import { Presence } from './lib/presence.js?v=486';
+import { Pulses } from './lib/pulse.js?v=486';
+import { BeatClock } from './lib/beatclock.js?v=486';
+import { BeatCue } from './lib/beatcue.js?v=486';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=486';
+import { Race, placeOf, standings } from './lib/race.js?v=486';
+import { Signals } from './lib/signals.js?v=486';
+import { pickShareLine, loadLines } from './lib/lines.js?v=486';
+import { RouteMap } from './lib/map.js?v=486';
+import * as sfx from './lib/sfx.js?v=486';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=486';
+import { glowTexture } from './lib/glow.js?v=486';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3223,7 +3223,7 @@ function shareThis() {
   } else if (window.__sunoShare) {
     // their song outside the free three: the rope — and no link goes out
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
+      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
@@ -3245,7 +3245,7 @@ function shareThis() {
 $('rb-share').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label
-      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
+      + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   }
   openShareCard();
@@ -3529,7 +3529,7 @@ function deliverClip() {
 }
 $('rb-clip').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
-    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS ALL SEVENTEEN');
+    ropeGate('CLIPS RIDE TUNNEL \u00b7 SURFER \u00b7 ' + WORLDS[WEEK_WORLD].label + ' (THIS WEEK\u2019S SPECIAL). ARTIST ACCESS OPENS EVERY WORLD');
     return;
   }
   if (!clipSaved) {

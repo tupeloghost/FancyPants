@@ -7,8 +7,8 @@
 // leaving your signature, leaving your mark.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=480';
-import { TUNE } from '../lib/tune.js?v=480';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=486';
+import { TUNE } from '../lib/tune.js?v=486';
 
 const MAX_STARS = 24;
 const AHEAD = 110;            // where stars appear down the flight path
