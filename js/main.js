@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=490';
-import { drawQR } from './lib/qr.js?v=490';
-import { WORLDS } from './worlds/registry.js?v=490';
-import { Net, PALETTE } from './net.js?v=490';
-import { Presence } from './lib/presence.js?v=490';
-import { Pulses } from './lib/pulse.js?v=490';
-import { BeatClock } from './lib/beatclock.js?v=490';
-import { BeatCue } from './lib/beatcue.js?v=490';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=490';
-import { Race, placeOf, standings } from './lib/race.js?v=490';
-import { Signals } from './lib/signals.js?v=490';
-import { pickShareLine, loadLines } from './lib/lines.js?v=490';
-import { RouteMap } from './lib/map.js?v=490';
-import * as sfx from './lib/sfx.js?v=490';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=490';
-import { glowTexture } from './lib/glow.js?v=490';
+import { AudioEngine } from './audio-engine.js?v=491';
+import { drawQR } from './lib/qr.js?v=491';
+import { WORLDS } from './worlds/registry.js?v=491';
+import { Net, PALETTE } from './net.js?v=491';
+import { Presence } from './lib/presence.js?v=491';
+import { Pulses } from './lib/pulse.js?v=491';
+import { BeatClock } from './lib/beatclock.js?v=491';
+import { BeatCue } from './lib/beatcue.js?v=491';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=491';
+import { Race, placeOf, standings } from './lib/race.js?v=491';
+import { Signals } from './lib/signals.js?v=491';
+import { pickShareLine, loadLines } from './lib/lines.js?v=491';
+import { RouteMap } from './lib/map.js?v=491';
+import * as sfx from './lib/sfx.js?v=491';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=491';
+import { glowTexture } from './lib/glow.js?v=491';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3376,9 +3376,9 @@ function burnWords(videoEl, srcBlob, words, mimeType) {
 }
 
 function openShareCard() {
-  $('shc-say').value = '';
-  $('shc-words').textContent = '';
-  $('shc-words').classList.add('hidden');
+  $('shc-say').value = 'y\u2019all have to try this';
+  $('shc-words').textContent = $('shc-say').value;
+  $('shc-words').classList.remove('hidden');
   $('shc-share').disabled = false;
   $('shc-share').textContent = 'SHARE THIS POST';
   const v = $('shc-video');
@@ -3394,7 +3394,7 @@ function openShareCard() {
     playCardVideo(v);
   } else {
     v.classList.add('hidden');
-    const still = shareStill();
+    const still = shareStill($('shc-say').value.trim());
     im.src = still.toDataURL('image/jpeg', 0.85);
     im.classList.remove('hidden');
     still.toBlob(b => { shareStillBlob = b; }, 'image/jpeg', 0.88);
@@ -3404,7 +3404,7 @@ function openShareCard() {
 // the emoji tray: tap to drop one at the cursor. Canvas text renders colour
 // emoji, so they burn onto the film like any other character.
 {
-  const TRAY = ['\u2728','\u2764\uFE0F','\ud83d\udd25','\ud83c\udf08','\ud83c\udfb6','\ud83c\udfa7','\ud83e\ude69','\ud83d\udc7b','\ud83c\udf19','\ud83c\udf52','\u2b50','\ud83d\udc8e','\ud83c\udf0a','\u26a1','\ud83d\ude08','\ud83d\ude2d','\ud83d\udc80','\ud83d\ude4c','\ud83d\udcab','\ud83c\udf88','\ud83e\udd29','\ud83d\udc83','\ud83d\udd7a','\ud83c\udf83','\ud83d\ude80','\ud83d\udc51','\ud83e\udd18','\ud83d\udca5'];
+  const TRAY = ['\u2728','\u2764\uFE0F','\ud83d\udd25','\ud83c\udf08','\ud83c\udfb6','\ud83c\udfa7','\ud83e\udea9','\ud83d\udc7b','\ud83c\udf19','\ud83c\udf52','\u2b50','\ud83d\udc8e','\ud83c\udf0a','\u26a1','\ud83d\ude08','\ud83d\ude2d','\ud83d\udc80','\ud83d\ude4c','\ud83d\udcab','\ud83c\udf88','\ud83e\udd29','\ud83d\udc83','\ud83d\udd7a','\ud83c\udf83','\ud83d\ude80','\ud83d\udc51','\ud83e\udd18','\ud83d\udca5'];
   const tray = $('shc-emoji');
   for (const e of TRAY) {
     const b = document.createElement('button');
