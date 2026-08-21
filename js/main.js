@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=486';
-import { drawQR } from './lib/qr.js?v=486';
-import { WORLDS } from './worlds/registry.js?v=486';
-import { Net, PALETTE } from './net.js?v=486';
-import { Presence } from './lib/presence.js?v=486';
-import { Pulses } from './lib/pulse.js?v=486';
-import { BeatClock } from './lib/beatclock.js?v=486';
-import { BeatCue } from './lib/beatcue.js?v=486';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=486';
-import { Race, placeOf, standings } from './lib/race.js?v=486';
-import { Signals } from './lib/signals.js?v=486';
-import { pickShareLine, loadLines } from './lib/lines.js?v=486';
-import { RouteMap } from './lib/map.js?v=486';
-import * as sfx from './lib/sfx.js?v=486';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=486';
-import { glowTexture } from './lib/glow.js?v=486';
+import { AudioEngine } from './audio-engine.js?v=488';
+import { drawQR } from './lib/qr.js?v=488';
+import { WORLDS } from './worlds/registry.js?v=488';
+import { Net, PALETTE } from './net.js?v=488';
+import { Presence } from './lib/presence.js?v=488';
+import { Pulses } from './lib/pulse.js?v=488';
+import { BeatClock } from './lib/beatclock.js?v=488';
+import { BeatCue } from './lib/beatcue.js?v=488';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=488';
+import { Race, placeOf, standings } from './lib/race.js?v=488';
+import { Signals } from './lib/signals.js?v=488';
+import { pickShareLine, loadLines } from './lib/lines.js?v=488';
+import { RouteMap } from './lib/map.js?v=488';
+import * as sfx from './lib/sfx.js?v=488';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=488';
+import { glowTexture } from './lib/glow.js?v=488';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3217,7 +3217,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app needed";
+    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app needed" + socialTag();
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3254,6 +3254,19 @@ $('rb-share').addEventListener('click', () => {
 // ── the player share card ── pre-built from the run that just ended: the
 // archetype's verdict big, their own clip beneath it, the CTA extending the
 // joke, and the song + QR small below. NEW LINE rerolls the verdict.
+// ── the artist's socials ── typed once beside the song title, remembered on
+// this device, and appended to every share their song rides out on. The song
+// is the ad; this is the address on the back of it.
+$('mq-social').value = localStorage.getItem('fp_social') || '';
+$('mq-social').addEventListener('input', () => {
+  localStorage.setItem('fp_social', $('mq-social').value.trim().slice(0, 80));
+});
+function socialTag() {
+  const v = ($('mq-social').value || localStorage.getItem('fp_social') || '').trim();
+  if (!v || !window.__sunoShare) return '';
+  return '\n' + (/^https?:\/\//i.test(v) ? v : v);
+}
+
 function shareCaption() {
   const l = window.__shareLine;
   const run = sig.lastRun || {};
@@ -3270,7 +3283,7 @@ function shareCaption() {
   const line = l ? l.text : pf.t;
   const cta = l ? l.cta : pf.c;
   const promo = window.__promoLink;
-  return line + ' ' + cta + '\n' + clipURL()
+  return line + ' ' + cta + '\n' + clipURL() + socialTag()
     + (promo ? '\n' + promo.label.replace(/^\u266a /, '') + ': ' + promo.url : '');
 }
 function shareStill() {
@@ -3996,7 +4009,7 @@ $('ac-share').addEventListener('click', () => {
   }
   const ext = acSaved.type.includes('mp4') ? 'mp4' : 'webm';
   const file = new File([acSaved.blob], 'fancy-britches-artist-card.' + ext, { type: acSaved.type });
-  const caption = ($('mq-title').value.trim() || 'my song') + ', from the inside: ' + clipURL();
+  const caption = ($('mq-title').value.trim() || 'my song') + ', from the inside: ' + clipURL() + socialTag();
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({ files: [file], text: caption }).catch(() => {});
   } else {
