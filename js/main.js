@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=523';
-import { drawQR } from './lib/qr.js?v=523';
-import { WORLDS } from './worlds/registry.js?v=523';
-import { Net, PALETTE } from './net.js?v=523';
-import { Presence } from './lib/presence.js?v=523';
-import { Pulses } from './lib/pulse.js?v=523';
-import { BeatClock } from './lib/beatclock.js?v=523';
-import { BeatCue } from './lib/beatcue.js?v=523';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=523';
-import { Race, placeOf, standings } from './lib/race.js?v=523';
-import { Signals } from './lib/signals.js?v=523';
-import { pickShareLine, loadLines } from './lib/lines.js?v=523';
-import { RouteMap } from './lib/map.js?v=523';
-import * as sfx from './lib/sfx.js?v=523';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=523';
-import { glowTexture } from './lib/glow.js?v=523';
+import { AudioEngine } from './audio-engine.js?v=524';
+import { drawQR } from './lib/qr.js?v=524';
+import { WORLDS } from './worlds/registry.js?v=524';
+import { Net, PALETTE } from './net.js?v=524';
+import { Presence } from './lib/presence.js?v=524';
+import { Pulses } from './lib/pulse.js?v=524';
+import { BeatClock } from './lib/beatclock.js?v=524';
+import { BeatCue } from './lib/beatcue.js?v=524';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=524';
+import { Race, placeOf, standings } from './lib/race.js?v=524';
+import { Signals } from './lib/signals.js?v=524';
+import { pickShareLine, loadLines } from './lib/lines.js?v=524';
+import { RouteMap } from './lib/map.js?v=524';
+import * as sfx from './lib/sfx.js?v=524';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=524';
+import { glowTexture } from './lib/glow.js?v=524';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2327,7 +2327,10 @@ function haptic(pattern) {
     const box = document.getElementById('hbox');
     if (!box) return;
     const ticks = Array.isArray(pattern) ? Math.min(3, Math.ceil(pattern.length / 2)) : 1;
-    for (let i = 0; i < ticks; i++) setTimeout(() => { try { box.click(); } catch { } }, i * 90);
+    // the FIRST flip happens synchronously: iOS only honours the tick when
+    // the flip still holds the user's gesture — a timer breaks that claim
+    try { box.click(); } catch { }
+    for (let i = 1; i < ticks; i++) setTimeout(() => { try { box.click(); } catch { } }, i * 90);
   }
 }
 window.__haptic = haptic;
