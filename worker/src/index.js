@@ -154,6 +154,11 @@ export class FancyPantsRoom {
         hue: Number.isFinite(+b.hue) ? ((+b.hue % 360) + 360) % 360 : 265,
         look: /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '',
         mood: String(b.mood || '').slice(0, 80),
+        // what they're here for, and a few things said in their own words
+        intents: (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3),
+        prompts: (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
+          q: String((x && x.q) || '').slice(0, 60), a: String((x && x.a) || '').slice(0, 160),
+        })).filter(x => x.q && x.a),
         hidden: [],
         at: Date.now(),
       };
@@ -178,6 +183,10 @@ export class FancyPantsRoom {
       if ('hue' in b && Number.isFinite(+b.hue)) page.hue = ((+b.hue % 360) + 360) % 360;
       if ('look' in b) page.look = /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '';
       if ('mood' in b) page.mood = String(b.mood || '').slice(0, 80);
+      if ('intents' in b) page.intents = (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3);
+      if ('prompts' in b) page.prompts = (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
+        q: String((x && x.q) || '').slice(0, 60), a: String((x && x.a) || '').slice(0, 160),
+      })).filter(x => x.q && x.a);
       if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
@@ -202,7 +211,7 @@ export class FancyPantsRoom {
       }
       const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '',
         type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265,
-        look: page.look || '', mood: page.mood || '', songs };
+        look: page.look || '', mood: page.mood || '', intents: page.intents || [], prompts: page.prompts || [], songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -548,6 +557,10 @@ export default {
           + '<a class="room" href="' + SITE_URL + '">step inside and play along</a></div>'
         : '';
       const kind = isStreamer ? 'streamer' : 'artist';
+      const intentRow = (pg.intents || []).length
+        ? '<p class="here">here for ' + pg.intents.map(x => '<b>' + esc(x) + '</b>').join(' · ') + '</p>' : '';
+      const promptRows = (pg.prompts || []).map(x =>
+        '<div class="prompt"><em>' + esc(x.q) + '</em><span>' + esc(x.a) + '</span></div>').join('');
       // the page IS their world: the game runs silently behind the card in
       // stage mode, wearing their look, moving to a heartbeat
       const stageSrc = SITE_URL + '?stage=1&world=' + encodeURIComponent(lead ? lead.world : 'tunnel')
@@ -579,6 +592,11 @@ export default {
         + ':root{--h:' + H + '}'
         + '.stage{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;filter:brightness(0.62) saturate(1.1)}'
         + '.mood{margin:-2px 0 18px;font-style:italic;color:hsl(var(--h),80%,82%);font-size:17px}'
+        + '.here{margin:0 0 16px;font:11.5px ui-monospace,Menlo,monospace;letter-spacing:2px;text-transform:uppercase;color:#9a94c4}.here b{font-weight:400;color:hsl(var(--h),85%,84%)}'
+        + '.prompts{margin:6px auto 26px;max-width:460px;display:flex;flex-direction:column;gap:10px;text-align:left}'
+        + '.prompt{padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(180,170,230,0.18)}'
+        + '.prompt em{display:block;font-style:normal;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;text-transform:uppercase;color:#9a94c4;margin-bottom:3px}'
+        + '.prompt span{font-style:italic;color:#ece8ff}'
         + '.mood::before{content:"\\201C"}.mood::after{content:"\\201D"}'
         + '*{box-sizing:border-box}'
         + 'body{margin:0;min-height:100vh;background:#07060f;color:#eceafb;font:16px/1.6 Georgia,serif;}'
@@ -624,9 +642,11 @@ export default {
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.mood ? '<p class="mood">' + esc(pg.mood) + '</p>' : '')
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
+        + intentRow
         + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
+        + (promptRows ? '<div class="prompts">' + promptRows + '</div>' : '')
         + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'

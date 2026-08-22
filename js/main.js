@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=550';
-import { drawQR } from './lib/qr.js?v=550';
-import { WORLDS } from './worlds/registry.js?v=550';
-import { Net, PALETTE } from './net.js?v=550';
-import { Presence } from './lib/presence.js?v=550';
-import { Pulses } from './lib/pulse.js?v=550';
-import { BeatClock } from './lib/beatclock.js?v=550';
-import { BeatCue } from './lib/beatcue.js?v=550';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=550';
-import { Race, placeOf, standings } from './lib/race.js?v=550';
-import { Signals } from './lib/signals.js?v=550';
-import { pickShareLine, loadLines } from './lib/lines.js?v=550';
-import { RouteMap } from './lib/map.js?v=550';
-import * as sfx from './lib/sfx.js?v=550';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=550';
-import { glowTexture } from './lib/glow.js?v=550';
+import { AudioEngine } from './audio-engine.js?v=551';
+import { drawQR } from './lib/qr.js?v=551';
+import { WORLDS } from './worlds/registry.js?v=551';
+import { Net, PALETTE } from './net.js?v=551';
+import { Presence } from './lib/presence.js?v=551';
+import { Pulses } from './lib/pulse.js?v=551';
+import { BeatClock } from './lib/beatclock.js?v=551';
+import { BeatCue } from './lib/beatcue.js?v=551';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=551';
+import { Race, placeOf, standings } from './lib/race.js?v=551';
+import { Signals } from './lib/signals.js?v=551';
+import { pickShareLine, loadLines } from './lib/lines.js?v=551';
+import { RouteMap } from './lib/map.js?v=551';
+import * as sfx from './lib/sfx.js?v=551';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=551';
+import { glowTexture } from './lib/glow.js?v=551';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2906,6 +2906,11 @@ async function openCreatorCard() {
         $('cc-tip').value = d.tip || '';
         $('cc-photo').value = d.photo || '';
         $('cc-mood').value = d.mood || '';
+        document.querySelectorAll('#cc-intents .chip').forEach(b => b.classList.toggle('on', (d.intents || []).includes(b.dataset.intent)));
+        const pm = {}; (d.prompts || []).forEach(x => { pm[x.q] = x.a; });
+        $('cc-p1').value = pm['the song that gets me out of bed'] || '';
+        $('cc-p2').value = pm['what I\u2019m making right now'] || '';
+        $('cc-p3').value = pm['I\u2019m up at night because'] || '';
         $('cc-watch').value = d.watch || '';
         setCcType(d.type || 'artist');
         (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
@@ -2929,6 +2934,7 @@ function setCcType(t) {
   $('cct-streamer').classList.toggle('on', ccType === 'streamer');
   $('cc-watch').classList.toggle('hidden', ccType !== 'streamer');
 }
+document.querySelectorAll('#cc-intents .chip').forEach(b => b.addEventListener('click', () => b.classList.toggle('on')));
 $('cct-artist').addEventListener('click', () => setCcType('artist'));
 $('cct-streamer').addEventListener('click', () => setCcType('streamer'));
 $('mq-page').addEventListener('click', openCreatorCard);
@@ -2943,6 +2949,9 @@ $('cc-save').addEventListener('click', async () => {
     bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), tip: $('cc-tip').value.trim(), links,
     type: ccType, photo: $('cc-photo').value.trim(), watch: $('cc-watch').value.trim(),
     mood: $('cc-mood').value.trim(),
+    intents: [...document.querySelectorAll('#cc-intents .chip.on')].map(b => b.dataset.intent),
+    prompts: [['the song that gets me out of bed', 'cc-p1'], ['what I\u2019m making right now', 'cc-p2'], ['I\u2019m up at night because', 'cc-p3']]
+      .map(([q, id]) => ({ q, a: $(id).value.trim() })).filter(x => x.a),
     hue: settings.hue,   // the page wears the look you were wearing when you made it
     look: [settings.colorMode, settings.pattern, settings.shape, Math.round(settings.hue)].join('.'),
   };
