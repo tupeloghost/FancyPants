@@ -403,6 +403,9 @@
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
   #cc-watch.hidden { display: none; }
+  #cc-prompts { display: flex; flex-direction: column; gap: 8px; margin: 4px 0; }
+  .cc-prow { display: flex; flex-direction: column; gap: 4px; }
+  .cc-prow select { font-size: 12px; letter-spacing: 0.4px; }
   #pr-url {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
@@ -2529,9 +2532,12 @@
       <button class="chip" data-intent="collaborators">COLLABORATORS</button>
       <button class="chip" data-intent="business">BUSINESS</button>
     </div>
-    <input id="cc-p1" maxlength="160" placeholder="the song that gets me out of bed&hellip; (optional)" autocomplete="off">
-    <input id="cc-p2" maxlength="160" placeholder="what I&rsquo;m making right now&hellip; (optional)" autocomplete="off">
-    <input id="cc-p3" maxlength="160" placeholder="I&rsquo;m up at night because&hellip; (optional)" autocomplete="off">
+    <!-- icebreakers: pick any three from the bank, answer in your own words -->
+    <div id="cc-prompts">
+      <div class="cc-prow"><select id="cc-q1"></select><input id="cc-p1" maxlength="160" placeholder="your answer (optional)" autocomplete="off"></div>
+      <div class="cc-prow"><select id="cc-q2"></select><input id="cc-p2" maxlength="160" placeholder="your answer (optional)" autocomplete="off"></div>
+      <div class="cc-prow"><select id="cc-q3"></select><input id="cc-p3" maxlength="160" placeholder="your answer (optional)" autocomplete="off"></div>
+    </div>
     <input id="cc-photo" maxlength="400" placeholder="a photo of you: paste an image link (optional)" autocomplete="off" spellcheck="false">
     <input id="cc-watch" maxlength="300" class="hidden" placeholder="where folks watch you: twitch, youtube, kick&hellip;" autocomplete="off" spellcheck="false">
     <textarea id="cc-bio" maxlength="500" rows="3" placeholder="a couple lines about you"></textarea>
@@ -2913,7 +2919,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 553</div>
+      <div id="build-stamp">build 554</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2955,6 +2961,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=553"></script>
+<script type="module" src="js/main.js?v=554"></script>
 </body>
 </html>

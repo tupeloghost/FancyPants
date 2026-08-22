@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=553';
-import { drawQR } from './lib/qr.js?v=553';
-import { WORLDS } from './worlds/registry.js?v=553';
-import { Net, PALETTE } from './net.js?v=553';
-import { Presence } from './lib/presence.js?v=553';
-import { Pulses } from './lib/pulse.js?v=553';
-import { BeatClock } from './lib/beatclock.js?v=553';
-import { BeatCue } from './lib/beatcue.js?v=553';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=553';
-import { Race, placeOf, standings } from './lib/race.js?v=553';
-import { Signals } from './lib/signals.js?v=553';
-import { pickShareLine, loadLines } from './lib/lines.js?v=553';
-import { RouteMap } from './lib/map.js?v=553';
-import * as sfx from './lib/sfx.js?v=553';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=553';
-import { glowTexture } from './lib/glow.js?v=553';
+import { AudioEngine } from './audio-engine.js?v=554';
+import { drawQR } from './lib/qr.js?v=554';
+import { WORLDS } from './worlds/registry.js?v=554';
+import { Net, PALETTE } from './net.js?v=554';
+import { Presence } from './lib/presence.js?v=554';
+import { Pulses } from './lib/pulse.js?v=554';
+import { BeatClock } from './lib/beatclock.js?v=554';
+import { BeatCue } from './lib/beatcue.js?v=554';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=554';
+import { Race, placeOf, standings } from './lib/race.js?v=554';
+import { Signals } from './lib/signals.js?v=554';
+import { pickShareLine, loadLines } from './lib/lines.js?v=554';
+import { RouteMap } from './lib/map.js?v=554';
+import * as sfx from './lib/sfx.js?v=554';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=554';
+import { glowTexture } from './lib/glow.js?v=554';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2910,10 +2910,11 @@ async function openCreatorCard() {
         $('cc-photo').value = d.photo || '';
         $('cc-mood').value = d.mood || '';
         document.querySelectorAll('#cc-intents .chip').forEach(b => b.classList.toggle('on', (d.intents || []).includes(b.dataset.intent)));
-        const pm = {}; (d.prompts || []).forEach(x => { pm[x.q] = x.a; });
-        $('cc-p1').value = pm['the song that gets me out of bed'] || '';
-        $('cc-p2').value = pm['what I\u2019m making right now'] || '';
-        $('cc-p3').value = pm['I\u2019m up at night because'] || '';
+        (d.prompts || []).slice(0, 3).forEach((x, i) => {
+          const sel = $('cc-q' + (i + 1));
+          if (![...sel.options].some(o => o.value === x.q)) sel.add(new Option(x.q, x.q));
+          sel.value = x.q; $('cc-p' + (i + 1)).value = x.a || '';
+        });
         $('cc-watch').value = d.watch || '';
         setCcType(d.type || 'artist');
         (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
@@ -2937,6 +2938,29 @@ function setCcType(t) {
   $('cct-streamer').classList.toggle('on', ccType === 'streamer');
   $('cc-watch').classList.toggle('hidden', ccType !== 'streamer');
 }
+// the icebreaker bank: prompts that make a stranger grin and want to answer back
+const PROMPT_BANK = [
+  'the song I\u2019d put on to win an argument',
+  'my karaoke weapon',
+  'the last thing that made me dance in my kitchen',
+  'a hill I will die on',
+  'my most unhinged late-night snack',
+  'a song that\u2019s secretly about me',
+  'what plays when I walk into a room',
+  'two truths and a lie',
+  'I\u2019m weirdly good at',
+  'the concert I\u2019d time-travel to',
+  'a warning label for me',
+  'you should say hey if',
+  'the thing I talk about too much',
+  'what I\u2019m making right now',
+  'I\u2019m up at night because',
+];
+[1, 2, 3].forEach(i => {
+  const sel = $('cc-q' + i);
+  PROMPT_BANK.forEach(q => sel.add(new Option(q, q)));
+  sel.selectedIndex = (i - 1) * 3 % PROMPT_BANK.length;   // three different starters
+});
 document.querySelectorAll('#cc-intents .chip').forEach(b => b.addEventListener('click', () => b.classList.toggle('on')));
 $('cct-artist').addEventListener('click', () => setCcType('artist'));
 $('cct-streamer').addEventListener('click', () => setCcType('streamer'));
@@ -2953,8 +2977,7 @@ $('cc-save').addEventListener('click', async () => {
     type: ccType, photo: $('cc-photo').value.trim(), watch: $('cc-watch').value.trim(),
     mood: $('cc-mood').value.trim(),
     intents: [...document.querySelectorAll('#cc-intents .chip.on')].map(b => b.dataset.intent),
-    prompts: [['the song that gets me out of bed', 'cc-p1'], ['what I\u2019m making right now', 'cc-p2'], ['I\u2019m up at night because', 'cc-p3']]
-      .map(([q, id]) => ({ q, a: $(id).value.trim() })).filter(x => x.a),
+    prompts: [1, 2, 3].map(i => ({ q: $('cc-q' + i).value, a: $('cc-p' + i).value.trim() })).filter(x => x.q && x.a),
     hue: settings.hue,   // the page wears the look you were wearing when you made it
     look: [settings.colorMode, settings.pattern, settings.shape, Math.round(settings.hue)].join('.'),
   };
