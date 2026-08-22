@@ -590,6 +590,28 @@ export default {
       return reply({ ok: true, provider, title });
     }
 
+    // /badge.svg?t=TITLE — the embed button artists paste onto their own
+    // sites: a dark pill, accent rim, "step inside 'song'" in the house serif.
+    // Served as an image so it works anywhere an <img> does.
+    if (url.pathname === '/badge.svg') {
+      const esc = x => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const t = (url.searchParams.get('t') || '').trim().slice(0, 40);
+      const label = t ? `step inside \u2018${t}\u2019` : 'step inside the song';
+      const w = Math.max(260, Math.min(600, Math.round(label.length * 11.5 + 180)));
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="52" viewBox="0 0 ${w} 52" role="img" aria-label="${esc(label)} on Fancy Britches">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9ad5"/><stop offset="1" stop-color="#7b6cff"/></linearGradient></defs>
+<rect x="1" y="1" width="${w - 2}" height="50" rx="25" fill="#0b0c14" stroke="url(#g)" stroke-width="1.5"/>
+<circle cx="30" cy="26" r="9" fill="none" stroke="url(#g)" stroke-width="1.6"/><circle cx="30" cy="26" r="2.4" fill="url(#g)"/>
+<text x="50" y="31" font-family="Didot, 'Bodoni 72', Georgia, serif" font-size="16" letter-spacing="1.2" fill="#f3f0ff">${esc(label)}</text>
+<text x="${w - 14}" y="31" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="8.5" letter-spacing="1.6" fill="#9a94c4">FANCY BRITCHES</text>
+</svg>`;
+      return new Response(svg, { headers: {
+        'Content-Type': 'image/svg+xml; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+        'Access-Control-Allow-Origin': '*',
+      } });
+    }
+
     // /thisweek — wherever the special is right now
     if (url.pathname === '/thisweek') {
       const FEATURED = ['tunnel'];

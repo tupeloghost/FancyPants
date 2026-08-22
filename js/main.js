@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=546';
-import { drawQR } from './lib/qr.js?v=546';
-import { WORLDS } from './worlds/registry.js?v=546';
-import { Net, PALETTE } from './net.js?v=546';
-import { Presence } from './lib/presence.js?v=546';
-import { Pulses } from './lib/pulse.js?v=546';
-import { BeatClock } from './lib/beatclock.js?v=546';
-import { BeatCue } from './lib/beatcue.js?v=546';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=546';
-import { Race, placeOf, standings } from './lib/race.js?v=546';
-import { Signals } from './lib/signals.js?v=546';
-import { pickShareLine, loadLines } from './lib/lines.js?v=546';
-import { RouteMap } from './lib/map.js?v=546';
-import * as sfx from './lib/sfx.js?v=546';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=546';
-import { glowTexture } from './lib/glow.js?v=546';
+import { AudioEngine } from './audio-engine.js?v=547';
+import { drawQR } from './lib/qr.js?v=547';
+import { WORLDS } from './worlds/registry.js?v=547';
+import { Net, PALETTE } from './net.js?v=547';
+import { Presence } from './lib/presence.js?v=547';
+import { Pulses } from './lib/pulse.js?v=547';
+import { BeatClock } from './lib/beatclock.js?v=547';
+import { BeatCue } from './lib/beatcue.js?v=547';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=547';
+import { Race, placeOf, standings } from './lib/race.js?v=547';
+import { Signals } from './lib/signals.js?v=547';
+import { pickShareLine, loadLines } from './lib/lines.js?v=547';
+import { RouteMap } from './lib/map.js?v=547';
+import * as sfx from './lib/sfx.js?v=547';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=547';
+import { glowTexture } from './lib/glow.js?v=547';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3478,6 +3478,20 @@ function creditText() {
     .filter(Boolean).join('  \u00b7  ');
 }
 window.__credit = creditText;   // debug handle
+// ── the embed button ── one snippet for the artist's own site: the song's
+// share link wrapped around a badge the worker draws. Link-only bios get
+// the bare link in the same copy, so it works everywhere.
+$('mq-embed').addEventListener('click', async e => {
+  e.stopPropagation();
+  const title = ($('mq-title').value.trim() || (window.__sunoShare ? sunoTrack.split(' \u00b7 ')[0] : '') || '').slice(0, 40);
+  const href = clipURL();
+  const badge = SUNO_PROXY + 'badge.svg' + (title ? '?t=' + encodeURIComponent(title) : '');
+  const snippet = '<a href="' + href + '" target="_blank" rel="noopener"><img src="' + badge
+    + '" alt="step inside ' + (title ? '\u2018' + title.replace(/"/g, '') + '\u2019' : 'the song') + ' on Fancy Britches" height="52"></a>';
+  const text = snippet + '\n\nlink only (linktree, bios): ' + href;
+  try { await navigator.clipboard.writeText(text); flash('COPIED. PASTE IT ON YOUR SITE OR IN YOUR BIO', 3200); }
+  catch { window.prompt('copy this', text); }
+});
 function socialTag() {
   const v = ($('mq-social').value || localStorage.getItem('fp_social') || '').trim();
   if (!v || !window.__sunoShare) return '';
