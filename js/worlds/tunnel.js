@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=521';
+import { glowTexture } from '../lib/glow.js?v=522';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring

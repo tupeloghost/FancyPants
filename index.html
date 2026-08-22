@@ -2655,7 +2655,7 @@
     <button class="rbtn hero" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-again">PLAY AGAIN</button>
     <button class="rbtn" id="rb-next">NEXT WORLD</button>
-    <button class="rbtn" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
+    <button class="rbtn hidden" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
     <button class="rbtn hidden" id="rb-recap">RECAP CARD</button>
   </div>
   <div id="results-stats">
@@ -2685,7 +2685,7 @@
   <button class="qb" id="qb-next" title="next track  →"><i>&#9656;</i><em>next</em></button>
   <span class="qsep" id="qsep-1"></span>
   <button class="qb" id="qb-world" title="next world  W"><i>&#9670;</i><em>world</em></button>
-  <button class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
+  <button style="display:none" class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
   <span class="qsep"></span>
   <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
   <span class="qsep"></span>
@@ -2712,6 +2712,10 @@
       <div class="row host-only">
         <div class="am-pick" id="am-row">
           <button id="am-instr" class="on">INSTRUMENTAL</button><button id="am-vocals">WITH VOCALS</button>
+        </div>
+        <div class="chill-row">
+          <button id="pm-roll" class="chip">&#9834; NONSTOP SONGS</button>
+          <button id="pm-wander" class="chip">&#9670; DRIFT BETWEEN WORLDS</button>
         </div>
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
@@ -2822,7 +2826,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 521</div>
+      <div id="build-stamp">build 522</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2864,6 +2868,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=521"></script>
+<script type="module" src="js/main.js?v=522"></script>
 </body>
 </html>

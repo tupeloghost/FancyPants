@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=521';
-import { drawQR } from './lib/qr.js?v=521';
-import { WORLDS } from './worlds/registry.js?v=521';
-import { Net, PALETTE } from './net.js?v=521';
-import { Presence } from './lib/presence.js?v=521';
-import { Pulses } from './lib/pulse.js?v=521';
-import { BeatClock } from './lib/beatclock.js?v=521';
-import { BeatCue } from './lib/beatcue.js?v=521';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=521';
-import { Race, placeOf, standings } from './lib/race.js?v=521';
-import { Signals } from './lib/signals.js?v=521';
-import { pickShareLine, loadLines } from './lib/lines.js?v=521';
-import { RouteMap } from './lib/map.js?v=521';
-import * as sfx from './lib/sfx.js?v=521';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=521';
-import { glowTexture } from './lib/glow.js?v=521';
+import { AudioEngine } from './audio-engine.js?v=522';
+import { drawQR } from './lib/qr.js?v=522';
+import { WORLDS } from './worlds/registry.js?v=522';
+import { Net, PALETTE } from './net.js?v=522';
+import { Presence } from './lib/presence.js?v=522';
+import { Pulses } from './lib/pulse.js?v=522';
+import { BeatClock } from './lib/beatclock.js?v=522';
+import { BeatCue } from './lib/beatcue.js?v=522';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=522';
+import { Race, placeOf, standings } from './lib/race.js?v=522';
+import { Signals } from './lib/signals.js?v=522';
+import { pickShareLine, loadLines } from './lib/lines.js?v=522';
+import { RouteMap } from './lib/map.js?v=522';
+import * as sfx from './lib/sfx.js?v=522';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=522';
+import { glowTexture } from './lib/glow.js?v=522';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2968,9 +2968,11 @@ function askMode() {
 let chillRoll = localStorage.getItem('fp_roll') === '1';
 let chillWander = localStorage.getItem('fp_wander') === '1';
 function syncChillUI() {
-  const r = document.getElementById('mc-roll'), w = document.getElementById('mc-wander');
-  if (r) r.classList.toggle('on', chillRoll);
-  if (w) w.classList.toggle('on', chillWander);
+  for (const [id, on] of [['mc-roll', chillRoll], ['pm-roll', chillRoll],
+                          ['mc-wander', chillWander], ['pm-wander', chillWander]]) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('on', on);
+  }
 }
 document.getElementById('mc-roll').addEventListener('click', e => {
   e.stopPropagation();
@@ -2986,6 +2988,16 @@ document.getElementById('mc-wander').addEventListener('click', e => {
   localStorage.setItem('fp_wander', chillWander ? '1' : '');
   syncChillUI();
 });
+// the panel's copies flip the same switches
+const _roll = () => { chillRoll = !chillRoll; localStorage.setItem('fp_roll', chillRoll ? '1' : ''); syncChillUI(); };
+const _wander = () => {
+  chillWander = !chillWander;
+  if (chillWander && !chillRoll) { chillRoll = true; localStorage.setItem('fp_roll', '1'); }
+  localStorage.setItem('fp_wander', chillWander ? '1' : '');
+  syncChillUI();
+};
+if ($('pm-roll')) $('pm-roll').addEventListener('click', e => { e.stopPropagation(); _roll(); });
+if ($('pm-wander')) $('pm-wander').addEventListener('click', e => { e.stopPropagation(); _wander(); });
 syncChillUI();
 
 // the next wandering world in the ring: rounds ask things of you, so the
