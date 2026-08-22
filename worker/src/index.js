@@ -180,9 +180,12 @@ export class FancyPantsRoom {
       // their promoted songs appear automatically: every /w/{slug}/... link
       const wl = await this.state.storage.list({ prefix: 'w:' + slug + '/' });
       const songs = [];
-      for (const [k] of wl) {
+      for (const [k, v] of wl) {
         const path = k.slice(2);
-        if (!page.hidden.includes(path)) songs.push(path);
+        if (page.hidden.includes(path)) continue;
+        // each song's home world rides along, so the page can show it
+        const home = v && v.song ? await this.state.storage.get('sh:' + v.song) : null;
+        songs.push({ path, world: (home && home.world) || '' });
       }
       const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
@@ -512,51 +515,78 @@ export default {
       const pg = await r.json().catch(() => ({}));
       if (!pg.slug) return new Response('no such page', { status: 404 });
       const esc = t => String(t || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-      const songRows = (pg.songs || []).map(p2 => {
-        const title = p2.split('/')[1].replace(/-/g, ' ');
-        return '<a class="song" href="https://fancy-pants.tupeloghost.workers.dev/w/' + p2 + '">\u266a ' + esc(title) + ' <span>play it \u2192</span></a>';
-      }).join('');
+      const songs = (pg.songs || []).map(o => {
+        const p2 = typeof o === 'string' ? o : o.path;
+        const world = (typeof o === 'string' ? '' : o.world) || 'tunnel';
+        return { p: p2, world, label: world.toUpperCase(), title: (p2.split('/')[1] || '').replace(/-/g, ' ') };
+      });
+      const lead = songs[0];
+      const heroImg = lead ? SITE_URL + 'previews/' + esc(lead.world) + '.jpg' : SITE_URL + 'og.jpg';
+      // the lead song is the page's thesis: one big door. the rest are rows.
+      const heroBtn = lead
+        ? '<a class="hero" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(lead.p) + '">'
+          + '<span class="eyebrow">step inside</span><b>' + esc(lead.title) + '</b><i>in ' + esc(lead.label) + '</i></a>'
+        : '';
+      const songRows = songs.slice(1).map(sg =>
+        '<a class="song" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(sg.p) + '">'
+        + '<img src="' + SITE_URL + 'previews/' + esc(sg.world) + '.jpg" alt="">'
+        + '<span class="t">' + esc(sg.title) + '<em>in ' + esc(sg.label) + '</em></span>'
+        + '<span class="go">step inside →</span></a>').join('');
       const linkRows = (pg.links || []).map(l =>
         '<a class="pill" href="' + esc(l.url) + '" rel="noopener">' + esc(l.label) + '</a>').join('');
       const html = '<!doctype html><html><head><meta charset="utf-8">'
-        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
         + '<meta name="robots" content="noindex">'
         + '<title>' + esc(pg.name) + '</title>'
-        + '<meta property="og:title" content="' + esc(pg.name) + '">'
+        + '<meta property="og:title" content="' + esc(pg.name) + (lead ? ' · step inside ‘' + esc(lead.title) + '’' : '') + '">'
         + '<meta property="og:description" content="' + esc(pg.nextAt && pg.next ? pg.next : (pg.bio || 'songs you can step inside, right in the browser')) + '">'
         + '<meta property="og:site_name" content="Fancy Britches">'
-        + '<meta property="og:image" content="' + SITE_URL + 'og.jpg">'
+        + '<meta property="og:image" content="' + heroImg + '">'
         + '<meta name="twitter:card" content="summary_large_image">'
         + '<meta name="twitter:title" content="' + esc(pg.name) + '">'
-        + '<meta name="twitter:image" content="' + SITE_URL + 'og.jpg">'
+        + '<meta name="twitter:image" content="' + heroImg + '">'
         + '<style>'
-        + 'body{margin:0;min-height:100vh;background:radial-gradient(1200px 700px at 50% -10%,#1a1430,#07060f 60%);'
-        + 'color:#eceafb;font:16px/1.6 Georgia,serif;display:flex;justify-content:center;padding:48px 18px;}'
-        + '.card{max-width:520px;width:100%;text-align:center;}'
-        + 'h1{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:44px;margin:0 0 6px;letter-spacing:1px;}'
-        + '.bio{font-style:italic;color:#b9b3da;margin:0 0 22px;white-space:pre-wrap;}'
-        + '.next{color:#eece78;font-style:italic;margin:0 0 26px;}'
-        + '.pill{display:inline-block;margin:5px;padding:11px 20px;border:1px solid rgba(180,170,230,0.35);'
-        + 'border-radius:24px;color:#e6e2fa;text-decoration:none;background:rgba(255,255,255,0.05);}'
-        + '.pill:hover{border-color:#a99ce8;}'
+        + '*{box-sizing:border-box}'
+        + 'body{margin:0;min-height:100vh;background:#07060f;color:#eceafb;font:16px/1.6 Georgia,serif;}'
+        + '.bg{position:fixed;inset:0;background:url(' + heroImg + ') center/cover;filter:blur(38px) saturate(1.3) brightness(0.45);transform:scale(1.15);z-index:0}'
+        + '.veil{position:fixed;inset:0;background:radial-gradient(900px 600px at 50% 0%,rgba(20,16,40,0.2),rgba(7,6,15,0.92) 70%);z-index:0}'
+        + '.card{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:52px 18px 40px;text-align:center;}'
+        + '.on{font:11px ui-monospace,Menlo,monospace;letter-spacing:3px;color:#9a94c4;text-transform:uppercase;margin:0 0 10px}'
+        + 'h1{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:46px;margin:0 0 8px;letter-spacing:1px;line-height:1.1}'
+        + '.bio{font-style:italic;color:#c4bfe3;margin:0 auto 22px;max-width:460px;white-space:pre-wrap;}'
+        + '.next{color:#eece78;font-style:italic;margin:0 0 22px;}'
+        + '.hero{display:block;margin:8px auto 26px;max-width:420px;padding:22px 26px;border-radius:22px;text-decoration:none;color:#130f26;'
+        + 'background:linear-gradient(175deg,#fff1f8,#d9c8ff 60%,#b8a6ff);box-shadow:0 14px 50px rgba(170,140,255,0.35),inset 0 1px 0 rgba(255,255,255,0.8);}'
+        + '.hero .eyebrow{display:block;font:11px ui-monospace,Menlo,monospace;letter-spacing:3px;text-transform:uppercase;color:#4b3f7a}'
+        + '.hero b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:30px;line-height:1.15;margin:4px 0 2px;text-transform:capitalize}'
+        + '.hero i{display:block;font-size:13px;color:#5a4f8a}'
+        + '.songs{margin:0 0 26px;display:flex;flex-direction:column;gap:10px;}'
+        + '.song{display:flex;align-items:center;gap:14px;padding:10px 14px 10px 10px;border-radius:16px;text-align:left;'
+        + 'background:rgba(255,255,255,0.06);border:1px solid rgba(180,170,230,0.22);color:#f0eefc;text-decoration:none;}'
+        + '.song img{width:58px;height:40px;object-fit:cover;border-radius:9px;flex:none}'
+        + '.song .t{flex:1;text-transform:capitalize}.song .t em{display:block;font-style:normal;font-size:12px;color:#9a94c4;text-transform:none}'
+        + '.song .go{color:#d9c8ff;font-size:13px;white-space:nowrap}'
+        + '.song:hover{border-color:#a99ce8;background:rgba(255,255,255,0.09)}'
         + '.tip{display:inline-block;margin:2px 0 18px;padding:13px 30px;border-radius:999px;color:#1b1430;'
         + 'background:linear-gradient(175deg,#ffe9a8,#eece78);font-weight:600;text-decoration:none;'
         + 'box-shadow:0 4px 22px rgba(238,206,120,0.35);}'
-        + '.songs{margin:30px 0 0;display:flex;flex-direction:column;gap:9px;}'
-        + '.song{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-radius:14px;'
-        + 'background:rgba(255,255,255,0.055);border:1px solid rgba(180,170,230,0.22);color:#f0eefc;text-decoration:none;}'
-        + '.song span{color:#b9b3da;font-size:13px;}'
-        + '.song:hover{border-color:#a99ce8;}'
-        + 'footer{margin-top:44px;font-size:12.5px;color:#8d87b0;}footer a{color:#b9b3da;}'
-        + '</style></head><body><div class="card">'
+        + '.pill{display:inline-block;margin:5px;padding:10px 18px;border:1px solid rgba(180,170,230,0.35);'
+        + 'border-radius:24px;color:#e6e2fa;text-decoration:none;background:rgba(255,255,255,0.05);font-size:14px}'
+        + '.pill:hover{border-color:#a99ce8;}'
+        + 'footer{margin-top:40px;font-size:12.5px;color:#8d87b0;}footer a{color:#b9b3da;}'
+        + '</style></head><body><div class="bg"></div><div class="veil"></div><div class="card">'
+        + '<p class="on">on fancy britches</p>'
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
         + (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : '')
+        + heroBtn
+        + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
-        + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'
-        + '</div>'        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent="going live "+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')        + '</body></html>';
+        + '</div>'
+        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent="going live "+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')
+        + '</body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
