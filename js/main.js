@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=551';
-import { drawQR } from './lib/qr.js?v=551';
-import { WORLDS } from './worlds/registry.js?v=551';
-import { Net, PALETTE } from './net.js?v=551';
-import { Presence } from './lib/presence.js?v=551';
-import { Pulses } from './lib/pulse.js?v=551';
-import { BeatClock } from './lib/beatclock.js?v=551';
-import { BeatCue } from './lib/beatcue.js?v=551';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=551';
-import { Race, placeOf, standings } from './lib/race.js?v=551';
-import { Signals } from './lib/signals.js?v=551';
-import { pickShareLine, loadLines } from './lib/lines.js?v=551';
-import { RouteMap } from './lib/map.js?v=551';
-import * as sfx from './lib/sfx.js?v=551';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=551';
-import { glowTexture } from './lib/glow.js?v=551';
+import { AudioEngine } from './audio-engine.js?v=553';
+import { drawQR } from './lib/qr.js?v=553';
+import { WORLDS } from './worlds/registry.js?v=553';
+import { Net, PALETTE } from './net.js?v=553';
+import { Presence } from './lib/presence.js?v=553';
+import { Pulses } from './lib/pulse.js?v=553';
+import { BeatClock } from './lib/beatclock.js?v=553';
+import { BeatCue } from './lib/beatcue.js?v=553';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=553';
+import { Race, placeOf, standings } from './lib/race.js?v=553';
+import { Signals } from './lib/signals.js?v=553';
+import { pickShareLine, loadLines } from './lib/lines.js?v=553';
+import { RouteMap } from './lib/map.js?v=553';
+import * as sfx from './lib/sfx.js?v=553';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=553';
+import { glowTexture } from './lib/glow.js?v=553';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2770,6 +2770,9 @@ function startRoom(code, name, asOwner) {
   net.onPromoted = () => {
     document.body.classList.remove('guest');
     document.body.classList.add('hosting');
+    // the crown comes with the music: a room's first arrival (a page's "play
+    // together" visitor) must not stand in silence waiting for a host
+    if (!audio.el.src && !window.__STAGE) setTimeout(() => playAuto(false), 200);
     const code = net.room || '';
     if (code) {
       const joinURL = location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
@@ -5322,7 +5325,9 @@ if (window.__namesOff) presence.namesVisible = false;
     // to THAT room, name auto-picked — one tap from camera to the game
     $('join-room').value = room.toUpperCase();
     window.__joinIntent = room.toUpperCase();
-    $('btn-solo').textContent = 'JOIN ROOM ' + room.toUpperCase();
+    // a page's "play together" names its person: the door says who's inside
+    const withName = (qp.get('with') || '').replace(/[<>]/g, '').trim().slice(0, 24);
+    $('btn-solo').textContent = withName ? 'PLAY WITH ' + withName.toUpperCase() : 'JOIN ROOM ' + room.toUpperCase();
   }
 }
 settings.broadcast = false;

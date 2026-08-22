@@ -557,6 +557,11 @@ export default {
           + '<a class="room" href="' + SITE_URL + '">step inside and play along</a></div>'
         : '';
       const kind = isStreamer ? 'streamer' : 'artist';
+      // every page has a standing room: "play together" drops a visitor into
+      // it. Whoever's there plays together; the first in the door hosts.
+      const roomCode = pg.slug.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 12);
+      const playBtn = '<a class="together" href="' + SITE_URL + '?room=' + roomCode + '&with=' + encodeURIComponent(pg.name.slice(0, 24)) + '">'
+        + '<b>play together</b><i>' + esc(pg.name) + '\u2019s room \u00b7 ' + roomCode + '</i></a>';
       const intentRow = (pg.intents || []).length
         ? '<p class="here">here for ' + pg.intents.map(x => '<b>' + esc(x) + '</b>').join(' · ') + '</p>' : '';
       const promptRows = (pg.prompts || []).map(x =>
@@ -592,6 +597,11 @@ export default {
         + ':root{--h:' + H + '}'
         + '.stage{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;filter:brightness(0.62) saturate(1.1)}'
         + '.mood{margin:-2px 0 18px;font-style:italic;color:hsl(var(--h),80%,82%);font-size:17px}'
+        + '.together{display:block;margin:-8px auto 26px;max-width:420px;padding:14px 18px;border-radius:18px;text-decoration:none;color:#f0eefc;'
+        + 'background:rgba(255,255,255,0.07);border:1px solid hsla(var(--h),70%,75%,0.45)}'
+        + '.together b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:19px;letter-spacing:1px}'
+        + '.together i{display:block;font-style:normal;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#9a94c4;margin-top:2px;text-transform:uppercase}'
+        + '.together:hover{background:rgba(255,255,255,0.11)}'
         + '.here{margin:0 0 16px;font:11.5px ui-monospace,Menlo,monospace;letter-spacing:2px;text-transform:uppercase;color:#9a94c4}.here b{font-weight:400;color:hsl(var(--h),85%,84%)}'
         + '.prompts{margin:6px auto 26px;max-width:460px;display:flex;flex-direction:column;gap:10px;text-align:left}'
         + '.prompt{padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(180,170,230,0.18)}'
@@ -645,6 +655,7 @@ export default {
         + intentRow
         + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn
+        + playBtn
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + (promptRows ? '<div class="prompts">' + promptRows + '</div>' : '')
         + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
