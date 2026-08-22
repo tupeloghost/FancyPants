@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=557';
-import { themePaint } from '../lib/themes.js?v=557';
-import { TUNE } from '../lib/tune.js?v=557';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=559';
+import { themePaint } from '../lib/themes.js?v=559';
+import { TUNE } from '../lib/tune.js?v=559';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -151,7 +151,7 @@ export function createWaterslide() {
       group.add(spray);
       sprayLife = 0;
 
-      sky = skyDome(300);
+      sky = skyDome(300, 0);   // no horizon band: this camera dives and banks
       group.add(sky);
 
       travel = 0; boost = 0;
@@ -321,7 +321,7 @@ export function createWaterslide() {
         }
         {
           const w = hoops.find(x => x.alive && x.wonder);
-          window.__slideInfo = { hoops: hoops.filter(x => x.alive).length,
+          window.__slideInfo = { hoops: hoops.filter(x => x.alive).length, surf: surfB, shape: shapeB,
             wonderUp: !!w, wonderSide: w ? w.side : null,
             wonderAhead: w ? Math.round(w.t - travel) : null, count: hoopCount };
         }
@@ -485,7 +485,7 @@ export function createWaterslide() {
         travel += speed * dt;
       }
 
-      if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.45);
+      if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.8);   // ~1.2s: felt, not dizzying
       gulp *= Math.pow(0.05, dt);
 
       if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
@@ -557,7 +557,9 @@ export function createWaterslide() {
           const level = audio[['bass', 'lowMid', 'mid', 'high', 'treble'][s2 % 5]];
           dummy.position.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, ringZ[r]);
           dummy.rotation.set(0, 0, a + Math.PI / 2);
-          const w = (Math.PI * R) / SEGS * 0.85;
+          // tile width follows the arc: the wrap-around needs wider tiles than
+          // the half-pipe, the ribbon narrower — or the wall shows gaps/overlaps
+          const w = (arcSpan * R) / SEGS * 0.85;
           dummy.scale.set(w, 1 + level * 1.6 * reactivity, 1);
           dummy.updateMatrix();
           wall.setMatrixAt(idx, dummy.matrix);
