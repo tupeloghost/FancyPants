@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=539';
-import { drawQR } from './lib/qr.js?v=539';
-import { WORLDS } from './worlds/registry.js?v=539';
-import { Net, PALETTE } from './net.js?v=539';
-import { Presence } from './lib/presence.js?v=539';
-import { Pulses } from './lib/pulse.js?v=539';
-import { BeatClock } from './lib/beatclock.js?v=539';
-import { BeatCue } from './lib/beatcue.js?v=539';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=539';
-import { Race, placeOf, standings } from './lib/race.js?v=539';
-import { Signals } from './lib/signals.js?v=539';
-import { pickShareLine, loadLines } from './lib/lines.js?v=539';
-import { RouteMap } from './lib/map.js?v=539';
-import * as sfx from './lib/sfx.js?v=539';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=539';
-import { glowTexture } from './lib/glow.js?v=539';
+import { AudioEngine } from './audio-engine.js?v=540';
+import { drawQR } from './lib/qr.js?v=540';
+import { WORLDS } from './worlds/registry.js?v=540';
+import { Net, PALETTE } from './net.js?v=540';
+import { Presence } from './lib/presence.js?v=540';
+import { Pulses } from './lib/pulse.js?v=540';
+import { BeatClock } from './lib/beatclock.js?v=540';
+import { BeatCue } from './lib/beatcue.js?v=540';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=540';
+import { Race, placeOf, standings } from './lib/race.js?v=540';
+import { Signals } from './lib/signals.js?v=540';
+import { pickShareLine, loadLines } from './lib/lines.js?v=540';
+import { RouteMap } from './lib/map.js?v=540';
+import * as sfx from './lib/sfx.js?v=540';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=540';
+import { glowTexture } from './lib/glow.js?v=540';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4486,7 +4486,8 @@ function ensureName() {
       const bonus = Math.min(50, streak * 5);
       setTimeout(() => {
         addScore(bonus, undefined, undefined, true);
-        flash('DAY ' + streak + ' IN A ROW \u00b7 +' + bonus + ', SUGAR', 2600);
+        // the welcome is the reward; the points land quietly on the ladder
+        flash('DAY ' + streak + ' IN A ROW. WELCOME BACK, SUGAR', 2600);
       }, 2500);
     }
   }
