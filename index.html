@@ -967,6 +967,11 @@
   }
   .rbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35); }
   .rbtn.hidden { display: none; }   /* .hidden is per-element in this sheet — buttons need their own */
+  .rbtn.quiet { background: none; border-color: hsla(var(--accent-h), 70%, 70%, 0.25); color: var(--ink-dim); font-size: 11px; letter-spacing: 1.6px; }
+  #week-line { margin-top: 10px; text-align: center; cursor: pointer; font: italic 400 13.5px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: hsl(var(--accent-h), 50%, 80%); }
+  #week-line.hidden { display: none; }
+  #week-line:hover { color: #fff; }
+  #recap-card.week #rc-handle, #recap-card.week #rc-next, #recap-card.week #rc-copy { display: none; }
   /* the hero action: the one the whole product wants pressed */
   .rbtn.hero {
     font-size: 13.5px; letter-spacing: 2.4px; padding: 12px 22px;
@@ -2457,6 +2462,7 @@
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
     <div id="today" class="hidden"></div>
     <div id="sunday" class="hidden"><span id="sun-text"></span> <a id="sun-cal" href="#" download="sundays-best.ics">add to calendar</a></div>
+    <div id="week-line" class="hidden"></div>
     <div id="side-doors">
       <a id="open-party" href="#">got a room code?</a>
     </div>
@@ -2763,6 +2769,7 @@
     <button class="rbtn hero" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-again">PLAY AGAIN</button>
     <button class="rbtn" id="rb-next">NEXT WORLD</button>
+    <button class="rbtn quiet hidden" id="rb-week">YOUR WEEK SO FAR</button>
     <button class="rbtn hidden" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
     <button class="rbtn hidden" id="rb-recap">RECAP CARD</button>
   </div>
@@ -2941,7 +2948,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 561</div>
+      <div id="build-stamp">build 562</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2983,6 +2990,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=561"></script>
+<script type="module" src="js/main.js?v=562"></script>
 </body>
 </html>

@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=561';
-import { themePaint } from '../lib/themes.js?v=561';
-import { TUNE } from '../lib/tune.js?v=561';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=562';
+import { themePaint } from '../lib/themes.js?v=562';
+import { TUNE } from '../lib/tune.js?v=562';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -78,6 +78,7 @@ export function createWaterslide() {
     let next = (Math.random() * SHAPES.length) | 0;
     if (next === shapeA) next = (next + 1) % SHAPES.length;
     shapeB = next; shapeMix = 0;
+    document.dispatchEvent(new CustomEvent('fp-bend'));   // the week ledger counts it
     surfA = surfB;
     let ns = (Math.random() * SURFS.length) | 0;
     if (ns === surfA) ns = (ns + 1) % SURFS.length;

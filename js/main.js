@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=561';
-import { drawQR } from './lib/qr.js?v=561';
-import { WORLDS } from './worlds/registry.js?v=561';
-import { Net, PALETTE } from './net.js?v=561';
-import { Presence } from './lib/presence.js?v=561';
-import { Pulses } from './lib/pulse.js?v=561';
-import { BeatClock } from './lib/beatclock.js?v=561';
-import { BeatCue } from './lib/beatcue.js?v=561';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=561';
-import { Race, placeOf, standings } from './lib/race.js?v=561';
-import { Signals } from './lib/signals.js?v=561';
-import { pickShareLine, loadLines } from './lib/lines.js?v=561';
-import { RouteMap } from './lib/map.js?v=561';
-import * as sfx from './lib/sfx.js?v=561';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=561';
-import { glowTexture } from './lib/glow.js?v=561';
+import { AudioEngine } from './audio-engine.js?v=562';
+import { drawQR } from './lib/qr.js?v=562';
+import { WORLDS } from './worlds/registry.js?v=562';
+import { Net, PALETTE } from './net.js?v=562';
+import { Presence } from './lib/presence.js?v=562';
+import { Pulses } from './lib/pulse.js?v=562';
+import { BeatClock } from './lib/beatclock.js?v=562';
+import { BeatCue } from './lib/beatcue.js?v=562';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=562';
+import { Race, placeOf, standings } from './lib/race.js?v=562';
+import { Signals } from './lib/signals.js?v=562';
+import { pickShareLine, loadLines } from './lib/lines.js?v=562';
+import { RouteMap } from './lib/map.js?v=562';
+import * as sfx from './lib/sfx.js?v=562';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=562';
+import { glowTexture } from './lib/glow.js?v=562';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4193,29 +4193,34 @@ $('rc-next').addEventListener('input', () => {
   localStorage.setItem('fp_next_stream', $('rc-next').value.trim());
   recapRedraw();
 });
-$('rc-close').addEventListener('click', () => $('recap-card').classList.add('hidden'));
+$('rc-close').addEventListener('click', () => { $('recap-card').classList.add('hidden'); $('recap-card').classList.remove('week'); $('recap-card')._mode = null; });
 $('rc-copy').addEventListener('click', () => {
   const d = $('recap-card')._data;
   navigator.clipboard.writeText(recapText(d, $('rc-handle').value.trim()))
     .then(() => flash('RECAP COPIED. PASTE IN CHAT', 2200)).catch(() => {});
 });
 $('rc-share').addEventListener('click', () => {
+  const week = $('recap-card')._mode === 'week';
   const d = $('recap-card')._data;
   const handle = $('rc-handle').value.trim();
-  drawRecap(d, handle).toBlob(blob => {
-    const file = new File([blob], 'fancy-britches-recap.jpg', { type: 'image/jpeg' });
+  const canvas = week ? drawWeekCard() : drawRecap(d, handle);
+  const text = week ? weekText() : recapText(d, handle);
+  canvas.toBlob(blob => {
+    const file = new File([blob], week ? 'my-week-inside.jpg' : 'fancy-britches-recap.jpg', { type: 'image/jpeg' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], text: recapText(d, handle) }).catch(() => {});
+      navigator.share({ files: [file], text }).catch(() => {});
     } else {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob); a.download = file.name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 30000);
-      navigator.clipboard.writeText(recapText(d, handle)).catch(() => {});
-      flash('RECAP SAVED. TEXT COPIED TOO', 2200);
+      navigator.clipboard.writeText(text).catch(() => {});
+      flash(week ? 'YOUR WEEK SAVED. TEXT COPIED TOO' : 'RECAP SAVED. TEXT COPIED TOO', 2200);
     }
   }, 'image/jpeg', 0.85);
 });
+$('rb-week').addEventListener('click', openWeekCard);
+$('week-line').addEventListener('click', openWeekCard);
 
 function showSetResults() {
   clipBufStop(true);
@@ -4504,6 +4509,7 @@ window.__lastRun = () => sig.lastRun || null;
 window.__forceArchetype = null;   // dev: pin an archetype id to preview its pool
 function recordRun(meta) {
   const run = sig.endRun(meta);
+  weekNote(w => w.runs.push({ at: run.at, world: run.worldId, song: run.songTitle || '', sec: run.runSeconds || 0 }));
   pickShareLine(run, '', window.__forceArchetype)
     .then(l => {
       window.__shareLine = l;
@@ -4514,6 +4520,107 @@ function recordRun(meta) {
     .catch(() => {});
   return run;
 }
+// ── the week ledger ── what this device did inside, this product week
+// (the Sunday-to-Sunday week). Feeds the "your week inside" card.
+const WK_MS = 604800000;
+const weekKey = () => Math.floor((Date.now() - WEEK_SHIFT) / WK_MS);
+function weekLedger() {
+  let w = null;
+  try { w = JSON.parse(localStorage.getItem('fp_week') || 'null'); } catch { w = null; }
+  if (!w || w.key !== weekKey()) w = { key: weekKey(), runs: [], doors: 0, holes: 0, bends: 0 };
+  return w;
+}
+function weekNote(fn) { const w = weekLedger(); fn(w); if (w.runs.length > 300) w.runs.length = 300; localStorage.setItem('fp_week', JSON.stringify(w)); updateWeekUI(); }
+document.addEventListener('fp-lookspark', () => weekNote(w => { w.doors++; }));
+document.addEventListener('fp-swallowed', () => weekNote(w => { w.holes++; }));
+document.addEventListener('fp-bend', () => weekNote(w => { w.bends++; }));
+function weekStats() {
+  const w = weekLedger();
+  const worlds = new Set(), songs = new Set(); let sec = 0; const per = {};
+  for (const r of w.runs) { if (r.world) { worlds.add(r.world); per[r.world] = (per[r.world] || 0) + (r.sec || 0); } if (r.song) songs.add(r.song); sec += r.sec || 0; }
+  const top = Object.entries(per).sort((a, b) => b[1] - a[1])[0];
+  return { runs: w.runs.length, worlds: worlds.size, songs: songs.size, minutes: Math.round(sec / 60), doors: w.doors, holes: w.holes, bends: w.bends,
+    topWorld: top && WORLDS[top[0]] ? WORLDS[top[0]].label : '' };
+}
+function drawWeekCard() {
+  const st = weekStats();
+  const W = 1280, H = 720;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const h = settings.hue;
+  const g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, 'hsl(' + h + ', 45%, 9%)'); g.addColorStop(1, 'hsl(' + ((h + 40) % 360) + ', 40%, 5%)');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  // a soft bloom in the corner, the house glow
+  const rg = x.createRadialGradient(W * 0.82, H * 0.18, 10, W * 0.82, H * 0.18, 520);
+  rg.addColorStop(0, 'hsla(' + h + ', 90%, 70%, 0.28)'); rg.addColorStop(1, 'hsla(' + h + ', 90%, 70%, 0)');
+  x.fillStyle = rg; x.fillRect(0, 0, W, H);
+  x.textBaseline = 'alphabetic';
+  x.fillStyle = 'rgba(220,214,245,0.8)';
+  x.font = '500 20px "SF Mono", Menlo, monospace';
+  x.fillText('Y O U R   W E E K   I N S I D E', 72, 96);
+  // the big numbers: songs · worlds · minutes (the felt week)
+  const big = [[st.songs, st.songs === 1 ? 'song' : 'songs'], [st.worlds, st.worlds === 1 ? 'world' : 'worlds'], [st.minutes, st.minutes === 1 ? 'minute' : 'minutes']];
+  big.forEach(([n, label], i) => {
+    const bx = 72 + i * 360;
+    x.fillStyle = '#f4f1ff';
+    x.font = '400 150px Didot, "Bodoni 72", Georgia, serif';
+    x.fillText(String(n), bx, 310);
+    x.fillStyle = 'rgba(220,214,245,0.72)';
+    x.font = '400 22px "SF Mono", Menlo, monospace';
+    x.fillText(label.toUpperCase(), bx + 4, 350);
+  });
+  // the small wonders
+  const bits = [];
+  if (st.doors) bits.push(st.doors + (st.doors === 1 ? ' new look' : ' new looks'));
+  if (st.bends) bits.push(st.bends + (st.bends === 1 ? ' new shape of slide' : ' new shapes of slide'));
+  if (st.holes) bits.push(st.holes + (st.holes === 1 ? ' black hole' : ' black holes'));
+  if (st.topWorld) bits.push('most time in ' + st.topWorld);
+  x.fillStyle = 'rgba(240,236,255,0.9)';
+  x.font = 'italic 400 34px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText(bits.length ? bits.join('  \u00b7  ') : 'step inside a few more and this fills up', 72, 450);
+  x.fillRect(72, 500, W - 144, 1);
+  x.fillStyle = 'rgba(220,214,245,0.85)';
+  x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
+  x.fillText('every song is an experience. step inside at ' + SITE.replace(/^https?:\/\//, ''), 72, 560);
+  const qrc = document.createElement('canvas');
+  if (drawQR(qrc, SITE, 3)) {
+    x.fillStyle = '#fff';
+    x.beginPath(); x.roundRect(W - qrc.width - 80, H - qrc.height - 80, qrc.width + 16, qrc.height + 16, 10); x.fill();
+    x.drawImage(qrc, W - qrc.width - 72, H - qrc.height - 72);
+  }
+  x.fillStyle = 'rgba(220,214,245,0.55)';
+  x.font = '500 16px "SF Mono", Menlo, monospace';
+  x.fillText('F A N C Y   B R I T C H E S', 72, H - 72);
+  return c;
+}
+function weekText() {
+  const st = weekStats();
+  return 'my week inside: ' + st.songs + ' songs, ' + st.worlds + ' worlds, ' + st.minutes + ' minutes'
+    + (st.doors ? ', ' + st.doors + ' new looks' : '') + (st.holes ? ', ' + st.holes + ' black holes' : '')
+    + '\n' + SITE + '\n#FancyBritches';
+}
+function openWeekCard() {
+  const img = drawWeekCard();
+  const prev = $('rc-preview');
+  prev.width = img.width; prev.height = img.height;
+  prev.getContext('2d').drawImage(img, 0, 0);
+  $('recap-card')._mode = 'week';
+  $('recap-card').classList.add('week');
+  $('recap-card').classList.remove('hidden');
+}
+function updateWeekUI() {
+  const st = weekStats();
+  const b = $('rb-week'); if (b) b.classList.toggle('hidden', st.runs < 2);
+  const l = $('week-line');
+  if (l) {
+    if (st.runs >= 2) {
+      l.textContent = 'this week you stepped inside ' + st.songs + (st.songs === 1 ? ' song' : ' songs') + ' across ' + st.worlds + (st.worlds === 1 ? ' world' : ' worlds') + '. see your week \u2192';
+      l.classList.remove('hidden');
+    } else l.classList.add('hidden');
+  }
+}
+window.__openWeek = openWeekCard;
 window.__previewLine = force => pickShareLine(sig.lastRun || {}, '', force || null);
 window.__signals = () => sig.snapshot({
   worldId: currentWorldKey,
@@ -4751,6 +4858,7 @@ const shareableFree = k => window.__devPaid || FEATURED.includes(k) || k === WEE
     el.classList.remove('hidden');
   }
 }
+updateWeekUI();   // the returning visitor sees their week on the door
 window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
 window.__GRADUATED = GRADUATED;
