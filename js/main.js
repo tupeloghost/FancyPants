@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=526';
-import { drawQR } from './lib/qr.js?v=526';
-import { WORLDS } from './worlds/registry.js?v=526';
-import { Net, PALETTE } from './net.js?v=526';
-import { Presence } from './lib/presence.js?v=526';
-import { Pulses } from './lib/pulse.js?v=526';
-import { BeatClock } from './lib/beatclock.js?v=526';
-import { BeatCue } from './lib/beatcue.js?v=526';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=526';
-import { Race, placeOf, standings } from './lib/race.js?v=526';
-import { Signals } from './lib/signals.js?v=526';
-import { pickShareLine, loadLines } from './lib/lines.js?v=526';
-import { RouteMap } from './lib/map.js?v=526';
-import * as sfx from './lib/sfx.js?v=526';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=526';
-import { glowTexture } from './lib/glow.js?v=526';
+import { AudioEngine } from './audio-engine.js?v=527';
+import { drawQR } from './lib/qr.js?v=527';
+import { WORLDS } from './worlds/registry.js?v=527';
+import { Net, PALETTE } from './net.js?v=527';
+import { Presence } from './lib/presence.js?v=527';
+import { Pulses } from './lib/pulse.js?v=527';
+import { BeatClock } from './lib/beatclock.js?v=527';
+import { BeatCue } from './lib/beatcue.js?v=527';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=527';
+import { Race, placeOf, standings } from './lib/race.js?v=527';
+import { Signals } from './lib/signals.js?v=527';
+import { pickShareLine, loadLines } from './lib/lines.js?v=527';
+import { RouteMap } from './lib/map.js?v=527';
+import * as sfx from './lib/sfx.js?v=527';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=527';
+import { glowTexture } from './lib/glow.js?v=527';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2289,8 +2289,10 @@ canvas.addEventListener('pointerdown', e => {
       seenMissed = beatCue.stats.missed;   // a wild press is its own miss
     }
   }
-  clickPulse = 1; // global color surge: every click makes the whole frame answer
-  impact(0.42);   // and it lands as light, not as a jolt
+  // the click still answers in light, but on a phone the full surge reads
+  // as the world blurring out — half strength keeps the sparkle, loses the wash
+  clickPulse = Math.max(clickPulse, IS_MOBILE ? 0.5 : 1);
+  impact(IS_MOBILE ? 0.22 : 0.42);
   spawnRipple(e.clientX, e.clientY);
   pulses.spawn(camera,
     (e.clientX / window.innerWidth) * 2 - 1,
