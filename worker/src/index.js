@@ -574,24 +574,28 @@ export default {
       //     people can actually make plans (propinquity is the real engine)
       // Items paraphrase the TIPI (Gosling 2003) for O, A, E, C plus two value
       // items and one chronotype item. R = reverse-scored.
+      // Forced choice between two EQUALLY fine things to be: no item has a
+      // 'better' answer, which is the standard guard against people picking
+      // what they think makes them likeable (social-desirability bias).
+      // Five steps between the poles; R items are reverse-scored.
       const VQ = [
-        'I chase new things: new sounds, new places, weird art',          // O
-        'I like what I already know better than what I don’t',        // O (R)
-        'I’m warm with people, even strangers',                      // A
-        'I get argumentative when I disagree',                             // A (R)
-        'I light up in a crowd',                                           // E
-        'I need quiet time to recharge',                                   // E (R)
-        'being a good friend matters more to me than being impressive',   // value: benevolence
-        'I’d rather make something than own something',               // value: creativity
-        'I come alive after dark',                                         // chronotype
-        'I’d rather plan it than wing it',                             // C
+        ['songs I already love', 'something I’ve never heard'],          // O   (high = new)
+        ['somewhere new every time', 'my usual spot'],                       // O (R)
+        ['say it straight', 'smooth it over'],                               // A   (high = warm)
+        ['let it slide', 'call it like I see it'],                           // A (R)
+        ['recharge alone', 'recharge in a crowd'],                           // E
+        ['talk to strangers easily', 'warm up slowly'],                      // E (R)
+        ['the friend who inspires you', 'the friend who shows up'],          // value: benevolence
+        ['I’d rather find it', 'I’d rather make it'],                // value: creativity
+        ['early hours', 'late hours'],                                       // chronotype
+        ['wing it', 'plan it'],                                              // C
       ];
       const vibeBlock = pg.quiz
         ? '<div class="vibe" id="vibe" data-q="' + esc(pg.quiz) + '" data-i="' + esc((pg.intents || []).join(',')) + '" data-n="' + esc(pg.name) + '">'
           + '<button class="vgo" id="vgo">see how you two would click <i>ten quick questions</i></button></div>'
         : '';
       const vibeScript = pg.quiz ? '<script>(function(){'
-        + 'var VQ=' + JSON.stringify(VQ) + ';var SC=["nah","not really","kinda","yeah","so me"];'
+        + 'var VQ=' + JSON.stringify(VQ) + ';'
         + 'var box=document.getElementById("vibe");if(!box)return;'
         + 'var theirs=box.getAttribute("data-q"),tI=(box.getAttribute("data-i")||"").split(",").filter(Boolean),name=box.getAttribute("data-n");'
         + 'function esc(t){return String(t).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c]})}'
@@ -603,15 +607,15 @@ export default {
         + 'var warmth=((m.A+t.A)/2-1)/4*8;'   // each person's warmth predicts friendship quality
         + 'var shared=mI.filter(function(x){return tI.indexOf(x)>-1}).length;'
         + 'var pct=Math.min(97,Math.round(30+60*fit+warmth+Math.min(2,shared)*4));'
-        + 'var D=[["O","chasers of new things","one of you chases new things, the other likes the known"],'
-        + '["A","warm with strangers","one of you is quicker to argue than the other"],'
-        + '["N","night people","one of you comes alive after dark, the other runs early"],'
-        + '["E","crowd people","one of you lights up in a crowd, the other needs the quiet"],'
-        + '["V1","friend-first people","you weigh being a good friend differently"],'
-        + '["V2","makers","one of you would rather make things, the other would rather have them"],'
+        + 'var D=[["O","ones for something new","one of you wants the new thing, the other the loved thing"],'
+        + '["A","smoothers-over","one of you says it straight, the other smooths it over"],'
+        + '["N","late-hours people","one of you runs late, the other early"],'
+        + '["E","crowd-rechargers","one of you recharges in a crowd, the other alone"],'
+        + '["V1","show-up friends","one of you prizes the friend who shows up, the other the one who inspires"],'
+        + '["V2","makers","one of you would rather make it, the other find it"],'
         + '["C","planners","one of you plans, the other wings it"]];'
+        + 'var LO={O:"ones for the songs you already love",A:"say-it-straight people",N:"early-hours people",E:"alone-rechargers",V1:"inspire-me friends",V2:"finders",C:"wing-it people"};'
         + 'var same=[],diff=[];for(var i=0;i<D.length;i++){var k=D[i][0],a=m[k],b=t[k],hi=a>=3.5&&b>=3.5,lo=a<=2.5&&b<=2.5;'
-        + 'var LO={O:"creatures of habit",A:"quick to argue",N:"early people",E:"quiet people",V1:"impress-first people",V2:"collectors",C:"wing-it people"};'
         + 'if(hi)same.push(D[i][1]);else if(lo)same.push(LO[k]);'
         + 'else if(Math.abs(a-b)>=2)diff.push(D[i][2])}'
         + 'var tag=pct>=85?"you’d click fast":pct>=70?"easy company":pct>=55?"different, in a good way":"a stretch, but stretches are fun";'
@@ -630,8 +634,9 @@ export default {
         + 'document.getElementById("vskip").onclick=function(e){e.preventDefault();finish()};'
         + 'var done=document.createElement("button");done.className="vdone";done.textContent="see it";done.onclick=finish;box.querySelector(".vq").appendChild(done);'
         + 'function finish(){var q=ans.join("");localStorage.setItem("fb_quiz",q);localStorage.setItem("fb_intents",picked.join(","));show(score(q,picked))}return}'
-        + 'var h="<div class=\\"vq\\"><p class=\\"vqq\\">"+(idx+1)+" of "+VQ.length+"</p><p class=\\"vst\\">"+esc(VQ[idx])+"</p><div class=\\"vopts vsc\\">";'
-        + 'for(var j=0;j<5;j++)h+="<button data-v=\\""+(j+1)+"\\">"+SC[j]+"</button>";box.innerHTML=h+"</div></div>";'
+        + 'var L=VQ[idx][0],R=VQ[idx][1];var SC=["\\u25c0 this","lean \\u25c0","honestly, both","lean \\u25b6","that \\u25b6"];'
+        + 'var h="<div class=\\"vq\\"><p class=\\"vqq\\">"+(idx+1)+" of "+VQ.length+" · which is more you</p><div class=\\"vpoles\\"><span>"+esc(L)+"</span><span>"+esc(R)+"</span></div><div class=\\"vopts vsc\\">";'
+        + 'for(var j=0;j<5;j++)h+="<button data-v=\\""+(j+1)+"\\">"+esc(SC[j])+"</button>";box.innerHTML=h+"</div></div>";'
         + 'var b2=box.querySelectorAll(".vopts button");for(var k=0;k<b2.length;k++)b2[k].onclick=function(){ans.push(this.getAttribute("data-v"));idx++;step()}}step()}'
         + 'var mine=localStorage.getItem("fb_quiz")||"";var mI=(localStorage.getItem("fb_intents")||"").split(",").filter(Boolean);'
         + 'if(/^[1-5]{10,12}$/.test(mine))show(score(mine,mI));else document.getElementById("vgo").onclick=quiz;'
@@ -685,6 +690,7 @@ export default {
         + '.vopts button:hover,.vopts button.on{background:hsla(var(--h),70%,60%,0.35);border-color:hsl(var(--h),80%,80%)}'
         + '.vq a,.vres a{display:inline-block;margin-top:10px;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#9a94c4;text-transform:uppercase}'
         + '.vdone{margin:10px 0 0 12px;padding:9px 18px;border-radius:999px;border:0;cursor:pointer;color:#130f26;background:hsl(var(--h),80%,80%);font:600 13px Georgia,serif}'
+        + '.vpoles{display:flex;justify-content:space-between;gap:12px;margin:0 0 10px;font-family:Didot,"Bodoni 72",Georgia,serif;font-size:17px;color:#fff}.vpoles span:last-child{text-align:right}'
         + '.vst{font-family:Didot,"Bodoni 72",Georgia,serif;font-size:19px;color:#fff;margin:0 0 12px;line-height:1.3}'
         + '.vsc button{min-width:0;flex:1;padding:11px 4px;font-size:13px}'
         + '.vwhy{font-size:12px!important;color:#8d87b0!important;margin-top:10px!important;font-style:italic}'

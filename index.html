@@ -408,6 +408,8 @@
   #cc-quiz-head i { display: block; font-style: normal; letter-spacing: 0.4px; text-transform: none; color: var(--ink-faint); margin-top: 2px; }
   .ccq { display: flex; flex-direction: column; gap: 5px; margin-bottom: 9px; }
   .ccq span { font: 12.5px Georgia, serif; color: var(--ink); }
+  .ccq-poles { display: flex; justify-content: space-between; gap: 10px; }
+  .ccq-poles b { font-weight: 400; } .ccq-poles b:last-child { text-align: right; }
   .ccq div { display: flex; gap: 4px; }
   .ccq button { flex: 1; padding: 7px 2px; font: 10px 'SF Mono', Menlo, monospace; letter-spacing: 0.3px; border-radius: 8px; }
   .ccq button.on { background: hsla(var(--accent-h), 70%, 60%, 0.35); border-color: hsla(var(--accent-h), 80%, 75%, 0.8); color: var(--ink); }
@@ -2542,7 +2544,7 @@
     </div>
     <!-- the vibe check: ten statements, five-point scale. what friendship
          research predicts: shared values + openness, warmth, matching rhythms -->
-    <div id="cc-quiz"><div id="cc-quiz-head">vibe check <i>ten quick ones, so visitors can see how you two would click</i></div><div id="cc-quiz-rows"></div></div>
+    <div id="cc-quiz"><div id="cc-quiz-head">vibe check <i>ten quick ones. pick the side that&rsquo;s more you, or lean, or both. there are no better answers</i></div><div id="cc-quiz-rows"></div></div>
     <!-- icebreakers: pick any three from the bank, answer in your own words -->
     <div id="cc-prompts">
       <div class="cc-prow"><select id="cc-q1"></select><input id="cc-p1" maxlength="160" placeholder="your answer (optional)" autocomplete="off"></div>
@@ -2930,7 +2932,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 555</div>
+      <div id="build-stamp">build 556</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2972,6 +2974,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=555"></script>
+<script type="module" src="js/main.js?v=556"></script>
 </body>
 </html>

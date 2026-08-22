@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=555';
-import { drawQR } from './lib/qr.js?v=555';
-import { WORLDS } from './worlds/registry.js?v=555';
-import { Net, PALETTE } from './net.js?v=555';
-import { Presence } from './lib/presence.js?v=555';
-import { Pulses } from './lib/pulse.js?v=555';
-import { BeatClock } from './lib/beatclock.js?v=555';
-import { BeatCue } from './lib/beatcue.js?v=555';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=555';
-import { Race, placeOf, standings } from './lib/race.js?v=555';
-import { Signals } from './lib/signals.js?v=555';
-import { pickShareLine, loadLines } from './lib/lines.js?v=555';
-import { RouteMap } from './lib/map.js?v=555';
-import * as sfx from './lib/sfx.js?v=555';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=555';
-import { glowTexture } from './lib/glow.js?v=555';
+import { AudioEngine } from './audio-engine.js?v=556';
+import { drawQR } from './lib/qr.js?v=556';
+import { WORLDS } from './worlds/registry.js?v=556';
+import { Net, PALETTE } from './net.js?v=556';
+import { Presence } from './lib/presence.js?v=556';
+import { Pulses } from './lib/pulse.js?v=556';
+import { BeatClock } from './lib/beatclock.js?v=556';
+import { BeatCue } from './lib/beatcue.js?v=556';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=556';
+import { Race, placeOf, standings } from './lib/race.js?v=556';
+import { Signals } from './lib/signals.js?v=556';
+import { pickShareLine, loadLines } from './lib/lines.js?v=556';
+import { RouteMap } from './lib/map.js?v=556';
+import * as sfx from './lib/sfx.js?v=556';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=556';
+import { glowTexture } from './lib/glow.js?v=556';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2941,31 +2941,31 @@ function setCcType(t) {
 }
 // the vibe check (owner's side): the same ten statements the page asks
 // visitors, so the page can score the pair. Kept in sync with the worker.
-const VIBE_Q = [
-  'I chase new things: new sounds, new places, weird art',
-  'I like what I already know better than what I don\u2019t',
-  'I\u2019m warm with people, even strangers',
-  'I get argumentative when I disagree',
-  'I light up in a crowd',
-  'I need quiet time to recharge',
-  'being a good friend matters more to me than being impressive',
-  'I\u2019d rather make something than own something',
-  'I come alive after dark',
-  'I\u2019d rather plan it than wing it',
+const VIBE_Q = [   // forced choice between two equally fine things to be (no 'better' answer)
+  ['songs I already love', 'something I\u2019ve never heard'],
+  ['somewhere new every time', 'my usual spot'],
+  ['say it straight', 'smooth it over'],
+  ['let it slide', 'call it like I see it'],
+  ['recharge alone', 'recharge in a crowd'],
+  ['talk to strangers easily', 'warm up slowly'],
+  ['the friend who inspires you', 'the friend who shows up'],
+  ['I\u2019d rather find it', 'I\u2019d rather make it'],
+  ['early hours', 'late hours'],
+  ['wing it', 'plan it'],
 ];
-const VIBE_SCALE = ['nah', 'not really', 'kinda', 'yeah', 'so me'];
 {
   const rows = $('cc-quiz-rows');
-  VIBE_Q.forEach((q, i) => {
+  VIBE_Q.forEach(([L, R], i) => {
     const row = document.createElement('div'); row.className = 'ccq';
-    const lab = document.createElement('span'); lab.textContent = q;
+    const poles = document.createElement('span'); poles.className = 'ccq-poles';
+    poles.innerHTML = '<b></b><b></b>'; poles.children[0].textContent = L; poles.children[1].textContent = R;
     const opts = document.createElement('div');
-    VIBE_SCALE.forEach((t, j) => {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.dataset.v = j + 1;
+    [L, 'lean ' + L, 'both', 'lean ' + R, R].forEach((t, j) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = j === 0 ? '\u25c0' : j === 4 ? '\u25b6' : (j === 2 ? 'both' : 'lean'); b.title = t; b.dataset.v = j + 1;
       b.addEventListener('click', () => { [...opts.children].forEach(x => x.classList.remove('on')); b.classList.add('on'); });
       opts.appendChild(b);
     });
-    row.append(lab, opts); rows.appendChild(row);
+    row.append(poles, opts); rows.appendChild(row);
   });
 }
 function ccQuizValue() {
