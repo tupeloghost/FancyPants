@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=540';
-import { drawQR } from './lib/qr.js?v=540';
-import { WORLDS } from './worlds/registry.js?v=540';
-import { Net, PALETTE } from './net.js?v=540';
-import { Presence } from './lib/presence.js?v=540';
-import { Pulses } from './lib/pulse.js?v=540';
-import { BeatClock } from './lib/beatclock.js?v=540';
-import { BeatCue } from './lib/beatcue.js?v=540';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=540';
-import { Race, placeOf, standings } from './lib/race.js?v=540';
-import { Signals } from './lib/signals.js?v=540';
-import { pickShareLine, loadLines } from './lib/lines.js?v=540';
-import { RouteMap } from './lib/map.js?v=540';
-import * as sfx from './lib/sfx.js?v=540';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=540';
-import { glowTexture } from './lib/glow.js?v=540';
+import { AudioEngine } from './audio-engine.js?v=541';
+import { drawQR } from './lib/qr.js?v=541';
+import { WORLDS } from './worlds/registry.js?v=541';
+import { Net, PALETTE } from './net.js?v=541';
+import { Presence } from './lib/presence.js?v=541';
+import { Pulses } from './lib/pulse.js?v=541';
+import { BeatClock } from './lib/beatclock.js?v=541';
+import { BeatCue } from './lib/beatcue.js?v=541';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=541';
+import { Race, placeOf, standings } from './lib/race.js?v=541';
+import { Signals } from './lib/signals.js?v=541';
+import { pickShareLine, loadLines } from './lib/lines.js?v=541';
+import { RouteMap } from './lib/map.js?v=541';
+import * as sfx from './lib/sfx.js?v=541';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=541';
+import { glowTexture } from './lib/glow.js?v=541';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1822,11 +1822,22 @@ document.addEventListener('fp-lookspark', () => {
   ring.classList.add('go');
   // the swap lands at the DRAINED point of the breath, so the new palette
   // arrives as the colour floods back — a reveal, never a stutter
+  // the palette lands at the crest of the bloom, and the HUE glides there
+  // over a second instead of snapping — the one continuous dial we have
   setTimeout(() => {
-    applyPreset(cfg);
+    const fromHue = settings.hue;
+    applyPreset({ ...cfg, hue: fromHue });
+    let d = ((cfg.hue - fromHue) % 360 + 540) % 360 - 180;   // shortest way round
+    const t0 = performance.now(), dur = 1000;
+    (function glide(now) {
+      const k = Math.min(1, (now - t0) / dur);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      setHue(((fromHue + d * e) % 360 + 360) % 360);
+      if (k < 1) requestAnimationFrame(glide);
+    })(t0);
     dealNextLook();   // deal the NEXT door's look the moment this one lands
-    setTimeout(() => { document.body.classList.remove('lookflash'); ring.classList.remove('go'); }, 1200);
-  }, 480);
+    setTimeout(() => { document.body.classList.remove('lookflash'); ring.classList.remove('go'); }, 1500);
+  }, 760);
 });
 // The black hole takes the LIGHT: the world falls into its darkest look and
 // stays there. The next wonder door is the rescue — it already deals a fresh
