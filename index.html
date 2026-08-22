@@ -2320,6 +2320,24 @@
   }
   @media (max-width: 620px) { #countdown { font-size: 76px; } }
 
+  /* ── Cards on small screens ── width-based, not pointer-based, so a
+     narrow window shows the same treatment a phone gets. Buttons become a
+     full-width thumb stack with the hero unmistakably in charge. */
+  @media (max-width: 620px) {
+    #results-actions { flex-direction: column; gap: 10px; }
+    #results-actions .rbtn {
+      width: 100%; padding: 17px 18px; font-size: 15px; letter-spacing: 2.6px;
+    }
+    #results-actions .rbtn.hero { padding: 19px 18px; font-size: 16.5px; letter-spacing: 3px; }
+    #ri-play { width: min(320px, 84vw); padding: 17px 0; font-size: 18px; }
+    #results-place { font-size: 40px; }
+    /* the transport bar steps up too: bigger, brighter, closer to the thumb */
+    #qbar { padding: 9px 11px; }
+    #qbar .qb { min-width: 52px; padding: 12px 8px 9px; }
+    #qbar .qb i { font-size: 18px; }
+    #qbar .qb em { font-size: 8.5px; }
+  }
+
   /* ── In-world offer position, phones ── lives at the END of the sheet so it
      outranks the base #show-me bottom above. The tutor's pill rides ABOVE the
      qbar (which itself rides above the collapsed sheet), never on its buttons. */
@@ -2796,7 +2814,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 515</div>
+      <div id="build-stamp">build 516</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2838,6 +2856,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=515"></script>
+<script type="module" src="js/main.js?v=516"></script>
 </body>
 </html>
