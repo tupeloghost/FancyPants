@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=518';
-import { drawQR } from './lib/qr.js?v=518';
-import { WORLDS } from './worlds/registry.js?v=518';
-import { Net, PALETTE } from './net.js?v=518';
-import { Presence } from './lib/presence.js?v=518';
-import { Pulses } from './lib/pulse.js?v=518';
-import { BeatClock } from './lib/beatclock.js?v=518';
-import { BeatCue } from './lib/beatcue.js?v=518';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=518';
-import { Race, placeOf, standings } from './lib/race.js?v=518';
-import { Signals } from './lib/signals.js?v=518';
-import { pickShareLine, loadLines } from './lib/lines.js?v=518';
-import { RouteMap } from './lib/map.js?v=518';
-import * as sfx from './lib/sfx.js?v=518';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=518';
-import { glowTexture } from './lib/glow.js?v=518';
+import { AudioEngine } from './audio-engine.js?v=519';
+import { drawQR } from './lib/qr.js?v=519';
+import { WORLDS } from './worlds/registry.js?v=519';
+import { Net, PALETTE } from './net.js?v=519';
+import { Presence } from './lib/presence.js?v=519';
+import { Pulses } from './lib/pulse.js?v=519';
+import { BeatClock } from './lib/beatclock.js?v=519';
+import { BeatCue } from './lib/beatcue.js?v=519';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=519';
+import { Race, placeOf, standings } from './lib/race.js?v=519';
+import { Signals } from './lib/signals.js?v=519';
+import { pickShareLine, loadLines } from './lib/lines.js?v=519';
+import { RouteMap } from './lib/map.js?v=519';
+import * as sfx from './lib/sfx.js?v=519';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=519';
+import { glowTexture } from './lib/glow.js?v=519';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2454,12 +2454,18 @@ function runWorldDemo() {
   const hand = $('demo-hand');
   hand.classList.remove('hidden');
   $('show-me').classList.add('hidden');
-  const t0 = performance.now(), D = 8000;
+  // a world with a teach script gets a longer lesson: the hand keeps
+  // steering while the captions walk through the rings one at a time
+  const teach = (WORLDS[currentWorldKey] && WORLDS[currentWorldKey].teach) || [];
+  const t0 = performance.now(), D = 8000 + teach.length * 3200;
   let demoX = 0;
   const steerWord = IS_MOBILE ? 'slide your finger to steer' : 'move the mouse to steer';
   const tapWord = IS_MOBILE ? 'tap to jump' : 'click to jump';
   announce('', steerWord, 3600, 'quiet');
   if (world.onTap) setTimeout(() => { if (demoRunning) announce('', tapWord, 3400, 'quiet'); }, 4200);
+  teach.forEach((line, i) => setTimeout(() => {
+    if (demoRunning) announce('', line, 3000, 'quiet');
+  }, (world.onTap ? 8000 : 4200) + i * 3200));
   const land = () => {
     demoRunning = false;
     hand.classList.add('hidden');
