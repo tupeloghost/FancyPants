@@ -166,6 +166,20 @@
   #qbar.hidden { display: none; }
   #qbar:hover { opacity: 1 !important; }
 
+  /* hand-drawn line icons: thin strokes, round caps — jewelry, not glyphs */
+  #qbar .qb i svg {
+    width: 20px; height: 20px; display: block; margin: 0 auto;
+    fill: none; stroke: currentColor; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  #qbar .qb i svg .f { fill: currentColor; stroke: none; }
+  #qb-play .ic-pause { display: none; }
+  #qb-play.playing .ic-play { display: none; }
+  #qb-play.playing .ic-pause { display: block; }
+  #qb-mute .ic-slash { display: none; }
+  #qb-mute.on .ic-slash { display: block; stroke: hsl(6, 80%, 68%); }
+  /* the WORLD ring wears the current look's accent — the door button IS a door */
+  #qb-world i { color: hsl(var(--accent-h), 75%, 78%); }
   #qbar .qb {
     -webkit-appearance: none; appearance: none;
     background: none; border: 0; cursor: pointer;
@@ -2708,14 +2722,14 @@
 </div>
 
 <div id="qbar">
-  <button class="qb" id="qb-prev" title="previous track  ←"><i>&#9666;</i><em>back</em></button>
-  <button class="qb" id="qb-play" title="play / pause  space"><i>&#9654;</i><em>play</em></button>
-  <button class="qb" id="qb-next" title="next track  →"><i>&#9656;</i><em>next</em></button>
+  <button class="qb" id="qb-prev" title="previous track  ←"><i><svg viewBox="0 0 24 24"><path class="f" d="M17 5.5 L9.5 12 L17 18.5 Z"/><line x1="7" y1="5.5" x2="7" y2="18.5"/></svg></i><em>back</em></button>
+  <button class="qb" id="qb-play" title="play / pause  space"><i><svg viewBox="0 0 24 24"><path class="f ic-play" d="M8.5 5 L18.5 12 L8.5 19 Z"/><g class="ic-pause"><line x1="9" y1="5.5" x2="9" y2="18.5"/><line x1="15" y1="5.5" x2="15" y2="18.5"/></g></svg></i><em>play</em></button>
+  <button class="qb" id="qb-next" title="next track  →"><i><svg viewBox="0 0 24 24"><path class="f" d="M7 5.5 L14.5 12 L7 18.5 Z"/><line x1="17" y1="5.5" x2="17" y2="18.5"/></svg></i><em>next</em></button>
   <span class="qsep" id="qsep-1"></span>
-  <button class="qb" id="qb-world" title="next world  W"><i>&#9670;</i><em>world</em></button>
+  <button class="qb" id="qb-world" title="next world  W"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.6"/><circle class="f" cx="12" cy="12" r="1.7"/><line x1="12" y1="2.6" x2="12" y2="4.6"/><line x1="12" y1="19.4" x2="12" y2="21.4"/></svg></i><em>world</em></button>
   <button style="display:none" class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
   <span class="qsep"></span>
-  <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i>&#9834;</i><em>mute</em></button>
+  <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i><svg viewBox="0 0 24 24"><path d="M14.5 5 V15.2"/><circle class="f" cx="12.2" cy="16.4" r="2.6"/><path d="M14.5 5 L18.5 6.6"/><line class="ic-slash" x1="5.5" y1="20" x2="19.5" y2="4.5"/></svg></i><em>mute</em></button>
   <span class="qsep"></span>
 
 </div>
@@ -2860,7 +2874,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 530</div>
+      <div id="build-stamp">build 531</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2902,6 +2916,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=530"></script>
+<script type="module" src="js/main.js?v=531"></script>
 </body>
 </html>

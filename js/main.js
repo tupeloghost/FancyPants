@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=530';
-import { drawQR } from './lib/qr.js?v=530';
-import { WORLDS } from './worlds/registry.js?v=530';
-import { Net, PALETTE } from './net.js?v=530';
-import { Presence } from './lib/presence.js?v=530';
-import { Pulses } from './lib/pulse.js?v=530';
-import { BeatClock } from './lib/beatclock.js?v=530';
-import { BeatCue } from './lib/beatcue.js?v=530';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=530';
-import { Race, placeOf, standings } from './lib/race.js?v=530';
-import { Signals } from './lib/signals.js?v=530';
-import { pickShareLine, loadLines } from './lib/lines.js?v=530';
-import { RouteMap } from './lib/map.js?v=530';
-import * as sfx from './lib/sfx.js?v=530';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=530';
-import { glowTexture } from './lib/glow.js?v=530';
+import { AudioEngine } from './audio-engine.js?v=531';
+import { drawQR } from './lib/qr.js?v=531';
+import { WORLDS } from './worlds/registry.js?v=531';
+import { Net, PALETTE } from './net.js?v=531';
+import { Presence } from './lib/presence.js?v=531';
+import { Pulses } from './lib/pulse.js?v=531';
+import { BeatClock } from './lib/beatclock.js?v=531';
+import { BeatCue } from './lib/beatcue.js?v=531';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=531';
+import { Race, placeOf, standings } from './lib/race.js?v=531';
+import { Signals } from './lib/signals.js?v=531';
+import { pickShareLine, loadLines } from './lib/lines.js?v=531';
+import { RouteMap } from './lib/map.js?v=531';
+import * as sfx from './lib/sfx.js?v=531';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=531';
+import { glowTexture } from './lib/glow.js?v=531';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1198,7 +1198,7 @@ function updatePlayBtn() {
   $('btn-play').textContent = audio.playing ? '⏸' : '▶';
   const q = $('qb-play');
   if (q) {
-    q.querySelector('i').textContent = audio.playing ? '⏸' : '▶';
+    q.classList.toggle('playing', audio.playing);   // CSS swaps the drawn icon
     q.querySelector('em').textContent = audio.playing ? 'pause' : 'play';
   }
 }
