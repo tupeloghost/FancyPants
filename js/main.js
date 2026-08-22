@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=529';
-import { drawQR } from './lib/qr.js?v=529';
-import { WORLDS } from './worlds/registry.js?v=529';
-import { Net, PALETTE } from './net.js?v=529';
-import { Presence } from './lib/presence.js?v=529';
-import { Pulses } from './lib/pulse.js?v=529';
-import { BeatClock } from './lib/beatclock.js?v=529';
-import { BeatCue } from './lib/beatcue.js?v=529';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=529';
-import { Race, placeOf, standings } from './lib/race.js?v=529';
-import { Signals } from './lib/signals.js?v=529';
-import { pickShareLine, loadLines } from './lib/lines.js?v=529';
-import { RouteMap } from './lib/map.js?v=529';
-import * as sfx from './lib/sfx.js?v=529';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=529';
-import { glowTexture } from './lib/glow.js?v=529';
+import { AudioEngine } from './audio-engine.js?v=530';
+import { drawQR } from './lib/qr.js?v=530';
+import { WORLDS } from './worlds/registry.js?v=530';
+import { Net, PALETTE } from './net.js?v=530';
+import { Presence } from './lib/presence.js?v=530';
+import { Pulses } from './lib/pulse.js?v=530';
+import { BeatClock } from './lib/beatclock.js?v=530';
+import { BeatCue } from './lib/beatcue.js?v=530';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=530';
+import { Race, placeOf, standings } from './lib/race.js?v=530';
+import { Signals } from './lib/signals.js?v=530';
+import { pickShareLine, loadLines } from './lib/lines.js?v=530';
+import { RouteMap } from './lib/map.js?v=530';
+import * as sfx from './lib/sfx.js?v=530';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=530';
+import { glowTexture } from './lib/glow.js?v=530';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2501,7 +2501,6 @@ function runWorldDemo() {
     clearInterval(demoTapIv);
     if (world && world.setInput) world.setInput(0, 0);
     offerShowMe(false);
-    announce('', 'your turn', 2600, 'quiet');
   };
   (function frame(now) {
     if (!demoRunning) { land(); return; }
