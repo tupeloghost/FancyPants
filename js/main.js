@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=522';
-import { drawQR } from './lib/qr.js?v=522';
-import { WORLDS } from './worlds/registry.js?v=522';
-import { Net, PALETTE } from './net.js?v=522';
-import { Presence } from './lib/presence.js?v=522';
-import { Pulses } from './lib/pulse.js?v=522';
-import { BeatClock } from './lib/beatclock.js?v=522';
-import { BeatCue } from './lib/beatcue.js?v=522';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=522';
-import { Race, placeOf, standings } from './lib/race.js?v=522';
-import { Signals } from './lib/signals.js?v=522';
-import { pickShareLine, loadLines } from './lib/lines.js?v=522';
-import { RouteMap } from './lib/map.js?v=522';
-import * as sfx from './lib/sfx.js?v=522';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=522';
-import { glowTexture } from './lib/glow.js?v=522';
+import { AudioEngine } from './audio-engine.js?v=523';
+import { drawQR } from './lib/qr.js?v=523';
+import { WORLDS } from './worlds/registry.js?v=523';
+import { Net, PALETTE } from './net.js?v=523';
+import { Presence } from './lib/presence.js?v=523';
+import { Pulses } from './lib/pulse.js?v=523';
+import { BeatClock } from './lib/beatclock.js?v=523';
+import { BeatCue } from './lib/beatcue.js?v=523';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=523';
+import { Race, placeOf, standings } from './lib/race.js?v=523';
+import { Signals } from './lib/signals.js?v=523';
+import { pickShareLine, loadLines } from './lib/lines.js?v=523';
+import { RouteMap } from './lib/map.js?v=523';
+import * as sfx from './lib/sfx.js?v=523';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=523';
+import { glowTexture } from './lib/glow.js?v=523';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2314,9 +2314,20 @@ canvas.addEventListener('pointerdown', e => {
 let bloomKick = 0;
 // ── Haptics ── a vocabulary, not a buzzer: each event has its own touch.
 // (Android honours vibrate(); iOS Safari has no web haptics API at all.)
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function haptic(pattern) {
-  if (IS_MOBILE && navigator.vibrate) {
-    try { navigator.vibrate(pattern); } catch { /* blocked */ }
+  if (!IS_MOBILE) return;
+  if (navigator.vibrate) {
+    try { navigator.vibrate(pattern); return; } catch { /* blocked */ }
+  }
+  // iPhone fallback: flip the hidden switch — one Taptic tick per flip.
+  // Patterns become up to three spaced ticks; a quirk, not a promise.
+  if (IS_IOS) {
+    const box = document.getElementById('hbox');
+    if (!box) return;
+    const ticks = Array.isArray(pattern) ? Math.min(3, Math.ceil(pattern.length / 2)) : 1;
+    for (let i = 0; i < ticks; i++) setTimeout(() => { try { box.click(); } catch { } }, i * 90);
   }
 }
 window.__haptic = haptic;

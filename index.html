@@ -2760,6 +2760,12 @@
 
     <div id="standings" class="hidden"></div>
     <div id="countdown" class="hidden" aria-hidden="true"></div>
+    <!-- the iOS tick: Safari has no vibration API, but flipping a native
+         switch control makes the Taptic Engine click. Invisible, harmless
+         where the quirk doesn't exist. -->
+    <label id="hbox" aria-hidden="true" style="position:fixed;left:-99px;top:-99px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
+      <input type="checkbox" switch>
+    </label>
 
     <div class="tab-page" id="page-worlds">
       <div id="world-chips"></div>
@@ -2826,7 +2832,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 522</div>
+      <div id="build-stamp">build 523</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2868,6 +2874,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=522"></script>
+<script type="module" src="js/main.js?v=523"></script>
 </body>
 </html>
