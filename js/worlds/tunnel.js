@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=512';
+import { glowTexture } from '../lib/glow.js?v=513';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -253,7 +253,7 @@ export function createTunnel() {
       camera.rotation.set(0, 0, 0);
     },
 
-    setInput(x, y) { steerTarget.x = x; steerTarget.y = y; },
+    setInput(x, y) { steerTarget.x = x || 0; steerTarget.y = y || 0; },
 
     // ghosts: glowing motes flying the same tube, offset by their steer
     placeGhost(p, i, out) {

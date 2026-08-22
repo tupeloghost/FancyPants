@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=512';
-import { drawQR } from './lib/qr.js?v=512';
-import { WORLDS } from './worlds/registry.js?v=512';
-import { Net, PALETTE } from './net.js?v=512';
-import { Presence } from './lib/presence.js?v=512';
-import { Pulses } from './lib/pulse.js?v=512';
-import { BeatClock } from './lib/beatclock.js?v=512';
-import { BeatCue } from './lib/beatcue.js?v=512';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=512';
-import { Race, placeOf, standings } from './lib/race.js?v=512';
-import { Signals } from './lib/signals.js?v=512';
-import { pickShareLine, loadLines } from './lib/lines.js?v=512';
-import { RouteMap } from './lib/map.js?v=512';
-import * as sfx from './lib/sfx.js?v=512';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=512';
-import { glowTexture } from './lib/glow.js?v=512';
+import { AudioEngine } from './audio-engine.js?v=513';
+import { drawQR } from './lib/qr.js?v=513';
+import { WORLDS } from './worlds/registry.js?v=513';
+import { Net, PALETTE } from './net.js?v=513';
+import { Presence } from './lib/presence.js?v=513';
+import { Pulses } from './lib/pulse.js?v=513';
+import { BeatClock } from './lib/beatclock.js?v=513';
+import { BeatCue } from './lib/beatcue.js?v=513';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=513';
+import { Race, placeOf, standings } from './lib/race.js?v=513';
+import { Signals } from './lib/signals.js?v=513';
+import { pickShareLine, loadLines } from './lib/lines.js?v=513';
+import { RouteMap } from './lib/map.js?v=513';
+import * as sfx from './lib/sfx.js?v=513';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=513';
+import { glowTexture } from './lib/glow.js?v=513';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2441,7 +2441,7 @@ function runWorldDemo() {
     demoRunning = false;
     hand.classList.add('hidden');
     clearInterval(demoTapIv);
-    if (world && world.setInput) world.setInput(0);
+    if (world && world.setInput) world.setInput(0, 0);
     offerShowMe(false);
     announce('', 'your turn', 2600, 'quiet');
   };
@@ -2458,7 +2458,7 @@ function runWorldDemo() {
     const px = innerWidth * (0.5 + x * 0.33);
     const py = innerHeight * 0.60 + Math.sin(t * 1.6) * innerHeight * 0.05;
     hand.style.transform = `translate(${px}px, ${py}px)`;
-    if (world && world.setInput) world.setInput(x);
+    if (world && world.setInput) world.setInput(x, 0);   // both axes: a one-arg call NaN-poisons two-axis worlds
     requestAnimationFrame(frame);
   })(t0);
   setTimeout(() => {
