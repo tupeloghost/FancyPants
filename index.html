@@ -146,7 +146,9 @@
     #qbar.dim { opacity: 0.92; }
     #qbar { gap: 4px; padding: 8px 10px; }
     #qbar .qb i { font-size: 17px; }
-    .rbtn { padding: 14px 16px; font-size: 13px; }
+    .rbtn { padding: 16px 18px; font-size: 14px; }
+    .rbtn.hero { padding: 17px 22px; font-size: 15px; }
+    #ri-play { padding: 16px 44px; font-size: 15px; }
     #show-me { padding: 12px 28px; font-size: 12px; }
   }
   /* mid-round the transport is a hazard, not a convenience: a thumb grazing
@@ -910,6 +912,15 @@
     transition: transform 160ms ease, box-shadow 160ms ease;
   }
   .rbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35); }
+  /* the hero action: the one the whole product wants pressed */
+  .rbtn.hero {
+    font-size: 13.5px; letter-spacing: 2.4px; padding: 12px 22px;
+    color: hsl(var(--accent-h), 60%, 8%);
+    background: linear-gradient(175deg, hsl(var(--accent-h), 85%, 78%), hsl(var(--accent-h), 75%, 58%));
+    border-color: hsla(var(--accent-h), 90%, 85%, 0.9);
+    box-shadow: 0 4px 24px hsla(var(--accent-h), 90%, 65%, 0.35);
+  }
+  .rbtn.hero:hover { box-shadow: 0 6px 30px hsla(var(--accent-h), 95%, 70%, 0.55); }
 
   #results-stats {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
@@ -2570,7 +2581,9 @@
     <div id="ri-round">round 1 of 4</div>
     <div id="ri-world">SLINKY</div>
     <div id="ri-track"></div>
-    <div id="ri-teach">
+    <!-- the rules paragraph is retired: the ghost-hand tutorial teaches by
+         SHOWING. The elements stay for the JS that fills them; hidden. -->
+    <div id="ri-teach" style="display:none">
       <canvas id="ri-demo"></canvas>
       <div id="ri-copy">
         <div id="ri-mode">RACE</div>
@@ -2613,9 +2626,9 @@
   <div id="results-board"></div>
   <div id="awards"></div>
   <div id="results-actions">
+    <button class="rbtn hero" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-again">PLAY AGAIN</button>
     <button class="rbtn" id="rb-next">NEXT WORLD</button>
-    <button class="rbtn" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-clip"><i>&#9678;</i> CLIP 15s</button>
     <button class="rbtn hidden" id="rb-recap">RECAP CARD</button>
   </div>
@@ -2783,7 +2796,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 514</div>
+      <div id="build-stamp">build 515</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2825,6 +2838,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=514"></script>
+<script type="module" src="js/main.js?v=515"></script>
 </body>
 </html>

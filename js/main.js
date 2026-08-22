@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=514';
-import { drawQR } from './lib/qr.js?v=514';
-import { WORLDS } from './worlds/registry.js?v=514';
-import { Net, PALETTE } from './net.js?v=514';
-import { Presence } from './lib/presence.js?v=514';
-import { Pulses } from './lib/pulse.js?v=514';
-import { BeatClock } from './lib/beatclock.js?v=514';
-import { BeatCue } from './lib/beatcue.js?v=514';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=514';
-import { Race, placeOf, standings } from './lib/race.js?v=514';
-import { Signals } from './lib/signals.js?v=514';
-import { pickShareLine, loadLines } from './lib/lines.js?v=514';
-import { RouteMap } from './lib/map.js?v=514';
-import * as sfx from './lib/sfx.js?v=514';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=514';
-import { glowTexture } from './lib/glow.js?v=514';
+import { AudioEngine } from './audio-engine.js?v=515';
+import { drawQR } from './lib/qr.js?v=515';
+import { WORLDS } from './worlds/registry.js?v=515';
+import { Net, PALETTE } from './net.js?v=515';
+import { Presence } from './lib/presence.js?v=515';
+import { Pulses } from './lib/pulse.js?v=515';
+import { BeatClock } from './lib/beatclock.js?v=515';
+import { BeatCue } from './lib/beatcue.js?v=515';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=515';
+import { Race, placeOf, standings } from './lib/race.js?v=515';
+import { Signals } from './lib/signals.js?v=515';
+import { pickShareLine, loadLines } from './lib/lines.js?v=515';
+import { RouteMap } from './lib/map.js?v=515';
+import * as sfx from './lib/sfx.js?v=515';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=515';
+import { glowTexture } from './lib/glow.js?v=515';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2530,7 +2530,8 @@ function showWorldIntro(key) {
   // watched by somebody actually playing (never lean-back, never a guest).
   // It waits on its own clock instead of dying with this greeting: a first
   // visit deserves longer than three seconds to notice the offer.
-  const teachable = (world && (world.setInput || world.onTap)) && !w.rhythm
+  // rhythm worlds included: the ghost hand replaced the round card's rules
+  const teachable = (world && (world.setInput || world.onTap))
     && !chillRoll && !document.body.classList.contains('guest');
   offerShowMe(teachable);
   el.classList.remove('gone');
