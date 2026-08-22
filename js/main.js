@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=513';
-import { drawQR } from './lib/qr.js?v=513';
-import { WORLDS } from './worlds/registry.js?v=513';
-import { Net, PALETTE } from './net.js?v=513';
-import { Presence } from './lib/presence.js?v=513';
-import { Pulses } from './lib/pulse.js?v=513';
-import { BeatClock } from './lib/beatclock.js?v=513';
-import { BeatCue } from './lib/beatcue.js?v=513';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=513';
-import { Race, placeOf, standings } from './lib/race.js?v=513';
-import { Signals } from './lib/signals.js?v=513';
-import { pickShareLine, loadLines } from './lib/lines.js?v=513';
-import { RouteMap } from './lib/map.js?v=513';
-import * as sfx from './lib/sfx.js?v=513';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=513';
-import { glowTexture } from './lib/glow.js?v=513';
+import { AudioEngine } from './audio-engine.js?v=514';
+import { drawQR } from './lib/qr.js?v=514';
+import { WORLDS } from './worlds/registry.js?v=514';
+import { Net, PALETTE } from './net.js?v=514';
+import { Presence } from './lib/presence.js?v=514';
+import { Pulses } from './lib/pulse.js?v=514';
+import { BeatClock } from './lib/beatclock.js?v=514';
+import { BeatCue } from './lib/beatcue.js?v=514';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=514';
+import { Race, placeOf, standings } from './lib/race.js?v=514';
+import { Signals } from './lib/signals.js?v=514';
+import { pickShareLine, loadLines } from './lib/lines.js?v=514';
+import { RouteMap } from './lib/map.js?v=514';
+import * as sfx from './lib/sfx.js?v=514';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=514';
+import { glowTexture } from './lib/glow.js?v=514';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -88,6 +88,29 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 });
+
+// ── Adaptive resolution ── phones vary wildly; instead of guessing, WATCH.
+// Sustained heavy frames step the render scale down (2 → 1.7 → 1.4); a
+// comfortably fast stretch steps it back up. Sharp when the phone can
+// afford it, smooth when it can't — never a permanent downgrade.
+const QUALITY_STEPS = [Math.min(window.devicePixelRatio, 2), 1.7, 1.4];
+let qStep = 0, qSlow = 0, qFast = 0, qHold = 0;
+function adaptQuality(dt) {
+  if (!IS_MOBILE) return;
+  qHold = Math.max(0, qHold - dt);
+  if (qHold > 0) return;                 // let a change settle before judging
+  if (dt > 1 / 42) { qSlow += dt; qFast = 0; }
+  else if (dt < 1 / 55) { qFast += dt; qSlow = 0; }
+  if (qSlow > 1.4 && qStep < QUALITY_STEPS.length - 1) qStep++;
+  else if (qFast > 6 && qStep > 0) qStep--;
+  else return;
+  qSlow = 0; qFast = 0; qHold = 2;
+  renderer.setPixelRatio(QUALITY_STEPS[qStep]);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setPixelRatio(QUALITY_STEPS[qStep]);
+  composer.setSize(window.innerWidth, window.innerHeight);
+}
+window.__quality = () => QUALITY_STEPS[qStep];
 
 // ── Audio ──
 const audio = new AudioEngine();
@@ -5393,6 +5416,7 @@ function frame(now) {
     camera.updateProjectionMatrix();
   }
 
+  adaptQuality(dt);
   composer.render();
 
   // NOTE: the camera deliberately keeps the viewer's framing until the next

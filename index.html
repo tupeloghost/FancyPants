@@ -43,6 +43,9 @@
     --well: hsla(var(--accent-h), 35%, 55%, 0.10);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* iOS ignores user-scalable=no: this is what actually stops double-tap
+     zoom on the buttons (the canvas already owns its own touches) */
+  body { touch-action: manipulation; }
   /* touch response: everything pressable compresses under the finger NOW —
      80ms down, spring back on release. The press is the product's handshake. */
   button, .qb, .rbtn, .mode-opt, .wchip, select {
@@ -2780,7 +2783,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 513</div>
+      <div id="build-stamp">build 514</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2822,6 +2825,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=513"></script>
+<script type="module" src="js/main.js?v=514"></script>
 </body>
 </html>
