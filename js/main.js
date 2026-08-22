@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=554';
-import { drawQR } from './lib/qr.js?v=554';
-import { WORLDS } from './worlds/registry.js?v=554';
-import { Net, PALETTE } from './net.js?v=554';
-import { Presence } from './lib/presence.js?v=554';
-import { Pulses } from './lib/pulse.js?v=554';
-import { BeatClock } from './lib/beatclock.js?v=554';
-import { BeatCue } from './lib/beatcue.js?v=554';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=554';
-import { Race, placeOf, standings } from './lib/race.js?v=554';
-import { Signals } from './lib/signals.js?v=554';
-import { pickShareLine, loadLines } from './lib/lines.js?v=554';
-import { RouteMap } from './lib/map.js?v=554';
-import * as sfx from './lib/sfx.js?v=554';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=554';
-import { glowTexture } from './lib/glow.js?v=554';
+import { AudioEngine } from './audio-engine.js?v=555';
+import { drawQR } from './lib/qr.js?v=555';
+import { WORLDS } from './worlds/registry.js?v=555';
+import { Net, PALETTE } from './net.js?v=555';
+import { Presence } from './lib/presence.js?v=555';
+import { Pulses } from './lib/pulse.js?v=555';
+import { BeatClock } from './lib/beatclock.js?v=555';
+import { BeatCue } from './lib/beatcue.js?v=555';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=555';
+import { Race, placeOf, standings } from './lib/race.js?v=555';
+import { Signals } from './lib/signals.js?v=555';
+import { pickShareLine, loadLines } from './lib/lines.js?v=555';
+import { RouteMap } from './lib/map.js?v=555';
+import * as sfx from './lib/sfx.js?v=555';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=555';
+import { glowTexture } from './lib/glow.js?v=555';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2910,6 +2910,7 @@ async function openCreatorCard() {
         $('cc-photo').value = d.photo || '';
         $('cc-mood').value = d.mood || '';
         document.querySelectorAll('#cc-intents .chip').forEach(b => b.classList.toggle('on', (d.intents || []).includes(b.dataset.intent)));
+        ccQuizSet(d.quiz || '');
         (d.prompts || []).slice(0, 3).forEach((x, i) => {
           const sel = $('cc-q' + (i + 1));
           if (![...sel.options].some(o => o.value === x.q)) sel.add(new Option(x.q, x.q));
@@ -2938,6 +2939,44 @@ function setCcType(t) {
   $('cct-streamer').classList.toggle('on', ccType === 'streamer');
   $('cc-watch').classList.toggle('hidden', ccType !== 'streamer');
 }
+// the vibe check (owner's side): the same ten statements the page asks
+// visitors, so the page can score the pair. Kept in sync with the worker.
+const VIBE_Q = [
+  'I chase new things: new sounds, new places, weird art',
+  'I like what I already know better than what I don\u2019t',
+  'I\u2019m warm with people, even strangers',
+  'I get argumentative when I disagree',
+  'I light up in a crowd',
+  'I need quiet time to recharge',
+  'being a good friend matters more to me than being impressive',
+  'I\u2019d rather make something than own something',
+  'I come alive after dark',
+  'I\u2019d rather plan it than wing it',
+];
+const VIBE_SCALE = ['nah', 'not really', 'kinda', 'yeah', 'so me'];
+{
+  const rows = $('cc-quiz-rows');
+  VIBE_Q.forEach((q, i) => {
+    const row = document.createElement('div'); row.className = 'ccq';
+    const lab = document.createElement('span'); lab.textContent = q;
+    const opts = document.createElement('div');
+    VIBE_SCALE.forEach((t, j) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.dataset.v = j + 1;
+      b.addEventListener('click', () => { [...opts.children].forEach(x => x.classList.remove('on')); b.classList.add('on'); });
+      opts.appendChild(b);
+    });
+    row.append(lab, opts); rows.appendChild(row);
+  });
+}
+function ccQuizValue() {
+  const rows = [...document.querySelectorAll('#cc-quiz-rows .ccq')];
+  const v = rows.map(r => { const on = r.querySelector('button.on'); return on ? on.dataset.v : ''; });
+  return v.every(Boolean) ? v.join('') : '';   // all ten or nothing: a half quiz scores lies
+}
+function ccQuizSet(q) {
+  const rows = [...document.querySelectorAll('#cc-quiz-rows .ccq')];
+  rows.forEach((r, i) => [...r.querySelectorAll('button')].forEach(b => b.classList.toggle('on', !!q && b.dataset.v === q[i])));
+}
 // the icebreaker bank: prompts that make a stranger grin and want to answer back
 const PROMPT_BANK = [
   'the song I\u2019d put on to win an argument',
@@ -2955,6 +2994,21 @@ const PROMPT_BANK = [
   'the thing I talk about too much',
   'what I\u2019m making right now',
   'I\u2019m up at night because',
+  'my toxic trait, musically speaking',
+  'the song I pretend I don\u2019t love',
+  'my walk-up song if life had one',
+  'a smell that is basically a song to me',
+  'the album I\u2019d be stranded with',
+  'the most embarrassing thing in my recently played',
+  'my villain origin story',
+  'an opinion that gets me uninvited',
+  'the last thing I cried at',
+  'my go-to dance move (describe it)',
+  'the lyric tattooed on my brain',
+  'I will fight anyone who says',
+  'the party trick I\u2019m known for',
+  'my roman empire',
+  'what my friends would warn you about',
 ];
 [1, 2, 3].forEach(i => {
   const sel = $('cc-q' + i);
@@ -2976,6 +3030,7 @@ $('cc-save').addEventListener('click', async () => {
     bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), tip: $('cc-tip').value.trim(), links,
     type: ccType, photo: $('cc-photo').value.trim(), watch: $('cc-watch').value.trim(),
     mood: $('cc-mood').value.trim(),
+    quiz: ccQuizValue(),
     intents: [...document.querySelectorAll('#cc-intents .chip.on')].map(b => b.dataset.intent),
     prompts: [1, 2, 3].map(i => ({ q: $('cc-q' + i).value, a: $('cc-p' + i).value.trim() })).filter(x => x.q && x.a),
     hue: settings.hue,   // the page wears the look you were wearing when you made it

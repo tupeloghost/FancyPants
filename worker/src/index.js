@@ -154,6 +154,7 @@ export class FancyPantsRoom {
         hue: Number.isFinite(+b.hue) ? ((+b.hue % 360) + 360) % 360 : 265,
         look: /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '',
         mood: String(b.mood || '').slice(0, 80),
+        quiz: /^[1-5]{10,12}$/.test(String(b.quiz || '')) ? String(b.quiz) : '',
         // what they're here for, and a few things said in their own words
         intents: (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3),
         prompts: (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
@@ -183,6 +184,7 @@ export class FancyPantsRoom {
       if ('hue' in b && Number.isFinite(+b.hue)) page.hue = ((+b.hue % 360) + 360) % 360;
       if ('look' in b) page.look = /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '';
       if ('mood' in b) page.mood = String(b.mood || '').slice(0, 80);
+      if ('quiz' in b) page.quiz = /^[1-5]{10,12}$/.test(String(b.quiz || '')) ? String(b.quiz) : '';
       if ('intents' in b) page.intents = (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3);
       if ('prompts' in b) page.prompts = (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
         q: String((x && x.q) || '').slice(0, 60), a: String((x && x.a) || '').slice(0, 160),
@@ -211,7 +213,7 @@ export class FancyPantsRoom {
       }
       const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '',
         type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265,
-        look: page.look || '', mood: page.mood || '', intents: page.intents || [], prompts: page.prompts || [], songs };
+        look: page.look || '', mood: page.mood || '', intents: page.intents || [], prompts: page.prompts || [], quiz: page.quiz || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -562,6 +564,78 @@ export default {
       const roomCode = pg.slug.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 12);
       const playBtn = '<a class="together" href="' + SITE_URL + '?room=' + roomCode + '&with=' + encodeURIComponent(pg.name.slice(0, 24)) + '">'
         + '<b>play together</b><i>' + esc(pg.name) + '\u2019s room \u00b7 ' + roomCode + '</i></a>';
+      // ── the vibe check, grounded ── ten short statements on a 5-point scale,
+      // drawn from what friendship research actually predicts:
+      //   · similarity in VALUES and OPENNESS (Byrne; Montoya & Horton meta-
+      //     analysis: actual similarity predicts attraction in new acquaintances)
+      //   · each person's AGREEABLENESS/warmth (predicts friendship quality
+      //     more than trait-matching does)
+      //   · matching RHYTHMS: chronotype and social energy decide whether two
+      //     people can actually make plans (propinquity is the real engine)
+      // Items paraphrase the TIPI (Gosling 2003) for O, A, E, C plus two value
+      // items and one chronotype item. R = reverse-scored.
+      const VQ = [
+        'I chase new things: new sounds, new places, weird art',          // O
+        'I like what I already know better than what I don’t',        // O (R)
+        'I’m warm with people, even strangers',                      // A
+        'I get argumentative when I disagree',                             // A (R)
+        'I light up in a crowd',                                           // E
+        'I need quiet time to recharge',                                   // E (R)
+        'being a good friend matters more to me than being impressive',   // value: benevolence
+        'I’d rather make something than own something',               // value: creativity
+        'I come alive after dark',                                         // chronotype
+        'I’d rather plan it than wing it',                             // C
+      ];
+      const vibeBlock = pg.quiz
+        ? '<div class="vibe" id="vibe" data-q="' + esc(pg.quiz) + '" data-i="' + esc((pg.intents || []).join(',')) + '" data-n="' + esc(pg.name) + '">'
+          + '<button class="vgo" id="vgo">see how you two would click <i>ten quick questions</i></button></div>'
+        : '';
+      const vibeScript = pg.quiz ? '<script>(function(){'
+        + 'var VQ=' + JSON.stringify(VQ) + ';var SC=["nah","not really","kinda","yeah","so me"];'
+        + 'var box=document.getElementById("vibe");if(!box)return;'
+        + 'var theirs=box.getAttribute("data-q"),tI=(box.getAttribute("data-i")||"").split(",").filter(Boolean),name=box.getAttribute("data-n");'
+        + 'function esc(t){return String(t).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c]})}'
+        + 'function prof(q){var v=q.split("").map(Number);var r=function(x){return 6-x};'
+        + 'return {O:(v[0]+r(v[1]))/2,A:(v[2]+r(v[3]))/2,E:(v[4]+r(v[5]))/2,V1:v[6],V2:v[7],N:v[8],C:v[9]}}'
+        + 'function sim(a,b){return 1-Math.abs(a-b)/4}'
+        + 'function score(mine,mI){var m=prof(mine),t=prof(theirs);'
+        + 'var fit=0.25*sim(m.O,t.O)+0.2*sim(m.A,t.A)+0.15*sim(m.V1,t.V1)+0.1*sim(m.V2,t.V2)+0.15*sim(m.N,t.N)+0.1*sim(m.E,t.E)+0.05*sim(m.C,t.C);'
+        + 'var warmth=((m.A+t.A)/2-1)/4*8;'   // each person's warmth predicts friendship quality
+        + 'var shared=mI.filter(function(x){return tI.indexOf(x)>-1}).length;'
+        + 'var pct=Math.min(97,Math.round(30+60*fit+warmth+Math.min(2,shared)*4));'
+        + 'var D=[["O","chasers of new things","one of you chases new things, the other likes the known"],'
+        + '["A","warm with strangers","one of you is quicker to argue than the other"],'
+        + '["N","night people","one of you comes alive after dark, the other runs early"],'
+        + '["E","crowd people","one of you lights up in a crowd, the other needs the quiet"],'
+        + '["V1","friend-first people","you weigh being a good friend differently"],'
+        + '["V2","makers","one of you would rather make things, the other would rather have them"],'
+        + '["C","planners","one of you plans, the other wings it"]];'
+        + 'var same=[],diff=[];for(var i=0;i<D.length;i++){var k=D[i][0],a=m[k],b=t[k],hi=a>=3.5&&b>=3.5,lo=a<=2.5&&b<=2.5;'
+        + 'var LO={O:"creatures of habit",A:"quick to argue",N:"early people",E:"quiet people",V1:"impress-first people",V2:"collectors",C:"wing-it people"};'
+        + 'if(hi)same.push(D[i][1]);else if(lo)same.push(LO[k]);'
+        + 'else if(Math.abs(a-b)>=2)diff.push(D[i][2])}'
+        + 'var tag=pct>=85?"you’d click fast":pct>=70?"easy company":pct>=55?"different, in a good way":"a stretch, but stretches are fun";'
+        + 'return {pct:pct,tag:tag,same:same,diff:diff,shared:shared}}'
+        + 'function show(r){var lines="";'
+        + 'if(r.same.length)lines+="<p>you’re both <b>"+r.same.slice(0,3).map(esc).join("</b>, <b>")+"</b></p>";'
+        + 'if(r.diff.length)lines+="<p>mind this: "+esc(r.diff[0])+"</p>";'
+        + 'if(r.shared)lines+="<p>and you’re here for the same thing</p>";'
+        + 'box.innerHTML="<div class=\\"vres\\"><span class=\\"vpct\\">"+r.pct+"%</span><span class=\\"vtag\\">"+esc(r.tag)+"</span>"+lines'
+        + '+"<p class=\\"vwhy\\">based on what friendship research actually predicts: shared values and openness, warmth, and whether your hours line up</p>"'
+        + '+"<a href=\\"#\\" id=\\"vredo\\">retake</a></div>";'
+        + 'document.getElementById("vredo").onclick=function(e){e.preventDefault();localStorage.removeItem("fb_quiz");quiz()}}'
+        + 'function quiz(){var ans=[],idx=0;function step(){if(idx>=VQ.length){'
+        + 'box.innerHTML="<div class=\\"vq\\"><p class=\\"vqq\\">and you’re here for</p><div class=\\"vopts\\"><button data-i=\\"friends\\">friends</button><button data-i=\\"collaborators\\">collaborators</button><button data-i=\\"business\\">business</button></div><a href=\\"#\\" id=\\"vskip\\">skip</a></div>";'
+        + 'var picked=[];var bs=box.querySelectorAll(".vopts button");for(var k=0;k<bs.length;k++)bs[k].onclick=function(){this.classList.toggle("on");picked=[].map.call(box.querySelectorAll(".vopts button.on"),function(b){return b.getAttribute("data-i")})};'
+        + 'document.getElementById("vskip").onclick=function(e){e.preventDefault();finish()};'
+        + 'var done=document.createElement("button");done.className="vdone";done.textContent="see it";done.onclick=finish;box.querySelector(".vq").appendChild(done);'
+        + 'function finish(){var q=ans.join("");localStorage.setItem("fb_quiz",q);localStorage.setItem("fb_intents",picked.join(","));show(score(q,picked))}return}'
+        + 'var h="<div class=\\"vq\\"><p class=\\"vqq\\">"+(idx+1)+" of "+VQ.length+"</p><p class=\\"vst\\">"+esc(VQ[idx])+"</p><div class=\\"vopts vsc\\">";'
+        + 'for(var j=0;j<5;j++)h+="<button data-v=\\""+(j+1)+"\\">"+SC[j]+"</button>";box.innerHTML=h+"</div></div>";'
+        + 'var b2=box.querySelectorAll(".vopts button");for(var k=0;k<b2.length;k++)b2[k].onclick=function(){ans.push(this.getAttribute("data-v"));idx++;step()}}step()}'
+        + 'var mine=localStorage.getItem("fb_quiz")||"";var mI=(localStorage.getItem("fb_intents")||"").split(",").filter(Boolean);'
+        + 'if(/^[1-5]{10,12}$/.test(mine))show(score(mine,mI));else document.getElementById("vgo").onclick=quiz;'
+        + '})();</scr' + 'ipt>' : '';
       const intentRow = (pg.intents || []).length
         ? '<p class="here">here for ' + pg.intents.map(x => '<b>' + esc(x) + '</b>').join(' · ') + '</p>' : '';
       const promptRows = (pg.prompts || []).map(x =>
@@ -602,6 +676,21 @@ export default {
         + '.together b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:19px;letter-spacing:1px}'
         + '.together i{display:block;font-style:normal;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#9a94c4;margin-top:2px;text-transform:uppercase}'
         + '.together:hover{background:rgba(255,255,255,0.11)}'
+        + '.vibe{margin:0 auto 24px;max-width:440px;padding:16px 18px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid hsla(var(--h),70%,75%,0.35)}'
+        + '.vgo{width:100%;padding:13px 16px;border-radius:999px;border:0;cursor:pointer;color:#130f26;background:linear-gradient(175deg,hsl(var(--h),90%,92%),hsl(var(--h),80%,76%));font:600 15px Georgia,serif}'
+        + '.vgo i{display:block;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#4b3f7a;font-style:normal;margin-top:2px}'
+        + '.vq .vqq{margin:0 0 10px;font:11px ui-monospace,Menlo,monospace;letter-spacing:2px;text-transform:uppercase;color:#9a94c4}'
+        + '.vopts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}'
+        + '.vopts button{flex:1;min-width:120px;padding:13px 12px;border-radius:14px;cursor:pointer;color:#f0eefc;background:rgba(255,255,255,0.07);border:1px solid rgba(180,170,230,0.35);font:15px Georgia,serif}'
+        + '.vopts button:hover,.vopts button.on{background:hsla(var(--h),70%,60%,0.35);border-color:hsl(var(--h),80%,80%)}'
+        + '.vq a,.vres a{display:inline-block;margin-top:10px;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#9a94c4;text-transform:uppercase}'
+        + '.vdone{margin:10px 0 0 12px;padding:9px 18px;border-radius:999px;border:0;cursor:pointer;color:#130f26;background:hsl(var(--h),80%,80%);font:600 13px Georgia,serif}'
+        + '.vst{font-family:Didot,"Bodoni 72",Georgia,serif;font-size:19px;color:#fff;margin:0 0 12px;line-height:1.3}'
+        + '.vsc button{min-width:0;flex:1;padding:11px 4px;font-size:13px}'
+        + '.vwhy{font-size:12px!important;color:#8d87b0!important;margin-top:10px!important;font-style:italic}'
+        + '.vres .vpct{font-family:Didot,"Bodoni 72",Georgia,serif;font-size:46px;line-height:1;color:hsl(var(--h),85%,84%);display:block}'
+        + '.vres .vtag{display:block;font-style:italic;color:#ece8ff;margin:2px 0 8px}'
+        + '.vres p{margin:4px 0;color:#c4bfe3;font-size:14.5px}.vres b{color:#fff;font-weight:400}'
         + '.here{margin:0 0 16px;font:11.5px ui-monospace,Menlo,monospace;letter-spacing:2px;text-transform:uppercase;color:#9a94c4}.here b{font-weight:400;color:hsl(var(--h),85%,84%)}'
         + '.prompts{margin:6px auto 26px;max-width:460px;display:flex;flex-direction:column;gap:10px;text-align:left}'
         + '.prompt{padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(180,170,230,0.18)}'
@@ -653,6 +742,7 @@ export default {
         + (pg.mood ? '<p class="mood">' + esc(pg.mood) + '</p>' : '')
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
         + intentRow
+        + vibeBlock
         + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn
         + playBtn
@@ -662,6 +752,7 @@ export default {
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'
         + '</div>'
+        + vibeScript
         + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent=(e.closest(".live")?"":"going live ")+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')
         + '</body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
