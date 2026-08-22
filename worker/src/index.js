@@ -152,6 +152,8 @@ export class FancyPantsRoom {
         photo: /^https?:\/\//.test(String(b.photo || '')) ? String(b.photo).slice(0, 400) : '',
         watch: /^https?:\/\//.test(String(b.watch || '')) ? String(b.watch).slice(0, 300) : '',
         hue: Number.isFinite(+b.hue) ? ((+b.hue % 360) + 360) % 360 : 265,
+        look: /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '',
+        mood: String(b.mood || '').slice(0, 80),
         hidden: [],
         at: Date.now(),
       };
@@ -174,6 +176,8 @@ export class FancyPantsRoom {
       if ('photo' in b) page.photo = /^https?:\/\//.test(String(b.photo || '')) ? String(b.photo).slice(0, 400) : '';
       if ('watch' in b) page.watch = /^https?:\/\//.test(String(b.watch || '')) ? String(b.watch).slice(0, 300) : '';
       if ('hue' in b && Number.isFinite(+b.hue)) page.hue = ((+b.hue % 360) + 360) % 360;
+      if ('look' in b) page.look = /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '';
+      if ('mood' in b) page.mood = String(b.mood || '').slice(0, 80);
       if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
@@ -197,7 +201,8 @@ export class FancyPantsRoom {
         songs.push({ path, world: (home && home.world) || '' });
       }
       const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '',
-        type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265, songs };
+        type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265,
+        look: page.look || '', mood: page.mood || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -543,6 +548,10 @@ export default {
           + '<a class="room" href="' + SITE_URL + '">step inside and play along</a></div>'
         : '';
       const kind = isStreamer ? 'streamer' : 'artist';
+      // the page IS their world: the game runs silently behind the card in
+      // stage mode, wearing their look, moving to a heartbeat
+      const stageSrc = SITE_URL + '?stage=1&world=' + encodeURIComponent(lead ? lead.world : 'tunnel')
+        + (pg.look ? '&look=' + encodeURIComponent(pg.look) : '&hue=' + H);
       // the lead song is the page's thesis: one big door. the rest are rows.
       const heroBtn = lead
         ? '<a class="hero" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(lead.p) + '">'
@@ -568,10 +577,13 @@ export default {
         + '<meta name="twitter:image" content="' + heroImg + '">'
         + '<style>'
         + ':root{--h:' + H + '}'
+        + '.stage{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;filter:brightness(0.62) saturate(1.1)}'
+        + '.mood{margin:-2px 0 18px;font-style:italic;color:hsl(var(--h),80%,82%);font-size:17px}'
+        + '.mood::before{content:"\\201C"}.mood::after{content:"\\201D"}'
         + '*{box-sizing:border-box}'
         + 'body{margin:0;min-height:100vh;background:#07060f;color:#eceafb;font:16px/1.6 Georgia,serif;}'
         + '.bg{position:fixed;inset:0;background:url(' + heroImg + ') center/cover;filter:blur(38px) saturate(1.3) brightness(0.45);transform:scale(1.15);z-index:0}'
-        + '.veil{position:fixed;inset:0;background:radial-gradient(900px 600px at 50% 0%,rgba(20,16,40,0.2),rgba(7,6,15,0.92) 70%);z-index:0}'
+        + '.veil{position:fixed;inset:0;background:radial-gradient(900px 600px at 50% 0%,rgba(20,16,40,0.15),rgba(7,6,15,0.82) 75%);z-index:0}'
         + '.card{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:52px 18px 40px;text-align:center;}'
         + '.on{font:11px ui-monospace,Menlo,monospace;letter-spacing:3px;color:#9a94c4;text-transform:uppercase;margin:0 0 10px}'
         + 'h1{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:46px;margin:0 0 8px;letter-spacing:1px;line-height:1.1}'
@@ -604,10 +616,13 @@ export default {
         + 'border-radius:24px;color:#e6e2fa;text-decoration:none;background:rgba(255,255,255,0.05);font-size:14px}'
         + '.pill:hover{border-color:#a99ce8;}'
         + 'footer{margin-top:40px;font-size:12.5px;color:#8d87b0;}footer a{color:#b9b3da;}'
-        + '</style></head><body><div class="bg"></div><div class="veil"></div><div class="card">'
+        + '</style></head><body><div class="bg"></div>'
+        + '<iframe class="stage" src="' + stageSrc + '" title="" tabindex="-1" aria-hidden="true" loading="lazy" allow="autoplay"></iframe>'
+        + '<div class="veil"></div><div class="card">'
         + (pg.photo ? '<img class="photo" src="' + esc(pg.photo) + '" alt="">' : '')
         + '<p class="on">' + kind + ' on fancy britches</p>'
         + '<h1>' + esc(pg.name) + '</h1>'
+        + (pg.mood ? '<p class="mood">' + esc(pg.mood) + '</p>' : '')
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
         + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn

@@ -213,6 +213,12 @@
 
   /* clean capture — every control gone, the world alone */
   body.clean #qbar, body.clean #panel, body.clean #plist { display: none !important; }
+  /* stage mode: a living backdrop. Nothing speaks, nothing asks, nothing is clickable. */
+  body.stage #world-intro, body.stage #annc, body.stage #countdown, body.stage #standings,
+  body.stage #show-me, body.stage #today, body.stage #cursor, body.stage #round-intro,
+  body.stage #results, body.stage #mode-card, body.stage #tap-to-start, body.stage #scene-fade { display: none !important; }
+  body.stage #game-hud, body.stage #beatcue, body.stage #rivals-bar, body.stage #hurt-vignette { display: none !important; }
+  body.stage { pointer-events: none; }
 
   /* a CARD owns the screen. The transport bar, the tutor's pill and the
      sheet leave the stage instead of haunting the veil as blurred smudges. */
@@ -2509,13 +2515,14 @@
 <div id="creator-card" class="hidden">
   <div id="cc-inner">
     <div id="cc-title">your page</div>
-    <div id="cc-sub">one link with your songs, socials, and what&rsquo;s next. promoted songs land on it automatically.</div>
+    <div id="cc-sub">one link with your songs, socials, and what&rsquo;s next. promoted songs land on it automatically. the page wears the look you have on right now.</div>
     <!-- the page's kind picks what it leads with. more kinds arrive with accounts. -->
     <div class="am-pick" id="cc-type">
       <button id="cct-artist" class="on" data-type="artist">ARTIST</button><button id="cct-streamer" data-type="streamer">STREAMER</button>
     </div>
     <input id="cc-slug" maxlength="30" placeholder="your page address (letters &amp; dashes)" autocomplete="off" spellcheck="false">
     <input id="cc-name" maxlength="60" placeholder="your name" autocomplete="off">
+    <input id="cc-mood" maxlength="80" placeholder="a mood or status line, change it any time (optional)" autocomplete="off">
     <input id="cc-photo" maxlength="400" placeholder="a photo of you: paste an image link (optional)" autocomplete="off" spellcheck="false">
     <input id="cc-watch" maxlength="300" class="hidden" placeholder="where folks watch you: twitch, youtube, kick&hellip;" autocomplete="off" spellcheck="false">
     <textarea id="cc-bio" maxlength="500" rows="3" placeholder="a couple lines about you"></textarea>
@@ -2897,7 +2904,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 548</div>
+      <div id="build-stamp">build 550</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2939,6 +2946,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=548"></script>
+<script type="module" src="js/main.js?v=550"></script>
 </body>
 </html>

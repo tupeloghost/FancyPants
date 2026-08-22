@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=548';
-import { drawQR } from './lib/qr.js?v=548';
-import { WORLDS } from './worlds/registry.js?v=548';
-import { Net, PALETTE } from './net.js?v=548';
-import { Presence } from './lib/presence.js?v=548';
-import { Pulses } from './lib/pulse.js?v=548';
-import { BeatClock } from './lib/beatclock.js?v=548';
-import { BeatCue } from './lib/beatcue.js?v=548';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=548';
-import { Race, placeOf, standings } from './lib/race.js?v=548';
-import { Signals } from './lib/signals.js?v=548';
-import { pickShareLine, loadLines } from './lib/lines.js?v=548';
-import { RouteMap } from './lib/map.js?v=548';
-import * as sfx from './lib/sfx.js?v=548';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=548';
-import { glowTexture } from './lib/glow.js?v=548';
+import { AudioEngine } from './audio-engine.js?v=550';
+import { drawQR } from './lib/qr.js?v=550';
+import { WORLDS } from './worlds/registry.js?v=550';
+import { Net, PALETTE } from './net.js?v=550';
+import { Presence } from './lib/presence.js?v=550';
+import { Pulses } from './lib/pulse.js?v=550';
+import { BeatClock } from './lib/beatclock.js?v=550';
+import { BeatCue } from './lib/beatcue.js?v=550';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=550';
+import { Race, placeOf, standings } from './lib/race.js?v=550';
+import { Signals } from './lib/signals.js?v=550';
+import { pickShareLine, loadLines } from './lib/lines.js?v=550';
+import { RouteMap } from './lib/map.js?v=550';
+import * as sfx from './lib/sfx.js?v=550';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=550';
+import { glowTexture } from './lib/glow.js?v=550';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -277,6 +277,19 @@ const settings = {
   if (qp.get('world') && WORLDS[qp.get('world')]) window.__shareWorld = qp.get('world');
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
+  // ── stage mode ── the game as a living backdrop (personal pages embed it):
+  // no chrome, no sound, no questions; it wanders on its own and pulses to a
+  // synthetic heartbeat because an iframe may not play audio unasked.
+  if (qp.get('stage') === '1') {
+    window.__STAGE = true;
+    const look = (qp.get('look') || '').split('.');
+    if (look[0]) settings.colorMode = look[0];
+    if (look[1]) settings.pattern = look[1];
+    if (look[2]) settings.shape = look[2];
+    if (look[3] && !isNaN(+look[3])) settings.hue = +look[3];
+    settings.attract = true;
+    document.body.classList.add('clean', 'stage');
+  }
 }
 
 function updateURL() {
@@ -2892,6 +2905,7 @@ async function openCreatorCard() {
         $('cc-next').value = d.next || '';
         $('cc-tip').value = d.tip || '';
         $('cc-photo').value = d.photo || '';
+        $('cc-mood').value = d.mood || '';
         $('cc-watch').value = d.watch || '';
         setCcType(d.type || 'artist');
         (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
@@ -2928,7 +2942,9 @@ $('cc-save').addEventListener('click', async () => {
     slug, name: $('cc-name').value.trim() || slug,
     bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), tip: $('cc-tip').value.trim(), links,
     type: ccType, photo: $('cc-photo').value.trim(), watch: $('cc-watch').value.trim(),
+    mood: $('cc-mood').value.trim(),
     hue: settings.hue,   // the page wears the look you were wearing when you made it
+    look: [settings.colorMode, settings.pattern, settings.shape, Math.round(settings.hue)].join('.'),
   };
   const key = ccKey(slug);
   $('cc-msg').textContent = 'savin\u2019\u2026';
@@ -4551,6 +4567,15 @@ function ensureName() {
 // PLAY asks nothing: the house music starts and the visitor is already in.
 // Only the second door, for people who came with their own music or a room
 // to run, gets the question about whose music it is.
+if (window.__STAGE) {
+  // the stage opens itself: no landing, no name, no music, no tutor
+  setTimeout(() => {
+    try { audio.setMuted(true); } catch { }
+    chillRoll = true;              // no countdowns, no offers, no cards
+    autoWanted = false;            // never try to start a song in here
+    dismissOverlay();
+  }, 300);
+}
 $('btn-solo').addEventListener('click', () => {
   if (window.__joinIntent) {
     const code = window.__joinIntent; window.__joinIntent = null;
@@ -5316,6 +5341,19 @@ function frame(now) {
   time += dt;
 
   const a = audio.update(dt);
+  if (window.__STAGE) {
+    // a slow 96 bpm heartbeat: bass swells, volume breathes, a beat lands
+    const bps = 96 / 60, ph = (time * bps) % 1;
+    const kick = Math.pow(Math.max(0, 1 - ph * 3.2), 2);
+    a.bass = 0.25 + kick * 0.55; a.lowMid = 0.2 + kick * 0.3;
+    a.mid = 0.22 + 0.12 * Math.sin(time * 2.1); a.high = 0.14 + 0.1 * Math.sin(time * 3.3 + 1);
+    a.treble = 0.1 + 0.08 * Math.sin(time * 4.7);
+    a.volume = 0.3 + kick * 0.35 + 0.08 * Math.sin(time * 0.7);
+    a.energy = 0.38 + 0.1 * Math.sin(time * 0.23);
+    const onBeat = ph < 0.05 && (time - (a._lastSynthBeat || -1)) > 0.4;
+    a.beat = onBeat; if (onBeat) { a._lastSynthBeat = time; a.beatIntensity = 0.8; }
+    else a.beatIntensity *= Math.pow(0.01, dt);
+  }
   net.update(dt, time);
   updateCursor(dt, a);
 
