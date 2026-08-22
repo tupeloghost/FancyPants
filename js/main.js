@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=545';
-import { drawQR } from './lib/qr.js?v=545';
-import { WORLDS } from './worlds/registry.js?v=545';
-import { Net, PALETTE } from './net.js?v=545';
-import { Presence } from './lib/presence.js?v=545';
-import { Pulses } from './lib/pulse.js?v=545';
-import { BeatClock } from './lib/beatclock.js?v=545';
-import { BeatCue } from './lib/beatcue.js?v=545';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=545';
-import { Race, placeOf, standings } from './lib/race.js?v=545';
-import { Signals } from './lib/signals.js?v=545';
-import { pickShareLine, loadLines } from './lib/lines.js?v=545';
-import { RouteMap } from './lib/map.js?v=545';
-import * as sfx from './lib/sfx.js?v=545';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=545';
-import { glowTexture } from './lib/glow.js?v=545';
+import { AudioEngine } from './audio-engine.js?v=546';
+import { drawQR } from './lib/qr.js?v=546';
+import { WORLDS } from './worlds/registry.js?v=546';
+import { Net, PALETTE } from './net.js?v=546';
+import { Presence } from './lib/presence.js?v=546';
+import { Pulses } from './lib/pulse.js?v=546';
+import { BeatClock } from './lib/beatclock.js?v=546';
+import { BeatCue } from './lib/beatcue.js?v=546';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=546';
+import { Race, placeOf, standings } from './lib/race.js?v=546';
+import { Signals } from './lib/signals.js?v=546';
+import { pickShareLine, loadLines } from './lib/lines.js?v=546';
+import { RouteMap } from './lib/map.js?v=546';
+import * as sfx from './lib/sfx.js?v=546';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=546';
+import { glowTexture } from './lib/glow.js?v=546';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3420,7 +3420,7 @@ function shareThis() {
     // One home at a time — this share claims it, and every link ever sent
     // follows the song here (visitors look the home up on arrival).
     url = SITE + '?world=' + currentWorldKey + '&suno=' + encodeURIComponent(window.__sunoShare);
-    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it, no app needed" + socialTag();
+    text = "'" + (sunoTrack || 'my song') + "' is a place now. get in it" + socialTag();
     claimHome();
     shareThis._home = (w ? w.label : 'THIS WORLD');
   } else if (window.__sunoShare) {
@@ -3431,8 +3431,8 @@ function shareThis() {
   } else {
     url = SITE + '?world=' + currentWorldKey + (file ? '&track=' + encodeURIComponent(file) : '');
     text = file
-      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here, no app needed"
-      : 'songs are places you can get into here. no app needed';
+      ? "i was just inside '" + prettyTrack(file) + "'. songs are places here"
+      : 'songs are places you can get into here';
   }
   if (navigator.share) {
     navigator.share({ title: 'Fancy Britches', text, url }).catch(() => {});
@@ -3474,7 +3474,7 @@ function creditText() {
   const artist = suno ? ($('mq-artist').value.trim() || sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost';
   const social = suno ? ($('mq-social').value || localStorage.getItem('fp_social') || '').trim() : '';
   const handle = social ? social.replace(/^https?:\/\/(www\.)?/i, '') : '';
-  return [title.toUpperCase(), artist ? 'by ' + artist : '', handle, 'step inside, no app']
+  return [title.toUpperCase(), artist ? 'by ' + artist : '', handle, 'step inside']
     .filter(Boolean).join('  \u00b7  ');
 }
 window.__credit = creditText;   // debug handle
@@ -3997,7 +3997,7 @@ function drawRecap(data, handle) {
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillStyle = 'rgba(220,216,245,0.92)';
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
-    + 'scan and step inside. no app, just a browser', 64, 656);
+    + 'scan and step inside', 64, 656);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, SITE, 3)) {
     x.fillStyle = '#fff';
@@ -4013,7 +4013,7 @@ function recapText(data, handle) {
   for (const sv of data.sups) lines.push(sv.label + ': ' + sv.name + ' (' + sv.num + ' ' + sv.unit + ')');
   lines.push('in the room: ' + data.everyone.join(', '));
   if (data.nextStream) lines.push(data.nextStream);
-  lines.push('step inside one yourself, no app needed: ' + SITE);
+  lines.push('step inside one yourself: ' + SITE);
   return lines.join('\n');
 }
 let lastSetLen = 0;
@@ -4216,7 +4216,7 @@ function drawArtistType(x, W, H, fmt) {
   }
   x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
   x.fillStyle = 'rgba(210,206,235,0.72)';
-  x.fillText('step inside it. no app, just a browser', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
+  x.fillText('step inside it', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
 }
 function acQR(fmt) {
