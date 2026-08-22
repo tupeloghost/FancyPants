@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=556';
-import { drawQR } from './lib/qr.js?v=556';
-import { WORLDS } from './worlds/registry.js?v=556';
-import { Net, PALETTE } from './net.js?v=556';
-import { Presence } from './lib/presence.js?v=556';
-import { Pulses } from './lib/pulse.js?v=556';
-import { BeatClock } from './lib/beatclock.js?v=556';
-import { BeatCue } from './lib/beatcue.js?v=556';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=556';
-import { Race, placeOf, standings } from './lib/race.js?v=556';
-import { Signals } from './lib/signals.js?v=556';
-import { pickShareLine, loadLines } from './lib/lines.js?v=556';
-import { RouteMap } from './lib/map.js?v=556';
-import * as sfx from './lib/sfx.js?v=556';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=556';
-import { glowTexture } from './lib/glow.js?v=556';
+import { AudioEngine } from './audio-engine.js?v=557';
+import { drawQR } from './lib/qr.js?v=557';
+import { WORLDS } from './worlds/registry.js?v=557';
+import { Net, PALETTE } from './net.js?v=557';
+import { Presence } from './lib/presence.js?v=557';
+import { Pulses } from './lib/pulse.js?v=557';
+import { BeatClock } from './lib/beatclock.js?v=557';
+import { BeatCue } from './lib/beatcue.js?v=557';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=557';
+import { Race, placeOf, standings } from './lib/race.js?v=557';
+import { Signals } from './lib/signals.js?v=557';
+import { pickShareLine, loadLines } from './lib/lines.js?v=557';
+import { RouteMap } from './lib/map.js?v=557';
+import * as sfx from './lib/sfx.js?v=557';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=557';
+import { glowTexture } from './lib/glow.js?v=557';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2941,17 +2941,27 @@ function setCcType(t) {
 }
 // the vibe check (owner's side): the same ten statements the page asks
 // visitors, so the page can score the pair. Kept in sync with the worker.
-const VIBE_Q = [   // forced choice between two equally fine things to be (no 'better' answer)
-  ['songs I already love', 'something I\u2019ve never heard'],
+const VIBE_Q = [   // 20 forced-choice pairs, 2 per construct, kept in sync with the worker
+  ['the friend who shows up', 'the friend who pushes you'],
+  ['I\u2019d rather be useful', 'I\u2019d rather be remarkable'],
   ['somewhere new every time', 'my usual spot'],
-  ['say it straight', 'smooth it over'],
-  ['let it slide', 'call it like I see it'],
+  ['shake things up', 'keep what works'],
+  ['songs I already love', 'something I\u2019ve never heard'],
+  ['polished and clean', 'weird and a little messy'],
   ['recharge alone', 'recharge in a crowd'],
-  ['talk to strangers easily', 'warm up slowly'],
-  ['the friend who inspires you', 'the friend who shows up'],
-  ['I\u2019d rather find it', 'I\u2019d rather make it'],
-  ['early hours', 'late hours'],
+  ['warm up slowly', 'talk to strangers easily'],
+  ['say it straight', 'smooth it over'],
+  ['call it like I see it', 'let it slide'],
   ['wing it', 'plan it'],
+  ['show up when I get there', 'show up early'],
+  ['early hours', 'late hours'],
+  ['one thing at a time', 'ten tabs open'],
+  ['catch up when we catch up', 'talk most days'],
+  ['let it build', 'get deep fast'],
+  ['dry', 'silly'],
+  ['I go easy on the people I love', 'I tease the people I love'],
+  ['cool off first', 'talk it out now'],
+  ['I\u2019d rather be told straight', 'I\u2019d rather be told gently'],
 ];
 {
   const rows = $('cc-quiz-rows');
@@ -2971,7 +2981,7 @@ const VIBE_Q = [   // forced choice between two equally fine things to be (no 'b
 function ccQuizValue() {
   const rows = [...document.querySelectorAll('#cc-quiz-rows .ccq')];
   const v = rows.map(r => { const on = r.querySelector('button.on'); return on ? on.dataset.v : ''; });
-  return v.every(Boolean) ? v.join('') : '';   // all ten or nothing: a half quiz scores lies
+  return v.every(Boolean) ? v.join('') : '';   // all twenty or nothing: a half quiz scores lies
 }
 function ccQuizSet(q) {
   const rows = [...document.querySelectorAll('#cc-quiz-rows .ccq')];

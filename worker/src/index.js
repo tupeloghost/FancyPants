@@ -154,7 +154,7 @@ export class FancyPantsRoom {
         hue: Number.isFinite(+b.hue) ? ((+b.hue % 360) + 360) % 360 : 265,
         look: /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '',
         mood: String(b.mood || '').slice(0, 80),
-        quiz: /^[1-5]{10,12}$/.test(String(b.quiz || '')) ? String(b.quiz) : '',
+        quiz: /^[1-5]{20}$/.test(String(b.quiz || '')) ? String(b.quiz) : '',
         // what they're here for, and a few things said in their own words
         intents: (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3),
         prompts: (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
@@ -184,7 +184,7 @@ export class FancyPantsRoom {
       if ('hue' in b && Number.isFinite(+b.hue)) page.hue = ((+b.hue % 360) + 360) % 360;
       if ('look' in b) page.look = /^[a-z]+\.[a-z]+\.[a-z]+\.\d{1,3}$/.test(String(b.look || '')) ? String(b.look) : '';
       if ('mood' in b) page.mood = String(b.mood || '').slice(0, 80);
-      if ('quiz' in b) page.quiz = /^[1-5]{10,12}$/.test(String(b.quiz || '')) ? String(b.quiz) : '';
+      if ('quiz' in b) page.quiz = /^[1-5]{20}$/.test(String(b.quiz || '')) ? String(b.quiz) : '';
       if ('intents' in b) page.intents = (Array.isArray(b.intents) ? b.intents : []).filter(x => ['friends', 'collaborators', 'business'].includes(x)).slice(0, 3);
       if ('prompts' in b) page.prompts = (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
         q: String((x && x.q) || '').slice(0, 60), a: String((x && x.a) || '').slice(0, 160),
@@ -579,53 +579,92 @@ export default {
       // what they think makes them likeable (social-desirability bias).
       // Five steps between the poles; R items are reverse-scored.
       const VQ = [
-        ['songs I already love', 'something I’ve never heard'],          // O   (high = new)
-        ['somewhere new every time', 'my usual spot'],                       // O (R)
-        ['say it straight', 'smooth it over'],                               // A   (high = warm)
-        ['let it slide', 'call it like I see it'],                           // A (R)
-        ['recharge alone', 'recharge in a crowd'],                           // E
-        ['talk to strangers easily', 'warm up slowly'],                      // E (R)
-        ['the friend who inspires you', 'the friend who shows up'],          // value: benevolence
-        ['I’d rather find it', 'I’d rather make it'],                // value: creativity
-        ['early hours', 'late hours'],                                       // chronotype
-        ['wing it', 'plan it'],                                              // C
+        // values: benevolence vs achievement
+        ['the friend who shows up', 'the friend who pushes you'],
+        ['I’d rather be useful', 'I’d rather be remarkable'],
+        // values: stimulation/self-direction vs security/tradition
+        ['somewhere new every time', 'my usual spot'],
+        ['shake things up', 'keep what works'],
+        // openness (aesthetic): music taste breadth and texture
+        ['songs I already love', 'something I’ve never heard'],
+        ['polished and clean', 'weird and a little messy'],
+        // extraversion / social energy
+        ['recharge alone', 'recharge in a crowd'],
+        ['warm up slowly', 'talk to strangers easily'],
+        // agreeableness / warmth (how I give it)
+        ['say it straight', 'smooth it over'],
+        ['call it like I see it', 'let it slide'],
+        // conscientiousness / planning
+        ['wing it', 'plan it'],
+        ['show up when I get there', 'show up early'],
+        // rhythm: chronotype, pace
+        ['early hours', 'late hours'],
+        ['one thing at a time', 'ten tabs open'],
+        // expectations: contact frequency, closeness pace
+        ['catch up when we catch up', 'talk most days'],
+        ['let it build', 'get deep fast'],
+        // humor style
+        ['dry', 'silly'],
+        ['I go easy on the people I love', 'I tease the people I love'],
+        // conflict: cool-off vs now; how I want to be told
+        ['cool off first', 'talk it out now'],
+        ['I’d rather be told straight', 'I’d rather be told gently'],
       ];
-      const vibeBlock = pg.quiz
+      const vibeBlock = (pg.quiz && pg.quiz.length === 20)
         ? '<div class="vibe" id="vibe" data-q="' + esc(pg.quiz) + '" data-i="' + esc((pg.intents || []).join(',')) + '" data-n="' + esc(pg.name) + '">'
-          + '<button class="vgo" id="vgo">see how you two would click <i>ten quick questions</i></button></div>'
+          + '<button class="vgo" id="vgo">see how you two would click <i>twenty quick picks, about a minute</i></button></div>'
         : '';
-      const vibeScript = pg.quiz ? '<script>(function(){'
+      const vibeScript = (pg.quiz && pg.quiz.length === 20) ? '<script>(function(){'
         + 'var VQ=' + JSON.stringify(VQ) + ';'
         + 'var box=document.getElementById("vibe");if(!box)return;'
         + 'var theirs=box.getAttribute("data-q"),tI=(box.getAttribute("data-i")||"").split(",").filter(Boolean),name=box.getAttribute("data-n");'
         + 'function esc(t){return String(t).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c]})}'
-        + 'function prof(q){var v=q.split("").map(Number);var r=function(x){return 6-x};'
-        + 'return {O:(v[0]+r(v[1]))/2,A:(v[2]+r(v[3]))/2,E:(v[4]+r(v[5]))/2,V1:v[6],V2:v[7],N:v[8],C:v[9]}}'
+        + 'function prof(q){var v=q.split("").map(Number);function m(i,j){return (v[i]+v[j])/2}'
+        + 'return {Vb:m(0,1),Vs:m(2,3),O:m(4,5),E:m(6,7),A:m(8,9),C:m(10,11),N:v[12],P:v[13],F:v[14],D:v[15],H1:v[16],H2:v[17],X:v[18],R:v[19]}}'
         + 'function sim(a,b){return 1-Math.abs(a-b)/4}'
         + 'function score(mine,mI){var m=prof(mine),t=prof(theirs);'
-        + 'var fit=0.25*sim(m.O,t.O)+0.2*sim(m.A,t.A)+0.15*sim(m.V1,t.V1)+0.1*sim(m.V2,t.V2)+0.15*sim(m.N,t.N)+0.1*sim(m.E,t.E)+0.05*sim(m.C,t.C);'
-        + 'var warmth=((m.A+t.A)/2-1)/4*8;'   // each person's warmth predicts friendship quality
+        // values: the strongest attitudinal predictor of liking
+        + 'var values=0.5*sim(m.Vb,t.Vb)+0.5*sim(m.Vs,t.Vs);'
+        // rhythm: matched EXPECTATIONS of contact and closeness dominate; then hours, pace, planning
+        + 'var rhythm=0.30*sim(m.F,t.F)+0.20*sim(m.D,t.D)+0.20*sim(m.N,t.N)+0.15*sim(m.P,t.P)+0.15*sim(m.C,t.C);'
+        // vibe: humor style similarity, social energy, aesthetic openness
+        + 'var vibe=0.30*sim(m.H1,t.H1)+0.20*sim(m.H2,t.H2)+0.25*sim(m.E,t.E)+0.25*sim(m.O,t.O);'
+        // conflict fit: how I give (A) vs how you want it (R), both directions, plus cool-off match
+        + 'var give=function(p){return p.A};var want=function(p){return p.R};'
+        + 'var fit=0.6*((sim(give(m),want(t))+sim(give(t),want(m)))/2)+0.4*sim(m.X,t.X);'
+        // warmth: each person's agreeableness predicts friendship quality (additive, not matched)
+        + 'var warmth=((m.A+t.A)/2-1)/4*8;'
         + 'var shared=mI.filter(function(x){return tI.indexOf(x)>-1}).length;'
-        + 'var pct=Math.min(97,Math.round(30+60*fit+warmth+Math.min(2,shared)*4));'
-        + 'var D=[["O","ones for something new","one of you wants the new thing, the other the loved thing"],'
-        + '["A","smoothers-over","one of you says it straight, the other smooths it over"],'
-        + '["N","late-hours people","one of you runs late, the other early"],'
+        + 'var core=0.30*values+0.25*rhythm+0.25*vibe+0.20*fit;'
+        + 'var pct=Math.min(97,Math.round(30+55*core+warmth+Math.min(2,shared)*4));'
+        + 'var D=[["Vb","show-up friends","one of you prizes the friend who shows up, the other the one who pushes"],'
+        + '["Vs","shake-it-up people","one of you shakes things up, the other keeps what works"],'
+        + '["O","ones for something new","one of you wants the new thing, the other the loved thing"],'
         + '["E","crowd-rechargers","one of you recharges in a crowd, the other alone"],'
-        + '["V1","show-up friends","one of you prizes the friend who shows up, the other the one who inspires"],'
-        + '["V2","makers","one of you would rather make it, the other find it"],'
-        + '["C","planners","one of you plans, the other wings it"]];'
-        + 'var LO={O:"ones for the songs you already love",A:"say-it-straight people",N:"early-hours people",E:"alone-rechargers",V1:"inspire-me friends",V2:"finders",C:"wing-it people"};'
+        + '["F","talk-most-days people","one of you wants to talk most days, the other catches up when you catch up"],'
+        + '["D","get-deep-fast people","one of you gets deep fast, the other lets it build"],'
+        + '["N","late-hours people","one of you runs late, the other early"],'
+        + '["H1","silly people","one of you is silly, the other dry"],'
+        + '["H2","teasers","one of you teases, the other goes easy"],'
+        + '["C","planners","one of you plans, the other wings it"],'
+        + '["X","talk-it-out-now people","one of you cools off first, the other wants to talk now"]];'
+        + 'var LO={Vb:"push-you friends",Vs:"keep-what-works people",O:"ones for the songs you already love",E:"alone-rechargers",F:"catch-up-when-we-catch-up people",D:"let-it-build people",N:"early-hours people",H1:"dry people",H2:"go-easy people",C:"wing-it people",X:"cool-off-first people"};'
         + 'var same=[],diff=[];for(var i=0;i<D.length;i++){var k=D[i][0],a=m[k],b=t[k],hi=a>=3.5&&b>=3.5,lo=a<=2.5&&b<=2.5;'
         + 'if(hi)same.push(D[i][1]);else if(lo)same.push(LO[k]);'
         + 'else if(Math.abs(a-b)>=2)diff.push(D[i][2])}'
+        // the feedback-fit line is its own kind of insight: it's about how to TALK to each other
+        + 'var gm=give(m)>=3.5?"gently":give(m)<=2.5?"straight":"",wt=want(t)>=3.5?"gently":want(t)<=2.5?"straight":"";'
+        + 'var tip=(gm&&wt&&gm!==wt)?"you tend to say things "+gm+"; they’d rather be told "+wt:"";'
         + 'var tag=pct>=85?"you’d click fast":pct>=70?"easy company":pct>=55?"different, in a good way":"a stretch, but stretches are fun";'
-        + 'return {pct:pct,tag:tag,same:same,diff:diff,shared:shared}}'
+        + 'return {pct:pct,tag:tag,same:same,diff:diff,shared:shared,tip:tip,facets:[["values",values],["rhythm",rhythm],["vibe",vibe]]}}'
         + 'function show(r){var lines="";'
+        + 'var bars="<div class=\\"vfacets\\">";for(var i=0;i<r.facets.length;i++){var f=r.facets[i],w=Math.round(f[1]*100);bars+="<div class=\\"vf\\"><span>"+f[0]+"</span><i><b style=\\"width:"+w+"%\\"></b></i></div>"}bars+="</div>";lines+=bars;'
+        + 'if(r.tip)lines+="<p class=\\"vtip\\">"+esc(r.tip)+"</p>";'
         + 'if(r.same.length)lines+="<p>you’re both <b>"+r.same.slice(0,3).map(esc).join("</b>, <b>")+"</b></p>";'
         + 'if(r.diff.length)lines+="<p>mind this: "+esc(r.diff[0])+"</p>";'
         + 'if(r.shared)lines+="<p>and you’re here for the same thing</p>";'
         + 'box.innerHTML="<div class=\\"vres\\"><span class=\\"vpct\\">"+r.pct+"%</span><span class=\\"vtag\\">"+esc(r.tag)+"</span>"+lines'
-        + '+"<p class=\\"vwhy\\">based on what friendship research actually predicts: shared values and openness, warmth, and whether your hours line up</p>"'
+        + '+"<p class=\\"vwhy\\">based on what friendship research actually predicts: shared values, matched expectations of contact, humor style, warmth, and whether you can be straight with each other</p>"'
         + '+"<a href=\\"#\\" id=\\"vredo\\">retake</a></div>";'
         + 'document.getElementById("vredo").onclick=function(e){e.preventDefault();localStorage.removeItem("fb_quiz");quiz()}}'
         + 'function quiz(){var ans=[],idx=0;function step(){if(idx>=VQ.length){'
@@ -639,7 +678,7 @@ export default {
         + 'for(var j=0;j<5;j++)h+="<button data-v=\\""+(j+1)+"\\">"+esc(SC[j])+"</button>";box.innerHTML=h+"</div></div>";'
         + 'var b2=box.querySelectorAll(".vopts button");for(var k=0;k<b2.length;k++)b2[k].onclick=function(){ans.push(this.getAttribute("data-v"));idx++;step()}}step()}'
         + 'var mine=localStorage.getItem("fb_quiz")||"";var mI=(localStorage.getItem("fb_intents")||"").split(",").filter(Boolean);'
-        + 'if(/^[1-5]{10,12}$/.test(mine))show(score(mine,mI));else document.getElementById("vgo").onclick=quiz;'
+        + 'if(/^[1-5]{20}$/.test(mine))show(score(mine,mI));else document.getElementById("vgo").onclick=quiz;'
         + '})();</scr' + 'ipt>' : '';
       const intentRow = (pg.intents || []).length
         ? '<p class="here">here for ' + pg.intents.map(x => '<b>' + esc(x) + '</b>').join(' · ') + '</p>' : '';
@@ -691,6 +730,11 @@ export default {
         + '.vq a,.vres a{display:inline-block;margin-top:10px;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;color:#9a94c4;text-transform:uppercase}'
         + '.vdone{margin:10px 0 0 12px;padding:9px 18px;border-radius:999px;border:0;cursor:pointer;color:#130f26;background:hsl(var(--h),80%,80%);font:600 13px Georgia,serif}'
         + '.vpoles{display:flex;justify-content:space-between;gap:12px;margin:0 0 10px;font-family:Didot,"Bodoni 72",Georgia,serif;font-size:17px;color:#fff}.vpoles span:last-child{text-align:right}'
+        + '.vfacets{display:flex;flex-direction:column;gap:6px;margin:10px auto 6px;max-width:300px}'
+        + '.vf{display:flex;align-items:center;gap:10px;font:11px ui-monospace,Menlo,monospace;letter-spacing:1.6px;text-transform:uppercase;color:#9a94c4}'
+        + '.vf span{width:58px;text-align:right}.vf i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;display:block}'
+        + '.vf b{display:block;height:100%;background:linear-gradient(90deg,hsl(var(--h),80%,70%),hsl(var(--h),90%,85%))}'
+        + '.vtip{font-style:italic;color:hsl(var(--h),80%,84%)!important}'
         + '.vst{font-family:Didot,"Bodoni 72",Georgia,serif;font-size:19px;color:#fff;margin:0 0 12px;line-height:1.3}'
         + '.vsc button{min-width:0;flex:1;padding:11px 4px;font-size:13px}'
         + '.vwhy{font-size:12px!important;color:#8d87b0!important;margin-top:10px!important;font-style:italic}'
