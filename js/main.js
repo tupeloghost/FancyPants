@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=533';
-import { drawQR } from './lib/qr.js?v=533';
-import { WORLDS } from './worlds/registry.js?v=533';
-import { Net, PALETTE } from './net.js?v=533';
-import { Presence } from './lib/presence.js?v=533';
-import { Pulses } from './lib/pulse.js?v=533';
-import { BeatClock } from './lib/beatclock.js?v=533';
-import { BeatCue } from './lib/beatcue.js?v=533';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=533';
-import { Race, placeOf, standings } from './lib/race.js?v=533';
-import { Signals } from './lib/signals.js?v=533';
-import { pickShareLine, loadLines } from './lib/lines.js?v=533';
-import { RouteMap } from './lib/map.js?v=533';
-import * as sfx from './lib/sfx.js?v=533';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=533';
-import { glowTexture } from './lib/glow.js?v=533';
+import { AudioEngine } from './audio-engine.js?v=534';
+import { drawQR } from './lib/qr.js?v=534';
+import { WORLDS } from './worlds/registry.js?v=534';
+import { Net, PALETTE } from './net.js?v=534';
+import { Presence } from './lib/presence.js?v=534';
+import { Pulses } from './lib/pulse.js?v=534';
+import { BeatClock } from './lib/beatclock.js?v=534';
+import { BeatCue } from './lib/beatcue.js?v=534';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=534';
+import { Race, placeOf, standings } from './lib/race.js?v=534';
+import { Signals } from './lib/signals.js?v=534';
+import { pickShareLine, loadLines } from './lib/lines.js?v=534';
+import { RouteMap } from './lib/map.js?v=534';
+import * as sfx from './lib/sfx.js?v=534';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=534';
+import { glowTexture } from './lib/glow.js?v=534';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -313,6 +313,9 @@ function switchWorld(key) {
 function _switchWorldNow(key) {
   if (world) world.dispose();
   currentWorldKey = key;
+  // the select mirrors reality HERE, not at every call site — the round
+  // card reads it, and the home-screen entry path used to forget it
+  { const sel = $('world-select'); if (sel && sel.value !== key) sel.value = key; }
   window.__worldKey = key;   // read-only debug handle for tests
   window.__settings = settings; // same purpose
   if (window.__sig) window.__sig.enterWorld(key);
