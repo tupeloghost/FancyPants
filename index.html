@@ -1472,6 +1472,14 @@
   #promo-pill i { font-style: normal; }
   /* today's song is the most tempting thing on this screen — it sits right
      under the door, not in the footer */
+  #sunday {
+    margin-top: 10px; text-align: center;
+    font: 11px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.4px;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+  #sunday.hidden { display: none; }
+  #sunday a { color: hsl(var(--accent-h), 60%, 80%); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 70%, 70%, 0.4); margin-left: 6px; }
+  #sunday a:hover { color: #fff; }
   #today {
     margin-top: 14px; text-align: center; cursor: pointer;
     font: italic 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
@@ -2448,6 +2456,7 @@
     <button id="btn-solo" class="cta">PLAY</button>
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
     <div id="today" class="hidden"></div>
+    <div id="sunday" class="hidden"><span id="sun-text"></span> <a id="sun-cal" href="#" download="sundays-best.ics">add to calendar</a></div>
     <div id="side-doors">
       <a id="open-party" href="#">got a room code?</a>
     </div>
@@ -2932,7 +2941,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 559</div>
+      <div id="build-stamp">build 560</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2974,6 +2983,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=559"></script>
+<script type="module" src="js/main.js?v=560"></script>
 </body>
 </html>

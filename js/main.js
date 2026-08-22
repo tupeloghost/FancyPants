@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=559';
-import { drawQR } from './lib/qr.js?v=559';
-import { WORLDS } from './worlds/registry.js?v=559';
-import { Net, PALETTE } from './net.js?v=559';
-import { Presence } from './lib/presence.js?v=559';
-import { Pulses } from './lib/pulse.js?v=559';
-import { BeatClock } from './lib/beatclock.js?v=559';
-import { BeatCue } from './lib/beatcue.js?v=559';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=559';
-import { Race, placeOf, standings } from './lib/race.js?v=559';
-import { Signals } from './lib/signals.js?v=559';
-import { pickShareLine, loadLines } from './lib/lines.js?v=559';
-import { RouteMap } from './lib/map.js?v=559';
-import * as sfx from './lib/sfx.js?v=559';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=559';
-import { glowTexture } from './lib/glow.js?v=559';
+import { AudioEngine } from './audio-engine.js?v=560';
+import { drawQR } from './lib/qr.js?v=560';
+import { WORLDS } from './worlds/registry.js?v=560';
+import { Net, PALETTE } from './net.js?v=560';
+import { Presence } from './lib/presence.js?v=560';
+import { Pulses } from './lib/pulse.js?v=560';
+import { BeatClock } from './lib/beatclock.js?v=560';
+import { BeatCue } from './lib/beatcue.js?v=560';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=560';
+import { Race, placeOf, standings } from './lib/race.js?v=560';
+import { Signals } from './lib/signals.js?v=560';
+import { pickShareLine, loadLines } from './lib/lines.js?v=560';
+import { RouteMap } from './lib/map.js?v=560';
+import * as sfx from './lib/sfx.js?v=560';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=560';
+import { glowTexture } from './lib/glow.js?v=560';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4709,8 +4709,11 @@ const WEEK_POOL = (() => {
   const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer').sort();
   return ['slide', 'surfer', ...pool];
 })();
-const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 23) - 3 * 86400000) / 604800000);
-const WEEKS_IN = Math.max(0, Math.floor((Date.now() - 3 * 86400000) / 604800000) - LAUNCH_WEEK);
+// weeks flip SUNDAY 16:00 UTC (10am Mountain, noon Eastern): a Sunday
+// morning, not Saturday night. Mirrored in the worker's /thisweek.
+const WEEK_SHIFT = 3 * 86400000 + 16 * 3600000;
+const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 23, 16) - WEEK_SHIFT) / 604800000);   // the week that BEGINS at launch's flip
+const WEEKS_IN = Math.max(0, Math.floor((Date.now() - WEEK_SHIFT) / 604800000) - LAUNCH_WEEK);
 const WEEK_WORLD = WEEK_POOL[WEEKS_IN % WEEK_POOL.length];
 // the alumni: every special whose week is over, permanent residents now
 const GRADUATED = WEEK_POOL.slice(0, Math.min(WEEKS_IN, WEEK_POOL.length))
@@ -4718,6 +4721,36 @@ const GRADUATED = WEEK_POOL.slice(0, Math.min(WEEKS_IN, WEEK_POOL.length))
 // free share worlds = the showcase pair + this week's guest — exactly the
 // three the picker leads with. Artist access opens the other fourteen.
 const shareableFree = k => window.__devPaid || FEATURED.includes(k) || k === WEEK_WORLD;
+// ── the Sunday ritual, on the door: what's open now, when the next opens,
+// and a calendar hook so the ritual lives in their week, not just ours ──
+{
+  const el = $('sunday');
+  if (el) {
+    const WK = 604800000;
+    const nextFlip = () => (Math.floor((Date.now() - WEEK_SHIFT) / WK) + 1) * WK + WEEK_SHIFT;
+    const fmt = ms => {
+      const sec = Math.max(0, ms / 1000), d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+      return d > 0 ? d + 'd ' + h + 'h' : h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+    };
+    const tick = () => {
+      const left = nextFlip() - Date.now();
+      $('sun-text').textContent = left <= 0
+        ? 'a new world just opened. hit PLAY'
+        : 'this sunday\u2019s best: ' + WORLDS[WEEK_WORLD].label + ' \u00b7 the next world opens in ' + fmt(left);
+    };
+    tick(); setInterval(tick, 30000);
+    const dt = new Date(nextFlip());
+    const pad = n => String(n).padStart(2, '0');
+    const stamp = d => d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + '00Z';
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Fancy Britches//EN', 'BEGIN:VEVENT',
+      'UID:sundays-best@fancybritches', 'DTSTAMP:' + stamp(new Date()), 'DTSTART:' + stamp(dt), 'DURATION:PT1H',
+      'RRULE:FREQ=WEEKLY', 'SUMMARY:Sunday\u2019s Best opens \u00b7 Fancy Britches',
+      'DESCRIPTION:a brand-new world every sunday. step inside: https://tupeloghost.github.io/FancyPants/',
+      'URL:https://tupeloghost.github.io/FancyPants/', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    $('sun-cal').href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    el.classList.remove('hidden');
+  }
+}
 window.__FEATURED_KEYS = FEATURED;
 window.__WEEK_KEY = WEEK_WORLD;
 window.__GRADUATED = GRADUATED;
