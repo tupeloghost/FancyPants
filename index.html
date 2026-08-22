@@ -214,6 +214,13 @@
   /* clean capture — every control gone, the world alone */
   body.clean #qbar, body.clean #panel, body.clean #plist { display: none !important; }
 
+  /* a CARD owns the screen. The transport bar, the tutor's pill and the
+     sheet leave the stage instead of haunting the veil as blurred smudges. */
+  body:has(#round-intro.show) #qbar, body:has(#round-intro.show) #show-me,
+  body:has(#round-intro.show) #panel, body:has(#round-intro.show) #standings,
+  body:has(#results.show) #qbar, body:has(#results.show) #show-me,
+  body:has(#results.show) #standings { display: none !important; }
+
   @media (max-width: 620px) {
     /* the collapsed sheet sits on the bottom edge — ride just above its lip */
     #qbar { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px); padding: 7px 9px; max-width: 96vw; }
@@ -2354,7 +2361,13 @@
       width: 100%; padding: 17px 18px; font-size: 15px; letter-spacing: 2.6px;
     }
     #results-actions .rbtn.hero { padding: 19px 18px; font-size: 16.5px; letter-spacing: 3px; }
-    #ri-play { width: min(320px, 84vw); padding: 17px 0; font-size: 18px; }
+    #ri-play {
+      width: min(320px, 84vw); padding: 17px 0; font-size: 18px;
+      color: hsl(var(--accent-h), 60%, 8%);
+      background: linear-gradient(175deg, hsl(var(--accent-h), 85%, 80%), hsl(var(--accent-h), 75%, 60%));
+      border-color: hsla(var(--accent-h), 90%, 85%, 0.9);
+      box-shadow: 0 6px 28px hsla(var(--accent-h), 90%, 65%, 0.4);
+    }
     #results-place { font-size: 40px; }
     /* the transport bar, done properly: ONE piece of deep neutral glass —
        never tinted by the world behind it, so it can't go muddy over a
@@ -2874,7 +2887,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 532</div>
+      <div id="build-stamp">build 533</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2916,6 +2929,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=532"></script>
+<script type="module" src="js/main.js?v=533"></script>
 </body>
 </html>
