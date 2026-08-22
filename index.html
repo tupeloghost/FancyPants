@@ -922,6 +922,7 @@
     transition: transform 160ms ease, box-shadow 160ms ease;
   }
   .rbtn:hover { transform: scale(1.05); box-shadow: 0 0 22px hsla(var(--accent-h), 90%, 70%, 0.35); }
+  .rbtn.hidden { display: none; }   /* .hidden is per-element in this sheet — buttons need their own */
   /* the hero action: the one the whole product wants pressed */
   .rbtn.hero {
     font-size: 13.5px; letter-spacing: 2.4px; padding: 12px 22px;
@@ -2859,7 +2860,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 528</div>
+      <div id="build-stamp">build 529</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2901,6 +2902,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=528"></script>
+<script type="module" src="js/main.js?v=529"></script>
 </body>
 </html>
