@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=537';
-import { themePaint } from '../lib/themes.js?v=537';
-import { TUNE } from '../lib/tune.js?v=537';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=538';
+import { themePaint } from '../lib/themes.js?v=538';
+import { TUNE } from '../lib/tune.js?v=538';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -314,7 +314,7 @@ export function createWaterslide() {
             const geos = this._loopGeos();
             // the look door's silhouette previews the tile shape it deals
             const dealtShape = window.__nextLook && window.__nextLook.cfg && geos[window.__nextLook.cfg.shape];
-            h.ring.geometry = h.wonder ? (dealtShape || geos.star) : h.bend ? geos.tri : geos.circle;
+            h.ring.geometry = h.wonder ? (dealtShape || geos.star) : geos.circle;
             h.mesh.scale.setScalar(h.wonder || h.bend ? 1.18 : 1);
             h.mesh.visible = true;
           }
@@ -334,8 +334,10 @@ export function createWaterslide() {
           // green means through; a BLACK HOLE means around — dark core,
           // white-violet rim, slowly turning. unmistakable at speed
           if (h.bend) {
-            // soap-film lens, electric white-cyan, tumbling slow — reads as
-            // a doorway to somewhere with different walls
+            // the ring that cannot hold its shape: it squashes and stretches
+            // as it comes at you — a moving demonstration of what it does
+            const wob = Math.sin(time * 2.6 + t);
+            h.mesh.scale.set(1.18 * (1 + 0.26 * wob), 1.18 * (1 - 0.26 * wob), 1.18);
             color.setHSL(0.5 + Math.sin(time * 1.7 + t) * 0.06, 0.85, 0.68 + audio.volume * 0.15);
             h.core.visible = true;
             h.core.material.opacity = 0.3;
@@ -360,7 +362,8 @@ export function createWaterslide() {
             h.core.visible = true;
             h.core.material.opacity = 0.94;
             h.disk.visible = false;
-            h.core.scale.setScalar(0.55 + Math.sin(time * 2.2 + t) * 0.12);
+            // the heart fills the loop: through the door you SEE the colors coming
+            h.core.scale.setScalar(0.85 + Math.sin(time * 2.2 + t) * 0.08);
             h.mesh.rotation.z = -time * 0.55;
             h.gl.material.opacity = 0.5 + audio.volume * 0.3;
           } else if (h.red) {

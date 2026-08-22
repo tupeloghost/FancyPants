@@ -11,23 +11,23 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=537';
-import { createSurfer } from './surfer.js?v=537';
-import { createOrbit } from './orbit.js?v=537';
-import { createBloom } from './bloom.js?v=537';
-import { createTrail } from './trail.js?v=537';
-import { createSignal } from './signal.js?v=537';
-import { createRiver } from './river.js?v=537';
-import { createFunhouse } from './funhouse.js?v=537';
-import { createLavaLamp } from './lavalamp.js?v=537';
-import { createPlasma } from './plasma.js?v=537';
-import { createCherryLand } from './cherryland.js?v=537';
-import { createSlinky } from './slinky.js?v=537';
-import { createBlacktop } from './blacktop.js?v=537';
-import { createWaterslide } from './waterslide.js?v=537';
-import { createGarden } from './garden.js?v=537';
-import { createPaint } from './paint.js?v=537';
-import { createComets } from './comets.js?v=537';
+import { createTunnel } from './tunnel.js?v=538';
+import { createSurfer } from './surfer.js?v=538';
+import { createOrbit } from './orbit.js?v=538';
+import { createBloom } from './bloom.js?v=538';
+import { createTrail } from './trail.js?v=538';
+import { createSignal } from './signal.js?v=538';
+import { createRiver } from './river.js?v=538';
+import { createFunhouse } from './funhouse.js?v=538';
+import { createLavaLamp } from './lavalamp.js?v=538';
+import { createPlasma } from './plasma.js?v=538';
+import { createCherryLand } from './cherryland.js?v=538';
+import { createSlinky } from './slinky.js?v=538';
+import { createBlacktop } from './blacktop.js?v=538';
+import { createWaterslide } from './waterslide.js?v=538';
+import { createGarden } from './garden.js?v=538';
+import { createPaint } from './paint.js?v=538';
+import { createComets } from './comets.js?v=538';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe. clicks send shockwaves', label: 'TUNNEL',
@@ -60,8 +60,8 @@ export const WORLDS = {
             // the tutor speaks these over the ghost-hand demo, one at a time
             teach: ['steer through the green rings', 'hold down to go faster',
                     'red is a black hole. it eats the light for a bit',
-                    'star rings deal a new look. the rim is the preview',
-                    'triangle rings reshape the whole slide'],
+                    'a ring glowing in new colors brings those colors',
+                    'the wobbling ring reshapes the whole slide'],
             goal: 'ride the slide. hold down to go faster', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'spray the dead neon alight before it fades', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'sweep up the runes. three alike fuse', label: 'LUMEN', create: createGarden },
