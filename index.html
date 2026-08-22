@@ -2332,18 +2332,35 @@
     #results-actions .rbtn.hero { padding: 19px 18px; font-size: 16.5px; letter-spacing: 3px; }
     #ri-play { width: min(320px, 84vw); padding: 17px 0; font-size: 18px; }
     #results-place { font-size: 40px; }
-    /* the transport bar steps up: every control is a REAL button now — its
-       own lit well under the thumb, not a bare glyph floating in a bar */
-    #qbar { padding: 7px; gap: 4px; max-width: 98vw; background: hsla(var(--accent-h), 30%, 4%, 0.8); }
-    #qbar .qb {
-      min-width: 48px; padding: 11px 4px 8px;
-      border-radius: 16px;
-      background: linear-gradient(178deg, hsla(var(--accent-h), 60%, 60%, 0.16), hsla(var(--accent-h), 45%, 30%, 0.08));
-      border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.28);
+    /* the transport bar, done properly: ONE piece of deep neutral glass —
+       never tinted by the world behind it, so it can't go muddy over a
+       bright scene. Crisp white icons breathe inside it; a soft well only
+       APPEARS under the finger. No boxes inside boxes, no separators. */
+    #qbar {
+      padding: 6px; gap: 0; max-width: 96vw;
+      background: rgba(9, 11, 16, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(26px) saturate(1.5);
+      -webkit-backdrop-filter: blur(26px) saturate(1.5);
     }
-    #qbar .qb:active { background: hsla(var(--accent-h), 70%, 60%, 0.3); }
-    #qbar .qb i { font-size: 18px; color: hsl(var(--accent-h), 60%, 92%); }
-    #qbar .qb em { font-size: 8.5px; color: hsl(var(--accent-h), 30%, 78%); }
+    #qbar .qsep { display: none; }
+    #qbar .qb {
+      min-width: 56px; padding: 11px 4px 9px;
+      border-radius: 999px; border: 0; background: none;
+      transition: background 120ms ease;
+    }
+    #qbar .qb:active { background: rgba(255, 255, 255, 0.14); }
+    #qbar .qb i { font-size: 19px; color: rgba(255, 255, 255, 0.95); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    #qbar .qb em { font-size: 8.5px; letter-spacing: 1.1px; margin-top: 3px; color: rgba(255, 255, 255, 0.55); }
+    /* the tutor's pill joins the same glass family */
+    #show-me {
+      background: rgba(9, 11, 16, 0.62);
+      border-color: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(26px) saturate(1.5);
+      -webkit-backdrop-filter: blur(26px) saturate(1.5);
+      color: rgba(255, 255, 255, 0.92); text-shadow: none;
+    }
   }
 
   /* ── In-world offer position, phones ── lives at the END of the sheet so it
@@ -2832,7 +2849,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 524</div>
+      <div id="build-stamp">build 525</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2874,6 +2891,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=524"></script>
+<script type="module" src="js/main.js?v=525"></script>
 </body>
 </html>
