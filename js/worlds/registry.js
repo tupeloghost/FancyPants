@@ -11,27 +11,28 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=519';
-import { createSurfer } from './surfer.js?v=519';
-import { createOrbit } from './orbit.js?v=519';
-import { createBloom } from './bloom.js?v=519';
-import { createTrail } from './trail.js?v=519';
-import { createSignal } from './signal.js?v=519';
-import { createRiver } from './river.js?v=519';
-import { createFunhouse } from './funhouse.js?v=519';
-import { createLavaLamp } from './lavalamp.js?v=519';
-import { createPlasma } from './plasma.js?v=519';
-import { createCherryLand } from './cherryland.js?v=519';
-import { createSlinky } from './slinky.js?v=519';
-import { createBlacktop } from './blacktop.js?v=519';
-import { createWaterslide } from './waterslide.js?v=519';
-import { createGarden } from './garden.js?v=519';
-import { createPaint } from './paint.js?v=519';
-import { createComets } from './comets.js?v=519';
+import { createTunnel } from './tunnel.js?v=520';
+import { createSurfer } from './surfer.js?v=520';
+import { createOrbit } from './orbit.js?v=520';
+import { createBloom } from './bloom.js?v=520';
+import { createTrail } from './trail.js?v=520';
+import { createSignal } from './signal.js?v=520';
+import { createRiver } from './river.js?v=520';
+import { createFunhouse } from './funhouse.js?v=520';
+import { createLavaLamp } from './lavalamp.js?v=520';
+import { createPlasma } from './plasma.js?v=520';
+import { createCherryLand } from './cherryland.js?v=520';
+import { createSlinky } from './slinky.js?v=520';
+import { createBlacktop } from './blacktop.js?v=520';
+import { createWaterslide } from './waterslide.js?v=520';
+import { createGarden } from './garden.js?v=520';
+import { createPaint } from './paint.js?v=520';
+import { createComets } from './comets.js?v=520';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe. clicks send shockwaves', label: 'TUNNEL',
-            teach: ['a glowing door drifts by now and then. fly through it and the world changes clothes'],
+            teach: ['tap anywhere. shockwaves, and a shot of speed',
+                    'a glowing door drifts by now and then. fly through it and the world changes clothes'],
             create: createTunnel },
   surfer: { pulse: 0.9, goal: 'catch sparks, tap to jump, HOLD to surge. shimmering ones repaint the world.', label: 'SURFER', create: createSurfer },
   orbit:  { pulse: 1.0, rhythm: true, autoRound: true, mode: 'DODGE', unit: 'FLARES',
