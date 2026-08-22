@@ -310,11 +310,12 @@
      the ring sweeps, and the NEW palette floods back richer than life before
      settling. The swap happens at the drained point, so the fresh colours
      arrive as the flood — a reveal, never a stutter. */
+  /* the repaint is a white-hot BLOOM now, never a gray-out — the old
+     drain-to-mono read as the world breaking on phones */
   @keyframes lookflash {
     0% { filter: brightness(1) saturate(1); }
-    30% { filter: brightness(1.55) saturate(0.05); }
-    45% { filter: brightness(1.35) saturate(0.3); }
-    70% { filter: brightness(1.08) saturate(1.75); }
+    30% { filter: brightness(1.8) saturate(1.1); }
+    55% { filter: brightness(1.25) saturate(1.6); }
     100% { filter: brightness(1) saturate(1); }
   }
   body.lookflash #canvas { animation: lookflash 1.6s cubic-bezier(0.3, 0, 0.3, 1); }
@@ -342,7 +343,7 @@
   /* gentle lights: every big flash softened for light-sensitive players */
   @keyframes lookflash-gentle {
     0% { filter: brightness(1) saturate(1); }
-    40% { filter: brightness(1.12) saturate(0.6); }
+    40% { filter: brightness(1.12) saturate(1.05); }
     100% { filter: brightness(1) saturate(1); }
   }
   body.gentle.lookflash #canvas { animation: lookflash-gentle 1.3s ease-out; }
@@ -2331,11 +2332,18 @@
     #results-actions .rbtn.hero { padding: 19px 18px; font-size: 16.5px; letter-spacing: 3px; }
     #ri-play { width: min(320px, 84vw); padding: 17px 0; font-size: 18px; }
     #results-place { font-size: 40px; }
-    /* the transport bar steps up too: bigger, brighter, closer to the thumb */
-    #qbar { padding: 9px 11px; }
-    #qbar .qb { min-width: 52px; padding: 12px 8px 9px; }
-    #qbar .qb i { font-size: 18px; }
-    #qbar .qb em { font-size: 8.5px; }
+    /* the transport bar steps up: every control is a REAL button now — its
+       own lit well under the thumb, not a bare glyph floating in a bar */
+    #qbar { padding: 7px; gap: 4px; max-width: 98vw; background: hsla(var(--accent-h), 30%, 4%, 0.8); }
+    #qbar .qb {
+      min-width: 48px; padding: 11px 4px 8px;
+      border-radius: 16px;
+      background: linear-gradient(178deg, hsla(var(--accent-h), 60%, 60%, 0.16), hsla(var(--accent-h), 45%, 30%, 0.08));
+      border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.28);
+    }
+    #qbar .qb:active { background: hsla(var(--accent-h), 70%, 60%, 0.3); }
+    #qbar .qb i { font-size: 18px; color: hsl(var(--accent-h), 60%, 92%); }
+    #qbar .qb em { font-size: 8.5px; color: hsl(var(--accent-h), 30%, 78%); }
   }
 
   /* ── In-world offer position, phones ── lives at the END of the sheet so it
@@ -2814,7 +2822,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 516</div>
+      <div id="build-stamp">build 518</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2856,6 +2864,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=516"></script>
+<script type="module" src="js/main.js?v=518"></script>
 </body>
 </html>
