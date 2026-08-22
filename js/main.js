@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=560';
-import { drawQR } from './lib/qr.js?v=560';
-import { WORLDS } from './worlds/registry.js?v=560';
-import { Net, PALETTE } from './net.js?v=560';
-import { Presence } from './lib/presence.js?v=560';
-import { Pulses } from './lib/pulse.js?v=560';
-import { BeatClock } from './lib/beatclock.js?v=560';
-import { BeatCue } from './lib/beatcue.js?v=560';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=560';
-import { Race, placeOf, standings } from './lib/race.js?v=560';
-import { Signals } from './lib/signals.js?v=560';
-import { pickShareLine, loadLines } from './lib/lines.js?v=560';
-import { RouteMap } from './lib/map.js?v=560';
-import * as sfx from './lib/sfx.js?v=560';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=560';
-import { glowTexture } from './lib/glow.js?v=560';
+import { AudioEngine } from './audio-engine.js?v=561';
+import { drawQR } from './lib/qr.js?v=561';
+import { WORLDS } from './worlds/registry.js?v=561';
+import { Net, PALETTE } from './net.js?v=561';
+import { Presence } from './lib/presence.js?v=561';
+import { Pulses } from './lib/pulse.js?v=561';
+import { BeatClock } from './lib/beatclock.js?v=561';
+import { BeatCue } from './lib/beatcue.js?v=561';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=561';
+import { Race, placeOf, standings } from './lib/race.js?v=561';
+import { Signals } from './lib/signals.js?v=561';
+import { pickShareLine, loadLines } from './lib/lines.js?v=561';
+import { RouteMap } from './lib/map.js?v=561';
+import * as sfx from './lib/sfx.js?v=561';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=561';
+import { glowTexture } from './lib/glow.js?v=561';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -484,7 +484,7 @@ fetch('audio/manifest.json?t=' + Date.now())
       const el = $('today');
       if (el) {
         el.textContent = "today\u2019s song: " + prettyTrack(file)
-          + '. tap to play it in this week\u2019s special, ' + WORLDS[window.__WEEK_KEY].label;
+          + '. tap to play it in this sunday\u2019s best, ' + WORLDS[window.__WEEK_KEY].label;
         el.classList.remove('hidden');
         el.onclick = () => {
           window.__shareTrack = file;
