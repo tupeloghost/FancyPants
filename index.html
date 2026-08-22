@@ -46,6 +46,15 @@
   /* iOS ignores user-scalable=no: this is what actually stops double-tap
      zoom on the buttons (the canvas already owns its own touches) */
   body { touch-action: manipulation; }
+  /* a HELD finger is steering, not selecting: without this iOS raises its
+     text-selection loupe mid-game. Real inputs opt back in below. */
+  body {
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text; user-select: text;
+  }
   /* touch response: everything pressable compresses under the finger NOW —
      80ms down, spring back on release. The press is the product's handshake. */
   button, .qb, .rbtn, .mode-opt, .wchip, select {
@@ -2850,7 +2859,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 527</div>
+      <div id="build-stamp">build 528</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2892,6 +2901,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=527"></script>
+<script type="module" src="js/main.js?v=528"></script>
 </body>
 </html>
