@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=547';
-import { drawQR } from './lib/qr.js?v=547';
-import { WORLDS } from './worlds/registry.js?v=547';
-import { Net, PALETTE } from './net.js?v=547';
-import { Presence } from './lib/presence.js?v=547';
-import { Pulses } from './lib/pulse.js?v=547';
-import { BeatClock } from './lib/beatclock.js?v=547';
-import { BeatCue } from './lib/beatcue.js?v=547';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=547';
-import { Race, placeOf, standings } from './lib/race.js?v=547';
-import { Signals } from './lib/signals.js?v=547';
-import { pickShareLine, loadLines } from './lib/lines.js?v=547';
-import { RouteMap } from './lib/map.js?v=547';
-import * as sfx from './lib/sfx.js?v=547';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=547';
-import { glowTexture } from './lib/glow.js?v=547';
+import { AudioEngine } from './audio-engine.js?v=548';
+import { drawQR } from './lib/qr.js?v=548';
+import { WORLDS } from './worlds/registry.js?v=548';
+import { Net, PALETTE } from './net.js?v=548';
+import { Presence } from './lib/presence.js?v=548';
+import { Pulses } from './lib/pulse.js?v=548';
+import { BeatClock } from './lib/beatclock.js?v=548';
+import { BeatCue } from './lib/beatcue.js?v=548';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=548';
+import { Race, placeOf, standings } from './lib/race.js?v=548';
+import { Signals } from './lib/signals.js?v=548';
+import { pickShareLine, loadLines } from './lib/lines.js?v=548';
+import { RouteMap } from './lib/map.js?v=548';
+import * as sfx from './lib/sfx.js?v=548';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=548';
+import { glowTexture } from './lib/glow.js?v=548';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2891,6 +2891,9 @@ async function openCreatorCard() {
         $('cc-bio').value = d.bio || '';
         $('cc-next').value = d.next || '';
         $('cc-tip').value = d.tip || '';
+        $('cc-photo').value = d.photo || '';
+        $('cc-watch').value = d.watch || '';
+        setCcType(d.type || 'artist');
         (d.links || []).forEach((l, i) => { const f = $('cc-l' + (i + 1)); if (f) f.value = l.label + ' | ' + l.url; });
         $('cc-save').textContent = 'SAVE CHANGES';
         $('cc-out').classList.remove('hidden');
@@ -2904,6 +2907,16 @@ async function openCreatorCard() {
     } catch (e) { /* offline: the form still works */ }
   }
 }
+// the page's kind: one primary, picks the hero. streamer reveals "where to watch"
+let ccType = 'artist';
+function setCcType(t) {
+  ccType = t === 'streamer' ? 'streamer' : 'artist';
+  $('cct-artist').classList.toggle('on', ccType === 'artist');
+  $('cct-streamer').classList.toggle('on', ccType === 'streamer');
+  $('cc-watch').classList.toggle('hidden', ccType !== 'streamer');
+}
+$('cct-artist').addEventListener('click', () => setCcType('artist'));
+$('cct-streamer').addEventListener('click', () => setCcType('streamer'));
 $('mq-page').addEventListener('click', openCreatorCard);
 $('cc-close').addEventListener('click', () => $('creator-card').classList.add('hidden'));
 $('cc-save').addEventListener('click', async () => {
@@ -2914,6 +2927,8 @@ $('cc-save').addEventListener('click', async () => {
   const body = {
     slug, name: $('cc-name').value.trim() || slug,
     bio: $('cc-bio').value.trim(), next: $('cc-next').value.trim(), tip: $('cc-tip').value.trim(), links,
+    type: ccType, photo: $('cc-photo').value.trim(), watch: $('cc-watch').value.trim(),
+    hue: settings.hue,   // the page wears the look you were wearing when you made it
   };
   const key = ccKey(slug);
   $('cc-msg').textContent = 'savin\u2019\u2026';

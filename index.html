@@ -396,6 +396,7 @@
   #name-dice:hover { border-color: hsla(var(--accent-h),80%,70%,0.6); background: var(--accent-soft); }
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
+  #cc-watch.hidden { display: none; }
   #pr-url {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
@@ -2507,10 +2508,16 @@
 <div id="burn-glow"></div>
 <div id="creator-card" class="hidden">
   <div id="cc-inner">
-    <div id="cc-title">your artist page</div>
+    <div id="cc-title">your page</div>
     <div id="cc-sub">one link with your songs, socials, and what&rsquo;s next. promoted songs land on it automatically.</div>
+    <!-- the page's kind picks what it leads with. more kinds arrive with accounts. -->
+    <div class="am-pick" id="cc-type">
+      <button id="cct-artist" class="on" data-type="artist">ARTIST</button><button id="cct-streamer" data-type="streamer">STREAMER</button>
+    </div>
     <input id="cc-slug" maxlength="30" placeholder="your page address (letters &amp; dashes)" autocomplete="off" spellcheck="false">
-    <input id="cc-name" maxlength="60" placeholder="artist name" autocomplete="off">
+    <input id="cc-name" maxlength="60" placeholder="your name" autocomplete="off">
+    <input id="cc-photo" maxlength="400" placeholder="a photo of you: paste an image link (optional)" autocomplete="off" spellcheck="false">
+    <input id="cc-watch" maxlength="300" class="hidden" placeholder="where folks watch you: twitch, youtube, kick&hellip;" autocomplete="off" spellcheck="false">
     <textarea id="cc-bio" maxlength="500" rows="3" placeholder="a couple lines about you"></textarea>
     <input id="cc-next" maxlength="120" placeholder="what&rsquo;s next? show, single, stream (optional)" autocomplete="off">
     <input id="cc-tip" maxlength="300" placeholder="your tip link: ko-fi, venmo, whatever (optional)" autocomplete="off" spellcheck="false">
@@ -2890,7 +2897,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 547</div>
+      <div id="build-stamp">build 548</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2932,6 +2939,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=547"></script>
+<script type="module" src="js/main.js?v=548"></script>
 </body>
 </html>

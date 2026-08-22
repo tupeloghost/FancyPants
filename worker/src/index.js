@@ -147,6 +147,11 @@ export class FancyPantsRoom {
         next: String(b.next || '').slice(0, 120),
         nextAt: String(b.nextAt || '').slice(0, 30),
         tip: /^https?:\/\//.test(String(b.tip || '')) ? String(b.tip).slice(0, 300) : '',
+        // the page's kind picks what it leads with; photo + hue make it THEIRS
+        type: ['artist', 'streamer'].includes(b.type) ? b.type : 'artist',
+        photo: /^https?:\/\//.test(String(b.photo || '')) ? String(b.photo).slice(0, 400) : '',
+        watch: /^https?:\/\//.test(String(b.watch || '')) ? String(b.watch).slice(0, 300) : '',
+        hue: Number.isFinite(+b.hue) ? ((+b.hue % 360) + 360) % 360 : 265,
         hidden: [],
         at: Date.now(),
       };
@@ -165,6 +170,10 @@ export class FancyPantsRoom {
       if ('next' in b) page.next = String(b.next || '').slice(0, 120);
       if ('nextAt' in b) page.nextAt = String(b.nextAt || '').slice(0, 30);
       if ('tip' in b) page.tip = /^https?:\/\//.test(String(b.tip || '')) ? String(b.tip).slice(0, 300) : '';
+      if ('type' in b) page.type = ['artist', 'streamer'].includes(b.type) ? b.type : 'artist';
+      if ('photo' in b) page.photo = /^https?:\/\//.test(String(b.photo || '')) ? String(b.photo).slice(0, 400) : '';
+      if ('watch' in b) page.watch = /^https?:\/\//.test(String(b.watch || '')) ? String(b.watch).slice(0, 300) : '';
+      if ('hue' in b && Number.isFinite(+b.hue)) page.hue = ((+b.hue % 360) + 360) % 360;
       if ('links' in b) page.links = (Array.isArray(b.links) ? b.links : []).slice(0, 6).map(l => ({
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
@@ -187,7 +196,8 @@ export class FancyPantsRoom {
         const home = v && v.song ? await this.state.storage.get('sh:' + v.song) : null;
         songs.push({ path, world: (home && home.world) || '' });
       }
-      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '', songs };
+      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '',
+        type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265, songs };
       if (url.searchParams.get('key') === page.editKey) {
         out.hidden = page.hidden;
         out.plays = {};
@@ -522,6 +532,17 @@ export default {
       });
       const lead = songs[0];
       const heroImg = lead ? SITE_URL + 'previews/' + esc(lead.world) + '.jpg' : SITE_URL + 'og.jpg';
+      const H = Number.isFinite(+pg.hue) ? +pg.hue : 265;
+      const isStreamer = pg.type === 'streamer';
+      const liveSoon = !!(pg.nextAt && !isNaN(new Date(pg.nextAt)) && new Date(pg.nextAt).getTime() > Date.now() - 3 * 3600e3);
+      // a streamer leads with the stream: when it is, where to watch, and a
+      // door into the room. Off-air, the lead song takes the stage like anyone's.
+      const liveBlock = isStreamer && liveSoon
+        ? '<div class="live"><span class="eyebrow">going live</span><b class="next" data-at="' + esc(pg.nextAt) + '">' + esc(pg.next || 'soon') + '</b>'
+          + (pg.watch ? '<a class="watch" href="' + esc(pg.watch) + '" rel="noopener">watch here \u2192</a>' : '')
+          + '<a class="room" href="' + SITE_URL + '">step inside and play along</a></div>'
+        : '';
+      const kind = isStreamer ? 'streamer' : 'artist';
       // the lead song is the page's thesis: one big door. the rest are rows.
       const heroBtn = lead
         ? '<a class="hero" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(lead.p) + '">'
@@ -546,6 +567,7 @@ export default {
         + '<meta name="twitter:title" content="' + esc(pg.name) + '">'
         + '<meta name="twitter:image" content="' + heroImg + '">'
         + '<style>'
+        + ':root{--h:' + H + '}'
         + '*{box-sizing:border-box}'
         + 'body{margin:0;min-height:100vh;background:#07060f;color:#eceafb;font:16px/1.6 Georgia,serif;}'
         + '.bg{position:fixed;inset:0;background:url(' + heroImg + ') center/cover;filter:blur(38px) saturate(1.3) brightness(0.45);transform:scale(1.15);z-index:0}'
@@ -556,7 +578,15 @@ export default {
         + '.bio{font-style:italic;color:#c4bfe3;margin:0 auto 22px;max-width:460px;white-space:pre-wrap;}'
         + '.next{color:#eece78;font-style:italic;margin:0 0 22px;}'
         + '.hero{display:block;margin:8px auto 26px;max-width:420px;padding:22px 26px;border-radius:22px;text-decoration:none;color:#130f26;'
-        + 'background:linear-gradient(175deg,#fff1f8,#d9c8ff 60%,#b8a6ff);box-shadow:0 14px 50px rgba(170,140,255,0.35),inset 0 1px 0 rgba(255,255,255,0.8);}'
+        + 'background:linear-gradient(175deg,hsl(var(--h),90%,94%),hsl(var(--h),80%,82%) 60%,hsl(var(--h),75%,72%));box-shadow:0 14px 50px hsla(var(--h),80%,65%,0.35),inset 0 1px 0 rgba(255,255,255,0.8);}'
+        + '.photo{width:108px;height:108px;border-radius:50%;object-fit:cover;margin:0 auto 14px;display:block;border:2px solid hsla(var(--h),80%,80%,0.6);box-shadow:0 10px 40px hsla(var(--h),80%,60%,0.35)}'
+        + '.live{margin:6px auto 22px;max-width:440px;padding:20px 22px;border-radius:22px;background:rgba(255,255,255,0.06);border:1px solid hsla(var(--h),70%,75%,0.35)}'
+        + '.live .eyebrow{display:block;font:11px ui-monospace,Menlo,monospace;letter-spacing:3px;text-transform:uppercase;color:hsl(var(--h),80%,80%)}'
+        + '.live .eyebrow::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5a5a;margin-right:8px;box-shadow:0 0 12px #ff5a5a;vertical-align:middle;animation:blink 1.4s infinite}'
+        + '@keyframes blink{50%{opacity:0.35}}'
+        + '.live b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:22px;margin:6px 0 12px;color:#fff;font-style:normal}'
+        + '.live .watch{display:inline-block;margin:0 6px 8px 0;padding:11px 20px;border-radius:999px;text-decoration:none;color:#130f26;background:linear-gradient(175deg,hsl(var(--h),90%,92%),hsl(var(--h),80%,76%));font-weight:600}'
+        + '.live .room{display:inline-block;padding:11px 18px;border-radius:999px;text-decoration:none;color:#e6e2fa;border:1px solid rgba(180,170,230,0.4)}'
         + '.hero .eyebrow{display:block;font:11px ui-monospace,Menlo,monospace;letter-spacing:3px;text-transform:uppercase;color:#4b3f7a}'
         + '.hero b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:30px;line-height:1.15;margin:4px 0 2px;text-transform:capitalize}'
         + '.hero i{display:block;font-size:13px;color:#5a4f8a}'
@@ -575,17 +605,18 @@ export default {
         + '.pill:hover{border-color:#a99ce8;}'
         + 'footer{margin-top:40px;font-size:12.5px;color:#8d87b0;}footer a{color:#b9b3da;}'
         + '</style></head><body><div class="bg"></div><div class="veil"></div><div class="card">'
-        + '<p class="on">on fancy britches</p>'
+        + (pg.photo ? '<img class="photo" src="' + esc(pg.photo) + '" alt="">' : '')
+        + '<p class="on">' + kind + ' on fancy britches</p>'
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
-        + (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : '')
+        + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
         + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
         + '<footer>every song here is an experience. <a href="https://tupeloghost.github.io/FancyPants/">turn yours into one at fancy britches</a></footer>'
         + '</div>'
-        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent="going live "+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')
+        + (pg.nextAt ? '<script>(function(){var e=document.querySelector(".next[data-at]");if(!e)return;var d=new Date(e.getAttribute("data-at"));if(isNaN(d))return;e.textContent=(e.closest(".live")?"":"going live ")+d.toLocaleString(undefined,{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});})();</scr'+'ipt>' : '')
         + '</body></html>';
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
