@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=544';
-import { drawQR } from './lib/qr.js?v=544';
-import { WORLDS } from './worlds/registry.js?v=544';
-import { Net, PALETTE } from './net.js?v=544';
-import { Presence } from './lib/presence.js?v=544';
-import { Pulses } from './lib/pulse.js?v=544';
-import { BeatClock } from './lib/beatclock.js?v=544';
-import { BeatCue } from './lib/beatcue.js?v=544';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=544';
-import { Race, placeOf, standings } from './lib/race.js?v=544';
-import { Signals } from './lib/signals.js?v=544';
-import { pickShareLine, loadLines } from './lib/lines.js?v=544';
-import { RouteMap } from './lib/map.js?v=544';
-import * as sfx from './lib/sfx.js?v=544';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=544';
-import { glowTexture } from './lib/glow.js?v=544';
+import { AudioEngine } from './audio-engine.js?v=545';
+import { drawQR } from './lib/qr.js?v=545';
+import { WORLDS } from './worlds/registry.js?v=545';
+import { Net, PALETTE } from './net.js?v=545';
+import { Presence } from './lib/presence.js?v=545';
+import { Pulses } from './lib/pulse.js?v=545';
+import { BeatClock } from './lib/beatclock.js?v=545';
+import { BeatCue } from './lib/beatcue.js?v=545';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=545';
+import { Race, placeOf, standings } from './lib/race.js?v=545';
+import { Signals } from './lib/signals.js?v=545';
+import { pickShareLine, loadLines } from './lib/lines.js?v=545';
+import { RouteMap } from './lib/map.js?v=545';
+import * as sfx from './lib/sfx.js?v=545';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=545';
+import { glowTexture } from './lib/glow.js?v=545';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3464,6 +3464,20 @@ $('mq-social').value = localStorage.getItem('fp_social') || '';
 $('mq-social').addEventListener('input', () => {
   localStorage.setItem('fp_social', $('mq-social').value.trim().slice(0, 80));
 });
+// ── the credit ── every clip and still that leaves here names the song AND
+// the artist (and their handle, if they gave one). A fan's share is the
+// artist's ad; the house catalog credits Tupelo Ghost the same way.
+function creditText() {
+  const suno = !!window.__sunoShare;
+  const title = suno ? (sunoTrack.split(' \u00b7 ')[0] || 'this song')
+    : prettyTrack($('track-select').value || audio.el.currentSrc || 'this song');
+  const artist = suno ? ($('mq-artist').value.trim() || sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost';
+  const social = suno ? ($('mq-social').value || localStorage.getItem('fp_social') || '').trim() : '';
+  const handle = social ? social.replace(/^https?:\/\/(www\.)?/i, '') : '';
+  return [title.toUpperCase(), artist ? 'by ' + artist : '', handle, 'step inside, no app']
+    .filter(Boolean).join('  \u00b7  ');
+}
+window.__credit = creditText;   // debug handle
 function socialTag() {
   const v = ($('mq-social').value || localStorage.getItem('fp_social') || '').trim();
   if (!v || !window.__sunoShare) return '';
@@ -3483,10 +3497,7 @@ function shareStill(words) {
   x.fillRect(0, H - bh, W, bh);
   x.fillStyle = 'rgba(240,238,255,0.92)';
   x.textBaseline = 'middle';
-  const run = sig.lastRun || {};
-  const barText = ((run.songTitle || 'this song') + '  \u00b7  '
-    + (run.worldId && WORLDS[run.worldId] ? WORLDS[run.worldId].label : '')
-    + '  \u00b7  STEP INSIDE IT, NO APP').toUpperCase();
+  const barText = creditText();
   let fs = Math.round(bh * 0.42);
   x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
   while (fs > 9 && x.measureText(barText).width > W - bh) {
@@ -3648,7 +3659,14 @@ $('shc-close').addEventListener('click', () => {
 });
 $('shc-share').addEventListener('click', async () => {
   const words = $('shc-say').value.trim();
-  const caption = (words ? words + '\n' : 'step inside \u2192\n') + clipURL() + socialTag() + '\n#FancyBritches';
+  // the post's text carries the credit too: song and artist, then the link
+  const credit = (() => {
+    const suno = !!window.__sunoShare;
+    const title = suno ? (sunoTrack.split(' \u00b7 ')[0] || '') : prettyTrack($('track-select').value || audio.el.currentSrc || '');
+    const artist = suno ? ($('mq-artist').value.trim() || sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost';
+    return title ? '\u266a ' + title + (artist ? ' by ' + artist : '') + '\n' : '';
+  })();
+  const caption = (words ? words + '\n' : 'step inside \u2192\n') + credit + clipURL() + socialTag() + '\n#FancyBritches';
   // a clip with words on it gets pressed first: the playback IS the preview,
   // and the burned copy is ready when the song stops
   if (clipSaved && words) {
@@ -3730,9 +3748,7 @@ function clipBufStart() {
   const ctx2 = comp.getContext('2d');
   const qrc = document.createElement('canvas');
   const hasQR = drawQR(qrc, clipURL(), 3);
-  const title = (window.__sunoShare ? (sunoTrack || 'my song')
-    : prettyTrack(($('track-select').value || audio.el.currentSrc || 'this song'))).toUpperCase();
-  const wlabel = WORLDS[currentWorldKey] ? WORLDS[currentWorldKey].label : '';
+  const barText = creditText();
   clipDraw = true;
   (function frame() {
     if (!clipDraw) return;
@@ -3744,7 +3760,6 @@ function clipBufStart() {
     ctx2.textBaseline = 'middle';
     // the QR floats ABOVE the bar; the words size themselves to fit the bar
     const q = bh * 1.5, m = Math.round(bh * 0.25);
-    const barText = title + '  \u00b7  ' + wlabel + '  \u00b7  STEP INSIDE IT, NO APP';
     let fs = Math.round(bh * 0.42);
     ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
     while (fs > 9 && ctx2.measureText(barText).width > W - bh) {
