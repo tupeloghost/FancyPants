@@ -216,6 +216,8 @@
 
   /* a CARD owns the screen. The transport bar, the tutor's pill and the
      sheet leave the stage instead of haunting the veil as blurred smudges. */
+  #opt-vibe { display: none; }   /* FREE PLAY is the PLAY door; its switches live in the panel */
+  body:has(#mode-card.show) #qbar, body:has(#mode-card.show) #show-me, body:has(#mode-card.show) #panel,
   body:has(#round-intro.show) #qbar, body:has(#round-intro.show) #show-me,
   body:has(#round-intro.show) #panel, body:has(#round-intro.show) #standings,
   body:has(#results.show) #qbar, body:has(#results.show) #show-me,
@@ -271,8 +273,9 @@
     letter-spacing: 5px; color: hsl(var(--accent-h), 55%, 94%); font-weight: 400;
   }
   #mode-inner p {
-    margin-top: 8px; font: 11px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
-    letter-spacing: 2px; text-transform: uppercase; color: var(--ink-faint);
+    margin-top: 10px; font: 12.5px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 0.8px; text-transform: none; color: var(--ink-dim);
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
   }
   #mode-opts { display: flex; flex-direction: column; gap: 11px; margin-top: 24px; }
   .mode-opt {
@@ -1512,8 +1515,8 @@
   #sc-done button { flex: 1; }
   #mc-host {
     margin-top: 16px; width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
-    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
-    color: var(--ink-dim); background: transparent; border: 1px solid var(--accent-line);
+    font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
+    color: var(--ink); background: hsla(var(--accent-h), 40%, 10%, 0.5); border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.45);
     transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
   #mc-host:hover { color: var(--ink); border-color: hsla(var(--accent-h),80%,70%,0.6); background: var(--accent-soft); }
@@ -2600,8 +2603,8 @@
 
 <div id="mode-card">
   <div id="mode-inner">
-    <h2>WHOSE MUSIC?</h2>
-    <p>change it any time</p>
+    <h2>HOST OR PROMOTE</h2>
+    <p>playing for yourself? just hit PLAY. this door is for your song or your crowd</p>
     <div id="mode-opts">
       <div class="mode-opt" id="opt-vibe"><b>FREE PLAY</b><em>we pick the songs.</em>
         <div class="am-pick" onclick="event.stopPropagation()">
@@ -2613,10 +2616,10 @@
           <button id="mc-wander" class="chip">&#9670; DRIFT BETWEEN WORLDS</button>
         </div>
       </div>
-      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round each.</em></div>
-      <div class="mode-opt" id="opt-promote"><b>PROMOTE YOUR SONG</b><em>pick its world, share the link.</em></div>
+      <div class="mode-opt" id="opt-promote"><b>PROMOTE YOUR SONG</b><em>paste a link, pick its world, share it.</em></div>
+      <div class="mode-opt" id="opt-play"><b>MAKE A SET LIST</b><em>your songs, one round each. great for a crowd.</em></div>
     </div>
-    <button id="mc-host">OPEN A ROOM</button>
+    <button id="mc-host">OPEN A ROOM &middot; play together live</button>
     <!-- Hosting splits in two, and only here: going live now is the old
          behaviour untouched, while scheduling writes the date onto the host's
          own page so the announcement outlives this tab. -->
@@ -2887,7 +2890,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 541</div>
+      <div id="build-stamp">build 542</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2929,6 +2932,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=541"></script>
+<script type="module" src="js/main.js?v=542"></script>
 </body>
 </html>
