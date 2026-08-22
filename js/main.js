@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=520';
-import { drawQR } from './lib/qr.js?v=520';
-import { WORLDS } from './worlds/registry.js?v=520';
-import { Net, PALETTE } from './net.js?v=520';
-import { Presence } from './lib/presence.js?v=520';
-import { Pulses } from './lib/pulse.js?v=520';
-import { BeatClock } from './lib/beatclock.js?v=520';
-import { BeatCue } from './lib/beatcue.js?v=520';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=520';
-import { Race, placeOf, standings } from './lib/race.js?v=520';
-import { Signals } from './lib/signals.js?v=520';
-import { pickShareLine, loadLines } from './lib/lines.js?v=520';
-import { RouteMap } from './lib/map.js?v=520';
-import * as sfx from './lib/sfx.js?v=520';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=520';
-import { glowTexture } from './lib/glow.js?v=520';
+import { AudioEngine } from './audio-engine.js?v=521';
+import { drawQR } from './lib/qr.js?v=521';
+import { WORLDS } from './worlds/registry.js?v=521';
+import { Net, PALETTE } from './net.js?v=521';
+import { Presence } from './lib/presence.js?v=521';
+import { Pulses } from './lib/pulse.js?v=521';
+import { BeatClock } from './lib/beatclock.js?v=521';
+import { BeatCue } from './lib/beatcue.js?v=521';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=521';
+import { Race, placeOf, standings } from './lib/race.js?v=521';
+import { Signals } from './lib/signals.js?v=521';
+import { pickShareLine, loadLines } from './lib/lines.js?v=521';
+import { RouteMap } from './lib/map.js?v=521';
+import * as sfx from './lib/sfx.js?v=521';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=521';
+import { glowTexture } from './lib/glow.js?v=521';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -139,11 +139,13 @@ let fovKick = 0;
 race.onEvent = (type, d) => {
   if (type === 'hit') {
     sfx.hit(d.streak, d.strong);
+    haptic(d.strong ? 14 : 7);       // every catch lands in the hand
     // strong hits stop the world; ordinary ones nick it
     hitStop = Math.max(hitStop, (d.strong ? 0.055 : 0.03) * TUNE.hitstop);
     fovKick = Math.max(fovKick, (d.strong ? 1 : 0.5) * TUNE.punch);
   } else {
     sfx.thud();
+    haptic(22);                       // a cost is a dull knock, not a tick
     hitStop = Math.max(hitStop, 0.04 * TUNE.hitstop);   // costs land too
   }
 };
@@ -542,6 +544,7 @@ function countdown(fn) {
   const tick = () => {
     if (n === 0) { el.classList.add('hidden'); el.textContent = ''; fn(); return; }
     el.textContent = n;
+    haptic(n === 1 ? 16 : 7);   // each beat lands in the hand, the last a hair harder
     el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
     n--;
     cdT = setTimeout(tick, 700);
@@ -1808,6 +1811,7 @@ document.addEventListener('fp-lookspark', () => {
   const { name, cfg } = window.__nextLook;
   // no banner: the world repainting itself IS the announcement, and saying so
   // out loud only got in front of the thing worth looking at
+  haptic([12, 40, 18]);   // the reveal: a double-tap of delight
   document.body.classList.remove('lookflash'); void document.body.offsetWidth;
   document.body.classList.add('lookflash');
   const ring = $('look-ring');
@@ -1831,6 +1835,7 @@ document.addEventListener('fp-swallowed', () => {
     localStorage.setItem('fp_bh_seen', '1');
     announce('BLACK HOLE', 'the light finds its way back', 2400, 'ember');
   }
+  haptic([35, 45, 60, 45, 90]);   // the void: a swelling rumble you FEEL land
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 1450);
@@ -2307,13 +2312,18 @@ canvas.addEventListener('pointerdown', e => {
 // reads as a glitch against worlds this clean — the frame is meant to be
 // still and the *world* is meant to respond.
 let bloomKick = 0;
+// ── Haptics ── a vocabulary, not a buzzer: each event has its own touch.
+// (Android honours vibrate(); iOS Safari has no web haptics API at all.)
+function haptic(pattern) {
+  if (IS_MOBILE && navigator.vibrate) {
+    try { navigator.vibrate(pattern); } catch { /* blocked */ }
+  }
+}
+window.__haptic = haptic;
 function impact(strength = 0.5) {
   bloomKick = Math.min(1.6, bloomKick + strength);
   clickPulse = Math.min(1.5, clickPulse + strength * 0.7);
-  // phones can feel it. (Android honours this; iOS Safari has no web haptics.)
-  if (IS_MOBILE && navigator.vibrate) {
-    try { navigator.vibrate(Math.round(6 + strength * 26)); } catch { /* blocked */ }
-  }
+  haptic(Math.round(6 + strength * 26));
 }
 window.__impact = impact;
 
