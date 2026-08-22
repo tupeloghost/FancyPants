@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=538';
-import { drawQR } from './lib/qr.js?v=538';
-import { WORLDS } from './worlds/registry.js?v=538';
-import { Net, PALETTE } from './net.js?v=538';
-import { Presence } from './lib/presence.js?v=538';
-import { Pulses } from './lib/pulse.js?v=538';
-import { BeatClock } from './lib/beatclock.js?v=538';
-import { BeatCue } from './lib/beatcue.js?v=538';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=538';
-import { Race, placeOf, standings } from './lib/race.js?v=538';
-import { Signals } from './lib/signals.js?v=538';
-import { pickShareLine, loadLines } from './lib/lines.js?v=538';
-import { RouteMap } from './lib/map.js?v=538';
-import * as sfx from './lib/sfx.js?v=538';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=538';
-import { glowTexture } from './lib/glow.js?v=538';
+import { AudioEngine } from './audio-engine.js?v=539';
+import { drawQR } from './lib/qr.js?v=539';
+import { WORLDS } from './worlds/registry.js?v=539';
+import { Net, PALETTE } from './net.js?v=539';
+import { Presence } from './lib/presence.js?v=539';
+import { Pulses } from './lib/pulse.js?v=539';
+import { BeatClock } from './lib/beatclock.js?v=539';
+import { BeatCue } from './lib/beatcue.js?v=539';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=539';
+import { Race, placeOf, standings } from './lib/race.js?v=539';
+import { Signals } from './lib/signals.js?v=539';
+import { pickShareLine, loadLines } from './lib/lines.js?v=539';
+import { RouteMap } from './lib/map.js?v=539';
+import * as sfx from './lib/sfx.js?v=539';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=539';
+import { glowTexture } from './lib/glow.js?v=539';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2561,7 +2561,9 @@ function showWorldIntro(key) {
   if (!$('tap-to-start').classList.contains('gone')) return;
   const el = $('world-intro');
   $('intro-name').textContent = w.label;
-  $('intro-goal').textContent = w.goal || '';
+  // the name IS the greeting: instructions live in the tutorial now, and a
+  // world that needs a caption to make sense isn't finished
+  $('intro-goal').textContent = '';
   el.classList.toggle('long', (w.label || '').length > 10);
   // "show me how" appears where showing helps: a world you steer or tap,
   // watched by somebody actually playing (never lean-back, never a guest).
