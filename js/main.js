@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=583';
-import { drawQR } from './lib/qr.js?v=583';
-import { WORLDS } from './worlds/registry.js?v=583';
-import { Net, PALETTE } from './net.js?v=583';
-import { Presence } from './lib/presence.js?v=583';
-import { Pulses } from './lib/pulse.js?v=583';
-import { BeatClock } from './lib/beatclock.js?v=583';
-import { BeatCue } from './lib/beatcue.js?v=583';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=583';
-import { Race, placeOf, standings } from './lib/race.js?v=583';
-import { Signals } from './lib/signals.js?v=583';
-import { pickShareLine, loadLines } from './lib/lines.js?v=583';
-import { RouteMap } from './lib/map.js?v=583';
-import * as sfx from './lib/sfx.js?v=583';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=583';
-import { glowTexture } from './lib/glow.js?v=583';
+import { AudioEngine } from './audio-engine.js?v=584';
+import { drawQR } from './lib/qr.js?v=584';
+import { WORLDS } from './worlds/registry.js?v=584';
+import { Net, PALETTE } from './net.js?v=584';
+import { Presence } from './lib/presence.js?v=584';
+import { Pulses } from './lib/pulse.js?v=584';
+import { BeatClock } from './lib/beatclock.js?v=584';
+import { BeatCue } from './lib/beatcue.js?v=584';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=584';
+import { Race, placeOf, standings } from './lib/race.js?v=584';
+import { Signals } from './lib/signals.js?v=584';
+import { pickShareLine, loadLines } from './lib/lines.js?v=584';
+import { RouteMap } from './lib/map.js?v=584';
+import * as sfx from './lib/sfx.js?v=584';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=584';
+import { glowTexture } from './lib/glow.js?v=584';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4958,7 +4958,7 @@ let promoteWorld = null;   // remembered for the mp3 route
 const WORLD_BLURBS = {
   tunnel: 'drift through a tunnel of light. click to send shockwaves',
   surfer: 'catch sparks and jump. air time pays',
-  slide: 'fly a neon waterslide. steer through the rings',
+  slide: 'ride a neon slide. steer through the rings',
 };
 let prWorldPick = null;
 // ── the two side doors ── The front door is one button. Everything else a

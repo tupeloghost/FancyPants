@@ -94,7 +94,7 @@
       },
       "lines": [
         {
-          "t": "you moved {move}% of the song. on a waterslide.",
+          "t": "you moved {move}% of the song. on a slide.",
           "c": "let gravity in →",
           "w": 10
         },
