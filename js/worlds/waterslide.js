@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=568';
-import { themePaint } from '../lib/themes.js?v=568';
-import { TUNE } from '../lib/tune.js?v=568';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=569';
+import { themePaint } from '../lib/themes.js?v=569';
+import { TUNE } from '../lib/tune.js?v=569';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -87,7 +87,10 @@ export function createWaterslide() {
   let gulp = 0;   // the swallow's camera kick
   let hugT = 0, hugIdx = 0;   // hugging a wall throws spray up that side
   let chain = 0, leapT = 0, goldT = 0;   // five greens in a row: gold water, and the slide throws you
+  let warpT = 0, rollT = 0;   // the black hole: warp lines and a barrel roll through the throat
   window.__slideBend = bendWorld;   // dev handle: audition surface+path changes
+  // dev handle: audition the black-hole fall without threading one
+  window.__slideSwallow = () => { gulp = 1.8; warpT = 1.8; rollT = 1; hoopBoost = 1.3; document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } })); };
 
   return {
     name: 'SLIDE',
@@ -439,7 +442,9 @@ export function createWaterslide() {
             } else if (through && h.red) {
               // SWALLOWED: no toll, no stun — the void's only price is the
               // LIGHT. The world goes black for a spell and that IS the event.
-              gulp = 1.5; // the lens lurches — being eaten is a full-body event
+              gulp = 1.8; // the lens lurches — being eaten is a full-body event
+              warpT = 1.8; rollT = 1;           // warp lines + a full barrel roll through the throat
+              hoopBoost = 1.3;                  // and you come out the other side FLYING
               if (opts.impact) opts.impact(1.0);
               document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } }));
               // shockrings collapse INTO the hole — violet, staggered
@@ -496,6 +501,11 @@ export function createWaterslide() {
 
       if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.8);   // ~1.2s: felt, not dizzying
       leapT = Math.max(0, leapT - dt / 1.7); goldT = Math.max(0, goldT - dt);
+      warpT = Math.max(0, warpT - dt); rollT = Math.max(0, rollT - dt / 1.5);
+      const warp = Math.min(1, warpT);
+      // the roll: eased full turn, fast through the middle
+      const rollK = rollT > 0 ? (1 - rollT) : 1;
+      const rollAng = rollT > 0 ? Math.PI * 2 * (rollK < 0.5 ? 2 * rollK * rollK : 1 - Math.pow(-2 * rollK + 2, 2) / 2) : 0;
       const leap = leapT > 0 ? Math.sin(Math.PI * (1 - leapT)) : 0;   // up, hang, down
       gulp *= Math.pow(0.05, dt);
 
@@ -519,7 +529,7 @@ export function createWaterslide() {
         -travel
       );
       camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6 + leap * 3, -(travel + 34));
-      camera.rotation.z += -bank + Math.sin(time * 34) * 0.06 * gulp;
+      camera.rotation.z += -bank + Math.sin(time * 34) * 0.06 * gulp + rollAng;
 
       for (const b of bursts) {
         if (!b.visible) continue;
@@ -598,7 +608,7 @@ export function createWaterslide() {
       const wcol = water.geometry.attributes.color;
       const span = RINGS * RING_SPACING;
       for (let i = 0; i < WATER_N; i++) {
-        waterOff[i] += (speed * 0.55 + 26) * dt;
+        waterOff[i] += (speed * 0.55 + 26 + warp * 260) * dt;   // warp speed through the hole
         const t = travel + (waterOff[i] % span);
         const floorY = dropY(t) + 0.55 + Math.abs(waterLane[i]) * 0.06;
         wpos.setXYZ(i, curveX(t) + waterLane[i], floorY, -t);
@@ -607,12 +617,12 @@ export function createWaterslide() {
         const distDim = Math.min(1, Math.max(0.06, ((waterOff[i] % span)) / 22));
         // gold water after five in a row: the reward you can see under you
         const gold = Math.min(1, goldT);
-        color.setHSL(gold > 0 ? 0.12 : (hue / 360 + 0.5) % 1, 0.4 + gold * 0.5, (0.16 + froth * 0.14 + audio.volume * 0.1 + gold * 0.2) * distDim);
+        color.setHSL(gold > 0 ? 0.12 : (hue / 360 + 0.5) % 1, 0.4 + gold * 0.5, (0.16 + froth * 0.14 + audio.volume * 0.1 + gold * 0.2 + warp * 0.5) * distDim);
         wcol.setXYZ(i, color.r, color.g, color.b);
       }
       wpos.needsUpdate = true;
       wcol.needsUpdate = true;
-      water.material.size = 0.5 + audio.volume * 0.3 + boost * 0.3;
+      water.material.size = 0.5 + audio.volume * 0.3 + boost * 0.3 + warp * 1.2;   // streaks become light-lines
 
       // hugging a wall throws water up that side — continuous while you lean
       {
