@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=582';
+import { glowTexture } from '../lib/glow.js?v=583';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -332,15 +332,18 @@ export function createTunnel() {
       if (!doorOn && travel > doorNextAt) {
         doorOn = true;
         doorZ = -150;
-        // one door in three is the DARE: a dark vortex, not a look
-        door.userData.vortex = Math.random() < 0.34;
+        // one door in three is the DARE: a dark vortex, not a look — but never
+        // in the first stretch, and never parked where an idle rider drifts
+        door.userData.vortex = travel > 1600 && Math.random() < 0.34;
         const dealt = window.__nextLook && window.__nextLook.cfg && doorGeos[window.__nextLook.cfg.shape];
         door.userData.rim.geometry = door.userData.vortex ? doorGeos.circle : (dealt || doorGeos.star);
         door.userData.voidDisc.visible = door.userData.vortex;
         door.userData.disk.visible = door.userData.vortex;
         const a = Math.random() * Math.PI * 2;
-        door.userData.dx = Math.cos(a) * 2.2;
-        door.userData.dy = Math.sin(a) * 1.6;
+        // a look door floats near the middle; a vortex hugs the wall, so
+        // entering it is always a deliberate lean, never an accident
+        door.userData.dx = Math.cos(a) * 2.2 * (door.userData.vortex ? 1.35 : 1);
+        door.userData.dy = Math.sin(a) * 1.6 * (door.userData.vortex ? 1.35 : 1);
         door.visible = true;
       }
       if (doorOn) {
@@ -376,7 +379,7 @@ export function createTunnel() {
         door.scale.setScalar(pulse * (doorPop > 0 ? 1 + (1 - doorPop) * 0 : 1));
         if (doorZ > -0.5) {
           const px = steer.x * 3.2, py = steer.y * 2.4;
-          const hit = Math.hypot(door.position.x - px, door.position.y - py) < 2.6;
+          const hit = Math.hypot(door.position.x - px, door.position.y - py) < (door.userData.vortex ? 1.7 : 2.6);
           if (hit && door.userData.vortex) {
             // THE RIDE: horizon pull (main), barrel roll + meteor storm (here),
             // a random dark dimension (main), a bang out the other side (main)

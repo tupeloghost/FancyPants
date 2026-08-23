@@ -403,6 +403,11 @@
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
   #cc-watch.hidden { display: none; }
+  /* the chill chips must never clip: stack them where the row can't fit */
+  @media (max-width: 620px) {
+    #page-music .chill-row { flex-direction: column; }
+    #page-music .chill-row .chip { width: 100%; }
+  }
   #cc-quiz { margin: 6px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--well); }
   #cc-quiz-head { font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
   #cc-quiz-head i { display: block; font-style: normal; letter-spacing: 0.4px; text-transform: none; color: var(--ink-faint); margin-top: 2px; }
@@ -1541,6 +1546,9 @@
   #host-when.hidden, #sched-form.hidden, #sc-done.hidden { display: none; }
   #host-when { display: none !important; }   /* the fork is retired; the form opens from the menu */
   #mode-card.sched-only h2, #mode-card.sched-only #mode-opts, #mode-card.sched-only #mc-host { display: none; }
+  /* one path at a time: a committed flow clears the other doors away */
+  #mode-card.flow-promote #opt-play, #mode-card.flow-promote #mc-host,
+  #mode-card.flow-set #opt-promote, #mode-card.flow-set #mc-host { display: none; }
   #schf-head { font: 400 20px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2px; text-align: center; margin-bottom: 4px; color: hsl(var(--accent-h), 55%, 92%); }
 
   #host-when button {
@@ -2976,7 +2984,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 582</div>
+      <div id="build-stamp">build 583</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3018,6 +3026,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=582"></script>
+<script type="module" src="js/main.js?v=583"></script>
 </body>
 </html>
