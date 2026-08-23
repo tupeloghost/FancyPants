@@ -970,10 +970,20 @@
   .rbtn.quiet { background: none; border-color: hsla(var(--accent-h), 70%, 70%, 0.25); color: var(--ink-dim); font-size: 11px; letter-spacing: 1.6px; }
   #week-line { margin-top: 10px; text-align: center; cursor: pointer; font: italic 400 13.5px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: hsl(var(--accent-h), 50%, 80%); }
   #week-line.hidden { display: none; }
-  #qr-name { display: flex; gap: 8px; margin: 0 auto 12px; max-width: 300px; }
-  #qr-name.hidden { display: none; }
-  #qr-name input { flex: 1; text-align: center; font: 13px 'SF Mono', Menlo, monospace; letter-spacing: 1px; }
-  #qr-name button { width: 46px; font-size: 17px; }
+  /* the name gate: one quick question at the door, then the world */
+  #name-gate { position: fixed; inset: 0; z-index: 260;   /* above the landing (200) */ display: flex; align-items: center; justify-content: center;
+    background: rgba(4, 4, 10, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  #name-gate.hidden { display: none; }
+  #ng-inner { width: min(340px, 88vw); text-align: center; padding: 26px 22px; border-radius: 20px;
+    background: hsla(var(--accent-h), 30%, 7%, 0.92); border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35); }
+  #ng-title { font: 400 24px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 1.5px; color: hsl(var(--accent-h), 55%, 93%); margin-bottom: 16px; }
+  #ng-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  #ng-row input { flex: 1; text-align: center; font: 15px 'SF Mono', Menlo, monospace; letter-spacing: 1px; padding: 12px 8px; }
+  #ng-row button { width: 52px; font-size: 19px; }
+  #ng-go { width: 100%; padding: 14px 0; border-radius: 999px; cursor: pointer; font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 4px; text-indent: 4px; color: hsl(var(--accent-h), 60%, 8%);
+    background: linear-gradient(175deg, hsl(var(--accent-h), 85%, 80%), hsl(var(--accent-h), 75%, 60%));
+    border: 1px solid hsla(var(--accent-h), 90%, 85%, 0.9); box-shadow: 0 6px 26px hsla(var(--accent-h), 90%, 65%, 0.35); }
   #week-line:hover { color: #fff; }
   #recap-card.week #rc-handle, #recap-card.week #rc-next, #recap-card.week #rc-copy { display: none; }
   /* the hero action: the one the whole product wants pressed */
@@ -1532,9 +1542,7 @@
   #host-when { display: none !important; }   /* the fork is retired; the form opens from the menu */
   #mode-card.sched-only h2, #mode-card.sched-only #mode-opts, #mode-card.sched-only #mc-host { display: none; }
   #schf-head { font: 400 20px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2px; text-align: center; margin-bottom: 4px; color: hsl(var(--accent-h), 55%, 92%); }
-  #sc-me { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 8px 0 2px; font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px; color: var(--ink-dim); text-transform: uppercase; }
-  #sc-me input { width: 130px; text-align: center; font: 12.5px 'SF Mono', Menlo, monospace; }
-  #sc-me button { width: 38px; font-size: 15px; }
+
   #host-when button {
     flex: 1; padding: 12px 0; cursor: pointer; border-radius: 999px;
     font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
@@ -2468,11 +2476,6 @@
          visitor straight into the house music. The second door is for people
          who arrived with intent, and those are the only ones asked whose
          music it is. -->
-    <!-- a QR room join is social: the name gets asked, once, right here -->
-    <div id="qr-name" class="hidden">
-      <input id="qr-name-in" maxlength="14" placeholder="what do we call you?" autocomplete="off">
-      <button id="qr-dice" title="pick a name for me">&#127922;</button>
-    </div>
     <button id="btn-solo" class="cta">PLAY</button>
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
     <div id="today" class="hidden"></div>
@@ -2773,6 +2776,13 @@
 
 <div id="pass-flash"></div>
 <div id="look-ring"></div>
+<div id="name-gate" class="hidden">
+  <div id="ng-inner">
+    <div id="ng-title">what do we call you?</div>
+    <div id="ng-row"><input id="ng-in" maxlength="14" autocomplete="off" spellcheck="false"><button id="ng-dice" title="deal me one">&#127922;</button></div>
+    <button id="ng-go">STEP INSIDE</button>
+  </div>
+</div>
 <div id="annc"><div id="annc-row"><i></i><b id="annc-title"></b><i></i></div><em id="annc-sub"></em></div>
 <div id="jump-flash"></div>
 
@@ -2849,7 +2859,6 @@
           <button id="pm-roll" class="chip">&#9834; NONSTOP SONGS</button>
           <button id="pm-wander" class="chip">&#9670; DRIFT BETWEEN WORLDS</button>
         </div>
-        <div id="sc-me">you&rsquo;re <input id="sc-myname" maxlength="14" autocomplete="off"> <button id="sc-mydice" title="deal me a new one">&#127922;</button></div>
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
       <div class="row host-only">
@@ -2967,7 +2976,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 579</div>
+      <div id="build-stamp">build 580</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3009,6 +3018,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=579"></script>
+<script type="module" src="js/main.js?v=580"></script>
 </body>
 </html>

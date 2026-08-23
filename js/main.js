@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=579';
-import { drawQR } from './lib/qr.js?v=579';
-import { WORLDS } from './worlds/registry.js?v=579';
-import { Net, PALETTE } from './net.js?v=579';
-import { Presence } from './lib/presence.js?v=579';
-import { Pulses } from './lib/pulse.js?v=579';
-import { BeatClock } from './lib/beatclock.js?v=579';
-import { BeatCue } from './lib/beatcue.js?v=579';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=579';
-import { Race, placeOf, standings } from './lib/race.js?v=579';
-import { Signals } from './lib/signals.js?v=579';
-import { pickShareLine, loadLines } from './lib/lines.js?v=579';
-import { RouteMap } from './lib/map.js?v=579';
-import * as sfx from './lib/sfx.js?v=579';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=579';
-import { glowTexture } from './lib/glow.js?v=579';
+import { AudioEngine } from './audio-engine.js?v=580';
+import { drawQR } from './lib/qr.js?v=580';
+import { WORLDS } from './worlds/registry.js?v=580';
+import { Net, PALETTE } from './net.js?v=580';
+import { Presence } from './lib/presence.js?v=580';
+import { Pulses } from './lib/pulse.js?v=580';
+import { BeatClock } from './lib/beatclock.js?v=580';
+import { BeatCue } from './lib/beatcue.js?v=580';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=580';
+import { Race, placeOf, standings } from './lib/race.js?v=580';
+import { Signals } from './lib/signals.js?v=580';
+import { pickShareLine, loadLines } from './lib/lines.js?v=580';
+import { RouteMap } from './lib/map.js?v=580';
+import * as sfx from './lib/sfx.js?v=580';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=580';
+import { glowTexture } from './lib/glow.js?v=580';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3208,28 +3208,11 @@ $('opt-promote').addEventListener('click', () => {
 // when this tab is closed. Private to whoever they send it to: a public
 // what's-on list with three entries reads as abandoned.
 $('mc-host').addEventListener('click', () => {
-  // OPEN A ROOM opens a room. The schedule question moved to the menu,
-  // where planners go looking — the door stays one press deep.
+  // OPEN A ROOM opens a room, after the one question that matters to a host
   $('mode-card').classList.remove('show', 'sched-only');
-  startRoom(genCode(), ensureName(), true);
+  askName(() => startRoom(genCode(), ensureName(), true));
 });
 // scheduling lives in the panel now: same form, calmer doorway
-// "you're ___" lives in the music tab — the place the dealt name shows up
-setInterval(() => { const f = $('sc-myname'); if (f && document.activeElement !== f) f.value = net.local.name || localStorage.getItem('fp_name') || ''; }, 1500);
-// editable in place — no more silent washtub
-$('sc-myname').addEventListener('change', () => {
-  const n = $('sc-myname').value.trim().slice(0, 14);
-  if (!n) { $('sc-myname').value = net.local.name || ''; return; }
-  $('join-name').value = n;
-  net.rename(n);
-});
-$('sc-mydice').addEventListener('click', e => {
-  e.stopPropagation();
-  $('name-dice').click();
-  const n = $('join-name').value;
-  $('sc-myname').value = n;
-  net.rename(n);
-});
 $('mq-sched').addEventListener('click', e => {
   e.stopPropagation();
   $('mode-card').classList.add('show', 'sched-only');
@@ -4846,10 +4829,39 @@ if (window.__STAGE) {
     dismissOverlay();
   }, 300);
 }
+// ── the name gate ── one quick question at the door: what do we call you?
+// Prefilled (kept name, or a dealt one), dice to reroll, Enter to go. The
+// QR auto-drop and stage mode skip it — those doors are already open.
+let ngThen = null;
+function askName(then) {
+  if (window.__STAGE || window.__autoGo) { then(); return; }
+  ngThen = then;
+  if (!$('ng-in').value) $('ng-in').value = localStorage.getItem('fp_name') || '';
+  if (!$('ng-in').value) { $('name-dice').click(); $('ng-in').value = $('join-name').value; }
+  $('name-gate').classList.remove('hidden');
+  setTimeout(() => $('ng-in').select(), 60);
+}
+$('ng-dice').addEventListener('click', e => {
+  e.stopPropagation();
+  $('name-dice').click();
+  $('ng-in').value = $('join-name').value;
+});
+$('ng-go').addEventListener('click', () => {
+  const n = $('ng-in').value.trim().slice(0, 14);
+  if (n) $('join-name').value = n;
+  $('name-gate').classList.add('hidden');
+  const go = ngThen; ngThen = null;
+  if (go) go();
+});
+$('ng-in').addEventListener('keydown', e => { if (e.key === 'Enter') $('ng-go').click(); });
 $('btn-solo').addEventListener('click', () => {
+  // solo play asks NOTHING — the gate only stands where other people will
+  // see your name (joining a room, hosting one)
   if (window.__joinIntent) {
-    const code = window.__joinIntent; window.__joinIntent = null;
-    startRoom(code, ensureName(), false);
+    askName(() => {
+      const code = window.__joinIntent; window.__joinIntent = null;
+      startRoom(code, ensureName(), false);
+    });
     return;
   }
   ensureName();
@@ -5620,15 +5632,7 @@ if (window.__namesOff) presence.namesVisible = false;
     // a page's "play together" names its person: the door says who's inside
     const withName = (qp.get('with') || '').replace(/[<>]/g, '').trim().slice(0, 24);
     $('btn-solo').textContent = withName ? 'PLAY WITH ' + withName.toUpperCase() : 'JOIN ROOM ' + room.toUpperCase();
-    // joining people, not a world: the name gets asked, right on the door
-    const qn = $('qr-name');
-    if (qn) {
-      qn.classList.remove('hidden');
-      $('qr-name-in').value = localStorage.getItem('fp_name') || '';
-      $('qr-name-in').addEventListener('input', () => { $('join-name').value = $('qr-name-in').value; });
-      $('qr-dice').addEventListener('click', () => { $('name-dice').click(); $('qr-name-in').value = $('join-name').value; });
-      if ($('qr-name-in').value) $('join-name').value = $('qr-name-in').value;
-    }
+
   }
 }
 settings.broadcast = false;
