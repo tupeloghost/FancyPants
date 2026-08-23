@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=571';
+import { glowTexture } from '../lib/glow.js?v=572';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -44,6 +44,7 @@ export function createTunnel() {
   let rush = 0, baseFov = 70;
   let holdK = 0;            // the held finger: a sustained rush, the tube tightens
   let chorusArmed = false;  // one volley per chorus
+  let rollT = 0;            // the vortex: a barrel roll through the throat
   let ripples = [];         // taps as physical bulges racing down the tube
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
@@ -244,8 +245,16 @@ export function createTunnel() {
         const heart = new THREE.Mesh(new THREE.CircleGeometry(1.6, 24),
           new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3, side: THREE.DoubleSide,
             blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-        door.add(rim, heart);
-        door.userData = { rim, heart };
+        // the void: a black disc that eats the tube behind it — vortex duty only
+        const voidDisc = new THREE.Mesh(new THREE.CircleGeometry(2.0, 28),
+          new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.94, side: THREE.DoubleSide }));
+        voidDisc.visible = false;
+        // the accretion disk: a tilted hot ring spinning around the void
+        const disk = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.08, 8, 40),
+          new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+        disk.visible = false;
+        door.add(rim, heart, voidDisc, disk);
+        door.userData = { rim, heart, voidDisc, disk };
         door.visible = false;
         group.add(door);
       }
@@ -258,6 +267,8 @@ export function createTunnel() {
     },
 
     setInput(x, y) { steerTarget.x = x || 0; steerTarget.y = y || 0; },
+    // dev: audition the vortex ride without steering into one
+    _vortex() { rush = 2.0; rollT = 1; document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } })); },
 
     // ghosts: glowing motes flying the same tube, offset by their steer
     placeGhost(p, i, out) {
@@ -294,6 +305,11 @@ export function createTunnel() {
       // speed you can SEE: the lens opens with the rush
       camera.fov += ((baseFov + rush * 13) - camera.fov) * Math.min(1, dt * 5);
       camera.updateProjectionMatrix();
+      // the vortex roll: one eased full turn, fastest through the middle
+      rollT = Math.max(0, rollT - dt / 1.5);
+      // (roll the WORLD around the lens — main owns the camera's rotation)
+      if (rollT > 0) { const k = 1 - rollT; group.rotation.z = Math.PI * 2 * (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2); }
+      else group.rotation.z = 0;
 
       // local participant state = our steer (what remotes render)
       if (participants && participants[0]) {
@@ -316,8 +332,12 @@ export function createTunnel() {
       if (!doorOn && travel > doorNextAt) {
         doorOn = true;
         doorZ = -150;
+        // one door in three is the DARE: a dark vortex, not a look
+        door.userData.vortex = Math.random() < 0.34;
         const dealt = window.__nextLook && window.__nextLook.cfg && doorGeos[window.__nextLook.cfg.shape];
-        door.userData.rim.geometry = dealt || doorGeos.star;
+        door.userData.rim.geometry = door.userData.vortex ? doorGeos.circle : (dealt || doorGeos.star);
+        door.userData.voidDisc.visible = door.userData.vortex;
+        door.userData.disk.visible = door.userData.vortex;
         const a = Math.random() * Math.PI * 2;
         door.userData.dx = Math.cos(a) * 2.2;
         door.userData.dy = Math.sin(a) * 1.6;
@@ -329,20 +349,49 @@ export function createTunnel() {
         const cx = Math.sin((travel - zc) * 0.02) * 3 + Math.sin((travel - zc) * 0.007) * 5 - curveX;
         const cy = Math.cos((travel - zc) * 0.016) * 2.2 - curveY;
         door.position.set(cx + door.userData.dx, cy + door.userData.dy, zc);
-        door.rotation.z = -time * 0.55;
-        const nl = window.__nextLook;
-        const spectral = !nl || nl.colorMode === 'rainbow' || nl.colorMode === 'cycle' || nl.colorMode === 'random';
-        if (spectral) color.setHSL((time * 0.22) % 1, 0.95, 0.6 + audio.volume * 0.12);
-        else color.setHSL(nl.hue / 360, 0.92, 0.55 + Math.sin(time * 2.6) * 0.08 + audio.volume * 0.12);
-        door.userData.rim.material.color.copy(color);
-        door.userData.heart.material.color.copy(color);
-        door.userData.heart.material.opacity = 0.22 + Math.sin(time * 2.2) * 0.08 + audio.volume * 0.15;
+        const vx = door.userData.vortex;
+        if (vx) {
+          // the vortex: ember rim spinning up as it nears, white-hot disk, black heart
+          const feed = Math.min(1, Math.max(0, 1 + doorZ / 60));
+          const flicker = Math.max(0, Math.sin(time * 13)) * 0.18 + audio.bass * 0.15;
+          door.rotation.z = time * (1.6 + feed * 3.4);
+          color.setHSL(0.04, 0.95, 0.42 + flicker + feed * 0.1);
+          door.userData.rim.material.color.copy(color);
+          door.userData.heart.material.opacity = 0;
+          door.userData.disk.rotation.set(1.25, time * 0.35, time * 4.2);
+          door.userData.disk.scale.setScalar(1 + feed * 0.5 + audio.bass * 0.2);
+          door.userData.disk.material.color.setHSL(0.06 + feed * 0.05, 1, 0.45 + feed * 0.3 + flicker);
+          door.userData.voidDisc.scale.setScalar(1 + feed * 0.35);
+        } else {
+          door.rotation.z = -time * 0.55;
+          const nl = window.__nextLook;
+          const spectral = !nl || nl.colorMode === 'rainbow' || nl.colorMode === 'cycle' || nl.colorMode === 'random';
+          if (spectral) color.setHSL((time * 0.22) % 1, 0.95, 0.6 + audio.volume * 0.12);
+          else color.setHSL(nl.hue / 360, 0.92, 0.55 + Math.sin(time * 2.6) * 0.08 + audio.volume * 0.12);
+          door.userData.rim.material.color.copy(color);
+          door.userData.heart.material.color.copy(color);
+          door.userData.heart.material.opacity = 0.22 + Math.sin(time * 2.2) * 0.08 + audio.volume * 0.15;
+        }
         const pulse = 1 + Math.sin(time * 2.4) * 0.05;
         door.scale.setScalar(pulse * (doorPop > 0 ? 1 + (1 - doorPop) * 0 : 1));
         if (doorZ > -0.5) {
           const px = steer.x * 3.2, py = steer.y * 2.4;
           const hit = Math.hypot(door.position.x - px, door.position.y - py) < 2.6;
-          if (hit) {
+          if (hit && door.userData.vortex) {
+            // THE RIDE: horizon pull (main), barrel roll + meteor storm (here),
+            // a random dark dimension (main), a bang out the other side (main)
+            document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } }));
+            if (opts.impact) opts.impact(1.0);
+            rush = 2.0; rollT = 1;
+            let fired = 0;
+            for (const m of meteors) {
+              if (m.visible || fired >= 6) continue;
+              fired++; m.visible = true;
+              m.userData.z = -RINGS * RING_SPACING * (0.5 + Math.random() * 0.5) - travel;
+              m.userData.angle = Math.random() * Math.PI * 2; m.userData.rr = 0.2 + Math.random() * 0.6;
+            }
+            doorPop = 1;
+          } else if (hit) {
             document.dispatchEvent(new CustomEvent('fp-lookspark'));
             if (opts.impact) opts.impact(0.7);
             rush = 1.6;              // the door flings you forward
