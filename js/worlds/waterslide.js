@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=574';
-import { themePaint } from '../lib/themes.js?v=574';
-import { TUNE } from '../lib/tune.js?v=574';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=575';
+import { themePaint } from '../lib/themes.js?v=575';
+import { TUNE } from '../lib/tune.js?v=575';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -35,7 +35,7 @@ export function createWaterslide() {
   let hoopCount = 0;           // arrivals, for the red cadence
   let bursts = [];             // golden rings left behind by a catch
   let wLastChartRef = null;
-  const tp = [0, 0, 0];
+  const tp = [0, 0, 0], tp2 = [0, 0, 0];
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
@@ -607,7 +607,10 @@ export function createWaterslide() {
       let front = Infinity, oldMode = null, oldHue = 0;
       if (wv) {
         const k = (performance.now() - wv.at) / wv.dur;
-        if (k < 1) { front = k * k * (RINGS * RING_SPACING + 20); oldMode = wv.from.colorMode; oldHue = wv.from.hue; }
+        if (k < 1) {
+          const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;   // ease in-out: a conducted sweep
+          front = e * (RINGS * RING_SPACING + 30); oldMode = wv.from.colorMode; oldHue = wv.from.hue;
+        }
       }
       let idx = 0;
       for (let r = 0; r < RINGS; r++) {
@@ -639,12 +642,17 @@ export function createWaterslide() {
           wall.setMatrixAt(idx, dummy.matrix);
 
           const jitv = Math.abs(Math.sin(ringSeed[r] * 43.7 + s2 * 12.9));
-          const past = oldMode && distAhead > front;
-          themePaint(past ? oldMode : colorMode, (past ? oldHue : hue) / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp);
-          // the front itself glows: a bright lip on the arriving color
-          const lip = oldMode ? Math.max(0, 1 - Math.abs(distAhead - front) / 9) : 0;
+          // the front is a soft BAND: tiles inside it wear a blend of both looks
+          const band = oldMode ? Math.min(1, Math.max(0, (distAhead - (front - 9)) / 18)) : 0;   // 0 = new, 1 = old
+          themePaint(band >= 1 ? oldMode : colorMode, (band >= 1 ? oldHue : hue) / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp);
+          if (band > 0 && band < 1) {
+            themePaint(oldMode, oldHue / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp2);
+            tp[0] += (tp2[0] - tp[0]) * band; tp[1] += (tp2[1] - tp[1]) * band; tp[2] += (tp2[2] - tp[2]) * band;
+          }
+          // a gentle glowing rim on the arriving color, wide and soft
+          const lip = oldMode ? Math.pow(Math.max(0, 1 - Math.abs(distAhead - front) / 16), 2) : 0;
           const wet = 0.16 + level * 0.4 * reactivity + boost * 0.12;
-          color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])) + lip * 0.3);
+          color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])) + lip * 0.16);
           color.multiplyScalar(Math.min(1, Math.max(0.08, distAhead / 22))); // dim right at the camera
           // hugging a wall: the tiles under you on that side light up
           if (distAhead < 16) {

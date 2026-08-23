@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=574';
+import { glowTexture } from '../lib/glow.js?v=575';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -437,7 +437,10 @@ export function createTunnel() {
       let wvFront = Infinity, wvOldMode = null, wvOldHue = 0;
       if (wv) {
         const k = (performance.now() - wv.at) / wv.dur;
-        if (k < 1) { wvFront = k * k * (RINGS * RING_SPACING + 20); wvOldMode = wv.from.colorMode; wvOldHue = wv.from.hue; }
+        if (k < 1) {
+          const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;   // ease in-out
+          wvFront = e * (RINGS * RING_SPACING + 30); wvOldMode = wv.from.colorMode; wvOldHue = wv.from.hue;
+        }
       }
 
       for (let r = 0; r < RINGS; r++) {
@@ -512,7 +515,7 @@ export function createTunnel() {
           // the paint wave: tiles beyond the front still wear the old look
           const past = wvOldMode && (-z) > wvFront;
           const cmHere = past ? wvOldMode : colorMode, hueHere = past ? wvOldHue : hue;
-          const lip = wvOldMode ? Math.max(0, 1 - Math.abs((-z) - wvFront) / 8) : 0;
+          const lip = wvOldMode ? Math.pow(Math.max(0, 1 - Math.abs((-z) - wvFront) / 18), 2) : 0;
           switch (cmHere) {
             case 'mono':
               h = ((hueHere / 360) + depthT * 0.3) % 1;
@@ -686,7 +689,8 @@ export function createTunnel() {
           const rawDrive = Math.min(1.55, (0.5 + level * 1.6 * reactivity + audio.beatIntensity * 0.6 + tapFlash * 0.45) * boost * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
-          color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave * (1 + lip * 1.2));
+          color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave * (1 + lip * 0.55));
+          if (lip > 0) color.lerp(WHITE, lip * 0.18);   // the rim warms toward white, softly
           if (colorMode === 'candy') {
             const peak = Math.max(color.r, color.g, color.b);
             if (peak > 0 && peak < 0.18) color.multiplyScalar(0.18 / peak);
