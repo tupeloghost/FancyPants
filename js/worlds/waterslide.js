@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=572';
-import { themePaint } from '../lib/themes.js?v=572';
-import { TUNE } from '../lib/tune.js?v=572';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=573';
+import { themePaint } from '../lib/themes.js?v=573';
+import { TUNE } from '../lib/tune.js?v=573';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -602,6 +602,13 @@ export function createWaterslide() {
       const arcSpan = sfA.span + (sfB.span - sfA.span) * shapeMix;
       const wantGeo = surfGeos[(shapeMix >= 0.5 ? sfB : sfA).geo];
       if (wall.geometry !== wantGeo) wall.geometry = wantGeo;
+      // the paint wave: a front racing ahead; tiles beyond it still wear the old look
+      const wv = opts.wave;
+      let front = Infinity, oldMode = null, oldHue = 0;
+      if (wv) {
+        const k = (performance.now() - wv.at) / wv.dur;
+        if (k < 1) { front = k * k * (RINGS * RING_SPACING + 20); oldMode = wv.from.colorMode; oldHue = wv.from.hue; }
+      }
       let idx = 0;
       for (let r = 0; r < RINGS; r++) {
         // Recycle by however many spans it takes, not one per frame. Stepping
@@ -632,9 +639,12 @@ export function createWaterslide() {
           wall.setMatrixAt(idx, dummy.matrix);
 
           const jitv = Math.abs(Math.sin(ringSeed[r] * 43.7 + s2 * 12.9));
-          themePaint(colorMode, hue / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp);
+          const past = oldMode && distAhead > front;
+          themePaint(past ? oldMode : colorMode, (past ? oldHue : hue) / 360, s2 / (SEGS - 1), t * 0.012, time, level, jitv, tp);
+          // the front itself glows: a bright lip on the arriving color
+          const lip = oldMode ? Math.max(0, 1 - Math.abs(distAhead - front) / 9) : 0;
           const wet = 0.16 + level * 0.4 * reactivity + boost * 0.12;
-          color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])));
+          color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])) + lip * 0.3);
           color.multiplyScalar(Math.min(1, Math.max(0.08, distAhead / 22))); // dim right at the camera
           // hugging a wall: the tiles under you on that side light up
           if (distAhead < 16) {

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=572';
-import { drawQR } from './lib/qr.js?v=572';
-import { WORLDS } from './worlds/registry.js?v=572';
-import { Net, PALETTE } from './net.js?v=572';
-import { Presence } from './lib/presence.js?v=572';
-import { Pulses } from './lib/pulse.js?v=572';
-import { BeatClock } from './lib/beatclock.js?v=572';
-import { BeatCue } from './lib/beatcue.js?v=572';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=572';
-import { Race, placeOf, standings } from './lib/race.js?v=572';
-import { Signals } from './lib/signals.js?v=572';
-import { pickShareLine, loadLines } from './lib/lines.js?v=572';
-import { RouteMap } from './lib/map.js?v=572';
-import * as sfx from './lib/sfx.js?v=572';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=572';
-import { glowTexture } from './lib/glow.js?v=572';
+import { AudioEngine } from './audio-engine.js?v=573';
+import { drawQR } from './lib/qr.js?v=573';
+import { WORLDS } from './worlds/registry.js?v=573';
+import { Net, PALETTE } from './net.js?v=573';
+import { Presence } from './lib/presence.js?v=573';
+import { Pulses } from './lib/pulse.js?v=573';
+import { BeatClock } from './lib/beatclock.js?v=573';
+import { BeatCue } from './lib/beatcue.js?v=573';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=573';
+import { Race, placeOf, standings } from './lib/race.js?v=573';
+import { Signals } from './lib/signals.js?v=573';
+import { pickShareLine, loadLines } from './lib/lines.js?v=573';
+import { RouteMap } from './lib/map.js?v=573';
+import * as sfx from './lib/sfx.js?v=573';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=573';
+import { glowTexture } from './lib/glow.js?v=573';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1840,6 +1840,9 @@ document.addEventListener('fp-lookspark', () => {
   // over a second instead of snapping — the one continuous dial we have
   setTimeout(() => {
     const fromHue = settings.hue;
+    // the PAINT WAVE: worlds keep the old look beyond a front that races from
+    // your hands to the horizon, so you watch the new world arrive
+    window.__lookWave = { at: performance.now(), dur: 1500, from: { colorMode: settings.colorMode, hue: settings.hue } };
     applyPreset({ ...cfg, hue: fromHue });
     let d = ((cfg.hue - fromHue) % 360 + 540) % 360 - 180;   // shortest way round
     const t0 = performance.now(), dur = 1000;
@@ -5808,6 +5811,7 @@ function frame(now) {
       unit: race.unit,
       collect: race.mode === 'COLLECT',
       chorus: a.chorus || 0,
+      wave: window.__lookWave || null,
       mult: race.multiplier,
       place: placeOf(participants),
       rivals: participants.slice(1, 12).map(p => ({

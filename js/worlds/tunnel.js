@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=572';
+import { glowTexture } from '../lib/glow.js?v=573';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -433,6 +433,12 @@ export function createTunnel() {
       const nowS = performance.now() / 1000;
       ripples = ripples.filter(rp => nowS - rp.at < 2.6);
       const px = steer.x * 3.2, py = steer.y * 2.4;   // where the rider is in the tube
+      const wv = opts.wave;
+      let wvFront = Infinity, wvOldMode = null, wvOldHue = 0;
+      if (wv) {
+        const k = (performance.now() - wv.at) / wv.dur;
+        if (k < 1) { wvFront = k * k * (RINGS * RING_SPACING + 20); wvOldMode = wv.from.colorMode; wvOldHue = wv.from.hue; }
+      }
 
       for (let r = 0; r < RINGS; r++) {
         let z = ringZ[r] + travel;
@@ -503,12 +509,16 @@ export function createTunnel() {
           const vert = Math.sin(a); // -1 bottom ... +1 top of the tube
           let h, sat = 1.0, boost = 1.0;
 
-          switch (colorMode) {
+          // the paint wave: tiles beyond the front still wear the old look
+          const past = wvOldMode && (-z) > wvFront;
+          const cmHere = past ? wvOldMode : colorMode, hueHere = past ? wvOldHue : hue;
+          const lip = wvOldMode ? Math.max(0, 1 - Math.abs((-z) - wvFront) / 8) : 0;
+          switch (cmHere) {
             case 'mono':
-              h = ((hue / 360) + depthT * 0.3) % 1;
+              h = ((hueHere / 360) + depthT * 0.3) % 1;
               break;
             case 'pastel':
-              h = ((hue / 360) + (s / SEGS) * 0.5 + depthT * 0.4) % 1;
+              h = ((hueHere / 360) + (s / SEGS) * 0.5 + depthT * 0.4) % 1;
               sat = 0.45; boost = 0.85;
               break;
             case 'fire': {
@@ -566,7 +576,7 @@ export function createTunnel() {
                 h = 0.6; sat = 0.12;
                 boost = 1.8 + 0.8 * Math.sin(time * 2.5 + jit * 90); // twinkle
               } else {
-                h = ((hue / 360) + 0.16 * Math.sin((travel - z) * 0.05 + a * 0.8) + 1) % 1;
+                h = ((hueHere / 360) + 0.16 * Math.sin((travel - z) * 0.05 + a * 0.8) + 1) % 1;
                 sat = 0.85;
                 boost = 0.18 + level * 0.25; // nebula stays dim
               }
@@ -576,8 +586,8 @@ export function createTunnel() {
               // dark champagne field; the real sparkle is the particle layer.
               // A few elements still catch the light, briefly and sharply.
               const spark = Math.abs(Math.sin(ringSeed[r] * 91.7 + s * 57.31 + Math.floor(time * 30) * 7.7));
-              if (spark > 0.965) { h = (hue / 360) % 1; sat = 0.25; boost = 3.2 + audio.volume; }
-              else { h = ((hue / 360) + jit * 0.04) % 1; sat = 0.6; boost = 0.4; }
+              if (spark > 0.965) { h = (hueHere / 360) % 1; sat = 0.25; boost = 3.2 + audio.volume; }
+              else { h = ((hueHere / 360) + jit * 0.04) % 1; sat = 0.6; boost = 0.4; }
               break;
             }
             case 'candy': {
@@ -592,17 +602,17 @@ export function createTunnel() {
               break;
             }
             case 'duo':
-              h = ((hue / 360) + (s % 2) * 0.5 + depthT * 0.25) % 1;
+              h = ((hueHere / 360) + (s % 2) * 0.5 + depthT * 0.25) % 1;
               break;
             case 'triad':
-              h = ((hue / 360) + (s % 3) / 3 + depthT * 0.25) % 1;
+              h = ((hueHere / 360) + (s % 3) / 3 + depthT * 0.25) % 1;
               break;
             case 'neon':
-              h = ((hue / 360) + (s % 3) / 3 + depthT * 0.4) % 1;
+              h = ((hueHere / 360) + (s % 3) / 3 + depthT * 0.4) % 1;
               boost = 1.5;
               break;
             case 'cycle':
-              h = ((hue / 360) + time * 0.03 + (s / SEGS) + depthT) % 1;
+              h = ((hueHere / 360) + time * 0.03 + (s / SEGS) + depthT) % 1;
               break;
             case 'random':
               h = (ringSeed[r] * 7.13 + s * 0.618) % 1;
@@ -611,16 +621,16 @@ export function createTunnel() {
               // hue <-> complement gradient, anchored to the hue slider so
               // the pair is always YOUR choice
               const t2 = 0.5 - 0.5 * Math.cos(((s / SEGS) + depthT + time * 0.012) * Math.PI * 2);
-              h = ((hue / 360) + t2 * 0.5) % 1;
+              h = ((hueHere / 360) + t2 * 0.5) % 1;
               break;
             }
             default:
-              if (PALETTES[colorMode]) {
-                palLerp(PALETTES[colorMode], (s / SEGS) + depthT + time * 0.012, palOut);
+              if (PALETTES[cmHere]) {
+                palLerp(PALETTES[cmHere], (s / SEGS) + depthT + time * 0.012, palOut);
                 h = palOut[0]; sat = palOut[1]; boost = palOut[2];
               } else {
                 // rainbow: full wheel around the tube + depth + energy drift
-                h = ((hue / 360) + (s / SEGS) + depthT * 0.6 + audio.energy * 0.1) % 1;
+                h = ((hueHere / 360) + (s / SEGS) + depthT * 0.6 + audio.energy * 0.1) % 1;
               }
           }
 
@@ -676,7 +686,7 @@ export function createTunnel() {
           const rawDrive = Math.min(1.55, (0.5 + level * 1.6 * reactivity + audio.beatIntensity * 0.6 + tapFlash * 0.45) * boost * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
-          color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave);
+          color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave * (1 + lip * 1.2));
           if (colorMode === 'candy') {
             const peak = Math.max(color.r, color.g, color.b);
             if (peak > 0 && peak < 0.18) color.multiplyScalar(0.18 / peak);
