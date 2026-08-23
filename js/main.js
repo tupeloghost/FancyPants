@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=563';
-import { drawQR } from './lib/qr.js?v=563';
-import { WORLDS } from './worlds/registry.js?v=563';
-import { Net, PALETTE } from './net.js?v=563';
-import { Presence } from './lib/presence.js?v=563';
-import { Pulses } from './lib/pulse.js?v=563';
-import { BeatClock } from './lib/beatclock.js?v=563';
-import { BeatCue } from './lib/beatcue.js?v=563';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=563';
-import { Race, placeOf, standings } from './lib/race.js?v=563';
-import { Signals } from './lib/signals.js?v=563';
-import { pickShareLine, loadLines } from './lib/lines.js?v=563';
-import { RouteMap } from './lib/map.js?v=563';
-import * as sfx from './lib/sfx.js?v=563';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=563';
-import { glowTexture } from './lib/glow.js?v=563';
+import { AudioEngine } from './audio-engine.js?v=564';
+import { drawQR } from './lib/qr.js?v=564';
+import { WORLDS } from './worlds/registry.js?v=564';
+import { Net, PALETTE } from './net.js?v=564';
+import { Presence } from './lib/presence.js?v=564';
+import { Pulses } from './lib/pulse.js?v=564';
+import { BeatClock } from './lib/beatclock.js?v=564';
+import { BeatCue } from './lib/beatcue.js?v=564';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=564';
+import { Race, placeOf, standings } from './lib/race.js?v=564';
+import { Signals } from './lib/signals.js?v=564';
+import { pickShareLine, loadLines } from './lib/lines.js?v=564';
+import { RouteMap } from './lib/map.js?v=564';
+import * as sfx from './lib/sfx.js?v=564';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=564';
+import { glowTexture } from './lib/glow.js?v=564';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1855,7 +1855,20 @@ document.addEventListener('fp-lookspark', () => {
 // The black hole takes the LIGHT: the world falls into its darkest look and
 // stays there. The next wonder door is the rescue — it already deals a fresh
 // bright look — so the flume plays fall and salvation off each other.
-let preDarkLook = null, darkBackT = null;
+let preDarkLook = null, darkBackT = null, darkNow = null;
+// the dark wardrobe: looks that read as night. Hue-following ones get a random
+// hue, so "dark" still comes in every color of the wheel.
+const DARK_MODES = ['midnight', 'cosmos', 'glitter', 'mono', 'duotone'];
+function randomDark(notMode) {
+  let mode = DARK_MODES[(Math.random() * DARK_MODES.length) | 0];
+  if (mode === notMode) mode = DARK_MODES[(DARK_MODES.indexOf(mode) + 1) % DARK_MODES.length];
+  return {
+    colorMode: mode,
+    pattern: OUTFIT_PATTERNS[(Math.random() * OUTFIT_PATTERNS.length) | 0],
+    shape: OUTFIT_SHAPES[(Math.random() * OUTFIT_SHAPES.length) | 0],
+    hue: mode === 'midnight' ? 250 : mode === 'cosmos' ? (200 + Math.random() * 100) | 0 : (Math.random() * 360) | 0,
+  };
+}
 document.addEventListener('fp-swallowed', () => {
   // the banner is a one-time caption — after that the swallow speaks for itself
   if (!localStorage.getItem('fp_bh_seen')) {
@@ -1866,20 +1879,21 @@ document.addEventListener('fp-swallowed', () => {
   document.body.classList.remove('swallowed'); void document.body.offsetWidth;
   document.body.classList.add('swallowed');
   setTimeout(() => document.body.classList.remove('swallowed'), 1450);
-  if (settings.colorMode !== 'midnight') {
-    if (!preDarkLook) preDarkLook = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
-    // the fall lands as the shake ends: colours collapse into midnight
-    setTimeout(() => applyPreset({ colorMode: 'midnight', pattern: settings.pattern, shape: settings.shape, hue: 250 }), 600);
-  }
+  // every black hole is a DIFFERENT dark dimension: a deep look dealt at
+  // random (midnight blue, ember glitter, a violet mono, a green cosmos...)
+  // with its own pattern and tiles. The third fall must not be a rerun.
+  if (!preDarkLook) preDarkLook = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
+  darkNow = randomDark(settings.colorMode);
+  setTimeout(() => applyPreset(darkNow), 600);   // the fall lands as the shake ends
   // the dark is a spell, not a sentence: sixteen seconds on, the light climbs
   // back out on its own (a wonder door still cuts the wait)
   clearTimeout(darkBackT);
   darkBackT = setTimeout(() => {
-    if (settings.colorMode === 'midnight' && preDarkLook) {
+    if (darkNow && settings.colorMode === darkNow.colorMode && preDarkLook) {
       // the light never comes back the same: climbing out of a black hole
       // deals a fresh outfit every time
-      applyPreset(randomOutfit('midnight'));
-      preDarkLook = null;
+      applyPreset(randomOutfit(darkNow.colorMode));
+      preDarkLook = null; darkNow = null;
     }
   }, 16000);
 });
