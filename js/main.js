@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=573';
-import { drawQR } from './lib/qr.js?v=573';
-import { WORLDS } from './worlds/registry.js?v=573';
-import { Net, PALETTE } from './net.js?v=573';
-import { Presence } from './lib/presence.js?v=573';
-import { Pulses } from './lib/pulse.js?v=573';
-import { BeatClock } from './lib/beatclock.js?v=573';
-import { BeatCue } from './lib/beatcue.js?v=573';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=573';
-import { Race, placeOf, standings } from './lib/race.js?v=573';
-import { Signals } from './lib/signals.js?v=573';
-import { pickShareLine, loadLines } from './lib/lines.js?v=573';
-import { RouteMap } from './lib/map.js?v=573';
-import * as sfx from './lib/sfx.js?v=573';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=573';
-import { glowTexture } from './lib/glow.js?v=573';
+import { AudioEngine } from './audio-engine.js?v=574';
+import { drawQR } from './lib/qr.js?v=574';
+import { WORLDS } from './worlds/registry.js?v=574';
+import { Net, PALETTE } from './net.js?v=574';
+import { Presence } from './lib/presence.js?v=574';
+import { Pulses } from './lib/pulse.js?v=574';
+import { BeatClock } from './lib/beatclock.js?v=574';
+import { BeatCue } from './lib/beatcue.js?v=574';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=574';
+import { Race, placeOf, standings } from './lib/race.js?v=574';
+import { Signals } from './lib/signals.js?v=574';
+import { pickShareLine, loadLines } from './lib/lines.js?v=574';
+import { RouteMap } from './lib/map.js?v=574';
+import * as sfx from './lib/sfx.js?v=574';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=574';
+import { glowTexture } from './lib/glow.js?v=574';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -507,7 +507,7 @@ let autoOrder = [], autoAt = 0;
 // can't see them; this switch is the only way in. Sticky per device.
 let vocalPool = [], instrPool = [];
 // instrumental is the default: nobody has opted into vocals until they say so
-let wantVocals = localStorage.getItem('fp_vocals') === '1';
+let wantVocals = localStorage.getItem('fp_vocals') !== '0';   // VOCALS are the default now; instrumentals are the chill pick
 
 function rebuildTrackPool() {
   const pool = (wantVocals ? vocalPool : instrPool);
@@ -525,7 +525,7 @@ function rebuildTrackPool() {
 function setVocals(on) {
   if (wantVocals === !!on) return;
   wantVocals = !!on;
-  localStorage.setItem('fp_vocals', on ? '1' : '');
+  localStorage.setItem('fp_vocals', on ? '1' : '0');   // '0' is an explicit instrumental pick (vocals default)
   rebuildTrackPool();
   syncAudioModeUI();
   if (!document.body.classList.contains('guest')) playAuto(true);   // hear it now
