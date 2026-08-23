@@ -9,10 +9,7 @@ export class AudioEngine {
     this.fadeNode = null;   // song fades ride their own node, AFTER the level
     this._fadedOut = false;
     this.el = new Audio();
-    // every song breathes in — and out near its end — so back-to-back tracks
-    // flow instead of jump-cutting. The analyser sits upstream: visuals
-    // never dim with the fade.
-    this.el.addEventListener('play', () => this._fadeIn());
+    // (song fades were tried and retired: songs start and end at full strength)
     this.el.crossOrigin = 'anonymous';
     this.sourceNode = null;
 
@@ -143,19 +140,6 @@ export class AudioEngine {
   }
 
   update(dt) {
-    // the exhale: start easing the level down just before the song runs out
-    if (this.fadeNode && this.playing && this.el.duration) {
-      const left = this.el.duration - this.el.currentTime;
-      if (left < 2.2 && !this._fadedOut) {
-        this._fadedOut = true;
-        const g = this.fadeNode.gain, t = this.ctx.currentTime;
-        g.cancelScheduledValues(t);
-        g.setValueAtTime(Math.max(0.0001, g.value), t);
-        g.exponentialRampToValueAtTime(0.0001, t + Math.max(0.3, left - 0.15));
-      } else if (left >= 3 && this._fadedOut) {
-        this._fadeIn();               // scrubbed back mid-fade: breathe in again
-      }
-    }
     const d = this.data;
     d.beat = false;
     if (!this.analyser) return d;
