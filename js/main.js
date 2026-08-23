@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=575';
-import { drawQR } from './lib/qr.js?v=575';
-import { WORLDS } from './worlds/registry.js?v=575';
-import { Net, PALETTE } from './net.js?v=575';
-import { Presence } from './lib/presence.js?v=575';
-import { Pulses } from './lib/pulse.js?v=575';
-import { BeatClock } from './lib/beatclock.js?v=575';
-import { BeatCue } from './lib/beatcue.js?v=575';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=575';
-import { Race, placeOf, standings } from './lib/race.js?v=575';
-import { Signals } from './lib/signals.js?v=575';
-import { pickShareLine, loadLines } from './lib/lines.js?v=575';
-import { RouteMap } from './lib/map.js?v=575';
-import * as sfx from './lib/sfx.js?v=575';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=575';
-import { glowTexture } from './lib/glow.js?v=575';
+import { AudioEngine } from './audio-engine.js?v=576';
+import { drawQR } from './lib/qr.js?v=576';
+import { WORLDS } from './worlds/registry.js?v=576';
+import { Net, PALETTE } from './net.js?v=576';
+import { Presence } from './lib/presence.js?v=576';
+import { Pulses } from './lib/pulse.js?v=576';
+import { BeatClock } from './lib/beatclock.js?v=576';
+import { BeatCue } from './lib/beatcue.js?v=576';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=576';
+import { Race, placeOf, standings } from './lib/race.js?v=576';
+import { Signals } from './lib/signals.js?v=576';
+import { pickShareLine, loadLines } from './lib/lines.js?v=576';
+import { RouteMap } from './lib/map.js?v=576';
+import * as sfx from './lib/sfx.js?v=576';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=576';
+import { glowTexture } from './lib/glow.js?v=576';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -278,6 +278,8 @@ const settings = {
   if (qp.get('world') && WORLDS[qp.get('world')]) window.__shareWorld = qp.get('world');
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
+  // a scanned QR carries maximum intent: go=1 skips the landing entirely
+  if (qp.get('go') === '1') window.__autoGo = true;
   // ── stage mode ── the game as a living backdrop (personal pages embed it):
   // no chrome, no sound, no questions; it wanders on its own and pulses to a
   // synthetic heartbeat because an iframe may not play audio unasked.
@@ -3626,6 +3628,7 @@ function creditText() {
   return [title.toUpperCase(), artist ? 'by ' + artist : '', handle, 'step inside']
     .filter(Boolean).join('  \u00b7  ');
 }
+const qrGo = u => u + (u.includes('?') ? '&' : '?') + 'go=1';   // QRs skip the landing
 window.__credit = creditText;   // debug handle
 // ── the embed button ── one snippet for the artist's own site: the song's
 // share link wrapped around a badge the worker draws. Link-only bios get
@@ -3669,7 +3672,7 @@ function shareStill(words) {
   }
   x.fillText(barText, Math.round(bh * 0.5), H - bh / 2);
   const qrc = document.createElement('canvas');
-  if (drawQR(qrc, clipURL(), 2)) {
+  if (drawQR(qrc, qrGo(clipURL()), 2)) {
     const q = bh * 1.5, m = Math.round(bh * 0.25);
     x.fillStyle = '#fff';
     x.fillRect(W - q - m - 4, H - bh - q - m - 4, q + 8, q + 8);
@@ -3910,7 +3913,7 @@ function clipBufStart() {
   comp.width = W; comp.height = H;
   const ctx2 = comp.getContext('2d');
   const qrc = document.createElement('canvas');
-  const hasQR = drawQR(qrc, clipURL(), 3);
+  const hasQR = drawQR(qrc, qrGo(clipURL()), 3);
   const barText = creditText();
   clipDraw = true;
   (function frame() {
@@ -4162,7 +4165,7 @@ function drawRecap(data, handle) {
   x.fillText((run.songTitle ? '\u266a  ' + run.songTitle + (run.artistName ? ' \u00b7 ' + run.artistName : '') + '     ' : '')
     + 'scan and step inside', 64, 656);
   const qrc = document.createElement('canvas');
-  if (drawQR(qrc, SITE, 3)) {
+  if (drawQR(qrc, qrGo(SITE), 3)) {
     x.fillStyle = '#fff';
     x.beginPath(); x.roundRect(1280 - qrc.width - 44, 720 - qrc.height - 44, qrc.width + 16, qrc.height + 16, 10); x.fill();
     x.drawImage(qrc, 1280 - qrc.width - 36, 720 - qrc.height - 36);
@@ -4389,7 +4392,7 @@ function drawArtistType(x, W, H, fmt) {
 }
 function acQR(fmt) {
   const qrc = document.createElement('canvas');
-  return drawQR(qrc, clipURL(), 2) ? qrc : null;
+  return drawQR(qrc, qrGo(clipURL()), 2) ? qrc : null;
 }
 function stopArtistRec() {
   clearTimeout(acStop); clearInterval(acTick);
@@ -4604,7 +4607,7 @@ function drawWeekCard() {
   x.font = '400 24px Didot, "Bodoni 72", Georgia, serif';
   x.fillText('every song is an experience. step inside at ' + SITE.replace(/^https?:\/\//, ''), 72, 560);
   const qrc = document.createElement('canvas');
-  if (drawQR(qrc, SITE, 3)) {
+  if (drawQR(qrc, qrGo(SITE), 3)) {
     x.fillStyle = '#fff';
     x.beginPath(); x.roundRect(W - qrc.width - 80, H - qrc.height - 80, qrc.width + 16, qrc.height + 16, 10); x.fill();
     x.drawImage(qrc, W - qrc.width - 72, H - qrc.height - 72);
@@ -4794,6 +4797,21 @@ function ensureName() {
 // PLAY asks nothing: the house music starts and the visitor is already in.
 // Only the second door, for people who came with their own music or a room
 // to run, gets the question about whose music it is.
+if (window.__autoGo && !window.__STAGE) {
+  // dropped straight into the world: the QR was the door. Audio needs one
+  // human tap — if the browser holds it, the first touch lets it through.
+  setTimeout(() => {
+    if (document.body.classList.contains('inside')) return;
+    ensureName();
+    dismissOverlay();
+    setTimeout(() => {
+      if (!audio.playing) {
+        flash('TAP ANYWHERE FOR SOUND', 3000);
+        document.addEventListener('pointerdown', () => { if (!audio.playing && audio.el.src) audio.play().catch(() => {}); }, { once: true });
+      }
+    }, 1200);
+  }, 600);
+}
 if (window.__STAGE) {
   // the stage opens itself: no landing, no name, no music, no tutor
   setTimeout(() => {
@@ -5577,6 +5595,15 @@ if (window.__namesOff) presence.namesVisible = false;
     // a page's "play together" names its person: the door says who's inside
     const withName = (qp.get('with') || '').replace(/[<>]/g, '').trim().slice(0, 24);
     $('btn-solo').textContent = withName ? 'PLAY WITH ' + withName.toUpperCase() : 'JOIN ROOM ' + room.toUpperCase();
+    // joining people, not a world: the name gets asked, right on the door
+    const qn = $('qr-name');
+    if (qn) {
+      qn.classList.remove('hidden');
+      $('qr-name-in').value = localStorage.getItem('fp_name') || '';
+      $('qr-name-in').addEventListener('input', () => { $('join-name').value = $('qr-name-in').value; });
+      $('qr-dice').addEventListener('click', () => { $('name-dice').click(); $('qr-name-in').value = $('join-name').value; });
+      if ($('qr-name-in').value) $('join-name').value = $('qr-name-in').value;
+    }
   }
 }
 settings.broadcast = false;
@@ -5604,7 +5631,22 @@ function frame(now) {
   time += dt;
 
   const a = audio.update(dt);
-  if (window.__STAGE) {
+  if (window.__autoGo && !window.__STAGE) {
+  // dropped straight into the world: the QR was the door. Audio needs one
+  // human tap — if the browser holds it, the first touch lets it through.
+  setTimeout(() => {
+    if (document.body.classList.contains('inside')) return;
+    ensureName();
+    dismissOverlay();
+    setTimeout(() => {
+      if (!audio.playing) {
+        flash('TAP ANYWHERE FOR SOUND', 3000);
+        document.addEventListener('pointerdown', () => { if (!audio.playing && audio.el.src) audio.play().catch(() => {}); }, { once: true });
+      }
+    }, 1200);
+  }, 600);
+}
+if (window.__STAGE) {
     // a slow 96 bpm heartbeat: bass swells, volume breathes, a beat lands
     const bps = 96 / 60, ph = (time * bps) % 1;
     const kick = Math.pow(Math.max(0, 1 - ph * 3.2), 2);

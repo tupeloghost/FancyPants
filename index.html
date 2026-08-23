@@ -970,6 +970,10 @@
   .rbtn.quiet { background: none; border-color: hsla(var(--accent-h), 70%, 70%, 0.25); color: var(--ink-dim); font-size: 11px; letter-spacing: 1.6px; }
   #week-line { margin-top: 10px; text-align: center; cursor: pointer; font: italic 400 13.5px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: hsl(var(--accent-h), 50%, 80%); }
   #week-line.hidden { display: none; }
+  #qr-name { display: flex; gap: 8px; margin: 0 auto 12px; max-width: 300px; }
+  #qr-name.hidden { display: none; }
+  #qr-name input { flex: 1; text-align: center; font: 13px 'SF Mono', Menlo, monospace; letter-spacing: 1px; }
+  #qr-name button { width: 46px; font-size: 17px; }
   #week-line:hover { color: #fff; }
   #recap-card.week #rc-handle, #recap-card.week #rc-next, #recap-card.week #rc-copy { display: none; }
   /* the hero action: the one the whole product wants pressed */
@@ -2458,6 +2462,11 @@
          visitor straight into the house music. The second door is for people
          who arrived with intent, and those are the only ones asked whose
          music it is. -->
+    <!-- a QR room join is social: the name gets asked, once, right here -->
+    <div id="qr-name" class="hidden">
+      <input id="qr-name-in" maxlength="14" placeholder="what do we call you?" autocomplete="off">
+      <button id="qr-dice" title="pick a name for me">&#127922;</button>
+    </div>
     <button id="btn-solo" class="cta">PLAY</button>
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
     <div id="today" class="hidden"></div>
@@ -2948,7 +2957,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 575</div>
+      <div id="build-stamp">build 576</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2990,6 +2999,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=575"></script>
+<script type="module" src="js/main.js?v=576"></script>
 </body>
 </html>

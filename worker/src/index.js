@@ -514,9 +514,10 @@ export default {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
       const r = await env.ROOMS.get(id).fetch(new Request('https://do/w-get/' + wslug[1] + '/' + wslug[2]));
       const row = await r.json().catch(() => ({}));
-      const dest = row.song
+      const go = url.searchParams.get('go') === '1' ? '&go=1' : '';
+      const dest = (row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
-        : SITE_URL;
+        : SITE_URL + '?_=1') + go;
       const title = wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ');
       const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
         ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
@@ -526,7 +527,8 @@ export default {
     // link that unfurls with the song's name instead of a query-string tail
     const pslug = url.pathname.match(/^\/p\/([a-z0-9-]{1,24})\/([A-Za-z0-9_.-]{1,60}\.mp3)$/);
     if (pslug) {
-      const dest = SITE_URL + '?world=' + pslug[1] + '&track=' + encodeURIComponent(pslug[2]);
+      const dest = SITE_URL + '?world=' + pslug[1] + '&track=' + encodeURIComponent(pslug[2])
+        + (url.searchParams.get('go') === '1' ? '&go=1' : '');
       const title = pslug[2].replace(/\.mp3$/, '').replace(/[_-]+/g, ' ');
       const image = ['tunnel', 'surfer', 'slide'].includes(pslug[1])
         ? SITE_URL + 'previews/' + pslug[1] + '.jpg' : null;
