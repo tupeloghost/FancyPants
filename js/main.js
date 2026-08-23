@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=585';
-import { drawQR } from './lib/qr.js?v=585';
-import { WORLDS } from './worlds/registry.js?v=585';
-import { Net, PALETTE } from './net.js?v=585';
-import { Presence } from './lib/presence.js?v=585';
-import { Pulses } from './lib/pulse.js?v=585';
-import { BeatClock } from './lib/beatclock.js?v=585';
-import { BeatCue } from './lib/beatcue.js?v=585';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=585';
-import { Race, placeOf, standings } from './lib/race.js?v=585';
-import { Signals } from './lib/signals.js?v=585';
-import { pickShareLine, loadLines } from './lib/lines.js?v=585';
-import { RouteMap } from './lib/map.js?v=585';
-import * as sfx from './lib/sfx.js?v=585';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=585';
-import { glowTexture } from './lib/glow.js?v=585';
+import { AudioEngine } from './audio-engine.js?v=586';
+import { drawQR } from './lib/qr.js?v=586';
+import { WORLDS } from './worlds/registry.js?v=586';
+import { Net, PALETTE } from './net.js?v=586';
+import { Presence } from './lib/presence.js?v=586';
+import { Pulses } from './lib/pulse.js?v=586';
+import { BeatClock } from './lib/beatclock.js?v=586';
+import { BeatCue } from './lib/beatcue.js?v=586';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=586';
+import { Race, placeOf, standings } from './lib/race.js?v=586';
+import { Signals } from './lib/signals.js?v=586';
+import { pickShareLine, loadLines } from './lib/lines.js?v=586';
+import { RouteMap } from './lib/map.js?v=586';
+import * as sfx from './lib/sfx.js?v=586';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=586';
+import { glowTexture } from './lib/glow.js?v=586';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4651,7 +4651,15 @@ function openWeekCard() {
   $('recap-card').classList.add('week');
   $('recap-card').classList.remove('hidden');
 }
+// PARKED until more worlds are open and the week has more to say: the
+// ledger still counts quietly, but no button and no landing line for now.
+const WEEK_CARD_ON = false;
 function updateWeekUI() {
+  if (!WEEK_CARD_ON) {
+    const b0 = $('rb-week'); if (b0) b0.classList.add('hidden');
+    const l0 = $('week-line'); if (l0) l0.classList.add('hidden');
+    return;
+  }
   const st = weekStats();
   const b = $('rb-week'); if (b) b.classList.toggle('hidden', st.runs < 2);
   const l = $('week-line');
