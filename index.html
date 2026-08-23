@@ -410,6 +410,11 @@
   #own-song:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
   #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
   #page-music.own #own-song { display: none; }
+  @media (max-width: 620px) {
+    /* outranks '#maker-line span'; font-size 0 swallows the loose middot */
+    #maker-line #maker-links { display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 0; }
+    #maker-line #maker-links a { font-size: 12px; }
+  }
   /* the chill chips must never clip: stack them where the row can't fit */
   @media (max-width: 620px) {
     #page-music .chill-row { flex-direction: column; }
@@ -1503,13 +1508,18 @@
   #promo-pill i { font-style: normal; }
   /* today's song is the most tempting thing on this screen — it sits right
      under the door, not in the footer */
-  #sunday {
-    margin-top: 10px; text-align: center;
-    font: 11px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.4px;
-    color: var(--ink-dim); text-transform: uppercase;
-  }
+  /* the sunday ritual: a soft serif line, then a whisper. easy on the eyes */
+  #sunday { margin-top: 12px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
   #sunday.hidden { display: none; }
-  #sunday a { color: hsl(var(--accent-h), 60%, 80%); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 70%, 70%, 0.4); margin-left: 6px; }
+  #sun-main {
+    font: italic 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
+    letter-spacing: 1.2px; color: hsl(var(--accent-h), 45%, 82%);
+  }
+  #sun-sub {
+    font: 10.5px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1px;
+    color: var(--ink-faint);
+  }
+  #sunday a { color: hsl(var(--accent-h), 50%, 78%); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 70%, 70%, 0.3); }
   #sunday a:hover { color: #fff; }
   #today {
     margin-top: 14px; text-align: center; cursor: pointer;
@@ -2493,7 +2503,10 @@
          music it is. -->
     <button id="btn-solo" class="cta">PLAY</button>
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
-    <div id="sunday" class="hidden"><span id="sun-text"></span> <a id="sun-cal" href="#" download="sundays-best.ics">add to calendar</a></div>
+    <div id="sunday" class="hidden">
+      <span id="sun-main"></span>
+      <span id="sun-sub"><span id="sun-text"></span> &middot; <a id="sun-cal" href="#" download="sundays-best.ics">add to calendar</a></span>
+    </div>
     <div id="week-line" class="hidden"></div>
     <div id="side-doors">
       <a id="open-party" href="#">got a room code?</a>
@@ -2990,7 +3003,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 586</div>
+      <div id="build-stamp">build 588</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3032,6 +3045,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=586"></script>
+<script type="module" src="js/main.js?v=588"></script>
 </body>
 </html>
