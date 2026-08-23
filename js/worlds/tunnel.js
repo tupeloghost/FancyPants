@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=570';
+import { glowTexture } from '../lib/glow.js?v=571';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -43,6 +43,7 @@ export function createTunnel() {
   // a door SURGES, and every beat gives the tube a pulse of forward motion
   let rush = 0, baseFov = 70;
   let holdK = 0;            // the held finger: a sustained rush, the tube tightens
+  let chorusArmed = false;  // one volley per chorus
   let ripples = [];         // taps as physical bulges racing down the tube
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
@@ -361,7 +362,23 @@ export function createTunnel() {
         if (doorPop === 0) { door.visible = false; door.userData.rim.material.opacity = 0.95; }
       }
 
-      const baseRadius = 6 * (1 - holdK * 0.14);
+      // the CATHEDRAL: on a chorus the tube swells to nearly double — walls fly
+      // away into a hall of light, then close back down as the song settles
+      const chorusK = opts.chorus || 0;
+      const baseRadius = 6 * (1 - holdK * 0.14) * (1 + chorusK * 0.7);
+      // a volley of shooting stars the instant a chorus lands
+      if (chorusK > 0.55 && !chorusArmed) {
+        chorusArmed = true;
+        let fired = 0;
+        for (const m of meteors) {
+          if (m.visible || fired >= 6) continue;
+          fired++;
+          m.visible = true;
+          m.userData.z = -RINGS * RING_SPACING * (0.6 + Math.random() * 0.4) - travel;
+          m.userData.angle = Math.random() * Math.PI * 2;
+          m.userData.rr = 0.25 + Math.random() * 0.6;
+        }
+      } else if (chorusK < 0.3) chorusArmed = false;
       const radius = baseRadius * (1 + audio.bass * 0.5 * reactivity + audio.beatIntensity * 0.25 * reactivity);
       // ripples live in world z: born at the lens, they race down the tube
       const nowS = performance.now() / 1000;

@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=570';
-import { themePaint } from '../lib/themes.js?v=570';
-import { TUNE } from '../lib/tune.js?v=570';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=571';
+import { themePaint } from '../lib/themes.js?v=571';
+import { TUNE } from '../lib/tune.js?v=571';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -71,7 +71,7 @@ export function createWaterslide() {
   const dropY = t => {
     const A = SHAPES[shapeA], B = SHAPES[shapeB];
     const slope = A.slope + (B.slope - A.slope) * shapeMix;
-    return -t * DROP * slope + A.y(t) + (B.y(t) - A.y(t)) * shapeMix;
+    return -t * DROP * slope * (1 + plungeK * 1.1) + A.y(t) + (B.y(t) - A.y(t)) * shapeMix;
   };
   const bendWorld = () => {
     shapeA = shapeMix < 1 ? shapeB : shapeA;   // never snap mid-morph
@@ -88,7 +88,11 @@ export function createWaterslide() {
   let hugT = 0, hugIdx = 0;   // hugging a wall throws spray up that side
   let chain = 0, leapT = 0, goldT = 0;   // five greens in a row: gold water, and the slide throws you
   let warpT = 0, rollT = 0;   // the black hole: warp lines and a barrel roll through the throat
+  let stars = null, nebula = [];               // the sky: you are falling through space
+  let plungeT = 0, plungeNext = 26, plungeK = 0;   // the plunge: the grade pitches into a real drop
+  let chorusArmed = false;
   window.__slideBend = bendWorld;   // dev handle: audition surface+path changes
+  window.__slidePlunge = () => { plungeT = 8; };
   // dev handle: audition the black-hole fall without threading one
   window.__slideSwallow = () => { gulp = 1.8; warpT = 1.8; rollT = 1; hoopBoost = 1.3; document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } })); };
 
@@ -158,6 +162,29 @@ export function createWaterslide() {
       sprayLife = 0;
 
       sky = skyDome(300, 0);   // no horizon band: this camera dives and banks
+      {
+        // a real sky: sparse stars all around, a faint nebula overhead in the accent hue
+        const N = 420, sp = new Float32Array(N * 3), sc = new Float32Array(N * 3);
+        for (let i = 0; i < N; i++) {
+          const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), rr = 230 + Math.random() * 40;
+          sp[i * 3] = Math.sin(ph) * Math.cos(th) * rr; sp[i * 3 + 1] = Math.cos(ph) * rr; sp[i * 3 + 2] = Math.sin(ph) * Math.sin(th) * rr;
+          const v = 0.5 + Math.random() * 0.5; sc[i * 3] = v; sc[i * 3 + 1] = v; sc[i * 3 + 2] = v * (0.9 + Math.random() * 0.1);
+        }
+        const sg2 = new THREE.BufferGeometry();
+        sg2.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+        sg2.setAttribute('color', new THREE.BufferAttribute(sc, 3));
+        stars = new THREE.Points(sg2, glowPoints(2.4, 0.85));
+        stars.material.vertexColors = true; stars.material.sizeAttenuation = true;
+        stars.frustumCulled = false;
+        group.add(stars);
+        nebula = [];
+        for (let i = 0; i < 3; i++) {
+          const nb = glowSprite(120 + i * 40);
+          nb.material.opacity = 0.16;
+          nb.userData = { dx: (i - 1) * 90, dy: 120 + i * 25, dz: -160 - i * 60 };
+          group.add(nb); nebula.push(nb);
+        }
+      }
       group.add(sky);
 
       travel = 0; boost = 0;
@@ -290,7 +317,7 @@ export function createWaterslide() {
         const gasWanted = (opts.holding && wStun <= 0) ? 1 : 0;
         wThrottle += (gasWanted - wThrottle) * Math.min(1, dt * (gasWanted ? 5 : 2.6));
         boost = Math.max(hoopBoost, wThrottle * 0.85);
-        speed = (14 + wThrottle * 24 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * (1 + 0.22 * (opts.chorus || 0)) * TUNE.speed;
+        speed = (14 + wThrottle * 24 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * (1 + 0.22 * (opts.chorus || 0)) * (1 + 0.3 * plungeK) * TUNE.speed;
         travel += speed * dt;
 
         const songTime = opts.songTime || 0, chart = opts.chart;
@@ -502,6 +529,25 @@ export function createWaterslide() {
       if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.8);   // ~1.2s: felt, not dizzying
       leapT = Math.max(0, leapT - dt / 1.7); goldT = Math.max(0, goldT - dt);
       warpT = Math.max(0, warpT - dt); rollT = Math.max(0, rollT - dt / 1.5);
+      // the plunge: every so often the grade pitches into a real drop for ~8s
+      if (sliding) {
+        plungeNext -= dt;
+        if (plungeNext <= 0 && plungeT <= 0) { plungeT = 8; plungeNext = 34 + Math.random() * 22; document.dispatchEvent(new CustomEvent('fp-plunge')); }
+      }
+      if (plungeT > 0) { plungeT = Math.max(0, plungeT - dt); const k = 1 - plungeT / 8; plungeK = Math.sin(Math.PI * k) * Math.sin(Math.PI * k); }
+      else plungeK = 0;
+      // a 360° spray burst the instant a chorus lands
+      const chorusK2 = opts.chorus || 0;
+      if (chorusK2 > 0.55 && !chorusArmed) {
+        chorusArmed = true;
+        sprayLife = 1.2;
+        const pos = spray.geometry.attributes.position, t0 = travel + 6;
+        for (let i = 0; i < 80; i++) {
+          const a2 = Math.PI + (i / 80) * Math.PI;   // the lower arc, all around you
+          pos.setXYZ(i, curveX(t0) + Math.cos(a2) * R * 0.85, dropY(t0) + R + Math.sin(a2) * R * 0.85 + 0.5, -t0 + (Math.random() - 0.5) * 4);
+        }
+        pos.needsUpdate = true;
+      } else if (chorusK2 < 0.3) chorusArmed = false;
       const warp = Math.min(1, warpT);
       // the roll: eased full turn, fast through the middle
       const rollK = rollT > 0 ? (1 - rollT) : 1;
@@ -608,7 +654,7 @@ export function createWaterslide() {
       const wcol = water.geometry.attributes.color;
       const span = RINGS * RING_SPACING;
       for (let i = 0; i < WATER_N; i++) {
-        waterOff[i] += (speed * 0.55 + 26 + warp * 260) * dt;   // warp speed through the hole
+        waterOff[i] += (speed * 0.55 + 26 + warp * 260 + plungeK * 60) * dt;   // warp speed through the hole; the plunge roars
         const t = travel + (waterOff[i] % span);
         const floorY = dropY(t) + 0.55 + Math.abs(waterLane[i]) * 0.06;
         wpos.setXYZ(i, curveX(t) + waterLane[i], floorY, -t);
@@ -660,10 +706,15 @@ export function createWaterslide() {
       }
 
       sky.position.copy(camera.position);
+      if (stars) { stars.position.copy(camera.position); stars.rotation.y = time * 0.004; }
+      for (const nb of nebula) {
+        nb.position.set(camera.position.x + nb.userData.dx, camera.position.y + nb.userData.dy, camera.position.z + nb.userData.dz);
+        nb.material.color.setHSL(((hue / 360) + 0.08) % 1, 0.7, 0.6);
+      }
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
       sky.material.color.setHSL(tp[0], tp[1] * 0.5, 0.24 + audio.energy * 0.15);
 
-      const fovT = 76 + speed * 0.16 + boost * 10 + gulp * 24 + leap * 12;
+      const fovT = 76 + speed * 0.16 + boost * 10 + gulp * 24 + leap * 12 + plungeK * 12;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
     },
