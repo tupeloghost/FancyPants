@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=591';
-import { drawQR } from './lib/qr.js?v=591';
-import { WORLDS } from './worlds/registry.js?v=591';
-import { Net, PALETTE } from './net.js?v=591';
-import { Presence } from './lib/presence.js?v=591';
-import { Pulses } from './lib/pulse.js?v=591';
-import { BeatClock } from './lib/beatclock.js?v=591';
-import { BeatCue } from './lib/beatcue.js?v=591';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=591';
-import { Race, placeOf, standings } from './lib/race.js?v=591';
-import { Signals } from './lib/signals.js?v=591';
-import { pickShareLine, loadLines } from './lib/lines.js?v=591';
-import { RouteMap } from './lib/map.js?v=591';
-import * as sfx from './lib/sfx.js?v=591';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=591';
-import { glowTexture } from './lib/glow.js?v=591';
+import { AudioEngine } from './audio-engine.js?v=592';
+import { drawQR } from './lib/qr.js?v=592';
+import { WORLDS } from './worlds/registry.js?v=592';
+import { Net, PALETTE } from './net.js?v=592';
+import { Presence } from './lib/presence.js?v=592';
+import { Pulses } from './lib/pulse.js?v=592';
+import { BeatClock } from './lib/beatclock.js?v=592';
+import { BeatCue } from './lib/beatcue.js?v=592';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=592';
+import { Race, placeOf, standings } from './lib/race.js?v=592';
+import { Signals } from './lib/signals.js?v=592';
+import { pickShareLine, loadLines } from './lib/lines.js?v=592';
+import { RouteMap } from './lib/map.js?v=592';
+import * as sfx from './lib/sfx.js?v=592';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=592';
+import { glowTexture } from './lib/glow.js?v=592';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4105,7 +4105,7 @@ function drawRecap(data, handle) {
   x.fillStyle = vg; x.fillRect(0, 0, 1280, 720);
   const GOLD = 'rgba(238,206,120,1)', GOLD_DIM = 'rgba(238,206,120,0.55)';
   x.textBaseline = 'top';
-  x.font = '600 17px "SF Mono", Menlo, monospace';
+  x.font = '600 17px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillStyle = 'rgba(200,196,225,0.65)';
   x.fillText('F A N C Y   B R I T C H E S   \u00b7   R O O M   R E C A P', 64, 42);
   x.fillStyle = 'rgba(248,246,255,0.98)';
@@ -4145,14 +4145,14 @@ function drawRecap(data, handle) {
     x.beginPath(); x.roundRect(tx, ty, tw, th, 14); x.fill();
     x.strokeStyle = 'rgba(190,180,230,0.22)'; x.lineWidth = 1;
     x.beginPath(); x.roundRect(tx, ty, tw, th, 14); x.stroke();
-    x.font = '600 14px "SF Mono", Menlo, monospace';
+    x.font = '600 14px Jost, "Avenir Next", "Century Gothic", sans-serif';
     x.fillStyle = GOLD_DIM;
     x.fillText(sv.label.toUpperCase(), tx + 18, ty + 14);
     x.font = '400 52px Didot, "Bodoni 72", Georgia, serif';
     x.fillStyle = GOLD;
     x.fillText(String(sv.num), tx + 18, ty + 34);
     const nw = x.measureText(String(sv.num)).width;
-    x.font = '15px "SF Mono", Menlo, monospace';
+    x.font = '15px Jost, "Avenir Next", "Century Gothic", sans-serif';
     x.fillStyle = 'rgba(210,206,235,0.75)';
     x.fillText(sv.unit, tx + 26 + nw, ty + 64);
     x.font = '400 25px Didot, "Bodoni 72", Georgia, serif';
@@ -4161,7 +4161,7 @@ function drawRecap(data, handle) {
   });
   // the roster, colored dots, winner starred
   const rx = 940;
-  x.font = '600 15px "SF Mono", Menlo, monospace';
+  x.font = '600 15px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillStyle = 'rgba(200,196,225,0.65)';
   x.fillText('T H E   R O O M', rx, 246);
   let ry = 278;
@@ -4390,7 +4390,7 @@ function drawArtistType(x, W, H, fmt) {
   x.textAlign = 'center'; x.textBaseline = 'alphabetic';
   const base = fmt === 'l' ? H - 120 : H - 210;
   // the billing block: eyebrow / TITLE / hairline / artist / invitation
-  x.font = '500 ' + Math.round(W * 0.016) + 'px "SF Mono", Menlo, monospace';
+  x.font = '500 ' + Math.round(W * 0.016) + 'px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillStyle = 'hsla(' + hue + ', 60%, 80%, 0.75)';
   x.fillText('A   P L A Y A B L E   W O R L D', W / 2, base - Math.round(W * (fmt === 'l' ? 0.062 : 0.098)));
   x.fillStyle = 'rgba(252,250,255,0.98)';
@@ -4408,7 +4408,7 @@ function drawArtistType(x, W, H, fmt) {
     x.fillStyle = 'rgba(232,228,250,0.92)';
     x.fillText(artist, W / 2, base + Math.round(W * (fmt === 'l' ? 0.056 : 0.082)), W - Math.round(W * 0.2));
   }
-  x.font = Math.round(W * 0.018) + 'px "SF Mono", Menlo, monospace';
+  x.font = Math.round(W * 0.018) + 'px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillStyle = 'rgba(210,206,235,0.72)';
   x.fillText('step inside it', W / 2, base + Math.round(W * (fmt === 'l' ? 0.095 : 0.135)));
   x.textAlign = 'left';
@@ -4603,7 +4603,7 @@ function drawWeekCard() {
   x.fillStyle = rg; x.fillRect(0, 0, W, H);
   x.textBaseline = 'alphabetic';
   x.fillStyle = 'rgba(220,214,245,0.8)';
-  x.font = '500 20px "SF Mono", Menlo, monospace';
+  x.font = '500 20px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillText('Y O U R   W E E K   I N S I D E', 72, 96);
   // the big numbers: songs · worlds · minutes (the felt week)
   const big = [[st.songs, st.songs === 1 ? 'song' : 'songs'], [st.worlds, st.worlds === 1 ? 'world' : 'worlds'], [st.minutes, st.minutes === 1 ? 'minute' : 'minutes']];
@@ -4613,7 +4613,7 @@ function drawWeekCard() {
     x.font = '400 150px Didot, "Bodoni 72", Georgia, serif';
     x.fillText(String(n), bx, 310);
     x.fillStyle = 'rgba(220,214,245,0.72)';
-    x.font = '400 22px "SF Mono", Menlo, monospace';
+    x.font = '400 22px Jost, "Avenir Next", "Century Gothic", sans-serif';
     x.fillText(label.toUpperCase(), bx + 4, 350);
   });
   // the small wonders
@@ -4636,7 +4636,7 @@ function drawWeekCard() {
     x.drawImage(qrc, W - qrc.width - 72, H - qrc.height - 72);
   }
   x.fillStyle = 'rgba(220,214,245,0.55)';
-  x.font = '500 16px "SF Mono", Menlo, monospace';
+  x.font = '500 16px Jost, "Avenir Next", "Century Gothic", sans-serif';
   x.fillText('F A N C Y   B R I T C H E S', 72, H - 72);
   return c;
 }

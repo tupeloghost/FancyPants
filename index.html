@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#02040c">
@@ -188,7 +191,7 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 2px; min-width: 46px; padding: 7px 10px;
     border-radius: 999px;
-    font: 11px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    font: 11px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     transition: color 160ms ease, background 160ms ease, transform 160ms ease;
   }
   #qbar .qb i { font-style: normal; font-size: 14px; line-height: 1; }
@@ -279,7 +282,7 @@
     letter-spacing: 5px; color: hsl(var(--accent-h), 55%, 94%); font-weight: 400;
   }
   #mode-inner p {
-    margin-top: 10px; font: 12.5px/1.6 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 10px; font: 12.5px/1.6 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 0.8px; text-transform: none; color: var(--ink-dim);
     text-shadow: 0 1px 8px rgba(0,0,0,0.9);
   }
@@ -305,14 +308,14 @@
   }
   .mode-opt em {
     display: block; margin-top: 5px; font-style: normal;
-    font: 12px/1.5 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+    font: 12px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim);
   }
   #pl-row { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   #pl-row.hidden { display: none; }
   #pl-input {
     flex: 1 1 240px; padding: 11px 14px; border-radius: 11px;
     border: 1px solid var(--accent-line); background: var(--glass);
-    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace;
+    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     outline: none;
   }
   #pl-input:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
@@ -329,9 +332,9 @@
   #marquee-edit input {
     padding: 9px 12px; border-radius: 10px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
-    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+    font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
-  #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  #pl-msg { width: 100%; min-height: 13px; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-dim); }
   /* the black hole got you: the whole frame lurches and darkens for a beat */
   /* crossing the event horizon: the frame is PULLED IN — the world zooms
      and twists while the light dies to almost nothing, then lets go */
@@ -406,7 +409,7 @@
   /* the artist door in the panel folds until asked for: players who came to
      listen never parse it at all */
   #own-song { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
-    color: var(--ink-dim); font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px; padding: 9px 0; border-radius: 10px; }
+    color: var(--ink-dim); font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.4px; padding: 9px 0; border-radius: 10px; }
   #own-song:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
   #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
   #page-music.own #own-song { display: none; }
@@ -421,14 +424,14 @@
     #page-music .chill-row .chip { width: 100%; }
   }
   #cc-quiz { margin: 6px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--well); }
-  #cc-quiz-head { font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
+  #cc-quiz-head { font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
   #cc-quiz-head i { display: block; font-style: normal; letter-spacing: 0.4px; text-transform: none; color: var(--ink-faint); margin-top: 2px; }
   .ccq { display: flex; flex-direction: column; gap: 5px; margin-bottom: 9px; }
   .ccq span { font: 12.5px Georgia, serif; color: var(--ink); }
   .ccq-poles { display: flex; justify-content: space-between; gap: 10px; }
   .ccq-poles b { font-weight: 400; } .ccq-poles b:last-child { text-align: right; }
   .ccq div { display: flex; gap: 4px; }
-  .ccq button { flex: 1; padding: 7px 2px; font: 10px 'SF Mono', Menlo, monospace; letter-spacing: 0.3px; border-radius: 8px; }
+  .ccq button { flex: 1; padding: 7px 2px; font: 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 0.3px; border-radius: 8px; }
   .ccq button.on { background: hsla(var(--accent-h), 70%, 60%, 0.35); border-color: hsla(var(--accent-h), 80%, 75%, 0.8); color: var(--ink); }
   #cc-prompts { display: flex; flex-direction: column; gap: 8px; margin: 4px 0; }
   .cc-prow { display: flex; flex-direction: column; gap: 4px; }
@@ -436,7 +439,7 @@
   #pr-url {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
-    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+    font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #pr-url:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
   #pr-worlds { display: flex; flex-direction: column; gap: 6px; }
@@ -457,7 +460,7 @@
   }
   .pr-opt em {
     display: block; margin-top: 2px; font-style: normal;
-    font: 11px/1.5 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+    font: 11px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim);
   }
   #pr-go {
     padding: 12px 18px; border-radius: 11px; cursor: pointer;
@@ -466,16 +469,16 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 14px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.6px;
   }
-  #pr-file { text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
+  #pr-file { text-align: center; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); }
   #pr-file:hover { color: var(--ink-dim); text-decoration: underline; }
-  #pr-msg { min-height: 13px; text-align: center; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
-  #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); }
+  #pr-msg { min-height: 13px; text-align: center; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-dim); }
+  #pl-file { width: 100%; text-align: center; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); }
   #pl-pick { width: 100%; display: flex; gap: 8px; justify-content: center; }
   #pl-pick.hidden { display: none; }
   #pl-world {
     flex: 1 1 200px; padding: 11px 14px; border-radius: 11px;
     border: 1px solid var(--accent-line); background: var(--glass);
-    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace;
+    color: hsl(var(--accent-h), 30%, 92%); font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
   }
   #pl-world-go {
     padding: 11px 18px; border-radius: 11px; cursor: pointer;
@@ -493,7 +496,7 @@
     margin: 6px 0 2px;
   }
   #ri-head {
-    font: 10px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 10px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 5px; text-transform: uppercase; color: var(--ink-faint);
   }
   #ri-rule {
@@ -501,7 +504,7 @@
     background: hsla(var(--accent-h), 70%, 75%, 0.35);
   }
   #ri-round {
-    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 11px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 4px; text-transform: uppercase; color: var(--ink-faint);
   }
   #ri-world {
@@ -511,7 +514,7 @@
     text-shadow: 0 0 34px hsla(var(--accent-h), 90%, 70%, 0.42);
   }
   #ri-track {
-    margin-top: 10px; font: 13px/1.5 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 10px; font: 13px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 2px; color: var(--ink-dim);
   }
   /* ── How this round is won ── words plus a live demonstration, because no
@@ -537,7 +540,7 @@
     #ri-demo { width: 88px; height: 88px; }
   }
   #ri-state {
-    margin-top: 20px; font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    margin-top: 20px; font: 11px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 2.4px; text-transform: uppercase; color: var(--ink-faint);
   }
   /* the round starts when YOU say so — instructions wait as long as you need */
@@ -583,12 +586,12 @@
   }
   #hud-unit {
     margin-top: 2px;
-    font: 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 11px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 3px; text-transform: uppercase; color: var(--ink-dim);
   }
   #hud-sub {
     margin-top: 7px;
-    font: 13px/1 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 13px/1 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 1px; color: var(--ink-faint);
     transition: color 200ms ease;
   }
@@ -669,7 +672,7 @@
     background: hsla(var(--accent-h), 35%, 8%, 0.78);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 8px 30px rgba(0,0,0,0.45);
-    font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
+    font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.8px;
     color: hsl(var(--accent-h), 45%, 92%);
     text-shadow: 0 1px 2px rgba(0,0,0,0.8);
     transition: background 160ms ease, border-color 160ms ease;
@@ -731,7 +734,7 @@
     border-radius: 14px; background: hsla(var(--accent-h), 30%, 6%, 0.82);
     border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.22);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    font: 10px 'SF Mono', ui-monospace, Menlo, monospace; color: var(--ink-dim);
+    font: 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim);
     opacity: 0; pointer-events: none; transform: translateY(-8px);
     transition: opacity var(--dur-out) var(--spring), transform var(--dur-out) var(--spring);
   }
@@ -749,7 +752,7 @@
     flex: 1; padding: 6px 0; cursor: pointer;
     background: hsla(var(--accent-h), 50%, 40%, 0.2);
     border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.3); border-radius: 8px;
-    color: var(--ink); font: 9px 'SF Mono', ui-monospace, monospace;
+    color: var(--ink); font: 9px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 1.5px; text-transform: uppercase;
   }
 
@@ -872,7 +875,7 @@
   .bomb-picker button:hover { transform: scale(1.35); }
   .bomb-picker em {
     margin-left: auto; font-style: normal;
-    font: 8px 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 8px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-faint);
   }
 
@@ -906,7 +909,7 @@
     -webkit-backdrop-filter: blur(26px) saturate(1.4);
     box-shadow: 0 22px 70px rgba(0,0,0,0.66), inset 0 1px 0 hsla(var(--accent-h),80%,85%,0.12);
     color: var(--ink);
-    font: 11.5px/1.5 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    font: 11.5px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     opacity: 0; pointer-events: none;
     transition: opacity var(--dur-out) var(--spring), transform var(--dur-out) var(--spring);
   }
@@ -957,10 +960,10 @@
   }
   .award span {
     flex: 1; text-align: right;
-    font: 12px 'SF Mono', Menlo, monospace; color: var(--ink-dim);
+    font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .award em { font: 700 12px 'SF Mono', Menlo, monospace; font-style: normal; color: var(--ink); }
+  .award em { font: 700 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; font-style: normal; color: var(--ink); }
   @keyframes award-in {
     from { opacity: 0; transform: translateY(10px) scale(0.96); }
     to { opacity: 1; transform: none; }
@@ -995,7 +998,7 @@
     background: hsla(var(--accent-h), 30%, 7%, 0.92); border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35); }
   #ng-title { font: 400 24px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 1.5px; color: hsl(var(--accent-h), 55%, 93%); margin-bottom: 16px; }
   #ng-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  #ng-row input { flex: 1; text-align: center; font: 15px 'SF Mono', Menlo, monospace; letter-spacing: 1px; padding: 12px 8px; }
+  #ng-row input { flex: 1; text-align: center; font: 15px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; padding: 12px 8px; }
   #ng-row button { width: 52px; font-size: 19px; }
   #ng-go { width: 100%; padding: 14px 0; border-radius: 999px; cursor: pointer; font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 4px; text-indent: 4px; color: hsl(var(--accent-h), 60%, 8%);
@@ -1051,7 +1054,7 @@
     border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.16);
     backdrop-filter: blur(16px) saturate(1.3);
     -webkit-backdrop-filter: blur(16px) saturate(1.3);
-    font: 11px/1.4 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    font: 11px/1.4 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     color: var(--ink-dim);
   }
   #tempo.hidden { display: none; }
@@ -1079,7 +1082,7 @@
   #panel {
     position: fixed; top: 14px; right: 14px; z-index: 100;
     width: 278px; color: var(--ink);
-    font: 11.5px/1.5 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+    font: 11.5px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     background:
       linear-gradient(175deg, hsla(var(--accent-h), 60%, 55%, 0.07), transparent 90px),
       var(--glass);
@@ -1232,7 +1235,7 @@
   /* section labels: fine caps with a hairline running off to the right */
   .mini-label {
     display: flex; align-items: center; gap: 9px;
-    font: 400 9.5px 'SF Mono', Menlo, monospace; letter-spacing: 3px;
+    font: 400 9.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 3px;
     color: var(--ink-dim); margin-bottom: 7px; text-transform: uppercase;
   }
   .mini-label::after {
@@ -1328,7 +1331,7 @@
   .slider label .val { color: var(--ink); font-size: 10.5px; }
   #btn-mute {
     width: auto; display: inline-block; padding: 2px 9px; margin-right: 8px;
-    font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    font: 400 9px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px;
     text-transform: uppercase; color: var(--ink-faint);
     background: transparent; border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.22);
     border-radius: 999px; vertical-align: middle;
@@ -1388,15 +1391,15 @@
   #tune-drawer .grid2 { margin-top: 8px; }
 
   #rights {
-    font: 400 8.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.2px;
+    font: 400 8.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.2px;
     color: var(--ink-faint); text-align: center; margin-top: 12px; opacity: 0.75;
   }
   #audio-stamp {
-    font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    font: 400 9px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.5px;
     color: var(--ink-faint); text-align: center; margin-top: 8px; opacity: 0.8;
   }
   #build-stamp {
-    font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    font: 400 9px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px;
     color: var(--ink-faint); text-align: center; margin-top: 10px; opacity: 0.7;
   }
   .hint {
@@ -1419,7 +1422,7 @@
     padding: 14px 12px; -webkit-overflow-scrolling: touch;
     background: radial-gradient(ellipse at center, rgba(2,4,12,0.35), rgba(0,0,0,0.75));
     color: var(--ink-dim); cursor: pointer;
-    font: 13px/1.6 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 3px;
+    font: 13px/1.6 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 3px;
     opacity: 1; transition: opacity 0.5s;
   }
   #tap-to-start.gone { opacity: 0; pointer-events: none; }
@@ -1445,7 +1448,7 @@
   .cta:hover { transform: scale(1.03); box-shadow: 0 0 40px hsla(var(--accent-h), 90%, 65%, 0.45); }
   .cta-soft {
     width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
-    font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px;
     color: var(--ink); background: var(--accent-soft);
     border: 1px solid var(--accent-line);
   }
@@ -1459,7 +1462,7 @@
   #join-card input {
     padding: 10px 12px; border-radius: 10px; text-align: center;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 14px 'SF Mono', Menlo, monospace;
+    border: 1px solid var(--accent-line); font: 14px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     letter-spacing: 2px; outline: none;
   }
   #join-card input:focus { border-color: var(--accent); box-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.4); }
@@ -1470,11 +1473,11 @@
     flex: 1; padding: 9px 0; border-radius: 10px; cursor: pointer;
     background: var(--accent-soft); color: var(--accent);
     border: 1px solid var(--accent-line);
-    font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    font: 700 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px;
   }
   .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
   #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
-  #suno-rights { font: 9.5px/1.5 'SF Mono', Menlo, monospace; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.4px; }
+  #suno-rights { font: 9.5px/1.5 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.4px; }
   /* self-serve song pasting is waitlist-gated for launch; the machinery
      stays for ?suno= demo links. body.suno-live re-opens the slot. */
   body:not(.suno-live) #suno-input, body:not(.suno-live) #suno-go,
@@ -1484,10 +1487,10 @@
   #promo-box input {
     padding: 9px 11px; border-radius: 9px;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 12px 'SF Mono', Menlo, monospace; outline: none;
+    border: 1px solid var(--accent-line); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #promo-box input:focus { border-color: var(--accent); }
-  #promo-status { font: 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 12px; }
+  #promo-status { font: 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); min-height: 12px; }
 
   /* the room-facing pill: quiet, elegant, tappable */
   #promo-pill {
@@ -1516,7 +1519,7 @@
     letter-spacing: 1.2px; color: hsl(var(--accent-h), 45%, 82%);
   }
   #sun-sub {
-    font: 10.5px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1px;
+    font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px;
     color: var(--ink-faint);
   }
   #sunday a { color: hsl(var(--accent-h), 50%, 78%); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 70%, 70%, 0.3); }
@@ -1543,7 +1546,7 @@
   .chip {
     flex: 1; padding: 9px 6px; cursor: pointer; border-radius: 999px;
     border: 1px solid var(--accent-line); background: transparent;
-    font: 10px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint);
+    font: 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint);
     white-space: nowrap; transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
   }
   .chip:hover { color: var(--ink); }
@@ -1552,7 +1555,7 @@
              border: 1px solid var(--accent-line); max-width: 320px; }
   .am-pick button {
     flex: 1; padding: 10px 4px; cursor: pointer; border: 0; background: transparent;
-    font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px; color: var(--ink-faint);
+    font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.4px; color: var(--ink-faint);
     white-space: nowrap;
     transition: background 160ms ease, color 160ms ease;
   }
@@ -1570,7 +1573,7 @@
 
   #host-when button {
     flex: 1; padding: 12px 0; cursor: pointer; border-radius: 999px;
-    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
+    font: 11.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px;
     color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-line);
   }
   #host-when button:hover { border-color: hsla(var(--accent-h),80%,70%,0.7); }
@@ -1578,20 +1581,20 @@
   #sched-form input {
     padding: 11px 12px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: var(--ink);
-    font: 13px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+    font: 13px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #sched-form input:focus { border-color: hsla(var(--accent-h),80%,70%,0.6); }
   #sched-form button {
     padding: 12px 0; cursor: pointer; border-radius: 999px;
-    font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
+    font: 11.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px;
     color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-line);
   }
-  #sc-msg { font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); text-align: center; }
+  #sc-msg { font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); text-align: center; }
   #sc-done { display: flex; gap: 8px; }
   #sc-done button { flex: 1; }
   #mc-host {
     margin-top: 16px; width: 100%; padding: 11px 0; cursor: pointer; border-radius: 999px;
-    font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.8px;
+    font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.8px;
     color: var(--ink); background: hsla(var(--accent-h), 40%, 10%, 0.5); border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.45);
     transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
@@ -1619,7 +1622,7 @@
   #side-doors {
     display: flex; justify-content: center; align-items: center; gap: 10px;
     margin-top: 18px;
-    font: 12px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.1px;
+    font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.1px;
   }
   #side-doors a { color: var(--ink-faint); text-decoration: none; border-bottom: 1px solid transparent; }
   #side-doors a:hover { color: var(--ink); border-bottom-color: hsla(var(--accent-h), 70%, 70%, 0.5); }
@@ -1641,7 +1644,7 @@
     font: italic 400 14px/1.6 'Didot', 'Bodoni 72', Georgia, serif;
     letter-spacing: 1.2px; color: var(--ink-dim);
   }
-  #maker-line span { display: block; margin-top: 12px; font: 12px/1.65 'SF Mono', Menlo, monospace; letter-spacing: 0.7px; }
+  #maker-line span { display: block; margin-top: 12px; font: 12px/1.65 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 0.7px; }
   #maker-line a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 60%, 70%, 0.35); }
   /* the safety note earns readable type: it was the smallest AND faintest
      text on the page, which is backwards for a health warning */
@@ -1653,34 +1656,34 @@
   #wl-email {
     padding: 10px 12px; border-radius: 10px; width: 220px;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 13px 'SF Mono', Menlo, monospace; outline: none;
+    border: 1px solid var(--accent-line); font: 13px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #wl-join {
     padding: 10px 18px; border-radius: 10px; cursor: pointer;
     background: var(--accent-soft); color: var(--accent);
-    border: 1px solid var(--accent-line); font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    border: 1px solid var(--accent-line); font: 700 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.5px;
   }
-  #wl-msg { width: 100%; text-align: center; font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 14px; }
+  #wl-msg { width: 100%; text-align: center; font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); min-height: 14px; }
   #custom-form { margin: 14px auto 0; display: flex; flex-direction: column; gap: 8px; width: min(360px, 88vw); }
   #custom-form.hidden { display: none; }
   #cw-lead { font: italic 400 13px/1.6 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 0.8px; color: var(--ink-dim); text-align: center; }
   #custom-form select, #custom-form textarea, #custom-form input {
     padding: 10px 12px; border-radius: 10px;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 13px 'SF Mono', Menlo, monospace; outline: none;
+    border: 1px solid var(--accent-line); font: 13px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #custom-form textarea { resize: vertical; font-family: Georgia, serif; font-size: 14px; }
   #cw-send {
     padding: 11px 0; border-radius: 10px; cursor: pointer;
     background: var(--accent-soft); color: var(--accent);
-    border: 1px solid var(--accent-line); font: 700 12px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    border: 1px solid var(--accent-line); font: 700 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.5px;
   }
-  #cw-msg { text-align: center; font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 14px; }
+  #cw-msg { text-align: center; font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); min-height: 14px; }
 
   /* room code — prominent, part of the broadcast frame */
   #room-badge {
     position: fixed; top: 16px; left: 18px; z-index: 90;
-    font: 700 30px 'SF Mono', Menlo, monospace; letter-spacing: 7px;
+    font: 700 30px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 7px;
     color: var(--accent);
     text-shadow: 0 0 18px hsla(var(--accent-h), 90%, 65%, 0.9), 0 0 50px hsla(var(--accent-h), 90%, 55%, 0.5);
     user-select: none; pointer-events: none;
@@ -1712,23 +1715,23 @@
   #sc-qr { width: 148px; height: 148px; image-rendering: pixelated; border-radius: 6px; }
   #sc-qr.gone { display: none; }
   #sc-url {
-    font: 400 11px 'SF Mono', Menlo, monospace; letter-spacing: 0.5px;
+    font: 400 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 0.5px;
     color: #fff; opacity: 0.85; max-width: 180px; text-align: center; word-break: break-all;
   }
   #sc-code {
-    font: 700 38px 'SF Mono', Menlo, monospace; letter-spacing: 10px;
+    font: 700 38px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 10px;
     color: #fff; margin-right: -10px; /* re-centre: tracking pads the right edge */
   }
   #sc-hide {
     background: none; border: none; cursor: pointer;
-    font: 400 9px 'SF Mono', Menlo, monospace; letter-spacing: 3px;
+    font: 400 9px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 3px;
     color: #fff; opacity: 0.45; padding: 2px 6px;
   }
   #sc-hide:hover { opacity: 0.9; }
   @media (max-width: 700px) { #stream-card { display: none; } } /* a phone is a controller, not a broadcast */
   #room-badge::after {
     content: attr(data-url); display: block;
-    font: 400 10px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px;
+    font: 400 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.5px;
     color: var(--ink-dim); text-shadow: none; margin-top: 3px;
   }
 
@@ -1773,7 +1776,7 @@
     background: rgba(6, 9, 20, 0.55);
     backdrop-filter: blur(8px) saturate(1.3);
     -webkit-backdrop-filter: blur(8px) saturate(1.3);
-    font: 700 13px 'SF Mono', ui-monospace, Menlo, monospace;
+    font: 700 13px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     color: #fff; letter-spacing: 1px; white-space: nowrap;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
@@ -1791,13 +1794,13 @@
   /* ── Score ── */
   #score-badge {
     position: fixed; top: 76px; left: 18px; z-index: 90;
-    font: 700 20px 'SF Mono', Menlo, monospace; letter-spacing: 2px;
+    font: 700 20px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2px;
     color: #fff;
     text-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.8);
     user-select: none; pointer-events: none;
     transition: transform 0.15s;
   }
-  #score-badge em { font: 400 10px 'SF Mono', Menlo, monospace; color: var(--ink-dim); font-style: normal; margin-left: 4px; letter-spacing: 2px; }
+  #score-badge em { font: 400 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); font-style: normal; margin-left: 4px; letter-spacing: 2px; }
   #score-badge.hidden { display: none; }
   /* points run the engine quietly now — nobody needs the receipt */
   #score-badge { display: none !important; }
@@ -1841,9 +1844,9 @@
   #cc-inner input, #cc-inner textarea {
     padding: 10px 13px; border-radius: 10px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
-    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none; resize: vertical;
+    font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none; resize: vertical;
   }
-  #cc-plays { font: 11px/1.7 'SF Mono', Menlo, monospace; color: var(--ink-dim); background: rgba(255,255,255,0.04); border-radius: 10px; padding: 9px 12px; }
+  #cc-plays { font: 11px/1.7 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); background: rgba(255,255,255,0.04); border-radius: 10px; padding: 9px 12px; }
   #cc-plays.hidden { display: none; }
   #cc-save, #cc-out button {
     padding: 12px; border-radius: 11px; cursor: pointer;
@@ -1854,8 +1857,8 @@
   }
   #cc-out { display: flex; flex-direction: column; gap: 8px; }
   #cc-out.hidden { display: none; }
-  #cc-msg { min-height: 13px; text-align: center; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
-  #cc-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #cc-msg { min-height: 13px; text-align: center; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-dim); }
+  #cc-close { background: none; border: none; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
   #mq-page {
     padding: 10px; border-radius: 10px; cursor: pointer;
     border: 1px solid var(--accent-line);
@@ -1878,12 +1881,12 @@
   }
   #ac-video { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
   #ac-video.hidden { display: none; }
-  #ac-status { min-height: 14px; text-align: center; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-dim); }
+  #ac-status { min-height: 14px; text-align: center; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-dim); }
   #ac-formats { display: flex; gap: 8px; justify-content: center; }
   .ac-fmt {
     padding: 8px 18px; border-radius: 10px; cursor: pointer;
     border: 1px solid var(--accent-line); background: var(--glass);
-    color: var(--ink-dim); font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 1px;
+    color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px;
   }
   .ac-fmt.on { background: var(--accent-soft); color: hsl(var(--accent-h), 55%, 93%); border-color: hsla(var(--accent-h),80%,70%,0.6); }
   #ac-actions button {
@@ -1893,11 +1896,11 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
-  #ac-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #ac-close { background: none; border: none; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
   #lyr-btn {
     padding: 8px; border-radius: 10px; cursor: pointer;
     border: 1px solid var(--accent-line); background: var(--glass);
-    color: var(--ink-dim); font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px;
+    color: var(--ink-dim); font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.4px;
   }
   #mq-card {
     padding: 10px; border-radius: 10px; cursor: pointer;
@@ -1923,7 +1926,7 @@
   #rc-handle, #rc-next {
     padding: 11px 14px; border-radius: 11px; border: 1px solid var(--accent-line);
     background: var(--glass); color: hsl(var(--accent-h), 30%, 92%);
-    font: 12.5px 'SF Mono', ui-monospace, Menlo, monospace; outline: none;
+    font: 12.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #rc-actions { display: flex; gap: 8px; }
   #rc-actions button {
@@ -1933,7 +1936,7 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
-  #rc-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #rc-close { background: none; border: none; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
   #rb-recap.hidden { display: none; }
   #lyric-layer {
     position: fixed; left: 50%; bottom: 17%; transform: translateX(-50%);
@@ -2025,7 +2028,7 @@
     color: hsl(var(--accent-h), 55%, 93%);
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
-  #shc-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #shc-close { background: none; border: none; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
   #shc-close:hover { color: var(--ink-dim); }
   #taste-card {
     position: fixed; z-index: 210; left: 50%; top: 50%;
@@ -2044,7 +2047,7 @@
   #taste-card input {
     padding: 11px 12px; border-radius: 10px; text-align: center;
     background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 13px 'SF Mono', Menlo, monospace; outline: none;
+    border: 1px solid var(--accent-line); font: 13px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; outline: none;
   }
   #taste-join {
     padding: 12px 0; border-radius: 999px; cursor: pointer;
@@ -2053,8 +2056,8 @@
     background: linear-gradient(175deg, hsla(var(--accent-h),75%,62%,0.3), hsla(var(--accent-h),55%,35%,0.2));
     border: 1px solid hsla(var(--accent-h), 85%, 72%, 0.6);
   }
-  #taste-msg { font: 11px 'SF Mono', Menlo, monospace; color: var(--ink-dim); min-height: 13px; }
-  #taste-close { background: none; border: none; cursor: pointer; font: 10.5px 'SF Mono', Menlo, monospace; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
+  #taste-msg { font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; color: var(--ink-dim); min-height: 13px; }
+  #taste-close { background: none; border: none; cursor: pointer; font: 10.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px; color: var(--ink-faint); padding: 4px; }
   #taste-close:hover { color: var(--ink-dim); }
 
   /* the burn, felt at the edges: while the throttle is held the frame
@@ -2075,7 +2078,7 @@
     background: hsla(var(--accent-h), 30%, 8%, 0.72);
     border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.5px; color: var(--ink-dim);
+    font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.5px; color: var(--ink-dim);
   }
   #balls-quick.hidden { display: none; }
   #balls-quick input { width: 130px; }
@@ -2101,7 +2104,7 @@
   .rival-chip {
     display: flex; align-items: center; gap: 7px;
     padding: 9px 14px; cursor: pointer;
-    font: 12px 'SF Mono', Menlo, monospace; letter-spacing: 1px;
+    font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1px;
     color: var(--ink);
     background: hsla(var(--accent-h), 30%, 8%, 0.72);
     border: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25);
@@ -2130,7 +2133,7 @@
   #rivals-pick button:hover { transform: scale(1.35); }
   #rivals-pick .sep { width: 1px; height: 20px; background: hsla(var(--accent-h),60%,70%,0.3); }
   #rivals-pick em {
-    font: 10px 'SF Mono', Menlo, monospace; font-style: normal;
+    font: 10px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; font-style: normal;
     letter-spacing: 1px; color: var(--ink-dim); white-space: nowrap;
   }
   @media (max-width: 620px) {
@@ -2161,11 +2164,11 @@
   }
   #figure-label.hidden { display: none; }
   #figure-label b {
-    font: 400 12px 'SF Mono', Menlo, monospace; letter-spacing: 6px;
+    font: 400 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 6px;
     color: var(--ink); opacity: 0.72;
   }
   #figure-label span {
-    font: 400 9.5px 'SF Mono', Menlo, monospace; letter-spacing: 2.5px;
+    font: 400 9.5px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 2.5px;
     color: var(--ink-faint);
   }
   @media (max-width: 620px) { #figure-label { top: 96px; } }
@@ -2231,7 +2234,7 @@
     position: fixed; left: 18px; bottom: 18px; z-index: 90;
     background: var(--glass); border: 1px solid var(--accent-line); border-radius: 12px;
     padding: 10px 12px; color: var(--ink); width: 200px;
-    font: 11px 'SF Mono', Menlo, monospace;
+    font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif;
     backdrop-filter: blur(14px);
   }
   #plist.hidden { display: none; }
@@ -3004,7 +3007,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 591</div>
+      <div id="build-stamp">build 592</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3046,6 +3049,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=591"></script>
+<script type="module" src="js/main.js?v=592"></script>
 </body>
 </html>
