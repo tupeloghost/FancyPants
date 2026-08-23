@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=564';
-import { drawQR } from './lib/qr.js?v=564';
-import { WORLDS } from './worlds/registry.js?v=564';
-import { Net, PALETTE } from './net.js?v=564';
-import { Presence } from './lib/presence.js?v=564';
-import { Pulses } from './lib/pulse.js?v=564';
-import { BeatClock } from './lib/beatclock.js?v=564';
-import { BeatCue } from './lib/beatcue.js?v=564';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=564';
-import { Race, placeOf, standings } from './lib/race.js?v=564';
-import { Signals } from './lib/signals.js?v=564';
-import { pickShareLine, loadLines } from './lib/lines.js?v=564';
-import { RouteMap } from './lib/map.js?v=564';
-import * as sfx from './lib/sfx.js?v=564';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=564';
-import { glowTexture } from './lib/glow.js?v=564';
+import { AudioEngine } from './audio-engine.js?v=565';
+import { drawQR } from './lib/qr.js?v=565';
+import { WORLDS } from './worlds/registry.js?v=565';
+import { Net, PALETTE } from './net.js?v=565';
+import { Presence } from './lib/presence.js?v=565';
+import { Pulses } from './lib/pulse.js?v=565';
+import { BeatClock } from './lib/beatclock.js?v=565';
+import { BeatCue } from './lib/beatcue.js?v=565';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=565';
+import { Race, placeOf, standings } from './lib/race.js?v=565';
+import { Signals } from './lib/signals.js?v=565';
+import { pickShareLine, loadLines } from './lib/lines.js?v=565';
+import { RouteMap } from './lib/map.js?v=565';
+import * as sfx from './lib/sfx.js?v=565';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=565';
+import { glowTexture } from './lib/glow.js?v=565';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -136,6 +136,7 @@ const race = new Race();
 // cost is a soft thud. One wiring point, the whole game finds its voice.
 let hitStop = 0;
 let fovKick = 0;
+let chorusOn = false;
 race.onEvent = (type, d) => {
   if (type === 'hit') {
     sfx.hit(d.streak, d.strong);
@@ -1890,10 +1891,10 @@ document.addEventListener('fp-swallowed', () => {
   clearTimeout(darkBackT);
   darkBackT = setTimeout(() => {
     if (darkNow && settings.colorMode === darkNow.colorMode && preDarkLook) {
-      // the light never comes back the same: climbing out of a black hole
-      // deals a fresh outfit every time
-      applyPreset(randomOutfit(darkNow.colorMode));
+      // the light comes back with a BANG: the full look ceremony (bloom, ring,
+      // hue glide) deals a fresh outfit — a second firework per black hole
       preDarkLook = null; darkNow = null;
+      document.dispatchEvent(new CustomEvent('fp-lookspark'));
     }
   }, 16000);
 });
@@ -4548,6 +4549,7 @@ function weekNote(fn) { const w = weekLedger(); fn(w); if (w.runs.length > 300) 
 document.addEventListener('fp-lookspark', () => weekNote(w => { w.doors++; }));
 document.addEventListener('fp-swallowed', () => weekNote(w => { w.holes++; }));
 document.addEventListener('fp-bend', () => weekNote(w => { w.bends++; }));
+document.addEventListener('fp-leap', () => { haptic([14, 40, 26]); impact(0.9); });
 function weekStats() {
   const w = weekLedger();
   const worlds = new Set(), songs = new Set(); let sec = 0; const per = {};
@@ -5611,6 +5613,12 @@ function frame(now) {
     a.beat = onBeat; if (onBeat) { a._lastSynthBeat = time; a.beatIntensity = 0.8; }
     else a.beatIntensity *= Math.pow(0.01, dt);
   }
+  // the world knows the chorus: when the song lifts, so does everything
+  if ((a.chorus || 0) > 0.55 && !chorusOn) {
+    chorusOn = true;
+    bloomKick = Math.max(bloomKick, 0.7); fovKick = Math.max(fovKick, 0.9); clickPulse = Math.max(clickPulse, 0.6);
+    haptic([10, 30, 18]);
+  } else if ((a.chorus || 0) < 0.25) chorusOn = false;
   net.update(dt, time);
   updateCursor(dt, a);
 
@@ -5798,6 +5806,7 @@ function frame(now) {
       feetLeft: race.feetLeft,
       unit: race.unit,
       collect: race.mode === 'COLLECT',
+      chorus: a.chorus || 0,
       mult: race.multiplier,
       place: placeOf(participants),
       rivals: participants.slice(1, 12).map(p => ({

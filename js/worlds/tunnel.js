@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=564';
+import { glowTexture } from '../lib/glow.js?v=565';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -287,7 +287,7 @@ export function createTunnel() {
       // HOLD = go faster, same grammar as the slide: a sustained surge that
       // also pulls the walls in close, which is what speed looks like
       holdK += (((opts.holding && !attract) ? 1 : 0) - holdK) * Math.min(1, dt * 4);
-      rush = Math.max(rush, holdK * 0.9);
+      rush = Math.max(rush, holdK * 0.9, (opts.chorus || 0) * 0.75);   // the chorus carries you
       const speed = (10 + audio.volume * 55 * reactivity) + rush * 45;
       travel += speed * dt;
       // speed you can SEE: the lens opens with the rush

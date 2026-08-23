@@ -30,6 +30,7 @@ export class AudioEngine {
       beat: false,
       beatIntensity: 0,
       energy: 0,
+      chorus: 0,      // 0..1: the song is LIFTING above its own recent average (a drop, a chorus)
       spectrum: new Float32Array(64), // downsampled, smoothed, 0-1 per bin
     };
 
@@ -199,6 +200,10 @@ export class AudioEngine {
 
     // Energy: slow-moving average of volume for section-change detection
     d.energy += (raw.volume - d.energy) * Math.min(1, dt * 0.5);
+    // the chorus: a fast average pulling clear of the slow one
+    this._fast = (this._fast || 0) + (raw.volume - (this._fast || 0)) * Math.min(1, dt * 1.4);
+    const liftRaw = Math.max(0, Math.min(1, (this._fast - d.energy * 1.12) / 0.1));
+    d.chorus += (liftRaw - d.chorus) * Math.min(1, dt * 2.5);
 
     // Beat detection on raw (unsmoothed) bass vs rolling average
     this._bassHistory[this._bassIdx] = raw.bass;

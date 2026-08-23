@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=564';
-import { themePaint } from '../lib/themes.js?v=564';
-import { TUNE } from '../lib/tune.js?v=564';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=565';
+import { themePaint } from '../lib/themes.js?v=565';
+import { TUNE } from '../lib/tune.js?v=565';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -86,6 +86,7 @@ export function createWaterslide() {
   };
   let gulp = 0;   // the swallow's camera kick
   let hugT = 0, hugIdx = 0;   // hugging a wall throws spray up that side
+  let chain = 0, leapT = 0, goldT = 0;   // five greens in a row: gold water, and the slide throws you
   window.__slideBend = bendWorld;   // dev handle: audition surface+path changes
 
   return {
@@ -286,7 +287,7 @@ export function createWaterslide() {
         const gasWanted = (opts.holding && wStun <= 0) ? 1 : 0;
         wThrottle += (gasWanted - wThrottle) * Math.min(1, dt * (gasWanted ? 5 : 2.6));
         boost = Math.max(hoopBoost, wThrottle * 0.85);
-        speed = (14 + wThrottle * 24 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * TUNE.speed;
+        speed = (14 + wThrottle * 24 + hoopBoost * 46) * (1 + 0.25 * Math.min(1, wHeat)) * (1 + 0.22 * (opts.chorus || 0)) * TUNE.speed;
         travel += speed * dt;
 
         const songTime = opts.songTime || 0, chart = opts.chart;
@@ -460,6 +461,11 @@ export function createWaterslide() {
             } else if (through) {
               race.collect((hoopBoost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
               hoopBoost = Math.min(1, hoopBoost + 0.85);
+              // five in a row: the water goes gold and the slide LAUNCHES you
+              if (++chain >= 5) {
+                chain = 0; leapT = 1; goldT = 4; gulp = Math.max(gulp, 0.6);
+                document.dispatchEvent(new CustomEvent('fp-leap'));
+              }
               if (opts.impact) opts.impact(hoopBoost > 0.9 ? 0.75 : 0.5);
               // leave a golden bloom where the catch happened
               const b = bursts.find(x => !x.visible) || bursts[0];
@@ -473,6 +479,7 @@ export function createWaterslide() {
               b.rotation.copy(h.mesh.rotation);
             } else if (!h.red) {
               race.drop(0);                            // a missed hoop breaks the run
+              chain = 0;
             }
             h.alive = false;
             h.mesh.visible = false;
@@ -488,6 +495,8 @@ export function createWaterslide() {
       }
 
       if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.8);   // ~1.2s: felt, not dizzying
+      leapT = Math.max(0, leapT - dt / 1.7); goldT = Math.max(0, goldT - dt);
+      const leap = leapT > 0 ? Math.sin(Math.PI * (1 - leapT)) : 0;   // up, hang, down
       gulp *= Math.pow(0.05, dt);
 
       if (attract) steerTarget = Math.sin(time * 0.5) * 0.5;
@@ -506,10 +515,10 @@ export function createWaterslide() {
       // camera rides low in the flume
       camera.position.set(
         curveX(travel) + steer * (R * 0.55),
-        dropY(travel) + 2.6 + Math.abs(steer) * 1.4 + audio.bass * 0.3,
+        dropY(travel) + 2.6 + Math.abs(steer) * 1.4 + audio.bass * 0.3 + leap * 7.5,
         -travel
       );
-      camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6, -(travel + 34));
+      camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6 + leap * 3, -(travel + 34));
       camera.rotation.z += -bank + Math.sin(time * 34) * 0.06 * gulp;
 
       for (const b of bursts) {
@@ -596,7 +605,9 @@ export function createWaterslide() {
         const froth = 0.5 + 0.5 * Math.sin(i * 3.7 + time * 14);
         // dim streaks near the camera so overlap never whites out the lens
         const distDim = Math.min(1, Math.max(0.06, ((waterOff[i] % span)) / 22));
-        color.setHSL((hue / 360 + 0.5) % 1, 0.4, (0.16 + froth * 0.14 + audio.volume * 0.1) * distDim);
+        // gold water after five in a row: the reward you can see under you
+        const gold = Math.min(1, goldT);
+        color.setHSL(gold > 0 ? 0.12 : (hue / 360 + 0.5) % 1, 0.4 + gold * 0.5, (0.16 + froth * 0.14 + audio.volume * 0.1 + gold * 0.2) * distDim);
         wcol.setXYZ(i, color.r, color.g, color.b);
       }
       wpos.needsUpdate = true;
@@ -642,7 +653,7 @@ export function createWaterslide() {
       themePaint(colorMode, hue / 360, 0.5, 0, time, audio.energy, 0.5, tp);
       sky.material.color.setHSL(tp[0], tp[1] * 0.5, 0.24 + audio.energy * 0.15);
 
-      const fovT = 76 + speed * 0.16 + boost * 10 + gulp * 24;
+      const fovT = 76 + speed * 0.16 + boost * 10 + gulp * 24 + leap * 12;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6);
       camera.updateProjectionMatrix();
     },
