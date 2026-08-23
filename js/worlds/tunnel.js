@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=565';
+import { glowTexture } from '../lib/glow.js?v=566';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -569,7 +569,7 @@ export function createTunnel() {
           let weave = 1;
           if (pattern === 'paisley') {
             const swirl = Math.sin(a * 2 + Math.sin((travel - z) * 0.045) * 2.6 + travel * 0.015);
-            weave = swirl > 0.25 ? 1.4 : (swirl > -0.35 ? 0.7 : 0.22);
+            weave = swirl > 0.25 ? 1.4 : (swirl > -0.35 ? 0.75 : 0.42);
             if (!themed) {
               if (swirl > 0.25) h = (h + 0.07) % 1;
               else if (swirl < -0.35) h = (h + 0.5) % 1;
@@ -583,12 +583,12 @@ export function createTunnel() {
             const dz2 = (along % 13 + 13) % 13 - 6.5;
             const d = Math.sqrt(dx * dx + dz2 * dz2);
             const edge = Math.min(1, Math.max(0, 1 - (d - 3.1) / 1.2));
-            weave = 0.1 + 1.55 * edge;
+            weave = 0.38 + 1.3 * edge;   // the field between dots stays a wall, not a void
             if (edge > 0.4 && !themed) h = (h + 0.5) % 1;
           } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;
             const segBand = (s % 4) < 2;
-            weave = ringBand && segBand ? 1.5 : (ringBand || segBand ? 0.8 : 0.28);
+            weave = ringBand && segBand ? 1.5 : (ringBand || segBand ? 0.85 : 0.45);
             if (ringBand !== segBand && !themed) h = (h + 0.06) % 1;
           }
           else if (pattern === 'checker') {
@@ -602,7 +602,8 @@ export function createTunnel() {
           // candy is a glossy rope — its stripes need to stay lit even on
           // quiet frequencies, or the cane looks broken. Other looks keep
           // their full contrast.
-          const lum = (colorMode === 'candy' ? 0.12 : 0.03) + 0.4 * (1 - Math.exp(-2.2 * drive));
+          // quiet bands must still read as tiles: a 3% floor went black under any weave
+          const lum = (colorMode === 'candy' ? 0.12 : 0.07) + 0.4 * (1 - Math.exp(-2.2 * drive));
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
 
           const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
