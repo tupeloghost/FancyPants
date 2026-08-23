@@ -1529,6 +1529,9 @@
   #btn-host-promote { margin-top: 9px; }
   #host-when { display: flex; gap: 8px; margin-top: 10px; }
   #host-when.hidden, #sched-form.hidden, #sc-done.hidden { display: none; }
+  #host-when { display: none !important; }   /* the fork is retired; the form opens from the menu */
+  #mode-card.sched-only h2, #mode-card.sched-only #mode-opts, #mode-card.sched-only #mc-host { display: none; }
+  #sc-head { font: 400 20px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2px; text-align: center; margin-bottom: 4px; color: hsl(var(--accent-h), 55%, 92%); }
   #host-when button {
     flex: 1; padding: 12px 0; cursor: pointer; border-radius: 999px;
     font: 11.5px 'SF Mono', Menlo, monospace; letter-spacing: 1.6px;
@@ -2693,6 +2696,7 @@
       <button id="hw-later">SCHEDULE IT</button>
     </div>
     <div id="sched-form" class="hidden">
+      <div id="sc-head">schedule a stream</div>
       <input id="sc-when" type="datetime-local">
       <input id="sc-where" type="url" placeholder="where folks watch: twitch, youtube, wherever" autocomplete="off">
       <input id="sc-name" maxlength="30" placeholder="your name" autocomplete="off">
@@ -2861,6 +2865,7 @@
           <button id="lyr-btn">LYRICS: ON</button>
           <button id="gentle-btn" title="softens flashes &amp; pulses, for light-sensitive folks">GENTLE LIGHTS: OFF</button>
           <button id="mq-page">YOUR ARTIST PAGE</button>
+          <button id="mq-sched">SCHEDULE A STREAM</button>
           <button id="mq-embed" title="a 'step inside' button for your website, linktree, anywhere">EMBED BUTTON</button>
         </div>
     <div id="suno-rights">paste a song you made or have rights to.</div>
@@ -2957,7 +2962,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 576</div>
+      <div id="build-stamp">build 577</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -2999,6 +3004,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=576"></script>
+<script type="module" src="js/main.js?v=577"></script>
 </body>
 </html>

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=576';
-import { drawQR } from './lib/qr.js?v=576';
-import { WORLDS } from './worlds/registry.js?v=576';
-import { Net, PALETTE } from './net.js?v=576';
-import { Presence } from './lib/presence.js?v=576';
-import { Pulses } from './lib/pulse.js?v=576';
-import { BeatClock } from './lib/beatclock.js?v=576';
-import { BeatCue } from './lib/beatcue.js?v=576';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=576';
-import { Race, placeOf, standings } from './lib/race.js?v=576';
-import { Signals } from './lib/signals.js?v=576';
-import { pickShareLine, loadLines } from './lib/lines.js?v=576';
-import { RouteMap } from './lib/map.js?v=576';
-import * as sfx from './lib/sfx.js?v=576';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=576';
-import { glowTexture } from './lib/glow.js?v=576';
+import { AudioEngine } from './audio-engine.js?v=577';
+import { drawQR } from './lib/qr.js?v=577';
+import { WORLDS } from './worlds/registry.js?v=577';
+import { Net, PALETTE } from './net.js?v=577';
+import { Presence } from './lib/presence.js?v=577';
+import { Pulses } from './lib/pulse.js?v=577';
+import { BeatClock } from './lib/beatclock.js?v=577';
+import { BeatCue } from './lib/beatcue.js?v=577';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=577';
+import { Race, placeOf, standings } from './lib/race.js?v=577';
+import { Signals } from './lib/signals.js?v=577';
+import { pickShareLine, loadLines } from './lib/lines.js?v=577';
+import { RouteMap } from './lib/map.js?v=577';
+import * as sfx from './lib/sfx.js?v=577';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=577';
+import { glowTexture } from './lib/glow.js?v=577';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1081,7 +1081,7 @@ $('track-select').addEventListener('change', e => {
   updatePlayBtn();
 });
 $('file-input').addEventListener('change', () => {
-  $('mode-card').classList.remove('show');
+  $('mode-card').classList.remove('show', 'sched-only');
   $('pl-row').classList.add('hidden');
   $('promote-form').classList.add('hidden');
   if (promoteWorld && WORLDS[promoteWorld]) {
@@ -3208,12 +3208,21 @@ $('opt-promote').addEventListener('click', () => {
 // when this tab is closed. Private to whoever they send it to: a public
 // what's-on list with three entries reads as abandoned.
 $('mc-host').addEventListener('click', () => {
-  $('pl-row').classList.add('hidden');
-  $('promote-form').classList.add('hidden');
-  $('host-when').classList.toggle('hidden');
+  // OPEN A ROOM opens a room. The schedule question moved to the menu,
+  // where planners go looking — the door stays one press deep.
+  $('mode-card').classList.remove('show', 'sched-only');
+  startRoom(genCode(), ensureName(), true);
+});
+// scheduling lives in the panel now: same form, calmer doorway
+$('mq-sched').addEventListener('click', e => {
+  e.stopPropagation();
+  $('mode-card').classList.add('show', 'sched-only');
+  $('host-when').classList.add('hidden');
+  $('sched-form').classList.remove('hidden');
+  if (!$('sc-name').value) $('sc-name').value = $('join-name').value || localStorage.getItem('fp_name') || '';
 });
 $('hw-now').addEventListener('click', () => {
-  $('mode-card').classList.remove('show');
+  $('mode-card').classList.remove('show', 'sched-only');
   startRoom(genCode(), ensureName(), true);
 });
 $('hw-later').addEventListener('click', () => {
@@ -3270,7 +3279,7 @@ $('sc-set').addEventListener('click', () => {
   $('opt-play').click();          // straight into building the set list
 });
 $('opt-vibe').addEventListener('click', () => {
-  $('mode-card').classList.remove('show');
+  $('mode-card').classList.remove('show', 'sched-only');
   $('pl-row').classList.add('hidden');
   endSet();
 });
@@ -3310,7 +3319,7 @@ $('pl-go').addEventListener('click', () => {
     .then(r => r.json())
     .then(info => {
       if (!info.songs || !info.songs.length) { $('pl-msg').textContent = 'no songs found on that playlist'; return; }
-      $('mode-card').classList.remove('show');
+      $('mode-card').classList.remove('show', 'sched-only');
       $('pl-row').classList.add('hidden');
       $('pl-msg').textContent = '';
       // the night is exactly as long as the playlist: one world per song
@@ -3329,7 +3338,7 @@ function openArtistDoor(raw) {
 $('pl-world-go').addEventListener('click', () => {
   const raw = $('pl-input').value.trim();
   const key = $('pl-world').value;
-  $('mode-card').classList.remove('show');
+  $('mode-card').classList.remove('show', 'sched-only');
   $('pl-pick').classList.add('hidden');
   $('pl-row').classList.add('hidden');
   $('pl-msg').textContent = '';
@@ -4972,7 +4981,7 @@ $('pr-go').addEventListener('click', () => {
       if (WORLDS[key]) { switchWorld(key); $('world-select').value = key; }
       promoteLink(raw);
       $('promote-form').classList.add('hidden');
-      $('mode-card').classList.remove('show');   // the card's job is done
+      $('mode-card').classList.remove('show', 'sched-only');   // the card's job is done
       return;
     }
     $('pr-msg').textContent = 'paste your song link, or load an mp3';
