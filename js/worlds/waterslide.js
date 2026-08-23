@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=562';
-import { themePaint } from '../lib/themes.js?v=562';
-import { TUNE } from '../lib/tune.js?v=562';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=563';
+import { themePaint } from '../lib/themes.js?v=563';
+import { TUNE } from '../lib/tune.js?v=563';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -85,6 +85,7 @@ export function createWaterslide() {
     surfB = ns;
   };
   let gulp = 0;   // the swallow's camera kick
+  let hugT = 0, hugIdx = 0;   // hugging a wall throws spray up that side
   window.__slideBend = bendWorld;   // dev handle: audition surface+path changes
 
   return {
@@ -570,6 +571,12 @@ export function createWaterslide() {
           const wet = 0.16 + level * 0.4 * reactivity + boost * 0.12;
           color.setHSL(tp[0], tp[1], Math.min(0.5, wet * Math.min(1.4, tp[2])));
           color.multiplyScalar(Math.min(1, Math.max(0.08, distAhead / 22))); // dim right at the camera
+          // hugging a wall: the tiles under you on that side light up
+          if (distAhead < 16) {
+            const hug = Math.max(0, Math.abs(steer) - 0.45) / 0.55;
+            const sideMatch = Math.max(0, Math.cos(a) * Math.sign(steer));
+            color.multiplyScalar(1 + hug * sideMatch * 1.3 * (1 - distAhead / 16));
+          }
           wall.setColorAt(idx, color);
           idx++;
         }
@@ -596,6 +603,25 @@ export function createWaterslide() {
       wcol.needsUpdate = true;
       water.material.size = 0.5 + audio.volume * 0.3 + boost * 0.3;
 
+      // hugging a wall throws water up that side — continuous while you lean
+      {
+        const hug = Math.max(0, Math.abs(steer) - 0.45) / 0.55;
+        hugT += dt;
+        if (hug > 0.15 && hugT > 0.09) {
+          hugT = 0;
+          sprayLife = Math.max(sprayLife, 0.35 + hug * 0.4);
+          const pos = spray.geometry.attributes.position;
+          const t0 = travel + 5, side = Math.sign(steer);
+          for (let k = 0; k < 14; k++) {
+            const i = hugIdx++ % 80;
+            pos.setXYZ(i,
+              curveX(t0) + side * R * (0.75 + Math.random() * 0.2),
+              dropY(t0) + 0.6 + Math.random() * 2.4,
+              -t0 + (Math.random() - 0.5) * 4);
+          }
+          pos.needsUpdate = true;
+        }
+      }
       // splash spray
       if (sprayLife > 0.02) {
         sprayLife *= Math.pow(0.06, dt);

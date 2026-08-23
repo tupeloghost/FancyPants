@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=562';
+import { glowTexture } from '../lib/glow.js?v=563';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -22,6 +22,7 @@ export function createTunnel() {
   let currentShape = 'slat';
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
+  const WHITE = new THREE.Color(1, 1, 1);
 
   const ringZ = new Float32Array(RINGS);
   const ringSeed = new Float32Array(RINGS);
@@ -41,6 +42,8 @@ export function createTunnel() {
   // ── the rush ── shots of speed, same grammar as the slide: a tap surges,
   // a door SURGES, and every beat gives the tube a pulse of forward motion
   let rush = 0, baseFov = 70;
+  let holdK = 0;            // the held finger: a sustained rush, the tube tightens
+  let ripples = [];         // taps as physical bulges racing down the tube
 
   const BANDS = ['bass', 'lowMid', 'mid', 'high', 'treble'];
 
@@ -264,6 +267,8 @@ export function createTunnel() {
       tapFlash = 1;
       tapQueued = true;
       rush = Math.max(rush, 1);      // a tap is a shot of speed
+      ripples.push({ at: performance.now() / 1000 });
+      if (ripples.length > 4) ripples.shift();
     },
 
     update(dt, audio, participants, opts) {
@@ -279,6 +284,10 @@ export function createTunnel() {
 
       rush *= Math.pow(0.2, dt);
       if (audio.beat) rush = Math.max(rush, 0.3 + audio.beatIntensity * 0.35);
+      // HOLD = go faster, same grammar as the slide: a sustained surge that
+      // also pulls the walls in close, which is what speed looks like
+      holdK += (((opts.holding && !attract) ? 1 : 0) - holdK) * Math.min(1, dt * 4);
+      rush = Math.max(rush, holdK * 0.9);
       const speed = (10 + audio.volume * 55 * reactivity) + rush * 45;
       travel += speed * dt;
       // speed you can SEE: the lens opens with the rush
@@ -352,8 +361,12 @@ export function createTunnel() {
         if (doorPop === 0) { door.visible = false; door.userData.rim.material.opacity = 0.95; }
       }
 
-      const baseRadius = 6;
+      const baseRadius = 6 * (1 - holdK * 0.14);
       const radius = baseRadius * (1 + audio.bass * 0.5 * reactivity + audio.beatIntensity * 0.25 * reactivity);
+      // ripples live in world z: born at the lens, they race down the tube
+      const nowS = performance.now() / 1000;
+      ripples = ripples.filter(rp => nowS - rp.at < 2.6);
+      const px = steer.x * 3.2, py = steer.y * 2.4;   // where the rider is in the tube
 
       for (let r = 0; r < RINGS; r++) {
         let z = ringZ[r] + travel;
@@ -389,6 +402,12 @@ export function createTunnel() {
           const level = audio[BANDS[b0]] * (1 - bf) + audio[BANDS[b1]] * bf;
 
           let segRadius = radius * silhouette(a, shape) * (1 + level * 0.18 * reactivity);
+          for (let q = 0; q < ripples.length; q++) {
+            const age = nowS - ripples[q].at;
+            const rz = -age * 42;                               // the bulge's z right now
+            const dz = (z - rz) / 5.5;
+            segRadius *= 1 + Math.exp(-dz * dz) * 0.34 * Math.max(0, 1 - age / 2.6);
+          }
           if (pattern === 'waves') {
             segRadius += Math.sin(a * 3 + travel * 0.12) * (1 + audio.mid * 2 * reactivity);
           } else if (pattern === 'checker' && (r + s) % 2) {
@@ -594,6 +613,14 @@ export function createTunnel() {
           if (colorMode === 'candy') {
             const peak = Math.max(color.r, color.g, color.b);
             if (peak > 0 && peak < 0.18) color.multiplyScalar(0.18 / peak);
+          }
+          if (z > -14) {
+            // brushing the wall: the tiles you graze light up white-hot
+            const dx = (cx + Math.cos(a) * segRadius + steer.x * z * 0.06) - px;
+            const dy = (cy + Math.sin(a) * segRadius + steer.y * z * 0.06) - py;
+            const d = Math.hypot(dx, dy);
+            const brush = Math.max(0, 1 - d / 3.4) * Math.max(0, 1 + z / 14);
+            if (brush > 0) { color.multiplyScalar(1 + brush * 1.4); color.lerp(WHITE, brush * 0.45); }
           }
           wall.setColorAt(idx, color);
           idx++;
