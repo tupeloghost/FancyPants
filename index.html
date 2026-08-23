@@ -403,6 +403,13 @@
   #promote-form { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 6px; }
   #promote-form.hidden { display: none; }
   #cc-watch.hidden { display: none; }
+  /* the artist door in the panel folds until asked for: players who came to
+     listen never parse it at all */
+  #own-song { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
+    color: var(--ink-dim); font: 11px 'SF Mono', Menlo, monospace; letter-spacing: 1.4px; padding: 9px 0; border-radius: 10px; }
+  #own-song:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
+  #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
+  #page-music.own #own-song { display: none; }
   /* the chill chips must never clip: stack them where the row can't fit */
   @media (max-width: 620px) {
     #page-music .chill-row { flex-direction: column; }
@@ -2486,7 +2493,6 @@
          music it is. -->
     <button id="btn-solo" class="cta">PLAY</button>
     <button id="btn-host-promote" class="cta-soft">HOST OR PROMOTE</button>
-    <div id="today" class="hidden"></div>
     <div id="sunday" class="hidden"><span id="sun-text"></span> <a id="sun-cal" href="#" download="sundays-best.ics">add to calendar</a></div>
     <div id="week-line" class="hidden"></div>
     <div id="side-doors">
@@ -2507,9 +2513,8 @@
     </div>
   </div>
   <div id="maker-line">
-    handmade worlds for your music, your events, and your community.
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
-    <span id="photo-note">contains flashing lights &amp; motion. toggle GENTLE LIGHTS in the music tab if needed.</span>
+    <span id="photo-note">flashing lights inside. GENTLE LIGHTS is in the music tab.</span>
   </div>
   <div id="waitlist-form" class="hidden">
     <div id="wl-lead">paste one of your songs and play it in every world, on the house. to share, your song rides TUNNEL or Sunday&rsquo;s best, a brand-new world every sunday. move it any time, links follow. <b>artist access</b> lets your song call any world home, plus your own analytics. leave your email and you&rsquo;re first in line.</div>
@@ -2873,6 +2878,7 @@
         <input type="file" id="file-input" accept="audio/*">
       </div>
       <div class="row host-only">
+        <button id="own-song">+ play your own song</button>
         <div id="suno-row">
           <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
           <button id="suno-go" title="load this link">&#9654;</button>
@@ -2984,7 +2990,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 584</div>
+      <div id="build-stamp">build 585</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3026,6 +3032,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=584"></script>
+<script type="module" src="js/main.js?v=585"></script>
 </body>
 </html>

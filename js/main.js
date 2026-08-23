@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=584';
-import { drawQR } from './lib/qr.js?v=584';
-import { WORLDS } from './worlds/registry.js?v=584';
-import { Net, PALETTE } from './net.js?v=584';
-import { Presence } from './lib/presence.js?v=584';
-import { Pulses } from './lib/pulse.js?v=584';
-import { BeatClock } from './lib/beatclock.js?v=584';
-import { BeatCue } from './lib/beatcue.js?v=584';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=584';
-import { Race, placeOf, standings } from './lib/race.js?v=584';
-import { Signals } from './lib/signals.js?v=584';
-import { pickShareLine, loadLines } from './lib/lines.js?v=584';
-import { RouteMap } from './lib/map.js?v=584';
-import * as sfx from './lib/sfx.js?v=584';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=584';
-import { glowTexture } from './lib/glow.js?v=584';
+import { AudioEngine } from './audio-engine.js?v=585';
+import { drawQR } from './lib/qr.js?v=585';
+import { WORLDS } from './worlds/registry.js?v=585';
+import { Net, PALETTE } from './net.js?v=585';
+import { Presence } from './lib/presence.js?v=585';
+import { Pulses } from './lib/pulse.js?v=585';
+import { BeatClock } from './lib/beatclock.js?v=585';
+import { BeatCue } from './lib/beatcue.js?v=585';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=585';
+import { Race, placeOf, standings } from './lib/race.js?v=585';
+import { Signals } from './lib/signals.js?v=585';
+import { pickShareLine, loadLines } from './lib/lines.js?v=585';
+import { RouteMap } from './lib/map.js?v=585';
+import * as sfx from './lib/sfx.js?v=585';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=585';
+import { glowTexture } from './lib/glow.js?v=585';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2716,6 +2716,7 @@ function rulesFor(key) {
 let autoWanted = false;
 function dismissOverlay() {
   audio.ensureContext();
+  if (window.__shareSuno || window.__sunoShare) $('page-music').classList.add('own');
   if (window.__shareWorld) { switchWorld(window.__shareWorld); window.__shareWorld = null; }
   // a shared suno link: reconstruct the paste and load it like a hand did
   if (window.__shareSuno) {
@@ -3216,6 +3217,11 @@ $('mc-host').addEventListener('click', () => {
   askName(() => startRoom(genCode(), ensureName(), true));
 });
 // scheduling lives in the panel now: same form, calmer doorway
+$('own-song').addEventListener('click', e => {
+  e.stopPropagation();
+  $('page-music').classList.add('own');
+  $('suno-input').focus();
+});
 $('mq-sched').addEventListener('click', e => {
   e.stopPropagation();
   $('mode-card').classList.add('show', 'sched-only');
