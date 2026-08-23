@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=590';
-import { drawQR } from './lib/qr.js?v=590';
-import { WORLDS } from './worlds/registry.js?v=590';
-import { Net, PALETTE } from './net.js?v=590';
-import { Presence } from './lib/presence.js?v=590';
-import { Pulses } from './lib/pulse.js?v=590';
-import { BeatClock } from './lib/beatclock.js?v=590';
-import { BeatCue } from './lib/beatcue.js?v=590';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=590';
-import { Race, placeOf, standings } from './lib/race.js?v=590';
-import { Signals } from './lib/signals.js?v=590';
-import { pickShareLine, loadLines } from './lib/lines.js?v=590';
-import { RouteMap } from './lib/map.js?v=590';
-import * as sfx from './lib/sfx.js?v=590';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=590';
-import { glowTexture } from './lib/glow.js?v=590';
+import { AudioEngine } from './audio-engine.js?v=591';
+import { drawQR } from './lib/qr.js?v=591';
+import { WORLDS } from './worlds/registry.js?v=591';
+import { Net, PALETTE } from './net.js?v=591';
+import { Presence } from './lib/presence.js?v=591';
+import { Pulses } from './lib/pulse.js?v=591';
+import { BeatClock } from './lib/beatclock.js?v=591';
+import { BeatCue } from './lib/beatcue.js?v=591';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=591';
+import { Race, placeOf, standings } from './lib/race.js?v=591';
+import { Signals } from './lib/signals.js?v=591';
+import { pickShareLine, loadLines } from './lib/lines.js?v=591';
+import { RouteMap } from './lib/map.js?v=591';
+import * as sfx from './lib/sfx.js?v=591';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=591';
+import { glowTexture } from './lib/glow.js?v=591';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1617,6 +1617,10 @@ function togglePlay() {
 
 $('qb-prev').addEventListener('click', playPrev);
 $('qb-next').addEventListener('click', () => playAuto(true));
+$('qb-home').addEventListener('click', () => {
+  // home means home: a clean landing, nothing carried along
+  location.assign(location.pathname);
+});
 $('qb-play').addEventListener('click', togglePlay);
 $('qb-world').addEventListener('click', () => stepWorld(1));
 $('qb-look').addEventListener('click', () => stepLook(1));
