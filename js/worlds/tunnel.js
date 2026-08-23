@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=567';
+import { glowTexture } from '../lib/glow.js?v=568';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -583,7 +583,7 @@ export function createTunnel() {
             const dz2 = (along % 13 + 13) % 13 - 6.5;
             const d = Math.sqrt(dx * dx + dz2 * dz2);
             const edge = Math.min(1, Math.max(0, 1 - (d - 3.1) / 1.2));
-            weave = 0.55 + 0.95 * edge;   // dots: brighter, not a different world
+            weave = 0.55 + 0.75 * edge;   // dots: brighter, not a different world
             if (edge > 0.4 && !themed) h = (h + 0.16) % 1;   // a shift, not a complement — no blotches
           } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;
@@ -603,11 +603,11 @@ export function createTunnel() {
           // quiet frequencies, or the cane looks broken. Other looks keep
           // their full contrast.
           // quiet bands must still read as tiles: a 3% floor went black under any weave
-          const lum = (colorMode === 'candy' ? 0.12 : 0.07) + 0.4 * (1 - Math.exp(-2.2 * drive));
+          const lum = (colorMode === 'candy' ? 0.12 : 0.05) + 0.34 * (1 - Math.exp(-2.2 * drive));
           color.setHSL(h, sat, colorMode === 'pastel' ? lum + 0.12 : lum);
 
           const proximityDim = Math.min(1, Math.max(0.12, -z / 16));
-          const rawDrive = Math.min(1.9, (0.55 + level * 1.9 * reactivity + audio.beatIntensity * 0.7 + tapFlash * 0.5) * boost * (0.82 + jit * 0.36));
+          const rawDrive = Math.min(1.55, (0.5 + level * 1.6 * reactivity + audio.beatIntensity * 0.6 + tapFlash * 0.45) * boost * (0.82 + jit * 0.36));
           const drive2 = 1 + (rawDrive - 1) * hdr;
           // weave lives OUTSIDE the clamp — patterns keep their contrast
           color.multiplyScalar(Math.max(0.12, drive2) * proximityDim * weave);
@@ -621,7 +621,7 @@ export function createTunnel() {
             const dy = (cy + Math.sin(a) * segRadius + steer.y * z * 0.06) - py;
             const d = Math.hypot(dx, dy);
             const brush = Math.max(0, 1 - d / 3.4) * Math.max(0, 1 + z / 14);
-            if (brush > 0) { color.multiplyScalar(1 + brush * 1.4); color.lerp(WHITE, brush * 0.45); }
+            if (brush > 0) { color.multiplyScalar(1 + brush * 0.9); color.lerp(WHITE, brush * 0.3); }
           }
           wall.setColorAt(idx, color);
           idx++;
