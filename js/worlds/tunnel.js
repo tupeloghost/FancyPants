@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=566';
+import { glowTexture } from '../lib/glow.js?v=567';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -572,7 +572,7 @@ export function createTunnel() {
             weave = swirl > 0.25 ? 1.4 : (swirl > -0.35 ? 0.75 : 0.42);
             if (!themed) {
               if (swirl > 0.25) h = (h + 0.07) % 1;
-              else if (swirl < -0.35) h = (h + 0.5) % 1;
+              else if (swirl < -0.35) h = (h + 0.18) % 1;
             }
           } else if (pattern === 'polka') {
             const arc = a * 6.2;
@@ -583,8 +583,8 @@ export function createTunnel() {
             const dz2 = (along % 13 + 13) % 13 - 6.5;
             const d = Math.sqrt(dx * dx + dz2 * dz2);
             const edge = Math.min(1, Math.max(0, 1 - (d - 3.1) / 1.2));
-            weave = 0.38 + 1.3 * edge;   // the field between dots stays a wall, not a void
-            if (edge > 0.4 && !themed) h = (h + 0.5) % 1;
+            weave = 0.55 + 0.95 * edge;   // dots: brighter, not a different world
+            if (edge > 0.4 && !themed) h = (h + 0.16) % 1;   // a shift, not a complement — no blotches
           } else if (pattern === 'plaid') {
             const ringBand = (r % 6) < 3;
             const segBand = (s % 4) < 2;
