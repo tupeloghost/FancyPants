@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=577';
-import { drawQR } from './lib/qr.js?v=577';
-import { WORLDS } from './worlds/registry.js?v=577';
-import { Net, PALETTE } from './net.js?v=577';
-import { Presence } from './lib/presence.js?v=577';
-import { Pulses } from './lib/pulse.js?v=577';
-import { BeatClock } from './lib/beatclock.js?v=577';
-import { BeatCue } from './lib/beatcue.js?v=577';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=577';
-import { Race, placeOf, standings } from './lib/race.js?v=577';
-import { Signals } from './lib/signals.js?v=577';
-import { pickShareLine, loadLines } from './lib/lines.js?v=577';
-import { RouteMap } from './lib/map.js?v=577';
-import * as sfx from './lib/sfx.js?v=577';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=577';
-import { glowTexture } from './lib/glow.js?v=577';
+import { AudioEngine } from './audio-engine.js?v=578';
+import { drawQR } from './lib/qr.js?v=578';
+import { WORLDS } from './worlds/registry.js?v=578';
+import { Net, PALETTE } from './net.js?v=578';
+import { Presence } from './lib/presence.js?v=578';
+import { Pulses } from './lib/pulse.js?v=578';
+import { BeatClock } from './lib/beatclock.js?v=578';
+import { BeatCue } from './lib/beatcue.js?v=578';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=578';
+import { Race, placeOf, standings } from './lib/race.js?v=578';
+import { Signals } from './lib/signals.js?v=578';
+import { pickShareLine, loadLines } from './lib/lines.js?v=578';
+import { RouteMap } from './lib/map.js?v=578';
+import * as sfx from './lib/sfx.js?v=578';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=578';
+import { glowTexture } from './lib/glow.js?v=578';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2799,6 +2799,7 @@ function startRoom(code, name, asOwner) {
       $('sc-url').textContent = joinURL.replace(/^https?:\/\//, '');
       $('sc-code').textContent = code;
       $('sc-qr').classList.toggle('gone', !drawQR($('sc-qr'), joinURL, 4));
+      $('sc-myname').value = net.local.name || '';
       $('stream-card').classList.remove('hidden');
     }
   };
@@ -3214,6 +3215,20 @@ $('mc-host').addEventListener('click', () => {
   startRoom(genCode(), ensureName(), true);
 });
 // scheduling lives in the panel now: same form, calmer doorway
+// the host card names YOU, editable right there — no more silent washtub
+$('sc-myname').addEventListener('change', () => {
+  const n = $('sc-myname').value.trim().slice(0, 14);
+  if (!n) { $('sc-myname').value = net.local.name || ''; return; }
+  $('join-name').value = n;
+  net.rename(n);
+});
+$('sc-mydice').addEventListener('click', e => {
+  e.stopPropagation();
+  $('name-dice').click();
+  const n = $('join-name').value;
+  $('sc-myname').value = n;
+  net.rename(n);
+});
 $('mq-sched').addEventListener('click', e => {
   e.stopPropagation();
   $('mode-card').classList.add('show', 'sched-only');

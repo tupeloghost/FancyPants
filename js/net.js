@@ -50,6 +50,15 @@ export class Net {
   }
 
   get local() { return this.participants[0]; }
+  // change your name mid-room: the server treats a second join on the same
+  // connection as a rename (rate-limited to one per 30s)
+  rename(name) {
+    this.local.name = name;
+    localStorage.setItem('fp_name', name);
+    if (this._ws && this._ws.readyState === 1) {
+      this._ws.send(JSON.stringify({ t: 'join', name, owner: this.owner }));
+    }
+  }
 
   // ── real connection (PartyKit) ──
   join(room, name, asOwner = false) {
