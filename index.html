@@ -392,6 +392,10 @@
     font: 12px 'Jost', 'Futura', 'Avenir Next', sans-serif;
     color: var(--ink-dim); letter-spacing: 1.5px;
   }
+  /* CLIP THAT is the promo artist's button alone */
+  #qb-clipthat { display: none; }
+  body.promo #qb-clipthat { display: flex; }
+  body.guest #qb-clipthat { display: none; }
   /* rooms are for experiencing it TOGETHER: promote lives in solo play only */
   body.guest #qb-promote, body.hosting #qb-promote { display: none; }
 
@@ -3166,6 +3170,7 @@
   <span class="qsep"></span>
   <button class="qb" id="qb-gift" title="drop a gift into the world"><i><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="9" rx="1.4"/><line x1="12" y1="10" x2="12" y2="19"/><path d="M5 10 H19 M12 10 C9 10 7 8.5 7.5 6.5 C8 4.8 10.5 5 12 7.5 C13.5 5 16 4.8 16.5 6.5 C17 8.5 15 10 12 10"/></svg></i><em>gift</em></button>
   <button class="qb" id="qb-host" title="open a room. friends scan the QR and drop in"><i><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.2"/><circle class="f" cx="16.5" cy="16.5" r="1.6"/></svg></i><em>host</em></button>
+  <button class="qb" id="qb-clipthat" title="save the last 15 seconds as your clip"><i><svg viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="13" height="11" rx="2"/><path class="f" d="M16.5 10.5 L20.5 8 V16 L16.5 13.5 Z"/></svg></i><em>clip that</em></button>
   <button class="qb" id="qb-promote" title="make a post from this moment"><i><svg viewBox="0 0 24 24"><path d="M4.5 10 V14 L15 17.5 V6.5 Z"/><path d="M15 9.5 C18 10 18 14 15 14.5"/><line x1="7.5" y1="14.8" x2="8.6" y2="19"/></svg></i><em>promote</em></button>
   <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i><svg viewBox="0 0 24 24"><path d="M14.5 5 V15.2"/><circle class="f" cx="12.2" cy="16.4" r="2.6"/><path d="M14.5 5 L18.5 6.6"/><line class="ic-slash" x1="5.5" y1="20" x2="19.5" y2="4.5"/></svg></i><em>mute</em></button>
   <span class="qsep"></span>
@@ -3316,7 +3321,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 641</div>
+      <div id="build-stamp">build 643</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3358,6 +3363,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=641"></script>
+<script type="module" src="js/main.js?v=643"></script>
 </body>
 </html>
