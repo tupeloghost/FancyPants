@@ -4,8 +4,8 @@
 // Worlds only supply placeGhost(participant, index, outVector3).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from './glow.js?v=624';
-import { PALETTE } from '../net.js?v=624';
+import { glowSprite, glowPoints } from './glow.js?v=625';
+import { PALETTE } from '../net.js?v=625';
 
 const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
 const RANK_AT = [0, 120, 350, 800, 1600];
@@ -31,6 +31,7 @@ export class Presence {
     this._proj = new THREE.Vector3();
     this._layer = null;
     this.colorShift = 0;  // a local flourish: spins everyone's crowd colors on YOUR screen
+    this.crowns = new Map(); // name -> until (ms): who wears a crown right now
   }
 
   init(scene) {
@@ -95,12 +96,14 @@ export class Presence {
       const colorHex = PALETTE[(p.color + this.colorShift) % PALETTE.length];
 
       const rk = rankOf(p.score);
-      if (g.id !== p.id || g.rank !== rk || g.pname !== p.name) {
+      const crowned = (this.crowns.get(p.name) || 0) > performance.now();
+      if (g.id !== p.id || g.rank !== rk || g.pname !== p.name || g.crowned !== crowned) {
+        g.crowned = crowned;
         g.rank = rk;
         g.pname = p.name;
         g.tag.dataset.pname = p.name;
         const css = '#' + colorHex.toString(16).padStart(6, '0');
-        g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
+        g.txt.textContent = (crowned ? '\u{1F451} ' : '') + (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
         g.dot.style.background = css;
         g.dot.style.boxShadow = `0 0 9px ${css}, 0 0 3px ${css}`;
         g.tag.style.borderColor = css + (rk >= 3 ? 'cc' : '66');
@@ -110,7 +113,7 @@ export class Presence {
         g.seeded = false;              // a new person starts a fresh trail
         g.flare = 1.6; // join flare — the payoff moment
         const css = '#' + colorHex.toString(16).padStart(6, '0');
-        g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
+        g.txt.textContent = (crowned ? '\u{1F451} ' : '') + (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
         g.dot.style.background = css;
         g.dot.style.boxShadow = `0 0 9px ${css}, 0 0 3px ${css}`;
         g.tag.style.borderColor = css + '66';
@@ -222,6 +225,11 @@ export class Presence {
       g.id = null;
       g.seeded = false;
     }
+  }
+
+  // crown a player by name — their plate wears it until the spell wears off
+  crown(name, ms) {
+    this.crowns.set(name, performance.now() + ms);
   }
 
   // a spent wonder door sparkles the CROWD instead: every ghost flares and

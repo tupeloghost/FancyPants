@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=624';
-import { drawQR } from './lib/qr.js?v=624';
-import { WORLDS } from './worlds/registry.js?v=624';
-import { Net, PALETTE } from './net.js?v=624';
-import { Presence } from './lib/presence.js?v=624';
-import { Pulses } from './lib/pulse.js?v=624';
-import { BeatClock } from './lib/beatclock.js?v=624';
-import { BeatCue } from './lib/beatcue.js?v=624';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=624';
-import { Race, placeOf, standings } from './lib/race.js?v=624';
-import { Signals } from './lib/signals.js?v=624';
-import { pickShareLine, loadLines } from './lib/lines.js?v=624';
-import { RouteMap } from './lib/map.js?v=624';
-import * as sfx from './lib/sfx.js?v=624';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=624';
-import { glowTexture } from './lib/glow.js?v=624';
+import { AudioEngine } from './audio-engine.js?v=625';
+import { drawQR } from './lib/qr.js?v=625';
+import { WORLDS } from './worlds/registry.js?v=625';
+import { Net, PALETTE } from './net.js?v=625';
+import { Presence } from './lib/presence.js?v=625';
+import { Pulses } from './lib/pulse.js?v=625';
+import { BeatClock } from './lib/beatclock.js?v=625';
+import { BeatCue } from './lib/beatcue.js?v=625';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=625';
+import { Race, placeOf, standings } from './lib/race.js?v=625';
+import { Signals } from './lib/signals.js?v=625';
+import { pickShareLine, loadLines } from './lib/lines.js?v=625';
+import { RouteMap } from './lib/map.js?v=625';
+import * as sfx from './lib/sfx.js?v=625';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=625';
+import { glowTexture } from './lib/glow.js?v=625';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2653,9 +2653,10 @@ function openRivalsPick() {
     b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
-  myEmojis.forEach(ch => {
+  myEmojis.forEach((left, ch) => {
     const b = document.createElement('button');
     b.textContent = ch; b.classList.add('caught');
+    const u = document.createElement('u'); u.textContent = left; b.appendChild(u);
     b.addEventListener('click', () => { sendBombC(name, ch); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
@@ -5701,6 +5702,14 @@ const RAIN_STYLE = {
   '\u{1F4A9}': { cls: 'rain-splat', n: 22 },
   '\u{1F61B}': { cls: 'rain-boing', n: 16 },
   '\u{1F389}': { cls: 'rain-bounce', n: 24 },
+  '\u{1F98B}': { cls: 'rain-arc', n: 14 },
+  '\u{1F308}': { cls: 'rain-twinkle', n: 18 },
+  '\u{1FAE7}': { cls: 'rain-rise', n: 26 },
+  '\u{1F451}': { cls: 'rain-arc', n: 10 },
+  '\u{1F340}': { cls: 'rain-bounce', n: 22 },
+  '\u{1F33B}': { cls: 'rain-arc', n: 14 },
+  '\u{1F438}': { cls: 'rain-boing', n: 14 },
+  '\u{1F369}': { cls: 'rain-bounce', n: 20 },
 };
 function emojiRain(char, fromName, scale = 1) {
   const box = $('emoji-rain');
@@ -5740,12 +5749,86 @@ function emojiRain(char, fromName, scale = 1) {
   impact(0.5);
 }
 
+// ── every emoji has a SIGNATURE ── the rain is the confetti; the signature
+// is what the emoji DOES to the room. Washes paint the air, the canvas
+// dances (jelly, hops, a full rainbow), and two of them are little spells:
+// the crown crowns you, the clover deals you a free door.
+const fxLayer = document.createElement('div');
+fxLayer.id = 'fx-layer';
+document.body.appendChild(fxLayer);
+function fxClass(cls, ms) {
+  if (document.body.classList.contains('gentle')) return;   // gentle keeps the ground still
+  document.body.classList.remove(cls); void document.body.offsetWidth;
+  document.body.classList.add(cls);
+  setTimeout(() => document.body.classList.remove(cls), ms);
+}
+function fxWash(bg, ms) {
+  const d = document.createElement('div');
+  d.className = 'fx-wash';
+  d.style.background = bg;
+  d.style.animationDuration = ms + 'ms';
+  d.addEventListener('animationend', () => d.remove());
+  fxLayer.appendChild(d);
+}
+function fxDrift(char, n, cls) {
+  for (let i = 0; i < n; i++) {
+    const sp = document.createElement('span');
+    sp.textContent = char;
+    sp.className = cls;
+    sp.style.left = (Math.random() * 92) + 'vw';
+    sp.style.top = (20 + Math.random() * 60) + 'vh';
+    sp.style.fontSize = (22 + Math.random() * 26) + 'px';
+    sp.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    sp.style.animationDelay = (Math.random() * 0.9) + 's';
+    sp.addEventListener('animationend', () => sp.remove());
+    fxLayer.appendChild(sp);
+  }
+}
+function fxBits(cls, n) {
+  const HUES = [340, 45, 160, 200, 270, 20];
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('i');
+    b.className = cls;
+    b.style.left = (Math.random() * 100) + 'vw';
+    b.style.background = `hsl(${HUES[i % HUES.length]}, 95%, 65%)`;
+    b.style.animationDuration = (1.2 + Math.random() * 1.2) + 's';
+    b.style.animationDelay = (Math.random() * 0.5) + 's';
+    b.style.transform = `rotate(${Math.random() * 360}deg)`;
+    b.addEventListener('animationend', () => b.remove());
+    fxLayer.appendChild(b);
+  }
+}
+const EMOJI_FX = {
+  '\u2764\uFE0F': () => fxWash('radial-gradient(ellipse at center, transparent 42%, rgba(255,80,140,0.38) 100%)', 2200),
+  '\u{1F47B}': () => { fxClass('fx-spook', 1600); fxDrift('\u{1F47B}', 1, 'fx-bigghost'); },
+  '\u{1F319}': () => fxWash('radial-gradient(ellipse at center, rgba(20,30,90,0) 28%, rgba(8,14,58,0.55) 100%)', 3000),
+  '\u{1F352}': () => fxClass('fx-jelly', 1000),
+  '\u2728': () => fxWash('radial-gradient(ellipse at center, rgba(255,255,255,0.24) 0%, transparent 70%)', 1100),
+  '\u{1F4A9}': () => fxWash('linear-gradient(115deg, transparent 25%, rgba(255,215,130,0.34) 50%, transparent 75%)', 1600),
+  '\u{1F61B}': () => fxClass('fx-wiggle', 1200),
+  '\u{1F389}': () => { fxClass('fx-pop', 900); fxBits('fx-conf', 30); haptic([10, 30, 10]); },
+  '\u{1F98B}': () => fxDrift('\u{1F98B}', 7, 'fx-flutter'),
+  '\u{1F308}': () => fxClass('fx-rainbow', 2600),
+  '\u{1FAE7}': () => { fxClass('fx-dream', 2400); fxDrift('\u{1FAE7}', 12, 'fx-bubble'); },
+  '\u{1F340}': () => fxWash('radial-gradient(ellipse at center, rgba(90,220,120,0.2) 0%, transparent 70%)', 1600),
+  '\u{1F33B}': () => { fxWash('radial-gradient(ellipse at bottom, rgba(255,190,60,0.32) 0%, transparent 65%)', 2400); fxDrift('\u{1F33B}', 5, 'fx-flutter'); },
+  '\u{1F438}': () => { fxClass('fx-hop', 1100); haptic([15, 70, 15, 70, 15]); },
+  '\u{1F369}': () => { fxClass('fx-sweet', 1200); fxBits('fx-spr', 34); },
+};
+const CROWN = '\u{1F451}', CLOVER = '\u{1F340}';
+function runFx(char) { const f = EMOJI_FX[char]; if (f) f(); }
+
 // send a CAUGHT emoji by character (gift-hoop trophies live outside EMOJIS)
 function sendBombC(toName, char) {
+  if (!myEmojis.has(char)) return;             // spent trophies leave the shelf
   if (!rateOk(emoteLog, 20000, 6)) return;
+  const left = myEmojis.get(char) - 1;
+  if (left <= 0) { myEmojis.delete(char); flash(char + ' ALL USED UP', 1500); }
+  else myEmojis.set(char, left);
   myStats.bombs++; statsPush();
   net.sendEmote(0, toName, char);
   flash(char + ' \u2192 ' + toName.toUpperCase(), 1600);
+  runFx(char);
   sfx.hit(6, true);
 }
 
@@ -5754,13 +5837,14 @@ function sendBomb(toName, idx) {
   myStats.bombs++; statsPush();
   net.sendEmote(idx, toName, EMOJIS[idx]);
   flash(EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase(), 1600);
+  runFx(EMOJIS[idx]);
   sfx.hit(6, true);
 }
 
 // ── gift hoops ── the host drops an emoji into the world; the first player
 // through a wonder door catches it and carries it for the rest of the night
 const GIFTS = ['\u{1F98B}', '\u{1F308}', '\u{1FAE7}', '\u{1F451}', '\u{1F340}', '\u{1F33B}', '\u{1F438}', '\u{1F369}'];
-const myEmojis = new Set();       // caught this session, joins every picker
+const myEmojis = new Map();       // caught this session: emoji -> throws left (10 per catch, stacks)
 let pendingGift = null;           // {e, from} while a hoop is in the world
 
 net.onGift = (name, e, quiet) => {
@@ -5776,9 +5860,9 @@ net.onCaught = (p, e, from, mine) => {
   pendingGift = null;
   $('gift-note').classList.add('hidden');
   if (mine) {
-    myEmojis.add(e);
+    myEmojis.set(e, (myEmojis.get(e) || 0) + 10);
     emojiRain(e, null);
-    flash(e + ' IS YOURS FOR THE NIGHT', 2600);
+    flash(e + ' IS YOURS \u00D7 ' + myEmojis.get(e), 2600);
     haptic([12, 40, 18]);
     sfx.fanfare();
   } else {
@@ -5860,11 +5944,22 @@ net.onEmote = (p, i, to, e) => {
     sfx.thud();
     return;
   }
-  if (to && to === net.local.name) emojiRain(e || EMOJIS[i] || EMOJIS[0], p.name);
+  const char = e || EMOJIS[i] || EMOJIS[0];
+  if (to && to === net.local.name) emojiRain(char, p.name);
   else if (to) {
     // everyone shares the moment: a lighter rain plus who sent it to who
-    emojiRain(e || EMOJIS[i] || EMOJIS[0], null, 0.35);
-    flash((p.name || '?').toUpperCase() + ' ' + (e || EMOJIS[i] || '') + ' \u2192 ' + to.toUpperCase(), 1800);
+    emojiRain(char, null, 0.35);
+    flash((p.name || '?').toUpperCase() + ' ' + char + ' \u2192 ' + to.toUpperCase(), 1800);
+  }
+  runFx(char);   // the signature plays for the whole room
+  // two of them are little SPELLS on the receiver
+  if (char === CROWN && to) {
+    presence.crown(to, 60000);
+    if (to === net.local.name) flash('YOU WEAR THE CROWN \u{1F451}', 2600);
+  }
+  if (char === CLOVER && to === net.local.name) {
+    // luck: the clover deals you a free wonder door
+    setTimeout(() => document.dispatchEvent(new CustomEvent('fp-lookspark')), 500);
   }
 };
 
@@ -5895,9 +5990,10 @@ net.onEmote = (p, i, to, e) => {
       b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(name, k); closeGhostPick(); });
       pick.appendChild(b);
     });
-    myEmojis.forEach(ch => {
+    myEmojis.forEach((left, ch) => {
       const b = document.createElement('button');
       b.textContent = ch; b.classList.add('caught');
+      const u = document.createElement('u'); u.textContent = left; b.appendChild(u);
       b.addEventListener('click', ev => { ev.stopPropagation(); sendBombC(name, ch); closeGhostPick(); });
       pick.appendChild(b);
     });
@@ -5952,9 +6048,10 @@ function renderPlist() {
         b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(p.name, k); pick.remove(); });
         pick.appendChild(b);
       });
-      myEmojis.forEach(ch => {
+      myEmojis.forEach((left, ch) => {
         const b = document.createElement('button');
         b.textContent = ch; b.classList.add('caught');
+        const u = document.createElement('u'); u.textContent = left; b.appendChild(u);
         b.addEventListener('click', ev => { ev.stopPropagation(); sendBombC(p.name, ch); pick.remove(); });
         pick.appendChild(b);
       });
