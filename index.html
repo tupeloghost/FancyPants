@@ -327,6 +327,23 @@
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
   #rb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
+  /* the clip preview: see the goods before pressing SHARE */
+  #rs-clip { width: 100%; max-height: 200px; object-fit: cover; border-radius: 14px; margin-top: 14px;
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.3); }
+  #rs-clip.hidden { display: none; }
+  /* next world as picture tiles: a glimpse, not a guess */
+  #rs-worlds-cap { margin-top: 14px; font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    letter-spacing: 2.4px; color: var(--ink-dim); text-align: center; }
+  #rs-worlds-cap.hidden, #rs-worlds.hidden { display: none; }
+  #rs-worlds { display: flex; gap: 8px; margin-top: 6px; }
+  .rsw { flex: 1; position: relative; border-radius: 12px; overflow: hidden; cursor: pointer;
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35); padding: 0; background: none; }
+  .rsw img { width: 100%; height: 72px; object-fit: cover; display: block; }
+  .rsw span { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0 4px; text-align: center;
+    font: 500 11px 'Jost', 'Futura', 'Avenir Next', sans-serif; letter-spacing: 2px; color: #fff;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75)); text-shadow: 0 1px 3px #000; }
+  .rsw.here { opacity: 0.4; pointer-events: none; }
+  .rsw:hover { border-color: hsl(var(--accent-h), 80%, 75%); }
   #marquee-edit { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
   #marquee-edit.hidden { display: none; }
   #marquee-edit input {
@@ -2854,6 +2871,9 @@
   <hr id="results-rule">
   <div id="results-board"></div>
   <div id="awards"></div>
+  <video id="rs-clip" class="hidden" muted loop playsinline></video>
+  <div id="rs-worlds-cap" class="hidden">NEXT WORLD</div>
+  <div id="rs-worlds" class="hidden"></div>
   <div id="results-actions">
     <button class="rbtn hero" id="rb-share">SHARE</button>
     <button class="rbtn" id="rb-again">PLAY AGAIN</button>
@@ -3042,7 +3062,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 606</div>
+      <div id="build-stamp">build 607</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3084,6 +3104,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=606"></script>
+<script type="module" src="js/main.js?v=607"></script>
 </body>
 </html>

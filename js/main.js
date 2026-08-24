@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=606';
-import { drawQR } from './lib/qr.js?v=606';
-import { WORLDS } from './worlds/registry.js?v=606';
-import { Net, PALETTE } from './net.js?v=606';
-import { Presence } from './lib/presence.js?v=606';
-import { Pulses } from './lib/pulse.js?v=606';
-import { BeatClock } from './lib/beatclock.js?v=606';
-import { BeatCue } from './lib/beatcue.js?v=606';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=606';
-import { Race, placeOf, standings } from './lib/race.js?v=606';
-import { Signals } from './lib/signals.js?v=606';
-import { pickShareLine, loadLines } from './lib/lines.js?v=606';
-import { RouteMap } from './lib/map.js?v=606';
-import * as sfx from './lib/sfx.js?v=606';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=606';
-import { glowTexture } from './lib/glow.js?v=606';
+import { AudioEngine } from './audio-engine.js?v=607';
+import { drawQR } from './lib/qr.js?v=607';
+import { WORLDS } from './worlds/registry.js?v=607';
+import { Net, PALETTE } from './net.js?v=607';
+import { Presence } from './lib/presence.js?v=607';
+import { Pulses } from './lib/pulse.js?v=607';
+import { BeatClock } from './lib/beatclock.js?v=607';
+import { BeatCue } from './lib/beatcue.js?v=607';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=607';
+import { Race, placeOf, standings } from './lib/race.js?v=607';
+import { Signals } from './lib/signals.js?v=607';
+import { pickShareLine, loadLines } from './lib/lines.js?v=607';
+import { RouteMap } from './lib/map.js?v=607';
+import * as sfx from './lib/sfx.js?v=607';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=607';
+import { glowTexture } from './lib/glow.js?v=607';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -728,6 +728,46 @@ function hideResults() {
   resultsShown = false;
   clearTimeout(resultsTimer);
   $('results').classList.remove('show');
+  const v = $('rs-clip');
+  if (v && v.src) { v.pause(); URL.revokeObjectURL(v.src); v.removeAttribute('src'); v.classList.add('hidden'); }
+}
+// the results card SHOWS the clip and the worlds: see the goods, pick the door
+function dressResults() {
+  const v = $('rs-clip');
+  const attach = () => {
+    v.src = URL.createObjectURL(clipSaved.blob);
+    v.classList.remove('hidden');
+    v.play().catch(() => {});
+  };
+  if (clipSaved && clipSaved.blob) attach();
+  else {
+    // the clip finishes pressing a beat after the card opens — wait for it
+    v.classList.add('hidden');
+    let tries = 0;
+    const wait = setInterval(() => {
+      if (!resultsShown || ++tries > 12) { clearInterval(wait); return; }
+      if (clipSaved && clipSaved.blob) { clearInterval(wait); attach(); }
+    }, 400);
+  }
+  const strip = $('rs-worlds');
+  strip.innerHTML = '';
+  for (const k of openWorlds()) {
+    const b = document.createElement('button');
+    b.className = 'rsw' + (k === currentWorldKey ? ' here' : '');
+    const img = document.createElement('img'); img.src = 'previews/' + k + '.jpg'; img.alt = '';
+    const lab = document.createElement('span'); lab.textContent = WORLDS[k].label;
+    b.append(img, lab);
+    b.addEventListener('click', () => {
+      hideResults();
+      $('world-select').value = k;
+      switchWorld(k);
+      playAuto(true);
+    });
+    strip.appendChild(b);
+  }
+  $('rs-worlds').classList.remove('hidden');
+  $('rs-worlds-cap').classList.remove('hidden');
+  $('rb-next').classList.add('hidden');
 }
 
 // ── Personal bests ── the cheapest replay engine there is. "Again?" is weak;
@@ -949,6 +989,7 @@ function showResults(reason) {
     // a free round ends on a question, and questions wait for answers
     $('rb-again').textContent = 'PLAY AGAIN';
     $('rb-next').textContent = 'NEXT WORLD';
+  dressResults();
     delete $('rb-again').dataset.mode;
     delete $('rb-next').dataset.mode;
     $('rb-recap').classList.add('hidden');
@@ -1118,6 +1159,7 @@ function showToyResults() {
   $('rs-pts').textContent = '';
   $('rb-again').textContent = 'PLAY AGAIN';
   $('rb-next').textContent = 'NEXT WORLD';
+  dressResults();
   delete $('rb-again').dataset.mode;
   delete $('rb-next').dataset.mode;
   $('rb-recap').classList.add('hidden');
@@ -4367,6 +4409,8 @@ function showSetResults() {
   celebrate(PALETTE[(net.local.color || 0) % PALETTE.length], rows[0][0] === (net.local.name || 'you'));
   $('rb-again').textContent = 'PLAY THE SET AGAIN';
   $('rb-next').textContent = 'FREE PLAY';
+  $('rb-next').classList.remove('hidden');
+  $('rs-worlds').classList.add('hidden'); $('rs-worlds-cap').classList.add('hidden');
   $('rb-recap').classList.toggle('hidden', document.body.classList.contains('guest'));
   $('rb-again').dataset.mode = 'set';
   $('rb-next').dataset.mode = 'set';
