@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=603';
-import { drawQR } from './lib/qr.js?v=603';
-import { WORLDS } from './worlds/registry.js?v=603';
-import { Net, PALETTE } from './net.js?v=603';
-import { Presence } from './lib/presence.js?v=603';
-import { Pulses } from './lib/pulse.js?v=603';
-import { BeatClock } from './lib/beatclock.js?v=603';
-import { BeatCue } from './lib/beatcue.js?v=603';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=603';
-import { Race, placeOf, standings } from './lib/race.js?v=603';
-import { Signals } from './lib/signals.js?v=603';
-import { pickShareLine, loadLines } from './lib/lines.js?v=603';
-import { RouteMap } from './lib/map.js?v=603';
-import * as sfx from './lib/sfx.js?v=603';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=603';
-import { glowTexture } from './lib/glow.js?v=603';
+import { AudioEngine } from './audio-engine.js?v=604';
+import { drawQR } from './lib/qr.js?v=604';
+import { WORLDS } from './worlds/registry.js?v=604';
+import { Net, PALETTE } from './net.js?v=604';
+import { Presence } from './lib/presence.js?v=604';
+import { Pulses } from './lib/pulse.js?v=604';
+import { BeatClock } from './lib/beatclock.js?v=604';
+import { BeatCue } from './lib/beatcue.js?v=604';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=604';
+import { Race, placeOf, standings } from './lib/race.js?v=604';
+import { Signals } from './lib/signals.js?v=604';
+import { pickShareLine, loadLines } from './lib/lines.js?v=604';
+import { RouteMap } from './lib/map.js?v=604';
+import * as sfx from './lib/sfx.js?v=604';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=604';
+import { glowTexture } from './lib/glow.js?v=604';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4790,10 +4790,19 @@ $('room-badge').addEventListener('click', () => {
 });
 $('join-room').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
 $('join-room').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
+// her curation of the name pool lives on this device (dev tool writes it):
+// cut names never deal; edited names deal in their new form
+const nameCuts = () => new Set(JSON.parse(localStorage.getItem('fp_name_cuts') || '[]'));
+const nameEdits = () => JSON.parse(localStorage.getItem('fp_name_edits') || '{}');
+function namePool() {
+  const cuts = nameCuts(), ed = nameEdits();
+  const pool = NAME_POOL.filter(n => !cuts.has(n)).map(n => ed[n] || n);
+  return pool.length ? pool : NAME_POOL;
+}
 let nameDeck = [];
 $('name-dice').addEventListener('click', () => {
   // a shuffled deck, dealt one at a time — no repeats till the well runs dry
-  if (!nameDeck.length) nameDeck = shuffled(NAME_POOL);
+  if (!nameDeck.length) nameDeck = shuffled(namePool());
   const pick = nameDeck.pop();
   $('join-name').value = pick;
   localStorage.setItem('fp_name', pick);
@@ -4864,7 +4873,8 @@ function ensureName() {
   let n = $('join-name').value.trim();
   if (!validName(n)) n = localStorage.getItem('fp_name') || '';
   if (!validName(n)) {
-    n = NAME_POOL[(Math.random() * NAME_POOL.length) | 0] + (10 + (Math.random() * 90 | 0));
+    const np = namePool();
+    n = np[(Math.random() * np.length) | 0] + (10 + (Math.random() * 90 | 0));
   }
   $('join-name').value = n;
   net.local.name = n;
@@ -5243,70 +5253,6 @@ if (params.get('dev') === '1') (function devPanel() {
   applySize();
   body.appendChild(NOTE('only you see this (the ?dev=1 in the address turns it on)'));
 
-  // ── the jokes: walk each pool in order, thumb down the misses ──
-  body.appendChild(H('\ud83d\ude06 REVIEW THE JOKES', '#eece78'));
-  body.appendChild(NOTE('pick a player type. jokes appear one by one, in order. \ud83d\udc4e saves a joke to your cut list.'));
-  const sel = mk('select', 'padding:7px;border-radius:8px;background:rgba(255,255,255,0.06);color:#e8e4fa;border:1px solid rgba(255,255,255,0.18);font:10.5px "SF Mono",Menlo,monospace;');
-  body.appendChild(sel);
-  let pool = [], poolAt = -1, poolArch = '';
-  const jokeOut = mk('div', 'min-height:44px;color:#e8e4fa;line-height:1.45;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;cursor:pointer;');
-  const jokeMeta = mk('div', 'color:#7f79a8;');
-  const rarity = w => (w >= 8 ? 'common' : w >= 3 ? 'uncommon' : 'RARE');
-  function showJoke(step) {
-    if (!pool.length) { jokeOut.textContent = 'no lines for this type yet'; jokeMeta.textContent = ''; return; }
-    poolAt = (poolAt + step + pool.length) % pool.length;
-    const l = pool[poolAt];
-    jokeOut.textContent = l.t + '  ' + (l.c || '');
-    jokeMeta.textContent = 'joke ' + (poolAt + 1) + ' of ' + pool.length + ' \u00b7 ' + rarity(l.w || 1) + ' \u00b7 tap the joke for the next one';
-  }
-  async function loadPool() {
-    const spec = await loadLines(currentWorldKey);
-    const id = sel.value;
-    poolArch = id || 'fallback';
-    pool = [];
-    if (spec) {
-      const arch = id ? spec.archetypes.find(x => x.id === id) : null;
-      pool = arch ? arch.lines : (spec.fallback || []);
-    }
-    poolAt = -1;
-    showJoke(1);
-    window.__forceArchetype = id || null;
-  }
-  async function fillArchetypes() {
-    sel.innerHTML = '<option value="">backup jokes, for runs that match no type</option>';
-    const spec = await loadLines(currentWorldKey);
-    if (spec && spec.archetypes) for (const a2 of spec.archetypes) {
-      const o = document.createElement('option');
-      o.value = a2.id;
-      o.textContent = 'player type: ' + a2.id.replace(/-/g, ' ');
-      sel.appendChild(o);
-    }
-    loadPool();
-  }
-  fillArchetypes();
-  sel.addEventListener('change', loadPool);
-  jokeOut.addEventListener('click', () => showJoke(1));
-  body.appendChild(jokeOut);
-  body.appendChild(jokeMeta);
-  const cutRow = mk('div', 'display:flex;gap:6px;');
-  const cutBtn = BTN('\ud83d\udc4e cut it', () => {
-    if (poolAt < 0 || !pool.length) return;
-    const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
-    const entry = currentWorldKey + ' / ' + poolArch + ': ' + pool[poolAt].t;
-    if (!cuts.includes(entry)) cuts.push(entry);
-    localStorage.setItem('fp_cutlist', JSON.stringify(cuts));
-    copyBtn.textContent = '\ud83d\udccb copy cut list (' + cuts.length + ')';
-    showJoke(1);
-  });
-  const copyBtn = BTN('\ud83d\udccb copy cut list (' + JSON.parse(localStorage.getItem('fp_cutlist') || '[]').length + ')', () => {
-    const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
-    navigator.clipboard.writeText('cut these lines:\n' + cuts.join('\n'))
-      .then(() => flash('CUT LIST COPIED', 2200)).catch(() => {});
-  });
-  cutBtn.style.flex = '1'; copyBtn.style.flex = '1.4';
-  cutRow.appendChild(cutBtn); cutRow.appendChild(copyBtn);
-  body.appendChild(cutRow);
-
   // ── the cards ──
   body.appendChild(H('\ud83c\udfac TEST THE SHARE CARDS', '#7cc4ff'));
   body.appendChild(NOTE('opens each card filled with pretend data. nothing is posted anywhere.'));
@@ -5382,29 +5328,54 @@ if (params.get('dev') === '1') (function devPanel() {
   });
   body.appendChild(paid);
 
-  // ── hear the sounds ── judging audio by playing a whole song is slow;
-  // these fire each voice on demand so a verdict takes two seconds
-  body.appendChild(H('\ud83d\udd0a HEAR THE SOUNDS', '#8affc1'));
-  body.appendChild(NOTE('tap to hear each one on its own. nothing else happens.'));
-  const SOUNDS = [
-    ['catch a spark (small)', () => sfx.swoosh('soft')],
-    ['catch a spark (bigger)', () => sfx.swoosh('air')],
-    ['rainbow spark', () => sfx.swoosh('bloom')],
-    ['hit on the beat', () => sfx.hit(6, true)],
-    ['a miss', () => sfx.thud()],
-    ['a clear', () => sfx.clear(3)],
-    ['someone passes you', () => sfx.pass(false)],
-    ['the finish', () => sfx.fanfare()],
-  ];
-  // asking to hear a sound counts as asking — the front-door gate steps aside
-  // for the length of the sound, then closes again
-  const audition = play => () => {
-    sfx.setSfxMuted(false);
-    play();
-    setTimeout(syncSfxMute, 7000);
+  // ── the names: review the whole dealing pool; tap cuts, edit mode renames ──
+  body.appendChild(H('\u{1F3F7} REVIEW THE PLAYER NAMES', '#eece78'));
+  body.appendChild(NOTE('tap a name to cut it (tap again to bring it back). flip on edit mode to rename instead. cuts and edits change what the dice deal on this device; copy the list and hand it to claude to make it permanent for everyone.'));
+  let nameEditMode = false;
+  const nmMode = BTN('\u270e edit mode: OFF (taps cut)', () => {
+    nameEditMode = !nameEditMode;
+    nmMode.textContent = nameEditMode ? '\u270e edit mode: ON (taps rename)' : '\u270e edit mode: OFF (taps cut)';
+  });
+  body.appendChild(nmMode);
+  const nmGrid = mk('div', 'display:flex;flex-wrap:wrap;gap:4px;max-height:220px;overflow-y:auto;'
+    + 'padding:6px;background:rgba(255,255,255,0.04);border-radius:8px;');
+  const drawNames = () => {
+    nmGrid.innerHTML = '';
+    const cuts = nameCuts(), ed = nameEdits();
+    for (const n of NAME_POOL) {
+      const chip = mk('button', 'padding:4px 7px;border-radius:7px;cursor:pointer;font:10px Jost,sans-serif;'
+        + 'letter-spacing:0.5px;border:1px solid rgba(255,255,255,0.14);'
+        + (cuts.has(n) ? 'background:rgba(255,80,80,0.18);color:#ff9d9d;text-decoration:line-through;'
+          : ed[n] ? 'background:rgba(140,255,190,0.14);color:#aef7cd;' : 'background:rgba(255,255,255,0.05);color:#e8e4fa;'),
+        ed[n] ? n + '\u2192' + ed[n] : n);
+      chip.addEventListener('click', () => {
+        if (nameEditMode) {
+          const cur = nameEdits();
+          const next = prompt('rename \u201c' + n + '\u201d to (empty clears the edit):', cur[n] || n);
+          if (next === null) return;
+          const t = next.trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+          if (!t || t === n) delete cur[n]; else cur[n] = t;
+          localStorage.setItem('fp_name_edits', JSON.stringify(cur));
+        } else {
+          const cur = [...nameCuts()];
+          const i = cur.indexOf(n);
+          if (i >= 0) cur.splice(i, 1); else cur.push(n);
+          localStorage.setItem('fp_name_cuts', JSON.stringify(cur));
+        }
+        nameDeck = [];   // the next dice roll uses the fresh pool
+        drawNames();
+      });
+      nmGrid.appendChild(chip);
+    }
   };
-  for (const [label, play] of SOUNDS) body.appendChild(BTN('\u25b6 ' + label, audition(play)));
-
+  drawNames();
+  body.appendChild(nmGrid);
+  body.appendChild(BTN('\u{1F4CB} copy name changes for claude', () => {
+    const cuts = [...nameCuts()], ed = nameEdits();
+    const txt = 'name pool changes:\ncut: ' + (cuts.join(', ') || 'none')
+      + '\nrenamed: ' + (Object.entries(ed).map(([a2, b2]) => a2 + ' \u2192 ' + b2).join(', ') || 'none');
+    navigator.clipboard.writeText(txt).then(() => flash('NAME CHANGES COPIED', 2200)).catch(() => {});
+  }));
 
   // ── the notebook: anything she notices becomes a note that knows where
   // it happened; one button copies the whole session's feedback for claude ──

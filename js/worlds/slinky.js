@@ -3,9 +3,9 @@
 // BOING it — a compression wave snaps down the whole spring.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=603';
-import { themePaint } from '../lib/themes.js?v=603';
-import { PALETTE } from '../net.js?v=603';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=604';
+import { themePaint } from '../lib/themes.js?v=604';
+import { PALETTE } from '../net.js?v=604';
 
 const RINGS = 84;           // coils
 const RING_R = 4.2;
