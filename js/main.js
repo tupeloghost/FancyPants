@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=625';
-import { drawQR } from './lib/qr.js?v=625';
-import { WORLDS } from './worlds/registry.js?v=625';
-import { Net, PALETTE } from './net.js?v=625';
-import { Presence } from './lib/presence.js?v=625';
-import { Pulses } from './lib/pulse.js?v=625';
-import { BeatClock } from './lib/beatclock.js?v=625';
-import { BeatCue } from './lib/beatcue.js?v=625';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=625';
-import { Race, placeOf, standings } from './lib/race.js?v=625';
-import { Signals } from './lib/signals.js?v=625';
-import { pickShareLine, loadLines } from './lib/lines.js?v=625';
-import { RouteMap } from './lib/map.js?v=625';
-import * as sfx from './lib/sfx.js?v=625';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=625';
-import { glowTexture } from './lib/glow.js?v=625';
+import { AudioEngine } from './audio-engine.js?v=629';
+import { drawQR } from './lib/qr.js?v=629';
+import { WORLDS } from './worlds/registry.js?v=629';
+import { Net, PALETTE } from './net.js?v=629';
+import { Presence } from './lib/presence.js?v=629';
+import { Pulses } from './lib/pulse.js?v=629';
+import { BeatClock } from './lib/beatclock.js?v=629';
+import { BeatCue } from './lib/beatcue.js?v=629';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=629';
+import { Race, placeOf, standings } from './lib/race.js?v=629';
+import { Signals } from './lib/signals.js?v=629';
+import { pickShareLine, loadLines } from './lib/lines.js?v=629';
+import { RouteMap } from './lib/map.js?v=629';
+import * as sfx from './lib/sfx.js?v=629';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=629';
+import { glowTexture } from './lib/glow.js?v=629';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -5871,39 +5871,35 @@ net.onCaught = (p, e, from, mine) => {
   }
 };
 
-// the host's gift picker, folded out of the bar
+// the host's gift card — a proper little shelf above the bar
 {
-  let gopen = null;
-  const closeGift = () => { if (gopen) { gopen.remove(); gopen = null; } };
-  $('qb-gift').addEventListener('click', () => {
-    if (gopen) { closeGift(); return; }
-    if (pendingGift) { flash('A GIFT IS ALREADY OUT ' + pendingGift.e, 1800); return; }
-    const pick = document.createElement('div');
-    pick.className = 'bomb-picker ghost-pick';
-    GIFTS.forEach(e2 => {
-      const b = document.createElement('button');
-      b.textContent = e2;
-      b.addEventListener('click', ev => {
-        ev.stopPropagation();
-        net.sendGift(e2);
-        closeGift();
-      });
-      pick.appendChild(b);
+  const card = $('gift-pick');
+  const row = $('gp-row');
+  GIFTS.forEach(e2 => {
+    const b = document.createElement('button');
+    b.textContent = e2;
+    b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      net.sendGift(e2);
+      card.classList.add('hidden');
+      document.body.classList.remove('gifting');
     });
-    const em = document.createElement('em');
-    em.textContent = 'drop a gift';
-    pick.appendChild(em);
-    document.body.appendChild(pick);
-    const r = $('qb-gift').getBoundingClientRect();
-    const w = Math.min(300, window.innerWidth - 16);
-    pick.style.maxWidth = w + 'px';
-    pick.style.flexWrap = 'wrap';
-    pick.style.left = Math.max(8, Math.min(window.innerWidth - 8 - w, r.left + r.width / 2 - w / 2)) + 'px';
-    pick.style.top = (r.top - 64) + 'px';
-    gopen = pick;
+    row.appendChild(b);
+  });
+  const shelf = open => {
+    card.classList.toggle('hidden', !open);
+    document.body.classList.toggle('gifting', open);
+  };
+  $('qb-gift').addEventListener('click', () => {
+    if (!card.classList.contains('hidden')) { shelf(false); return; }
+    if (pendingGift) { flash('A GIFT IS ALREADY OUT ' + pendingGift.e, 1800); return; }
+    shelf(true);
   });
   document.addEventListener('pointerdown', e => {
-    if (gopen && !gopen.contains(e.target) && !$('qb-gift').contains(e.target)) closeGift();
+    if (!card.classList.contains('hidden') && !card.contains(e.target) && !$('qb-gift').contains(e.target)) {
+      card.classList.add('hidden');
+      document.body.classList.remove('gifting');
+    }
   });
 }
 

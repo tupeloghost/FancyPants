@@ -238,6 +238,38 @@
     animation: giftGlow 1.6s ease-in-out infinite;
   }
   #gift-note.hidden { display: none; }
+  /* the host's gift shelf */
+  #gift-pick {
+    position: fixed; left: 50%; bottom: 128px; transform: translateX(-50%);
+    z-index: 70; display: flex; flex-direction: column; gap: 10px;
+    align-items: center; padding: 16px 18px 13px; border-radius: 16px;
+    background: rgba(8, 12, 24, 0.92);
+    border: 1px solid hsla(var(--accent-h), 75%, 72%, 0.45);
+    backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  }
+  #gift-pick.hidden { display: none; }
+  body.gifting #show-me { display: none; }   /* the shelf owns its moment */
+  #gift-pick span { text-align: center; max-width: 300px; }
+  @media (max-width: 620px) { #gift-pick { bottom: 158px; } }
+  #gift-pick b {
+    font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif; font-weight: 700;
+    color: #fff; letter-spacing: 3px;
+  }
+  #gift-pick span {
+    font: 10px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    color: var(--ink-dim); letter-spacing: 1.4px; text-transform: uppercase;
+  }
+  #gp-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  #gp-row button {
+    background: hsla(var(--accent-h), 45%, 16%, 0.6); border: 1px solid transparent;
+    border-radius: 12px; cursor: pointer; font-size: 27px; line-height: 1;
+    padding: 9px 12px; transition: transform 130ms ease, border-color 130ms ease;
+  }
+  #gp-row button:hover, #gp-row button:active {
+    transform: scale(1.18);
+    border-color: hsla(var(--accent-h), 85%, 72%, 0.7);
+  }
   /* ── emoji signatures: the fx layer ── */
   #fx-layer { position: fixed; inset: 0; z-index: 44; pointer-events: none; overflow: hidden; }
   #fx-layer .fx-wash { position: absolute; inset: 0; animation: fxWash ease-out both; }
@@ -3035,7 +3067,12 @@
   <div id="il-num"></div>
   <div id="il-board"></div>
 </div>
-<div id="gift-note" class="hidden"><b id="gift-emoji"></b><span>first through a door takes it</span></div>
+<div id="gift-pick" class="hidden">
+    <b>DROP A GIFT</b>
+    <div id="gp-row"></div>
+    <span>first player through a door catches it</span>
+  </div>
+  <div id="gift-note" class="hidden"><b id="gift-emoji"></b><span>first through a door takes it</span></div>
   <div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
   <div id="name-gate" class="hidden">
   <div id="ng-inner">
@@ -3250,7 +3287,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 625</div>
+      <div id="build-stamp">build 629</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3292,6 +3329,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=625"></script>
+<script type="module" src="js/main.js?v=629"></script>
 </body>
 </html>
