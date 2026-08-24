@@ -412,6 +412,30 @@
     color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px; padding: 10px 0; border-radius: 10px; }
   .pm-act:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
   #gentle-btn.hidden { display: none; }   /* parked: the setting confused more than it helped */
+  /* the stream interlude: a six-second tally between songs. Nothing to
+     press, nothing blocking — the next song rolls itself. */
+  #interlude {
+    position: fixed; inset: 0; z-index: 96; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    pointer-events: none; opacity: 0; transition: opacity 600ms ease; text-align: center;
+  }
+  #interlude.show { opacity: 1; }
+  #il-title {
+    font: 400 30px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 6px; text-indent: 6px;
+    color: hsl(var(--accent-h), 55%, 94%); text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 40px hsla(var(--accent-h), 90%, 70%, 0.4);
+  }
+  #il-num {
+    font: 400 54px 'Didot', 'Bodoni 72', Georgia, serif; line-height: 1;
+    color: hsl(var(--accent-h), 70%, 88%); text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  }
+  #il-num em { display: block; font: 12px 'Jost', 'Futura', 'Avenir Next', sans-serif; letter-spacing: 3px; font-style: normal; color: var(--ink-dim); text-transform: uppercase; margin-top: 4px; }
+  #il-board { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+  #il-board .ilr {
+    display: flex; gap: 12px; justify-content: center; align-items: baseline;
+    font: 15px 'Jost', 'Futura', 'Avenir Next', sans-serif; letter-spacing: 1.2px;
+    color: hsl(var(--accent-h), 30%, 88%); text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+  }
+  #il-board .ilr b { font-weight: 500; color: #fff; }
   #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
   #page-music.own #own-song { display: none; }
   @media (max-width: 620px) {
@@ -2807,6 +2831,11 @@
 
 <div id="pass-flash"></div>
 <div id="look-ring"></div>
+<div id="interlude" aria-hidden="true">
+  <div id="il-title">SONG COMPLETE</div>
+  <div id="il-num"></div>
+  <div id="il-board"></div>
+</div>
 <div id="name-gate" class="hidden">
   <div id="ng-inner">
     <div id="ng-title">Player Name</div>
@@ -3011,7 +3040,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 600</div>
+      <div id="build-stamp">build 601</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3053,6 +3082,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=600"></script>
+<script type="module" src="js/main.js?v=601"></script>
 </body>
 </html>

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=600';
-import { drawQR } from './lib/qr.js?v=600';
-import { WORLDS } from './worlds/registry.js?v=600';
-import { Net, PALETTE } from './net.js?v=600';
-import { Presence } from './lib/presence.js?v=600';
-import { Pulses } from './lib/pulse.js?v=600';
-import { BeatClock } from './lib/beatclock.js?v=600';
-import { BeatCue } from './lib/beatcue.js?v=600';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=600';
-import { Race, placeOf, standings } from './lib/race.js?v=600';
-import { Signals } from './lib/signals.js?v=600';
-import { pickShareLine, loadLines } from './lib/lines.js?v=600';
-import { RouteMap } from './lib/map.js?v=600';
-import * as sfx from './lib/sfx.js?v=600';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=600';
-import { glowTexture } from './lib/glow.js?v=600';
+import { AudioEngine } from './audio-engine.js?v=601';
+import { drawQR } from './lib/qr.js?v=601';
+import { WORLDS } from './worlds/registry.js?v=601';
+import { Net, PALETTE } from './net.js?v=601';
+import { Presence } from './lib/presence.js?v=601';
+import { Pulses } from './lib/pulse.js?v=601';
+import { BeatClock } from './lib/beatclock.js?v=601';
+import { BeatCue } from './lib/beatcue.js?v=601';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=601';
+import { Race, placeOf, standings } from './lib/race.js?v=601';
+import { Signals } from './lib/signals.js?v=601';
+import { pickShareLine, loadLines } from './lib/lines.js?v=601';
+import { RouteMap } from './lib/map.js?v=601';
+import * as sfx from './lib/sfx.js?v=601';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=601';
+import { glowTexture } from './lib/glow.js?v=601';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -813,6 +813,29 @@ function countUp(el, target, ms = 900) {
   }, 33);
 }
 
+// ── the stream interlude ── hosted rooms never stop for a card: six
+// seconds of tally (the number, the names), then the next song rolls itself
+let ilT = 0;
+function showInterlude(num, unit) {
+  $('il-num').innerHTML = '';
+  if (num != null) {
+    $('il-num').textContent = String(num);
+    const em = document.createElement('em'); em.textContent = unit || ''; $('il-num').appendChild(em);
+  }
+  const board = [...participants].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 4);
+  $('il-board').innerHTML = '';
+  for (const p of board) {
+    if (!p.name) continue;
+    const r = document.createElement('div'); r.className = 'ilr';
+    const nm = document.createElement('span'); nm.textContent = p.name + (p.local ? ' (you)' : '');
+    const sc = document.createElement('b'); sc.textContent = (p.score || 0).toLocaleString();
+    r.append(nm, sc); $('il-board').appendChild(r);
+  }
+  $('interlude').classList.add('show');
+  clearTimeout(ilT);
+  ilT = setTimeout(() => $('interlude').classList.remove('show'), 6000);
+}
+function hostedSeamless() { return document.body.classList.contains('hosting') && !setList; }
 function showResults(reason) {
   toyLast = false;
   clipBufStop(true);   // freeze the reel on the run that just ended
@@ -823,6 +846,14 @@ function showResults(reason) {
   statsRoundDone();
   ghostRoundDone();
   $('awards').innerHTML = '';   // honours belong to set finales only
+  if (hostedSeamless() && race.active) {
+    const unit = (WORLDS[currentWorldKey] && WORLDS[currentWorldKey].unit) || 'points';
+    showInterlude(Math.round(race.feet).toLocaleString(), unit.toLowerCase());
+    race.reset();
+    document.body.classList.remove('playing-round');
+    setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
+    return;
+  }
   if (resultsShown || !race.active) return;
   resultsShown = true;
 
@@ -1050,12 +1081,18 @@ function showToyResults() {
   clipBufStop(true);
   const gained = Math.max(0, score - toyRound.score0);
   recordRun(runMeta('toy', { pointsGained: gained }));
+  if (hostedSeamless()) {
+    showInterlude(gained > 0 ? gained.toLocaleString() : null, 'points');
+    toyRound = null;
+    setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
+    return;
+  }
   const quiet = WORLDS[currentWorldKey] && WORLDS[currentWorldKey].quietPoints;
   toyRound = null;
   toyLast = true;
   resultsShown = true;
   $('awards').innerHTML = '';
-  $('results-place').textContent = 'THAT\u2019S THE SONG';
+  $('results-place').textContent = 'SONG COMPLETE';
   const subs = ["the song's done. look what you made", 'one song, well spent', 'that was a whole mood, sugar'];
   $('results-sub').textContent = subs[Math.floor(Math.random() * subs.length)];
   $('results-board').innerHTML = '';
