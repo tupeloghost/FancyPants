@@ -1652,6 +1652,7 @@
   #side-doors a { color: var(--ink-faint); text-decoration: none; border-bottom: 1px solid transparent; }
   #side-doors a:hover { color: var(--ink); border-bottom-color: hsla(var(--accent-h), 70%, 70%, 0.5); }
   #side-doors .sd-dot { color: var(--ink-faint); opacity: 0.6; }
+  #side-doors a.hidden { display: none; }
   /* The party block unfolds to its OWN height. Animating max-height to a
      guessed number snapped the moment the guess passed the real height, and
      since the landing is vertically centred that snap jumped the whole page.
@@ -2536,8 +2537,7 @@
     </div>
     <div id="week-line" class="hidden"></div>
     <div id="side-doors">
-      <a id="btn-host-promote" href="#">host or promote</a>
-      <span class="sd-dot">&middot;</span>
+      <a id="btn-host-promote" href="#" class="hidden">host or promote</a>
       <a id="open-party" href="#">got a room code?</a>
     </div>
     <div id="party-block" class="folded">
@@ -3040,7 +3040,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 602</div>
+      <div id="build-stamp">build 603</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3082,6 +3082,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=602"></script>
+<script type="module" src="js/main.js?v=603"></script>
 </body>
 </html>
