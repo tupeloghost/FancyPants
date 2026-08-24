@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=635';
-import { drawQR } from './lib/qr.js?v=635';
-import { WORLDS } from './worlds/registry.js?v=635';
-import { Net, PALETTE } from './net.js?v=635';
-import { Presence } from './lib/presence.js?v=635';
-import { Pulses } from './lib/pulse.js?v=635';
-import { BeatClock } from './lib/beatclock.js?v=635';
-import { BeatCue } from './lib/beatcue.js?v=635';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=635';
-import { Race, placeOf, standings } from './lib/race.js?v=635';
-import { Signals } from './lib/signals.js?v=635';
-import { pickShareLine, loadLines } from './lib/lines.js?v=635';
-import { RouteMap } from './lib/map.js?v=635';
-import * as sfx from './lib/sfx.js?v=635';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=635';
-import { glowTexture } from './lib/glow.js?v=635';
+import { AudioEngine } from './audio-engine.js?v=637';
+import { drawQR } from './lib/qr.js?v=637';
+import { WORLDS } from './worlds/registry.js?v=637';
+import { Net, PALETTE } from './net.js?v=637';
+import { Presence } from './lib/presence.js?v=637';
+import { Pulses } from './lib/pulse.js?v=637';
+import { BeatClock } from './lib/beatclock.js?v=637';
+import { BeatCue } from './lib/beatcue.js?v=637';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=637';
+import { Race, placeOf, standings } from './lib/race.js?v=637';
+import { Signals } from './lib/signals.js?v=637';
+import { pickShareLine, loadLines } from './lib/lines.js?v=637';
+import { RouteMap } from './lib/map.js?v=637';
+import * as sfx from './lib/sfx.js?v=637';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=637';
+import { glowTexture } from './lib/glow.js?v=637';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -93,15 +93,19 @@ window.addEventListener('resize', () => {
 // Sustained heavy frames step the render scale down (2 → 1.7 → 1.4); a
 // comfortably fast stretch steps it back up. Sharp when the phone can
 // afford it, smooth when it can't — never a permanent downgrade.
-const QUALITY_STEPS = [Math.min(window.devicePixelRatio, 2), 1.7, 1.4];
-let qStep = 0, qSlow = 0, qFast = 0, qHold = 0;
+const QUALITY_STEPS = [Math.min(window.devicePixelRatio, 2), 1.7, 1.4, 1.15, 1];
+// phones OPEN at 1.7 and must EARN full resolution by holding 57fps —
+// starting at max and waiting for lag to prove itself is how the first
+// minute (the minute that decides everything) ends up laggy
+let qStep = IS_MOBILE ? 1 : 0, qSlow = 0, qFast = 0, qHold = 0;
+if (IS_MOBILE) renderer.setPixelRatio(QUALITY_STEPS[qStep]);
 function adaptQuality(dt) {
   if (!IS_MOBILE) return;
   qHold = Math.max(0, qHold - dt);
   if (qHold > 0) return;                 // let a change settle before judging
-  if (dt > 1 / 42) { qSlow += dt; qFast = 0; }
-  else if (dt < 1 / 55) { qFast += dt; qSlow = 0; }
-  if (qSlow > 1.4 && qStep < QUALITY_STEPS.length - 1) qStep++;
+  if (dt > 1 / 48) { qSlow += dt; qFast = 0; }
+  else if (dt < 1 / 57) { qFast += dt; qSlow = 0; }
+  if (qSlow > 1.0 && qStep < QUALITY_STEPS.length - 1) qStep++;
   else if (qFast > 6 && qStep > 0) qStep--;
   else return;
   qSlow = 0; qFast = 0; qHold = 2;
@@ -111,6 +115,14 @@ function adaptQuality(dt) {
   composer.setSize(window.innerWidth, window.innerHeight);
 }
 window.__quality = () => QUALITY_STEPS[qStep];
+
+// hold PORTRAIT where the platform allows it (Android; iOS politely refuses
+// and the landscape veil covers for it)
+if (IS_MOBILE && screen.orientation && screen.orientation.lock) {
+  document.addEventListener('pointerdown', () => {
+    screen.orientation.lock('portrait').catch(() => {});
+  }, { once: true });
+}
 
 // ── Audio ──
 const audio = new AudioEngine();
@@ -6359,8 +6371,8 @@ function frame(now) {
     const fps = Math.round(fpsFrames / fpsTime);
     $('fps').textContent = fps;
     fpsFrames = 0; fpsTime = 0;
-    lowFpsStreak = fps < 42 ? lowFpsStreak + 1 : 0;
-    if (lowFpsStreak >= 8 && bloomPass.enabled) {
+    lowFpsStreak = fps < (IS_MOBILE ? 48 : 42) ? lowFpsStreak + 1 : 0;
+    if (lowFpsStreak >= (IS_MOBILE ? 4 : 8) && bloomPass.enabled) {
       if (bloomPass.strength > 0.45) {
         bloomPass.strength *= 0.5;
       } else {

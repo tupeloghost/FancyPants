@@ -238,6 +238,18 @@
     animation: giftGlow 1.6s ease-in-out infinite;
   }
   #gift-note.hidden { display: none; }
+  /* the world is a PORTRAIT: sideways phones get a gentle ask, not a reflow */
+  #turn-note {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(4, 7, 16, 0.96);
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    color: var(--ink-dim);
+    font: 13px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  @media (pointer: coarse) and (orientation: landscape) {
+    #turn-note { display: flex; }
+  }
   /* the host's gift shelf */
   #gift-pick {
     position: fixed; left: 50%; bottom: 128px; transform: translateX(-50%);
@@ -2042,6 +2054,13 @@
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
   }
   .ptag.pop { animation: tagpop 0.8s ease-out; }
+  /* moving glass is a GPU tax phones can't afford: solid ink instead */
+  @media (pointer: coarse) {
+    .ptag {
+      backdrop-filter: none; -webkit-backdrop-filter: none;
+      background: rgba(6, 9, 20, 0.82);
+    }
+  }
   @keyframes tagpop {
     0% { opacity: 0; filter: brightness(3) blur(4px); }
     45% { opacity: 1; filter: brightness(1.8) blur(0); }
@@ -3070,7 +3089,8 @@
   <div id="il-num"></div>
   <div id="il-board"></div>
 </div>
-<div id="gift-pick" class="hidden">
+<div id="turn-note"><svg viewBox="0 0 24 24" width="42" height="42"><rect x="7" y="3.5" width="10" height="17" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M20.5 9 A 9 9 0 0 0 15 3.8 M20.5 9 l 0.4 -2.4 M20.5 9 l -2.3 -0.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span>turn your phone upright</span></div>
+  <div id="gift-pick" class="hidden">
     <b>DROP A GIFT</b>
     <div id="gp-row"></div>
     <span>first player through a door catches it</span>
@@ -3290,7 +3310,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 635</div>
+      <div id="build-stamp">build 637</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3332,6 +3352,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=635"></script>
+<script type="module" src="js/main.js?v=637"></script>
 </body>
 </html>
