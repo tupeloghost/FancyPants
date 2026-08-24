@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=623';
-import { drawQR } from './lib/qr.js?v=623';
-import { WORLDS } from './worlds/registry.js?v=623';
-import { Net, PALETTE } from './net.js?v=623';
-import { Presence } from './lib/presence.js?v=623';
-import { Pulses } from './lib/pulse.js?v=623';
-import { BeatClock } from './lib/beatclock.js?v=623';
-import { BeatCue } from './lib/beatcue.js?v=623';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=623';
-import { Race, placeOf, standings } from './lib/race.js?v=623';
-import { Signals } from './lib/signals.js?v=623';
-import { pickShareLine, loadLines } from './lib/lines.js?v=623';
-import { RouteMap } from './lib/map.js?v=623';
-import * as sfx from './lib/sfx.js?v=623';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=623';
-import { glowTexture } from './lib/glow.js?v=623';
+import { AudioEngine } from './audio-engine.js?v=624';
+import { drawQR } from './lib/qr.js?v=624';
+import { WORLDS } from './worlds/registry.js?v=624';
+import { Net, PALETTE } from './net.js?v=624';
+import { Presence } from './lib/presence.js?v=624';
+import { Pulses } from './lib/pulse.js?v=624';
+import { BeatClock } from './lib/beatclock.js?v=624';
+import { BeatCue } from './lib/beatcue.js?v=624';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=624';
+import { Race, placeOf, standings } from './lib/race.js?v=624';
+import { Signals } from './lib/signals.js?v=624';
+import { pickShareLine, loadLines } from './lib/lines.js?v=624';
+import { RouteMap } from './lib/map.js?v=624';
+import * as sfx from './lib/sfx.js?v=624';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=624';
+import { glowTexture } from './lib/glow.js?v=624';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1969,6 +1969,8 @@ function roomLookOpen() {
   return performance.now() - lastRoomLook > hold;
 }
 document.addEventListener('fp-lookspark', () => {
+  // a gift on the wind: MY door while a gift hoop is up is a claim on it
+  if (pendingGift && net.connected && !lookFromRemote) net.sendCatch();
   if (net.connected && !lookFromRemote && !roomLookOpen()) {
     // the hold is on: this door sparkles the CROWD instead of the walls
     haptic([12, 40, 18]);
@@ -2649,6 +2651,12 @@ function openRivalsPick() {
     b.textContent = e2;
     if (GLITTER.has(e2)) b.classList.add('glitter');
     b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
+    pick.appendChild(b);
+  });
+  myEmojis.forEach(ch => {
+    const b = document.createElement('button');
+    b.textContent = ch; b.classList.add('caught');
+    b.addEventListener('click', () => { sendBombC(name, ch); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
   const sep = document.createElement('span'); sep.className = 'sep'; pick.appendChild(sep);
@@ -5732,12 +5740,87 @@ function emojiRain(char, fromName, scale = 1) {
   impact(0.5);
 }
 
+// send a CAUGHT emoji by character (gift-hoop trophies live outside EMOJIS)
+function sendBombC(toName, char) {
+  if (!rateOk(emoteLog, 20000, 6)) return;
+  myStats.bombs++; statsPush();
+  net.sendEmote(0, toName, char);
+  flash(char + ' \u2192 ' + toName.toUpperCase(), 1600);
+  sfx.hit(6, true);
+}
+
 function sendBomb(toName, idx) {
   if (!rateOk(emoteLog, 20000, 6)) return;
   myStats.bombs++; statsPush();
   net.sendEmote(idx, toName, EMOJIS[idx]);
   flash(EMOJIS[idx] + ' \u2192 ' + toName.toUpperCase(), 1600);
   sfx.hit(6, true);
+}
+
+// ── gift hoops ── the host drops an emoji into the world; the first player
+// through a wonder door catches it and carries it for the rest of the night
+const GIFTS = ['\u{1F98B}', '\u{1F308}', '\u{1FAE7}', '\u{1F451}', '\u{1F340}', '\u{1F33B}', '\u{1F438}', '\u{1F369}'];
+const myEmojis = new Set();       // caught this session, joins every picker
+let pendingGift = null;           // {e, from} while a hoop is in the world
+
+net.onGift = (name, e, quiet) => {
+  pendingGift = { e, from: name };
+  $('gift-emoji').textContent = e;
+  $('gift-note').classList.remove('hidden');
+  if (!quiet) {
+    flash(name.toUpperCase() + ' DROPPED A GIFT ' + e, 2400);
+    sfx.fanfare();
+  }
+};
+net.onCaught = (p, e, from, mine) => {
+  pendingGift = null;
+  $('gift-note').classList.add('hidden');
+  if (mine) {
+    myEmojis.add(e);
+    emojiRain(e, null);
+    flash(e + ' IS YOURS FOR THE NIGHT', 2600);
+    haptic([12, 40, 18]);
+    sfx.fanfare();
+  } else {
+    emojiRain(e, null, 0.35);
+    flash((p.name || '?').toUpperCase() + ' CAUGHT ' + e, 2200);
+  }
+};
+
+// the host's gift picker, folded out of the bar
+{
+  let gopen = null;
+  const closeGift = () => { if (gopen) { gopen.remove(); gopen = null; } };
+  $('qb-gift').addEventListener('click', () => {
+    if (gopen) { closeGift(); return; }
+    if (pendingGift) { flash('A GIFT IS ALREADY OUT ' + pendingGift.e, 1800); return; }
+    const pick = document.createElement('div');
+    pick.className = 'bomb-picker ghost-pick';
+    GIFTS.forEach(e2 => {
+      const b = document.createElement('button');
+      b.textContent = e2;
+      b.addEventListener('click', ev => {
+        ev.stopPropagation();
+        net.sendGift(e2);
+        closeGift();
+      });
+      pick.appendChild(b);
+    });
+    const em = document.createElement('em');
+    em.textContent = 'drop a gift';
+    pick.appendChild(em);
+    document.body.appendChild(pick);
+    const r = $('qb-gift').getBoundingClientRect();
+    const w = Math.min(300, window.innerWidth - 16);
+    pick.style.maxWidth = w + 'px';
+    pick.style.flexWrap = 'wrap';
+    pick.style.left = Math.max(8, Math.min(window.innerWidth - 8 - w, r.left + r.width / 2 - w / 2)) + 'px';
+    pick.style.top = (r.top - 64) + 'px';
+    gopen = pick;
+  });
+  document.addEventListener('pointerdown', e => {
+    if (gopen && !gopen.contains(e.target) && !$('qb-gift').contains(e.target)) closeGift();
+  });
 }
 
 // a look arrives over the wire: the room redresses, and the screen says who
@@ -5812,6 +5895,12 @@ net.onEmote = (p, i, to, e) => {
       b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(name, k); closeGhostPick(); });
       pick.appendChild(b);
     });
+    myEmojis.forEach(ch => {
+      const b = document.createElement('button');
+      b.textContent = ch; b.classList.add('caught');
+      b.addEventListener('click', ev => { ev.stopPropagation(); sendBombC(name, ch); closeGhostPick(); });
+      pick.appendChild(b);
+    });
     TRICKS.forEach(t => {
       const b = document.createElement('button');
       b.textContent = t.e; b.title = t.name;
@@ -5861,6 +5950,12 @@ function renderPlist() {
         b.textContent = e2;
         if (GLITTER.has(e2)) b.classList.add('glitter');
         b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(p.name, k); pick.remove(); });
+        pick.appendChild(b);
+      });
+      myEmojis.forEach(ch => {
+        const b = document.createElement('button');
+        b.textContent = ch; b.classList.add('caught');
+        b.addEventListener('click', ev => { ev.stopPropagation(); sendBombC(p.name, ch); pick.remove(); });
         pick.appendChild(b);
       });
       // the tricks row — the ones with a hand on the wheel

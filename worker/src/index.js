@@ -329,6 +329,7 @@ export class FancyPantsRoom {
       ws.send(JSON.stringify({
         t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(), world: this.worldKey,
         look: this.lookNow || undefined,
+        gift: this.gift || undefined,
         owner: connId === this.ownerId,
         promo: this.promo,
         roster: [...this.peers.entries()]
@@ -339,6 +340,27 @@ export class FancyPantsRoom {
         JSON.stringify({ t: 'join', p: { id: connId, name: p.name, color: p.color } }),
         connId
       );
+      return;
+    }
+
+    // gift hoops: the HOST drops an emoji into the world; the first player
+    // through a wonder door catches it. The server is the referee — one
+    // gift at a time, first catch wins, everyone hears both moments.
+    if (m.t === 'gift') {
+      const p = this.peers.get(connId);
+      if (!p || connId !== this.ownerId) return;
+      const e = String(m.e || '').slice(0, 8);
+      if (!e) return;
+      this.gift = { e, from: p.name };
+      this.broadcast(JSON.stringify({ t: 'gift', name: p.name, e }));
+      return;
+    }
+    if (m.t === 'catch') {
+      const p = this.peers.get(connId);
+      if (!p || p.spectator || !this.gift) return;
+      const g = this.gift;
+      this.gift = null;
+      this.broadcast(JSON.stringify({ t: 'caught', id: connId, name: p.name, e: g.e, from: g.from }));
       return;
     }
 

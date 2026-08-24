@@ -211,6 +211,9 @@
   }
 
   /* a guest drives nothing but their own look and their own speakers */
+  /* the gift door belongs to the HOST alone */
+  #qb-gift { display: none; }
+  body.hosting #qb-gift { display: flex; }
   body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-next,
   body.guest #qb-world, body.guest #qsep-1 { display: none; }
   /* the guest's own pause card — their break, nobody else's */
@@ -224,6 +227,26 @@
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
   #guest-pause.hidden { display: none; }
+  /* the gift-in-the-world pill */
+  #gift-note {
+    position: fixed; left: 50%; top: 64px; transform: translateX(-50%);
+    z-index: 56; display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; border-radius: 999px; pointer-events: none;
+    background: rgba(6, 9, 20, 0.78);
+    border: 1px solid hsla(var(--accent-h), 80%, 72%, 0.5);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    animation: giftGlow 1.6s ease-in-out infinite;
+  }
+  #gift-note.hidden { display: none; }
+  #gift-note b { font-size: 22px; }
+  #gift-note span {
+    font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    color: var(--ink-dim); letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  @keyframes giftGlow {
+    0%, 100% { box-shadow: 0 0 10px hsla(var(--accent-h), 90%, 70%, 0.25); }
+    50% { box-shadow: 0 0 26px hsla(var(--accent-h), 90%, 70%, 0.6); }
+  }
   #guest-pause b {
     font: 400 26px 'Didot', 'Bodoni MT', 'Playfair Display', serif;
     color: #fff; letter-spacing: 6px;
@@ -932,6 +955,9 @@
   #emoji-rain span.glitter,
   .bomb-picker button.glitter {
     filter: drop-shadow(0 0 5px #ffd9f7) drop-shadow(0 0 10px #b78aff) saturate(1.35) brightness(1.15);
+  }
+  .bomb-picker button.caught {
+    filter: drop-shadow(0 0 6px hsla(var(--accent-h), 95%, 72%, 0.9));
   }
   .bomb-picker button.glitter { position: relative; }
   .bomb-picker button.glitter::after {
@@ -2918,7 +2944,8 @@
   <div id="il-num"></div>
   <div id="il-board"></div>
 </div>
-<div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
+<div id="gift-note" class="hidden"><b id="gift-emoji"></b><span>first through a door takes it</span></div>
+  <div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
   <div id="name-gate" class="hidden">
   <div id="ng-inner">
     <div id="ng-title">Player Name</div>
@@ -2980,6 +3007,7 @@
   <button class="qb" id="qb-world" title="next world  W"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.6"/><circle class="f" cx="12" cy="12" r="1.7"/><line x1="12" y1="2.6" x2="12" y2="4.6"/><line x1="12" y1="19.4" x2="12" y2="21.4"/></svg></i><em>world</em></button>
   <button style="display:none" class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
   <span class="qsep"></span>
+  <button class="qb" id="qb-gift" title="drop a gift into the world"><i><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="9" rx="1.4"/><line x1="12" y1="10" x2="12" y2="19"/><path d="M5 10 H19 M12 10 C9 10 7 8.5 7.5 6.5 C8 4.8 10.5 5 12 7.5 C13.5 5 16 4.8 16.5 6.5 C17 8.5 15 10 12 10"/></svg></i><em>gift</em></button>
   <button class="qb" id="qb-host" title="open a room. friends scan the QR and drop in"><i><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.2"/><circle class="f" cx="16.5" cy="16.5" r="1.6"/></svg></i><em>host</em></button>
   <button class="qb" id="qb-promote" title="make a post from this moment"><i><svg viewBox="0 0 24 24"><path d="M4.5 10 V14 L15 17.5 V6.5 Z"/><path d="M15 9.5 C18 10 18 14 15 14.5"/><line x1="7.5" y1="14.8" x2="8.6" y2="19"/></svg></i><em>promote</em></button>
   <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i><svg viewBox="0 0 24 24"><path d="M14.5 5 V15.2"/><circle class="f" cx="12.2" cy="16.4" r="2.6"/><path d="M14.5 5 L18.5 6.6"/><line class="ic-slash" x1="5.5" y1="20" x2="19.5" y2="4.5"/></svg></i><em>mute</em></button>
@@ -3131,7 +3159,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 623</div>
+      <div id="build-stamp">build 624</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3173,6 +3201,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=623"></script>
+<script type="module" src="js/main.js?v=624"></script>
 </body>
 </html>

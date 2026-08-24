@@ -32,6 +32,8 @@ export class Net {
     this.onWorld = null;   // (key) => {} — the host moved the room to another world
     this.onEmote = null;   // (participant, idx) => {} — someone reacted
     this.onLook = null;    // (participant|null, cfg) => {} — the room changed clothes (null = quiet catch-up)
+    this.onGift = null;    // (name, emoji, quiet) => {} — a gift hoop is in the world
+    this.onCaught = null;  // ({name, id}, emoji, from, mine) => {} — somebody took it
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -113,6 +115,7 @@ export class Net {
       this.local.color = m.color;
       for (const p of m.roster || []) this._addPeer(p);
       if (m.look && this.onLook) this.onLook(null, m.look);
+      if (m.gift && this.onGift) this.onGift(m.gift.from, m.gift.e, true);
       if (m.song && !this.owner && this.onSong) this.onSong(m.song);
       if (m.world && !this.owner && this.onWorld) this.onWorld(m.world);
     } else if (m.t === 'join') {
@@ -154,6 +157,10 @@ export class Net {
       const p = this.participants.find(x => x.id === m.id);
       if (!p) this._who(m.id);
       if (this.onEmote) this.onEmote(p || { name: 'someone', color: 0 }, m.i, m.to, m.e);
+    } else if (m.t === 'gift') {
+      if (this.onGift) this.onGift(m.name || 'the host', m.e, false);
+    } else if (m.t === 'caught') {
+      if (this.onCaught) this.onCaught({ name: m.name, id: m.id }, m.e, m.from, m.id === this.local.id);
     } else if (m.t === 'look') {
       const p = this.participants.find(x => x.id === m.id);
       if (this.onLook) this.onLook(p || { name: m.name || 'someone', color: 0 }, m);
@@ -206,6 +213,18 @@ export class Net {
     if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
     // the character rides the wire so sender and receiver can never disagree
     this._ws.send(JSON.stringify({ t: 'emote', i: idx, to, e: char }));
+  }
+
+  // host: drop a gift hoop (an emoji) into the world
+  sendGift(e) {
+    if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'gift', e }));
+  }
+
+  // anyone: I just flew through a door while a gift was up — claim it
+  sendCatch() {
+    if (!this.connected || this.spectator || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'catch' }));
   }
 
   // anyone: a wonder door's new look, worn by the whole room (throttled)
