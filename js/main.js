@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=597';
-import { drawQR } from './lib/qr.js?v=597';
-import { WORLDS } from './worlds/registry.js?v=597';
-import { Net, PALETTE } from './net.js?v=597';
-import { Presence } from './lib/presence.js?v=597';
-import { Pulses } from './lib/pulse.js?v=597';
-import { BeatClock } from './lib/beatclock.js?v=597';
-import { BeatCue } from './lib/beatcue.js?v=597';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=597';
-import { Race, placeOf, standings } from './lib/race.js?v=597';
-import { Signals } from './lib/signals.js?v=597';
-import { pickShareLine, loadLines } from './lib/lines.js?v=597';
-import { RouteMap } from './lib/map.js?v=597';
-import * as sfx from './lib/sfx.js?v=597';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=597';
-import { glowTexture } from './lib/glow.js?v=597';
+import { AudioEngine } from './audio-engine.js?v=598';
+import { drawQR } from './lib/qr.js?v=598';
+import { WORLDS } from './worlds/registry.js?v=598';
+import { Net, PALETTE } from './net.js?v=598';
+import { Presence } from './lib/presence.js?v=598';
+import { Pulses } from './lib/pulse.js?v=598';
+import { BeatClock } from './lib/beatclock.js?v=598';
+import { BeatCue } from './lib/beatcue.js?v=598';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=598';
+import { Race, placeOf, standings } from './lib/race.js?v=598';
+import { Signals } from './lib/signals.js?v=598';
+import { pickShareLine, loadLines } from './lib/lines.js?v=598';
+import { RouteMap } from './lib/map.js?v=598';
+import * as sfx from './lib/sfx.js?v=598';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=598';
+import { glowTexture } from './lib/glow.js?v=598';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3235,7 +3235,15 @@ $('pm-invite').addEventListener('click', e => {
   } else {
     askName(() => startRoom(genCode(), ensureName(), true));
   }
+  syncInviteLabel();
 });
+// the button says what it will DO next
+function syncInviteLabel() {
+  const b = $('pm-invite'); if (!b) return;
+  if (!document.body.classList.contains('hosting')) { b.textContent = 'invite friends (QR code)'; return; }
+  b.textContent = $('stream-card').classList.contains('hidden') ? 'show QR code' : 'hide QR code';
+}
+setInterval(syncInviteLabel, 1500);
 $('own-song').addEventListener('click', e => {
   e.stopPropagation();
   $('page-music').classList.add('own');
