@@ -1678,6 +1678,7 @@
     margin-top: 18px;
     font: 12px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.1px;
   }
+  #open-party { color: var(--ink-dim); }
   #side-doors a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25); padding-bottom: 1px; }
   #side-doors a:hover { color: var(--ink); border-bottom-color: hsla(var(--accent-h), 70%, 70%, 0.5); }
   #side-doors .sd-dot { color: var(--ink-faint); opacity: 0.6; }
@@ -2569,9 +2570,9 @@
     <div id="week-line" class="hidden"></div>
     <div id="side-doors">
       <a id="btn-host-promote" href="#" class="hidden">host or promote</a>
-      <a id="open-party" href="#">got a room code?</a>
+      <span id="open-party">got a room code?</span>
     </div>
-    <div id="party-block" class="folded">
+    <div id="party-block">
       <div id="party-inner">
         <div id="name-row">
           <input id="join-name" maxlength="14" placeholder="name, or tap &#127922;" autocomplete="off">
@@ -3080,7 +3081,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 615</div>
+      <div id="build-stamp">build 616</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3122,6 +3123,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=615"></script>
+<script type="module" src="js/main.js?v=616"></script>
 </body>
 </html>
