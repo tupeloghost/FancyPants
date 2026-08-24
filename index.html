@@ -408,9 +408,9 @@
   #cc-watch.hidden { display: none; }
   /* the artist door in the panel folds until asked for: players who came to
      listen never parse it at all */
-  #own-song { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
-    color: var(--ink-dim); font: 11px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.4px; padding: 9px 0; border-radius: 10px; }
-  #own-song:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
+  .pm-act { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
+    color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px; padding: 10px 0; border-radius: 10px; }
+  .pm-act:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
   #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
   #page-music.own #own-song { display: none; }
   @media (max-width: 620px) {
@@ -2897,7 +2897,9 @@
         <input type="file" id="file-input" accept="audio/*">
       </div>
       <div class="row host-only">
-        <button id="own-song">+ play your own song</button>
+        <button id="own-song" class="pm-act">+ play your own song</button>
+        <button id="pm-promote" class="pm-act">promote your song</button>
+        <button id="pm-invite" class="pm-act">invite friends</button>
         <div id="suno-row">
           <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
           <button id="suno-go" title="load this link">&#9654;</button>
@@ -3008,7 +3010,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 595</div>
+      <div id="build-stamp">build 596</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3050,6 +3052,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=595"></script>
+<script type="module" src="js/main.js?v=596"></script>
 </body>
 </html>

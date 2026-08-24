@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=595';
-import { drawQR } from './lib/qr.js?v=595';
-import { WORLDS } from './worlds/registry.js?v=595';
-import { Net, PALETTE } from './net.js?v=595';
-import { Presence } from './lib/presence.js?v=595';
-import { Pulses } from './lib/pulse.js?v=595';
-import { BeatClock } from './lib/beatclock.js?v=595';
-import { BeatCue } from './lib/beatcue.js?v=595';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=595';
-import { Race, placeOf, standings } from './lib/race.js?v=595';
-import { Signals } from './lib/signals.js?v=595';
-import { pickShareLine, loadLines } from './lib/lines.js?v=595';
-import { RouteMap } from './lib/map.js?v=595';
-import * as sfx from './lib/sfx.js?v=595';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=595';
-import { glowTexture } from './lib/glow.js?v=595';
+import { AudioEngine } from './audio-engine.js?v=596';
+import { drawQR } from './lib/qr.js?v=596';
+import { WORLDS } from './worlds/registry.js?v=596';
+import { Net, PALETTE } from './net.js?v=596';
+import { Presence } from './lib/presence.js?v=596';
+import { Pulses } from './lib/pulse.js?v=596';
+import { BeatClock } from './lib/beatclock.js?v=596';
+import { BeatCue } from './lib/beatcue.js?v=596';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=596';
+import { Race, placeOf, standings } from './lib/race.js?v=596';
+import { Signals } from './lib/signals.js?v=596';
+import { pickShareLine, loadLines } from './lib/lines.js?v=596';
+import { RouteMap } from './lib/map.js?v=596';
+import * as sfx from './lib/sfx.js?v=596';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=596';
+import { glowTexture } from './lib/glow.js?v=596';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3221,6 +3221,21 @@ $('mc-host').addEventListener('click', () => {
   askName(() => startRoom(genCode(), ensureName(), true));
 });
 // scheduling lives in the panel now: same form, calmer doorway
+// the world's menu carries the artist and social doors, in plain words
+$('pm-promote').addEventListener('click', e => {
+  e.stopPropagation();
+  $('pl-row').classList.add('hidden');
+  $('promote-form').classList.remove('hidden');
+  $('mode-card').classList.add('show', 'flow-promote');
+});
+$('pm-invite').addEventListener('click', e => {
+  e.stopPropagation();
+  if (document.body.classList.contains('hosting')) {
+    $('stream-card').classList.toggle('hidden');   // hosts show or hide the QR at will
+  } else {
+    askName(() => startRoom(genCode(), ensureName(), true));
+  }
+});
 $('own-song').addEventListener('click', e => {
   e.stopPropagation();
   $('page-music').classList.add('own');
