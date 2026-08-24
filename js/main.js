@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=593';
-import { drawQR } from './lib/qr.js?v=593';
-import { WORLDS } from './worlds/registry.js?v=593';
-import { Net, PALETTE } from './net.js?v=593';
-import { Presence } from './lib/presence.js?v=593';
-import { Pulses } from './lib/pulse.js?v=593';
-import { BeatClock } from './lib/beatclock.js?v=593';
-import { BeatCue } from './lib/beatcue.js?v=593';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=593';
-import { Race, placeOf, standings } from './lib/race.js?v=593';
-import { Signals } from './lib/signals.js?v=593';
-import { pickShareLine, loadLines } from './lib/lines.js?v=593';
-import { RouteMap } from './lib/map.js?v=593';
-import * as sfx from './lib/sfx.js?v=593';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=593';
-import { glowTexture } from './lib/glow.js?v=593';
+import { AudioEngine } from './audio-engine.js?v=594';
+import { drawQR } from './lib/qr.js?v=594';
+import { WORLDS } from './worlds/registry.js?v=594';
+import { Net, PALETTE } from './net.js?v=594';
+import { Presence } from './lib/presence.js?v=594';
+import { Pulses } from './lib/pulse.js?v=594';
+import { BeatClock } from './lib/beatclock.js?v=594';
+import { BeatCue } from './lib/beatcue.js?v=594';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=594';
+import { Race, placeOf, standings } from './lib/race.js?v=594';
+import { Signals } from './lib/signals.js?v=594';
+import { pickShareLine, loadLines } from './lib/lines.js?v=594';
+import { RouteMap } from './lib/map.js?v=594';
+import * as sfx from './lib/sfx.js?v=594';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=594';
+import { glowTexture } from './lib/glow.js?v=594';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -5258,6 +5258,33 @@ if (params.get('dev') === '1') (function devPanel() {
     if (!$('mq-title').value) { $('mq-title').value = 'holographic'; $('mq-artist').value = 'tupelo ghost'; }
     $('mq-card').click();
   }));
+  body.appendChild(BTN('\u25b6 week card (parked feature, preview only)', () => openWeekCard()));
+
+  // ── the moments: every big ceremony on a button, no waiting for luck ──
+  body.appendChild(H('\u2728 TRIGGER THE MOMENTS', '#c9a2ff'));
+  body.appendChild(NOTE('fire each ceremony on demand instead of waiting for a ring to drift by.'));
+  body.appendChild(BTN('\u2b50 look door lands (new colors + paint wave)', () => {
+    document.dispatchEvent(new CustomEvent('fp-lookspark'));
+  }));
+  body.appendChild(BTN('\u{1F573} black hole (fall, roll, dark world, bang out)', () => {
+    if (currentWorldKey === 'slide' && window.__slideSwallow) window.__slideSwallow();
+    else if (currentWorldKey === 'tunnel' && world && world._vortex) world._vortex();
+    else document.dispatchEvent(new CustomEvent('fp-swallowed', { detail: { n: 0 } }));
+  }));
+  body.appendChild(BTN('\u{1F53A} reshape the slide (slide only)', () => {
+    if (window.__slideBend && currentWorldKey === 'slide') window.__slideBend();
+    else flash('THAT ONE ONLY WORKS IN SLIDE', 2200);
+  }));
+  body.appendChild(BTN('\u{1F3A2} the plunge (slide only)', () => {
+    if (window.__slidePlunge && currentWorldKey === 'slide') window.__slidePlunge();
+    else flash('THAT ONE ONLY WORKS IN SLIDE', 2200);
+  }));
+  body.appendChild(BTN('\u{1F3A4} fake a chorus for 4 seconds', () => {
+    const iv = setInterval(() => { audio.data.chorus = 1; }, 16);
+    setTimeout(() => clearInterval(iv), 4000);
+  }));
+  body.appendChild(BTN('\u{1F590} run the tutorial hand', () => runWorldDemo()));
+  body.appendChild(BTN('\u{1F6AA} preview the Player Name gate', () => askName(() => flash('GATE DONE. NOTHING ELSE HAPPENED', 2200))));
 
   // ── shortcuts ──
   body.appendChild(H('\u26a1 SHORTCUTS', '#8affc1'));
@@ -5429,6 +5456,8 @@ if (params.get('dev') === '1') (function devPanel() {
   const ver = document.querySelector('script[src*="main.js"]')?.src.match(/v=(\d+)/)?.[1] || '?';
   setInterval(() => {
     status.textContent = 'v' + ver + ' \u00b7 sunday\u2019s best: ' + WORLDS[WEEK_WORLD].label
+      + (window.__quality ? ' \u00b7 render scale ' + window.__quality() : '')
+      + ' \u00b7 chorus ' + Math.round((audio.data.chorus || 0) * 100) + '%'
       + (devErrors.length ? '\n\u26a0 ' + devErrors[devErrors.length - 1] : '');
   }, 2000);
   body.appendChild(status);
