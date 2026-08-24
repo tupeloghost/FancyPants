@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=608';
-import { drawQR } from './lib/qr.js?v=608';
-import { WORLDS } from './worlds/registry.js?v=608';
-import { Net, PALETTE } from './net.js?v=608';
-import { Presence } from './lib/presence.js?v=608';
-import { Pulses } from './lib/pulse.js?v=608';
-import { BeatClock } from './lib/beatclock.js?v=608';
-import { BeatCue } from './lib/beatcue.js?v=608';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=608';
-import { Race, placeOf, standings } from './lib/race.js?v=608';
-import { Signals } from './lib/signals.js?v=608';
-import { pickShareLine, loadLines } from './lib/lines.js?v=608';
-import { RouteMap } from './lib/map.js?v=608';
-import * as sfx from './lib/sfx.js?v=608';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=608';
-import { glowTexture } from './lib/glow.js?v=608';
+import { AudioEngine } from './audio-engine.js?v=609';
+import { drawQR } from './lib/qr.js?v=609';
+import { WORLDS } from './worlds/registry.js?v=609';
+import { Net, PALETTE } from './net.js?v=609';
+import { Presence } from './lib/presence.js?v=609';
+import { Pulses } from './lib/pulse.js?v=609';
+import { BeatClock } from './lib/beatclock.js?v=609';
+import { BeatCue } from './lib/beatcue.js?v=609';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=609';
+import { Race, placeOf, standings } from './lib/race.js?v=609';
+import { Signals } from './lib/signals.js?v=609';
+import { pickShareLine, loadLines } from './lib/lines.js?v=609';
+import { RouteMap } from './lib/map.js?v=609';
+import * as sfx from './lib/sfx.js?v=609';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=609';
+import { glowTexture } from './lib/glow.js?v=609';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2291,12 +2291,17 @@ window.addEventListener('pointermove', e => {
   dragPX = e.clientX; dragPY = e.clientY;
 });
 
-// pointer steering (interactive mode) — mouse maps screen position directly
+// pointer steering (interactive mode) — screen position, with GAIN: full
+// steer arrives at ~1/3 from center, so a trackpad's short swipes are
+// enough. Mice keep working; they just have slack near the edges.
+const STEER_GAIN = 1.6;
 function steerFromPointer(cx, cy) {
-  aim.x = (cx / window.innerWidth) * 2 - 1;
-  aim.y = -((cy / window.innerHeight) * 2 - 1);
+  const sx = Math.max(-1, Math.min(1, ((cx / window.innerWidth) * 2 - 1) * STEER_GAIN));
+  const sy = Math.max(-1, Math.min(1, -((cy / window.innerHeight) * 2 - 1) * STEER_GAIN));
+  aim.x = sx;
+  aim.y = sy;
   if (settings.attract || !world || !world.setInput) return;
-  world.setInput((cx / window.innerWidth) * 2 - 1, -((cy / window.innerHeight) * 2 - 1));
+  world.setInput(sx, sy);
 }
 window.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return; // touch steers by dragging, below
