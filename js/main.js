@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=639';
-import { drawQR } from './lib/qr.js?v=639';
-import { WORLDS } from './worlds/registry.js?v=639';
-import { Net, PALETTE } from './net.js?v=639';
-import { Presence } from './lib/presence.js?v=639';
-import { Pulses } from './lib/pulse.js?v=639';
-import { BeatClock } from './lib/beatclock.js?v=639';
-import { BeatCue } from './lib/beatcue.js?v=639';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=639';
-import { Race, placeOf, standings } from './lib/race.js?v=639';
-import { Signals } from './lib/signals.js?v=639';
-import { pickShareLine, loadLines } from './lib/lines.js?v=639';
-import { RouteMap } from './lib/map.js?v=639';
-import * as sfx from './lib/sfx.js?v=639';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=639';
-import { glowTexture } from './lib/glow.js?v=639';
+import { AudioEngine } from './audio-engine.js?v=640';
+import { drawQR } from './lib/qr.js?v=640';
+import { WORLDS } from './worlds/registry.js?v=640';
+import { Net, PALETTE } from './net.js?v=640';
+import { Presence } from './lib/presence.js?v=640';
+import { Pulses } from './lib/pulse.js?v=640';
+import { BeatClock } from './lib/beatclock.js?v=640';
+import { BeatCue } from './lib/beatcue.js?v=640';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=640';
+import { Race, placeOf, standings } from './lib/race.js?v=640';
+import { Signals } from './lib/signals.js?v=640';
+import { pickShareLine, loadLines } from './lib/lines.js?v=640';
+import { RouteMap } from './lib/map.js?v=640';
+import * as sfx from './lib/sfx.js?v=640';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=640';
+import { glowTexture } from './lib/glow.js?v=640';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2967,7 +2967,9 @@ function dismissOverlay() {
   document.body.classList.add('inside');
 }
 panel.classList.add('hidden'); // no controls before the door opens, any device
-function startRoom(code, name, asOwner) {
+let roomTyped = false;   // this join came from fingers on the code box
+function startRoom(code, name, asOwner, typed) {
+  roomTyped = !!typed;
   if (!validName(name)) { $('join-msg').textContent = 'name: 3-14 letters, numbers, _'; return; }
   // signals: was this a return trip? (same room seen before on this device)
   try {
@@ -2999,6 +3001,13 @@ function startRoom(code, name, asOwner) {
   net.onPromoted = () => {
     document.body.classList.remove('guest');
     document.body.classList.add('hosting');
+    // a TYPED code that lands in an empty room deserves the truth: either
+    // the code has a typo, or they beat their friends here. Say so once.
+    // (QR scans and links skip this: those codes can't be mistyped.)
+    if (roomTyped && net.participants.length <= 1) {
+      setTimeout(() => announce('NOBODY HERE YET', 'check the code, or the party starts with you', 4200), 900);
+      roomTyped = false;
+    }
     // the crown comes with the music: a room's first arrival (a page's "play
     // together" visitor) must not stand in silence waiting for a host
     if (!audio.el.src && !window.__STAGE) setTimeout(() => playAuto(false), 200);
@@ -4983,7 +4992,7 @@ $('btn-join').addEventListener('click', () => {
   // forgive everything forgivable: case, spaces, dashes, stray punctuation
   const code = $('join-room').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (code.length < 4) { $('join-msg').textContent = "we'll need that room code, sugar"; return; }
-  startRoom(code, $('join-name').value.trim(), false);
+  startRoom(code, $('join-name').value.trim(), false, true);
 });
 
 // a name nobody had to type — southern, friendly, never blocking the door
