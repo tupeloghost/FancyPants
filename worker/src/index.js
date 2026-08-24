@@ -201,6 +201,10 @@ export class FancyPantsRoom {
       const slug = String(url.searchParams.get('slug') || '').toLowerCase().slice(0, 30);
       const page = slug && await this.state.storage.get('cp:' + slug);
       if (!page) return new Response('{}', { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      // a public reading ticks the artist's private odometer
+      if (url.searchParams.get('count') === '1' && url.searchParams.get('key') !== page.editKey) {
+        await this.state.storage.put('cv:' + slug, ((await this.state.storage.get('cv:' + slug)) || 0) + 1);
+      }
       // their promoted songs appear automatically: every /w/{slug}/... link
       const wl = await this.state.storage.list({ prefix: 'w:' + slug + '/' });
       const songs = [];
@@ -222,6 +226,7 @@ export class FancyPantsRoom {
           const path = k.slice(2);
           out.plays[path] = (await this.state.storage.get('wv:' + path)) || 0;
         }
+        out.views = (await this.state.storage.get('cv:' + slug)) || 0;
         out.canEdit = true;
       }
       return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
@@ -581,7 +586,8 @@ export default {
     const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);
     if (cslug) {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
-      const r = await env.ROOMS.get(id).fetch(new Request('https://do/c-get?slug=' + cslug[1]));
+      const ckey = String(url.searchParams.get('key') || '').replace(/[^a-f0-9]/g, '').slice(0, 32);
+      const r = await env.ROOMS.get(id).fetch(new Request('https://do/c-get?slug=' + cslug[1] + '&count=1' + (ckey ? '&key=' + ckey : '')));
       const pg = await r.json().catch(() => ({}));
       if (!pg.slug) return new Response('no such page', { status: 404 });
       const esc = t => String(t || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
@@ -654,11 +660,12 @@ export default {
         ['cool off first', 'talk it out now'],
         ['I’d rather be told straight', 'I’d rather be told gently'],
       ];
-      const vibeBlock = (pg.quiz && pg.quiz.length === 20)
+      const VIBE_ON = false;   // tabled 2026-08-24: artist value first; flip to bring the vibe check back
+      const vibeBlock = (VIBE_ON && pg.quiz && pg.quiz.length === 20)
         ? '<div class="vibe" id="vibe" data-q="' + esc(pg.quiz) + '" data-i="' + esc((pg.intents || []).join(',')) + '" data-n="' + esc(pg.name) + '">'
           + '<button class="vgo" id="vgo">see how you two would click <i>twenty quick picks, about a minute</i></button></div>'
         : '';
-      const vibeScript = (pg.quiz && pg.quiz.length === 20) ? '<script>(function(){'
+      const vibeScript = (VIBE_ON && pg.quiz && pg.quiz.length === 20) ? '<script>(function(){'
         + 'var VQ=' + JSON.stringify(VQ) + ';'
         + 'var box=document.getElementById("vibe");if(!box)return;'
         + 'var theirs=box.getAttribute("data-q"),tI=(box.getAttribute("data-i")||"").split(",").filter(Boolean),name=box.getAttribute("data-n");'
@@ -734,6 +741,14 @@ export default {
       // stage mode, wearing their look, moving to a heartbeat
       const stageSrc = SITE_URL + '?stage=1&world=' + encodeURIComponent(lead ? lead.world : 'tunnel')
         + (pg.look ? '&look=' + encodeURIComponent(pg.look) : '&hue=' + H);
+      // the OWNER's seat: with their edit key in the link, the page opens with
+      // their numbers - screenshot-able, invisible to everyone else
+      const privStrip = pg.canEdit
+        ? '<div class="mine"><span class="meye">your numbers \u00b7 only you see this</span>'
+          + '<div class="mrow"><b>' + (pg.views || 0) + '</b><i>page visits</i></div>'
+          + songs.map(sg => '<div class="mrow"><b>' + ((pg.plays || {})[sg.p] || 0) + '</b><i>stepped inside \u2018' + esc(sg.title) + '\u2019</i></div>').join('')
+          + '</div>'
+        : '';
       // the lead song is the page's thesis: one big door. the rest are rows.
       const heroBtn = lead
         ? '<a class="hero" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(lead.p) + '">'
@@ -761,6 +776,11 @@ export default {
         + ':root{--h:' + H + '}'
         + '.stage{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:0;pointer-events:none;filter:brightness(0.62) saturate(1.1)}'
         + '.mood{margin:-2px 0 18px;font-style:italic;color:hsl(var(--h),80%,82%);font-size:17px}'
+        + '.mine{margin:0 auto 26px;max-width:420px;padding:14px 18px;border-radius:16px;text-align:left;background:hsla(var(--h),60%,30%,0.22);border:1px dashed hsla(var(--h),70%,75%,0.5)}'
+        + '.meye{display:block;font:11px ui-monospace,Menlo,monospace;letter-spacing:2px;text-transform:uppercase;color:hsl(var(--h),70%,80%);margin-bottom:8px}'
+        + '.mrow{display:flex;align-items:baseline;gap:10px;margin:3px 0}'
+        + '.mrow b{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:24px;min-width:44px;text-align:right;color:#fff}'
+        + '.mrow i{font-style:normal;font-size:13px;color:#c4bfe3}'
         + '.together{display:block;margin:-8px auto 26px;max-width:420px;padding:14px 18px;border-radius:18px;text-decoration:none;color:#f0eefc;'
         + 'background:rgba(255,255,255,0.07);border:1px solid hsla(var(--h),70%,75%,0.45)}'
         + '.together b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:19px;letter-spacing:1px}'
@@ -833,17 +853,21 @@ export default {
         + '</style></head><body><div class="bg"></div>'
         + '<iframe class="stage" src="' + stageSrc + '" title="" tabindex="-1" aria-hidden="true" loading="lazy" allow="autoplay"></iframe>'
         + '<div class="veil"></div><div class="card">'
+        + privStrip
         + (pg.photo ? '<img class="photo" src="' + esc(pg.photo) + '" alt="">' : '')
         + '<p class="on">' + kind + ' on fancy britches</p>'
         + '<h1>' + esc(pg.name) + '</h1>'
         + (pg.mood ? '<p class="mood">' + esc(pg.mood) + '</p>' : '')
         + (pg.bio ? '<p class="bio">' + esc(pg.bio) + '</p>' : '')
-        + intentRow
-        + vibeBlock
+        // seat order: a visitor came for the EXPERIENCE — the stream if it's
+        // on, then the music doors, then playing together. Who the artist is
+        // as a person (intents, vibe check, prompts) is the second act.
         + (liveBlock ? liveBlock : (pg.next ? '<p class="next"' + (pg.nextAt ? ' data-at="' + esc(pg.nextAt) + '"' : '') + '>' + esc(pg.next) + '</p>' : ''))
         + heroBtn
-        + playBtn
         + (songRows ? '<div class="songs">' + songRows + '</div>' : '')
+        + playBtn
+        + intentRow
+        + vibeBlock
         + (promptRows ? '<div class="prompts">' + promptRows + '</div>' : '')
         + (pg.tip ? '<a class="tip" href="' + esc(pg.tip) + '" rel="noopener">&#10024; support ' + esc(pg.name) + '</a>' : '')
         + (linkRows ? '<div>' + linkRows + '</div>' : '')
