@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=601';
-import { drawQR } from './lib/qr.js?v=601';
-import { WORLDS } from './worlds/registry.js?v=601';
-import { Net, PALETTE } from './net.js?v=601';
-import { Presence } from './lib/presence.js?v=601';
-import { Pulses } from './lib/pulse.js?v=601';
-import { BeatClock } from './lib/beatclock.js?v=601';
-import { BeatCue } from './lib/beatcue.js?v=601';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=601';
-import { Race, placeOf, standings } from './lib/race.js?v=601';
-import { Signals } from './lib/signals.js?v=601';
-import { pickShareLine, loadLines } from './lib/lines.js?v=601';
-import { RouteMap } from './lib/map.js?v=601';
-import * as sfx from './lib/sfx.js?v=601';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=601';
-import { glowTexture } from './lib/glow.js?v=601';
+import { AudioEngine } from './audio-engine.js?v=602';
+import { drawQR } from './lib/qr.js?v=602';
+import { WORLDS } from './worlds/registry.js?v=602';
+import { Net, PALETTE } from './net.js?v=602';
+import { Presence } from './lib/presence.js?v=602';
+import { Pulses } from './lib/pulse.js?v=602';
+import { BeatClock } from './lib/beatclock.js?v=602';
+import { BeatCue } from './lib/beatcue.js?v=602';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=602';
+import { Race, placeOf, standings } from './lib/race.js?v=602';
+import { Signals } from './lib/signals.js?v=602';
+import { pickShareLine, loadLines } from './lib/lines.js?v=602';
+import { RouteMap } from './lib/map.js?v=602';
+import * as sfx from './lib/sfx.js?v=602';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=602';
+import { glowTexture } from './lib/glow.js?v=602';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -833,9 +833,14 @@ function showInterlude(num, unit) {
   }
   $('interlude').classList.add('show');
   clearTimeout(ilT);
-  ilT = setTimeout(() => $('interlude').classList.remove('show'), 6000);
+  // the tally holds the stage until the HOST moves on (NEXT, WORLD, or a
+  // song pick) — with NONSTOP SONGS on, it fades and the night rolls itself
+  if (chillRoll) ilT = setTimeout(() => $('interlude').classList.remove('show'), 6000);
 }
+audio.el.addEventListener('playing', () => $('interlude').classList.remove('show'));
 function hostedSeamless() { return document.body.classList.contains('hosting') && !setList; }
+let interludeHold = false;   // the tally holds the stage; nothing auto-rolls under it
+audio.el.addEventListener('playing', () => { interludeHold = false; });
 function showResults(reason) {
   toyLast = false;
   clipBufStop(true);   // freeze the reel on the run that just ended
@@ -851,7 +856,9 @@ function showResults(reason) {
     showInterlude(Math.round(race.feet).toLocaleString(), unit.toLowerCase());
     race.reset();
     document.body.classList.remove('playing-round');
-    setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
+    // the host chooses the next move; NONSTOP SONGS is the explicit opt-in to rolling
+    interludeHold = !chillRoll;
+    if (chillRoll) setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
     return;
   }
   if (resultsShown || !race.active) return;
@@ -1052,7 +1059,7 @@ audio.el.addEventListener('ended', () => {
   }
   // a free round's results card is a question, and questions wait — rolling
   // to the next song here buried the card under the next round's intro
-  if (!setList && !resultsShown) playAuto(true);
+  if (!setList && !resultsShown && !interludeHold) playAuto(true);
 });
 
 // ── toy rounds ── in the wandering worlds (no race chart) every song IS a
@@ -1084,7 +1091,7 @@ function showToyResults() {
   if (hostedSeamless()) {
     showInterlude(gained > 0 ? gained.toLocaleString() : null, 'points');
     toyRound = null;
-    setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
+    if (chillRoll) setTimeout(() => { if (chillWander) driftWorld(); playAuto(true); }, 2500);
     return;
   }
   const quiet = WORLDS[currentWorldKey] && WORLDS[currentWorldKey].quietPoints;
