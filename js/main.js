@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=622';
-import { drawQR } from './lib/qr.js?v=622';
-import { WORLDS } from './worlds/registry.js?v=622';
-import { Net, PALETTE } from './net.js?v=622';
-import { Presence } from './lib/presence.js?v=622';
-import { Pulses } from './lib/pulse.js?v=622';
-import { BeatClock } from './lib/beatclock.js?v=622';
-import { BeatCue } from './lib/beatcue.js?v=622';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=622';
-import { Race, placeOf, standings } from './lib/race.js?v=622';
-import { Signals } from './lib/signals.js?v=622';
-import { pickShareLine, loadLines } from './lib/lines.js?v=622';
-import { RouteMap } from './lib/map.js?v=622';
-import * as sfx from './lib/sfx.js?v=622';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=622';
-import { glowTexture } from './lib/glow.js?v=622';
+import { AudioEngine } from './audio-engine.js?v=623';
+import { drawQR } from './lib/qr.js?v=623';
+import { WORLDS } from './worlds/registry.js?v=623';
+import { Net, PALETTE } from './net.js?v=623';
+import { Presence } from './lib/presence.js?v=623';
+import { Pulses } from './lib/pulse.js?v=623';
+import { BeatClock } from './lib/beatclock.js?v=623';
+import { BeatCue } from './lib/beatcue.js?v=623';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=623';
+import { Race, placeOf, standings } from './lib/race.js?v=623';
+import { Signals } from './lib/signals.js?v=623';
+import { pickShareLine, loadLines } from './lib/lines.js?v=623';
+import { RouteMap } from './lib/map.js?v=623';
+import * as sfx from './lib/sfx.js?v=623';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=623';
+import { glowTexture } from './lib/glow.js?v=623';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2647,6 +2647,7 @@ function openRivalsPick() {
   EMOJIS.forEach((e2, k) => {
     const b = document.createElement('button');
     b.textContent = e2;
+    if (GLITTER.has(e2)) b.classList.add('glitter');
     b.addEventListener('click', () => { sendBomb(name, k); rivalsTarget = null; openRivalsPick(); renderRivals(); });
     pick.appendChild(b);
   });
@@ -5654,7 +5655,8 @@ switchWorld(startWorld);
 // ── Emoji bombs ── click a player, pick an emoji, and it rains all over
 // THEIR screen. Costs points, which completes the economy: rounds pay you at
 // the bell, and this is what the money is FOR — mischief.
-const EMOJIS = ['\u2764\uFE0F', '\u{1F47B}', '\u{1F319}', '\u{1F352}', '\u2728', '\u{1F4A9}', '\u{1F61B}', '\u{1F618}'];  // heart, ghost, moon, cherry, stars, poop, tongue, kiss — her list, verbatim
+const EMOJIS = ['\u2764\uFE0F', '\u{1F47B}', '\u{1F319}', '\u{1F352}', '\u2728', '\u{1F4A9}', '\u{1F61B}', '\u{1F389}'];  // heart, ghost, moon, cherry, stars, glitter poop, tongue, party — audited 2026-08-24: playful only, nothing a stranger could find uncomfortable (kiss retired)
+const GLITTER = new Set(['\u{1F4A9}']);   // these wear sparkle everywhere they appear
 const BOMB_COST = 15;   // (legacy name; emojis are free now)
 // free to throw, limited by breath: emojis 6 per 20s, tricks 2 per 30s —
 // enough to be rowdy, never enough to wallpaper somebody's screen
@@ -5690,7 +5692,7 @@ const RAIN_STYLE = {
   '\u2728': { cls: 'rain-twinkle', n: 44 },
   '\u{1F4A9}': { cls: 'rain-splat', n: 22 },
   '\u{1F61B}': { cls: 'rain-boing', n: 16 },
-  '\u{1F618}': { cls: 'rain-smooch', n: 8 },
+  '\u{1F389}': { cls: 'rain-bounce', n: 24 },
 };
 function emojiRain(char, fromName, scale = 1) {
   const box = $('emoji-rain');
@@ -5705,7 +5707,23 @@ function emojiRain(char, fromName, scale = 1) {
     sp.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
     sp.style.animationDelay = (Math.random() * 1.2) + 's';
     sp.addEventListener('animationend', () => sp.remove());
+    if (GLITTER.has(char)) sp.classList.add('glitter');
     box.appendChild(sp);
+  }
+  // glittery characters bring their own sparkle shower along
+  if (GLITTER.has(char)) {
+    for (let i = 0; i < 18; i++) {
+      const tw = document.createElement('span');
+      tw.textContent = '\u2728';
+      tw.className = 'rain-twinkle';
+      tw.style.left = (Math.random() * 100) + 'vw';
+      tw.style.top = (Math.random() * 90) + 'vh';
+      tw.style.fontSize = (12 + Math.random() * 18) + 'px';
+      tw.style.animationDuration = (2 + Math.random() * 1.6) + 's';
+      tw.style.animationDelay = (Math.random() * 1.4) + 's';
+      tw.addEventListener('animationend', () => tw.remove());
+      box.appendChild(tw);
+    }
   }
   if (fromName) {
     flash(fromName.toUpperCase() + ' SENT ' + char, 2200);
@@ -5790,6 +5808,7 @@ net.onEmote = (p, i, to, e) => {
     EMOJIS.forEach((e2, k) => {
       const b = document.createElement('button');
       b.textContent = e2;
+      if (GLITTER.has(e2)) b.classList.add('glitter');
       b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(name, k); closeGhostPick(); });
       pick.appendChild(b);
     });
@@ -5840,6 +5859,7 @@ function renderPlist() {
       EMOJIS.forEach((e2, k) => {
         const b = document.createElement('button');
         b.textContent = e2;
+        if (GLITTER.has(e2)) b.classList.add('glitter');
         b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(p.name, k); pick.remove(); });
         pick.appendChild(b);
       });
