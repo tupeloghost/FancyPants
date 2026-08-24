@@ -263,8 +263,11 @@
   #gp-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   #gp-row button {
     background: hsla(var(--accent-h), 45%, 16%, 0.6); border: 1px solid transparent;
-    border-radius: 12px; cursor: pointer; font-size: 27px; line-height: 1;
-    padding: 9px 12px; transition: transform 130ms ease, border-color 130ms ease;
+    border-radius: 12px; cursor: pointer; font-size: 25px;
+    width: 58px; height: 54px; padding: 0; overflow: visible;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    transition: transform 130ms ease, border-color 130ms ease;
   }
   #gp-row button:hover, #gp-row button:active {
     transform: scale(1.18);
@@ -2019,7 +2022,7 @@
     transform-origin: 50% 100%;
     will-change: transform, opacity;
   }
-  .ptag { pointer-events: auto; cursor: pointer; }
+
   /* names dance a little — each plate sways on its own clock */
   .ptag span { display: inline-block; animation: nameSway 3.6s ease-in-out infinite; }
   .ptag:nth-child(2n) span { animation-duration: 4.3s; animation-delay: -1.2s; }
@@ -3287,7 +3290,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 631</div>
+      <div id="build-stamp">build 634</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3329,6 +3332,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=631"></script>
+<script type="module" src="js/main.js?v=634"></script>
 </body>
 </html>

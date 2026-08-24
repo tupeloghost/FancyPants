@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=631';
-import { drawQR } from './lib/qr.js?v=631';
-import { WORLDS } from './worlds/registry.js?v=631';
-import { Net, PALETTE } from './net.js?v=631';
-import { Presence } from './lib/presence.js?v=631';
-import { Pulses } from './lib/pulse.js?v=631';
-import { BeatClock } from './lib/beatclock.js?v=631';
-import { BeatCue } from './lib/beatcue.js?v=631';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=631';
-import { Race, placeOf, standings } from './lib/race.js?v=631';
-import { Signals } from './lib/signals.js?v=631';
-import { pickShareLine, loadLines } from './lib/lines.js?v=631';
-import { RouteMap } from './lib/map.js?v=631';
-import * as sfx from './lib/sfx.js?v=631';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=631';
-import { glowTexture } from './lib/glow.js?v=631';
+import { AudioEngine } from './audio-engine.js?v=634';
+import { drawQR } from './lib/qr.js?v=634';
+import { WORLDS } from './worlds/registry.js?v=634';
+import { Net, PALETTE } from './net.js?v=634';
+import { Presence } from './lib/presence.js?v=634';
+import { Pulses } from './lib/pulse.js?v=634';
+import { BeatClock } from './lib/beatclock.js?v=634';
+import { BeatCue } from './lib/beatcue.js?v=634';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=634';
+import { Race, placeOf, standings } from './lib/race.js?v=634';
+import { Signals } from './lib/signals.js?v=634';
+import { pickShareLine, loadLines } from './lib/lines.js?v=634';
+import { RouteMap } from './lib/map.js?v=634';
+import * as sfx from './lib/sfx.js?v=634';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=634';
+import { glowTexture } from './lib/glow.js?v=634';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -5963,67 +5963,8 @@ net.onEmote = (p, i, to, e) => {
   }
 };
 
-// ── click a player IN THE WORLD to send them something ── their floating
-// nameplate is the door: tap it and the emoji picker opens right there
-{
-  let gpick = null;
-  const closeGhostPick = () => { if (gpick) { gpick.remove(); gpick = null; } };
-  document.addEventListener('pointerdown', e => {
-    const tag = e.target.closest ? e.target.closest('.ptag') : null;
-    if (!tag) { if (gpick && !gpick.contains(e.target)) closeGhostPick(); return; }
-    e.stopPropagation();   // a tap on a NAME is never a tap on the world
-  }, true);
-  document.addEventListener('click', e => {
-    const tag = e.target.closest ? e.target.closest('.ptag') : null;
-    if (!tag || !tag.dataset.pname) return;
-    e.stopPropagation();
-    const name = tag.dataset.pname;
-    if (gpick && gpick.dataset.pname === name) { closeGhostPick(); return; }
-    closeGhostPick();
-    const pick = document.createElement('div');
-    pick.className = 'bomb-picker ghost-pick';
-    pick.dataset.pname = name;
-    EMOJIS.forEach((e2, k) => {
-      const b = document.createElement('button');
-      b.textContent = e2;
-      if (GLITTER.has(e2)) b.classList.add('glitter');
-      b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(name, k); closeGhostPick(); });
-      pick.appendChild(b);
-    });
-    myEmojis.forEach((left, ch) => {
-      const b = document.createElement('button');
-      b.textContent = ch; b.classList.add('caught');
-      const u = document.createElement('u'); u.textContent = left; b.appendChild(u);
-      b.addEventListener('click', ev => { ev.stopPropagation(); sendBombC(name, ch); closeGhostPick(); });
-      pick.appendChild(b);
-    });
-    TRICKS.forEach(t => {
-      const b = document.createElement('button');
-      b.textContent = t.e; b.title = t.name;
-      b.addEventListener('click', ev => {
-        ev.stopPropagation();
-        if (!rateOk(trickLog, 30000, 2)) { flash('EASY, SUGAR. GIVE IT A BREATH', 1600, true); return; }
-        myStats.bombs++; statsPush();
-        net.sendEmote(t.i, name, t.e);
-        flash(t.e + ' \u2192 ' + name.toUpperCase(), 1600);
-        sfx.hit(9, true);
-        closeGhostPick();
-      });
-      pick.appendChild(b);
-    });
-    const em = document.createElement('em');
-    em.textContent = '\u2192 ' + name;
-    pick.appendChild(em);
-    document.body.appendChild(pick);
-    const r = tag.getBoundingClientRect();
-    const w = Math.min(300, window.innerWidth - 16);
-    pick.style.maxWidth = w + 'px';
-    pick.style.flexWrap = 'wrap';
-    pick.style.left = Math.max(8, Math.min(window.innerWidth - 8 - w, r.left + r.width / 2 - w / 2)) + 'px';
-    pick.style.top = Math.min(window.innerHeight - 110, r.bottom + 10) + 'px';
-    gpick = pick;
-  });
-}
+// (clickable nameplates tried v619-631 and retired: tapping a player mid-
+// flight was too interruptive. Emojis live in the player list instead.)
 
 function renderPlist() {
   const box = $('plist-rows');
