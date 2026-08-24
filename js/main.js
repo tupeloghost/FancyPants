@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=605';
-import { drawQR } from './lib/qr.js?v=605';
-import { WORLDS } from './worlds/registry.js?v=605';
-import { Net, PALETTE } from './net.js?v=605';
-import { Presence } from './lib/presence.js?v=605';
-import { Pulses } from './lib/pulse.js?v=605';
-import { BeatClock } from './lib/beatclock.js?v=605';
-import { BeatCue } from './lib/beatcue.js?v=605';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=605';
-import { Race, placeOf, standings } from './lib/race.js?v=605';
-import { Signals } from './lib/signals.js?v=605';
-import { pickShareLine, loadLines } from './lib/lines.js?v=605';
-import { RouteMap } from './lib/map.js?v=605';
-import * as sfx from './lib/sfx.js?v=605';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=605';
-import { glowTexture } from './lib/glow.js?v=605';
+import { AudioEngine } from './audio-engine.js?v=606';
+import { drawQR } from './lib/qr.js?v=606';
+import { WORLDS } from './worlds/registry.js?v=606';
+import { Net, PALETTE } from './net.js?v=606';
+import { Presence } from './lib/presence.js?v=606';
+import { Pulses } from './lib/pulse.js?v=606';
+import { BeatClock } from './lib/beatclock.js?v=606';
+import { BeatCue } from './lib/beatcue.js?v=606';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=606';
+import { Race, placeOf, standings } from './lib/race.js?v=606';
+import { Signals } from './lib/signals.js?v=606';
+import { pickShareLine, loadLines } from './lib/lines.js?v=606';
+import { RouteMap } from './lib/map.js?v=606';
+import * as sfx from './lib/sfx.js?v=606';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=606';
+import { glowTexture } from './lib/glow.js?v=606';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -512,15 +512,24 @@ let vocalPool = [], instrPool = [];
 let wantVocals = localStorage.getItem('fp_vocals') !== '0';   // VOCALS are the default now; instrumentals are the chill pick
 
 function rebuildTrackPool() {
-  const pool = (wantVocals ? vocalPool : instrPool);
-  trackList = pool.slice();
+  // vocals are the songs that PLAY by default; the library lists both,
+  // split into groups, and a manual pick plays whatever was picked
+  trackList = vocalPool.slice();
   const sel = $('track-select');
-  [...sel.options].filter(o => o.value.startsWith('audio/')).forEach(o => o.remove());
-  for (const t of pool) {
-    const opt = document.createElement('option');
-    opt.value = t; opt.textContent = prettyTrack(t);
-    sel.appendChild(opt);
-  }
+  [...sel.querySelectorAll('option[value^="audio/"], optgroup')].forEach(o => o.remove());
+  const addGroup = (label, pool) => {
+    if (!pool.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    for (const t of pool) {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = prettyTrack(t);
+      g.appendChild(opt);
+    }
+    sel.appendChild(g);
+  };
+  addGroup('with vocals', vocalPool);
+  addGroup('instrumentals', instrPool);
   autoOrder = []; autoAt = 0;            // reshuffle from the new pool
 }
 

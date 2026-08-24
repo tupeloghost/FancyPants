@@ -411,6 +411,8 @@
   .pm-act { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
     color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px; padding: 10px 0; border-radius: 10px; }
   .pm-act:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
+  #am-row.hidden { display: none; }   /* the library's groups replaced the toggle */
+  #track-select optgroup { font-style: normal; color: var(--ink-faint); }
   #gentle-btn.hidden { display: none; }   /* parked: the setting confused more than it helped */
   /* the stream interlude: a six-second tally between songs. Nothing to
      press, nothing blocking — the next song rolls itself. */
@@ -2913,7 +2915,7 @@
       <div id="guest-world"></div>
       <div id="guest-note">&#9834; <span id="guest-track">the host is driving the music</span></div>
       <div class="row host-only">
-        <div class="am-pick" id="am-row">
+        <div class="am-pick hidden" id="am-row">
           <button id="am-instr" class="on">INSTRUMENTAL</button><button id="am-vocals">WITH VOCALS</button>
         </div>
         <div class="chill-row">
@@ -3040,7 +3042,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 605</div>
+      <div id="build-stamp">build 606</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3082,6 +3084,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=605"></script>
+<script type="module" src="js/main.js?v=606"></script>
 </body>
 </html>
