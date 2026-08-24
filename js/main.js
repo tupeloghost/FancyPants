@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=612';
-import { drawQR } from './lib/qr.js?v=612';
-import { WORLDS } from './worlds/registry.js?v=612';
-import { Net, PALETTE } from './net.js?v=612';
-import { Presence } from './lib/presence.js?v=612';
-import { Pulses } from './lib/pulse.js?v=612';
-import { BeatClock } from './lib/beatclock.js?v=612';
-import { BeatCue } from './lib/beatcue.js?v=612';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=612';
-import { Race, placeOf, standings } from './lib/race.js?v=612';
-import { Signals } from './lib/signals.js?v=612';
-import { pickShareLine, loadLines } from './lib/lines.js?v=612';
-import { RouteMap } from './lib/map.js?v=612';
-import * as sfx from './lib/sfx.js?v=612';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=612';
-import { glowTexture } from './lib/glow.js?v=612';
+import { AudioEngine } from './audio-engine.js?v=613';
+import { drawQR } from './lib/qr.js?v=613';
+import { WORLDS } from './worlds/registry.js?v=613';
+import { Net, PALETTE } from './net.js?v=613';
+import { Presence } from './lib/presence.js?v=613';
+import { Pulses } from './lib/pulse.js?v=613';
+import { BeatClock } from './lib/beatclock.js?v=613';
+import { BeatCue } from './lib/beatcue.js?v=613';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=613';
+import { Race, placeOf, standings } from './lib/race.js?v=613';
+import { Signals } from './lib/signals.js?v=613';
+import { pickShareLine, loadLines } from './lib/lines.js?v=613';
+import { RouteMap } from './lib/map.js?v=613';
+import * as sfx from './lib/sfx.js?v=613';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=613';
+import { glowTexture } from './lib/glow.js?v=613';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4037,6 +4037,7 @@ $('shc-share').addEventListener('click', async () => {
 // Clips follow the share rule: house songs clip anywhere; an artist's song
 // clips only where its share link works (the trio + the world of the week).
 let clipDraw = false, clipRecs = [], clipRot = 0, clipStag = 0, clipSaved = null, clipMime = '';
+let clipPeak = null;   // the most ENERGETIC 15s of the song so far — the chorus, in practice
 // one claim function for every share surface: stores the home world AND
 // mints the permanent /w/{artist}/{song} address (same names, same link)
 function claimHome() {
@@ -4124,14 +4125,27 @@ function clipBufStart() {
   };
   const first = mk();
   if (!first) { clipDraw = false; return; }
+  clipPeak = null;   // fresh song, fresh hunt for its loudest stretch
   clipRecs = [first];
   clipStag = setTimeout(() => { if (clipDraw) { const r = mk(); if (r) clipRecs.push(r); } }, 7500);
   // rotation: any recorder past 15s starts over — between the pair there is
   // always one holding at least the last 7.5 seconds
   clipRot = setInterval(() => {
     clipRecs.forEach((r, i) => {
-      if (r && r.state === 'recording' && Date.now() - r._born >= 15000) {
-        try { r.onstop = null; r.stop(); } catch (e) {}
+      if (!r || r.state !== 'recording') return;
+      // every chunk keeps score of how loud its stretch of song was
+      r._eSum = (r._eSum || 0) + (audio.data.volume || 0);
+      r._eN = (r._eN || 0) + 1;
+      if (Date.now() - r._born >= 15000) {
+        // a full chunk retires — if it was the loudest stretch yet, keep it
+        r.onstop = () => {
+          const e = (r._eSum || 0) / Math.max(1, r._eN || 1);
+          if (!clipPeak || e > clipPeak.energy) {
+            const type = clipMime || 'video/webm';
+            clipPeak = { blob: new Blob(r._chunks, { type }), type, energy: e };
+          }
+        };
+        try { r.stop(); } catch (e) {}
         const fresh = mk();
         if (fresh) clipRecs[i] = fresh;
       }
@@ -4150,7 +4164,12 @@ function clipBufStop(keep) {
     if (keep && r === best) {
       r.onstop = () => {
         const type = clipMime || 'video/webm';
-        clipSaved = { blob: new Blob(r._chunks, { type }), type };
+        const e = (r._eSum || 0) / Math.max(1, r._eN || 1);
+        // the ending only wins if it genuinely outsings the song's peak —
+        // a quiet outro (or a skip to the end) must not become the clip
+        clipSaved = (clipPeak && clipPeak.energy > e + 0.03)
+          ? { blob: clipPeak.blob, type: clipPeak.type }
+          : { blob: new Blob(r._chunks, { type }), type };
       };
     } else r.onstop = null;
     try { if (r.state !== 'inactive') r.stop(); } catch (e) {}
