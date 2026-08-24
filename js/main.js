@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=616';
-import { drawQR } from './lib/qr.js?v=616';
-import { WORLDS } from './worlds/registry.js?v=616';
-import { Net, PALETTE } from './net.js?v=616';
-import { Presence } from './lib/presence.js?v=616';
-import { Pulses } from './lib/pulse.js?v=616';
-import { BeatClock } from './lib/beatclock.js?v=616';
-import { BeatCue } from './lib/beatcue.js?v=616';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=616';
-import { Race, placeOf, standings } from './lib/race.js?v=616';
-import { Signals } from './lib/signals.js?v=616';
-import { pickShareLine, loadLines } from './lib/lines.js?v=616';
-import { RouteMap } from './lib/map.js?v=616';
-import * as sfx from './lib/sfx.js?v=616';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=616';
-import { glowTexture } from './lib/glow.js?v=616';
+import { AudioEngine } from './audio-engine.js?v=618';
+import { drawQR } from './lib/qr.js?v=618';
+import { WORLDS } from './worlds/registry.js?v=618';
+import { Net, PALETTE } from './net.js?v=618';
+import { Presence } from './lib/presence.js?v=618';
+import { Pulses } from './lib/pulse.js?v=618';
+import { BeatClock } from './lib/beatclock.js?v=618';
+import { BeatCue } from './lib/beatcue.js?v=618';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=618';
+import { Race, placeOf, standings } from './lib/race.js?v=618';
+import { Signals } from './lib/signals.js?v=618';
+import { pickShareLine, loadLines } from './lib/lines.js?v=618';
+import { RouteMap } from './lib/map.js?v=618';
+import * as sfx from './lib/sfx.js?v=618';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=618';
+import { glowTexture } from './lib/glow.js?v=618';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4982,8 +4982,15 @@ if (window.__autoGo && !window.__STAGE) {
   // human tap — if the browser holds it, the first touch lets it through.
   setTimeout(() => {
     if (document.body.classList.contains('inside')) return;
-    ensureName();
-    dismissOverlay();
+    const name = ensureName();
+    // a QR that names a room is an invitation to THAT room, not to solo:
+    // join it on the way through the door (startRoom dismisses the overlay)
+    if (window.__joinIntent) {
+      const code = window.__joinIntent; window.__joinIntent = null;
+      startRoom(code, name, false);
+    } else {
+      dismissOverlay();
+    }
     setTimeout(() => {
       if (!audio.playing) {
         flash('TAP ANYWHERE FOR SOUND', 3000);
@@ -5817,22 +5824,7 @@ function frame(now) {
   time += dt;
 
   const a = audio.update(dt);
-  if (window.__autoGo && !window.__STAGE) {
-  // dropped straight into the world: the QR was the door. Audio needs one
-  // human tap — if the browser holds it, the first touch lets it through.
-  setTimeout(() => {
-    if (document.body.classList.contains('inside')) return;
-    ensureName();
-    dismissOverlay();
-    setTimeout(() => {
-      if (!audio.playing) {
-        flash('TAP ANYWHERE FOR SOUND', 3000);
-        document.addEventListener('pointerdown', () => { if (!audio.playing && audio.el.src) audio.play().catch(() => {}); }, { once: true });
-      }
-    }, 1200);
-  }, 600);
-}
-if (window.__STAGE) {
+  if (window.__STAGE) {
     // a slow 96 bpm heartbeat: bass swells, volume breathes, a beat lands
     const bps = 96 / 60, ph = (time * bps) % 1;
     const kick = Math.pow(Math.max(0, 1 - ph * 3.2), 2);

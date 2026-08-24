@@ -47,6 +47,12 @@ export class Net {
         }));
       }
     }, 1000);
+    // phones rarely close a socket politely: say goodbye on the way out so
+    // the room sees the leave NOW instead of after the silence prune
+    window.addEventListener('pagehide', () => {
+      this._noRetry = true;
+      try { this._ws && this._ws.close(); } catch { /* already gone */ }
+    });
   }
 
   get local() { return this.participants[0]; }
