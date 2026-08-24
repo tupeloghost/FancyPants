@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=609';
-import { drawQR } from './lib/qr.js?v=609';
-import { WORLDS } from './worlds/registry.js?v=609';
-import { Net, PALETTE } from './net.js?v=609';
-import { Presence } from './lib/presence.js?v=609';
-import { Pulses } from './lib/pulse.js?v=609';
-import { BeatClock } from './lib/beatclock.js?v=609';
-import { BeatCue } from './lib/beatcue.js?v=609';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=609';
-import { Race, placeOf, standings } from './lib/race.js?v=609';
-import { Signals } from './lib/signals.js?v=609';
-import { pickShareLine, loadLines } from './lib/lines.js?v=609';
-import { RouteMap } from './lib/map.js?v=609';
-import * as sfx from './lib/sfx.js?v=609';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=609';
-import { glowTexture } from './lib/glow.js?v=609';
+import { AudioEngine } from './audio-engine.js?v=610';
+import { drawQR } from './lib/qr.js?v=610';
+import { WORLDS } from './worlds/registry.js?v=610';
+import { Net, PALETTE } from './net.js?v=610';
+import { Presence } from './lib/presence.js?v=610';
+import { Pulses } from './lib/pulse.js?v=610';
+import { BeatClock } from './lib/beatclock.js?v=610';
+import { BeatCue } from './lib/beatcue.js?v=610';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=610';
+import { Race, placeOf, standings } from './lib/race.js?v=610';
+import { Signals } from './lib/signals.js?v=610';
+import { pickShareLine, loadLines } from './lib/lines.js?v=610';
+import { RouteMap } from './lib/map.js?v=610';
+import * as sfx from './lib/sfx.js?v=610';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=610';
+import { glowTexture } from './lib/glow.js?v=610';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -528,7 +528,12 @@ function rebuildTrackPool() {
     }
     sel.appendChild(g);
   };
-  addGroup('with vocals', vocalPool);
+  // the songs stand on their own; only the instrumentals wear a label
+  for (const t of vocalPool) {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = prettyTrack(t);
+    sel.appendChild(opt);
+  }
   addGroup('instrumentals', instrPool);
   autoOrder = []; autoAt = 0;            // reshuffle from the new pool
 }
