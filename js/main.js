@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=640';
-import { drawQR } from './lib/qr.js?v=640';
-import { WORLDS } from './worlds/registry.js?v=640';
-import { Net, PALETTE } from './net.js?v=640';
-import { Presence } from './lib/presence.js?v=640';
-import { Pulses } from './lib/pulse.js?v=640';
-import { BeatClock } from './lib/beatclock.js?v=640';
-import { BeatCue } from './lib/beatcue.js?v=640';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=640';
-import { Race, placeOf, standings } from './lib/race.js?v=640';
-import { Signals } from './lib/signals.js?v=640';
-import { pickShareLine, loadLines } from './lib/lines.js?v=640';
-import { RouteMap } from './lib/map.js?v=640';
-import * as sfx from './lib/sfx.js?v=640';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=640';
-import { glowTexture } from './lib/glow.js?v=640';
+import { AudioEngine } from './audio-engine.js?v=641';
+import { drawQR } from './lib/qr.js?v=641';
+import { WORLDS } from './worlds/registry.js?v=641';
+import { Net, PALETTE } from './net.js?v=641';
+import { Presence } from './lib/presence.js?v=641';
+import { Pulses } from './lib/pulse.js?v=641';
+import { BeatClock } from './lib/beatclock.js?v=641';
+import { BeatCue } from './lib/beatcue.js?v=641';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=641';
+import { Race, placeOf, standings } from './lib/race.js?v=641';
+import { Signals } from './lib/signals.js?v=641';
+import { pickShareLine, loadLines } from './lib/lines.js?v=641';
+import { RouteMap } from './lib/map.js?v=641';
+import * as sfx from './lib/sfx.js?v=641';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=641';
+import { glowTexture } from './lib/glow.js?v=641';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3862,6 +3862,12 @@ $('rb-share').addEventListener('click', () => {
 // this device, and appended to every share their song rides out on. The song
 // is the ad; this is the address on the back of it.
 $('mq-social').value = localStorage.getItem('fp_social') || '';
+// promo mode fills the blanks the artist's page already knows
+setInterval(() => {
+  if (!promoPage) return;
+  if (!$('mq-artist').value) $('mq-artist').value = promoPage.name;
+  if (!$('mq-social').value) $('mq-social').value = promoPage.url.replace(/^https?:\/\//, '');
+}, 1500);
 $('mq-social').addEventListener('input', () => {
   localStorage.setItem('fp_social', $('mq-social').value.trim().slice(0, 80));
 });
@@ -3872,8 +3878,9 @@ function creditText() {
   const suno = !!window.__sunoShare;
   const title = suno ? (sunoTrack.split(' \u00b7 ')[0] || 'this song')
     : prettyTrack($('track-select').value || audio.el.currentSrc || 'this song');
-  const artist = suno ? ($('mq-artist').value.trim() || sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost';
-  const social = suno ? ($('mq-social').value || localStorage.getItem('fp_social') || '').trim() : '';
+  // promo mode: the artist's page identity signs the card without retyping
+  const artist = suno ? ($('mq-artist').value.trim() || (promoPage && promoPage.name) || sunoTrack.split(' \u00b7 ')[1] || '') : 'Tupelo Ghost';
+  const social = suno ? ($('mq-social').value || localStorage.getItem('fp_social') || (promoPage && promoPage.url) || '').trim() : '';
   const handle = social ? social.replace(/^https?:\/\/(www\.)?/i, '') : '';
   return [title.toUpperCase(), artist ? 'by ' + artist : '', handle, 'step inside']
     .filter(Boolean).join('  \u00b7  ');
@@ -3920,7 +3927,16 @@ function shareStill(words) {
     fs -= 1;
     x.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
   }
-  x.fillText(barText, Math.round(bh * 0.5), H - bh / 2);
+  let tx = Math.round(bh * 0.5);
+  if (promoImg && promoImg.complete && promoImg.naturalWidth) {
+    // the artist's face on their own card: a small circle ahead of the credit
+    const pr = bh * 0.38, pcx = tx + pr, pcy = H - bh / 2;
+    x.save(); x.beginPath(); x.arc(pcx, pcy, pr, 0, Math.PI * 2); x.clip();
+    x.drawImage(promoImg, pcx - pr, pcy - pr, pr * 2, pr * 2);
+    x.restore();
+    tx = Math.round(pcx + pr + bh * 0.25);
+  }
+  x.fillText(barText, tx, H - bh / 2);
   const qrc = document.createElement('canvas');
   if (drawQR(qrc, qrGo(clipURL()), 2)) {
     const q = bh * 1.5, m = Math.round(bh * 0.25);
@@ -4183,7 +4199,15 @@ function clipBufStart() {
       fs -= 1;
       ctx2.font = '400 ' + fs + 'px Didot, "Bodoni 72", Georgia, serif';
     }
-    ctx2.fillText(barText, Math.round(bh * 0.5), H - bh / 2);
+    let tx2 = Math.round(bh * 0.5);
+    if (promoImg && promoImg.complete && promoImg.naturalWidth) {
+      const pr = bh * 0.38, pcx = tx2 + pr, pcy = H - bh / 2;
+      ctx2.save(); ctx2.beginPath(); ctx2.arc(pcx, pcy, pr, 0, Math.PI * 2); ctx2.clip();
+      ctx2.drawImage(promoImg, pcx - pr, pcy - pr, pr * 2, pr * 2);
+      ctx2.restore();
+      tx2 = Math.round(pcx + pr + bh * 0.25);
+    }
+    ctx2.fillText(barText, tx2, H - bh / 2);
     if (hasQR) {
       ctx2.fillStyle = '#fff';
       ctx2.fillRect(W - q - m - 4, H - bh - q - m - 4, q + 8, q + 8);
@@ -5894,6 +5918,37 @@ function sendBomb(toName, idx) {
 // through a wonder door catches it and carries it for the rest of the night
 const GIFTS = ['\u{1F98B}', '\u{1F308}', '\u{1FAE7}', '\u{1F451}', '\u{1F340}', '\u{1F33B}', '\u{1F438}', '\u{1F369}'];
 const myEmojis = new Map();       // caught this session: emoji -> throws left (10 per catch, stacks)
+// ── the link that gives ── an artist can attach one gift emoji to their
+// promo links; arriving through one loads the gift into your session stash
+{
+  const g = new URLSearchParams(location.search).get('gift');
+  if (g && GIFTS.includes(g) && !sessionStorage.getItem('fp_lgift')) {
+    try { sessionStorage.setItem('fp_lgift', '1'); } catch { /* private mode */ }
+    myEmojis.set(g, (myEmojis.get(g) || 0) + 10);
+    setTimeout(() => { flash('A GIFT FOR YOU ' + g + ' \u00d7 10', 3200); emojiRain(g, null, 0.5); sfx.fanfare(); }, 4500);
+  }
+}
+// ── promo mode ── ?promo=slug marks this browser as the artist's: their
+// name, page link, and photo ride every card they make from here on
+const promoSlug = (() => {
+  const q = new URLSearchParams(location.search).get('promo');
+  if (q && /^[a-z0-9-]{3,30}$/.test(q)) { localStorage.setItem('fp_promo', q); return q; }
+  return localStorage.getItem('fp_promo') || '';
+})();
+let promoPage = null;       // {name, url, photo} once fetched
+let promoImg = null;        // the pfp, CORS-clean via the worker, for canvases
+if (promoSlug) {
+  fetch(SUNO_PROXY + 'c-get?slug=' + promoSlug).then(r => r.json()).then(pg => {
+    if (!pg || !pg.slug) return;
+    promoPage = { name: pg.name || '', url: SUNO_PROXY + 'c/' + pg.slug, photo: pg.photo || '' };
+    if (pg.photo) {
+      promoImg = new Image();
+      promoImg.crossOrigin = 'anonymous';
+      promoImg.src = SUNO_PROXY + 'pfp?slug=' + promoSlug;
+      promoImg.onerror = () => { promoImg = null; };
+    }
+  }).catch(() => {});
+}
 let pendingGift = null;           // {e, from} while a hoop is in the world
 
 net.onGift = (name, e, quiet) => {

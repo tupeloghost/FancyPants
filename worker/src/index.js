@@ -107,6 +107,11 @@ export class FancyPantsRoom {
       const home = await this.state.storage.get('sh:' + row.song);
       const visits = ((await this.state.storage.get('wv:' + slugPath)) || 0) + 1;
       await this.state.storage.put('wv:' + slugPath, visits);
+      // a scan is a QR arrival (go=1): counted apart so the artist can see
+      // which promotion actually worked - the poster or the bio link
+      if (url.searchParams.get('go') === '1') {
+        await this.state.storage.put('wq:' + slugPath, ((await this.state.storage.get('wq:' + slugPath)) || 0) + 1);
+      }
       return new Response(JSON.stringify({ song: row.song, world: home ? home.world : null }), { headers: { 'Content-Type': 'application/json' } });
     }
     // ── test screenshots: the dev panel posts a jpeg, gets back a URL that
@@ -225,6 +230,11 @@ export class FancyPantsRoom {
         for (const [k] of allW) {
           const path = k.slice(2);
           out.plays[path] = (await this.state.storage.get('wv:' + path)) || 0;
+        }
+        out.scans = {};
+        for (const [k] of allW) {
+          const path = k.slice(2);
+          out.scans[path] = (await this.state.storage.get('wq:' + path)) || 0;
         }
         out.views = (await this.state.storage.get('cv:' + slug)) || 0;
         out.canEdit = true;
@@ -559,12 +569,15 @@ export default {
     const wslug = url.pathname.match(/^\/w\/([a-z0-9-]{1,40})\/([a-z0-9-]{1,40})$/);
     if (wslug) {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
-      const r = await env.ROOMS.get(id).fetch(new Request('https://do/w-get/' + wslug[1] + '/' + wslug[2]));
+      const r = await env.ROOMS.get(id).fetch(new Request('https://do/w-get/' + wslug[1] + '/' + wslug[2]
+        + (url.searchParams.get('go') === '1' ? '?go=1' : '')));
       const row = await r.json().catch(() => ({}));
       const go = url.searchParams.get('go') === '1' ? '&go=1' : '';
+      const GIFT_SHELF = ['\u{1F98B}','\u{1F308}','\u{1FAE7}','\u{1F451}','\u{1F340}','\u{1F33B}','\u{1F438}','\u{1F369}'];
+      const grider = GIFT_SHELF.includes(url.searchParams.get('gift') || '') ? '&gift=' + encodeURIComponent(url.searchParams.get('gift')) : '';
       const dest = (row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
-        : SITE_URL + '?_=1') + go;
+        : SITE_URL + '?_=1') + go + grider;
       const title = wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ');
       const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
         ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
@@ -575,13 +588,30 @@ export default {
     const pslug = url.pathname.match(/^\/p\/([a-z0-9-]{1,24})\/([A-Za-z0-9_.-]{1,60}\.mp3)$/);
     if (pslug) {
       const dest = SITE_URL + '?world=' + pslug[1] + '&track=' + encodeURIComponent(pslug[2])
-        + (url.searchParams.get('go') === '1' ? '&go=1' : '');
+        + (url.searchParams.get('go') === '1' ? '&go=1' : '') + grider;
       const title = pslug[2].replace(/\.mp3$/, '').replace(/[_-]+/g, ' ');
       const image = ['tunnel', 'surfer', 'slide'].includes(pslug[1])
         ? SITE_URL + 'previews/' + pslug[1] + '.jpg' : null;
       return unfurl(title + ', from the inside',
         'it moves when the music does, and again when you do.', dest, image);
     }
+    // /pfp?slug=X — the page's photo through our own door: CORS-clean so the
+    // game can paint it onto promo cards without tainting the canvas
+    if (url.pathname === '/pfp') {
+      const slug = String(url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+      if (!slug) return new Response('no', { status: 400 });
+      const id2 = env.ROOMS.idFromName('THE-WAITING-LIST');
+      const r2 = await env.ROOMS.get(id2).fetch(new Request('https://do/c-get?slug=' + slug));
+      const pg2 = await r2.json().catch(() => ({}));
+      if (!pg2.photo) return new Response('no photo', { status: 404 });
+      const img = await fetch(pg2.photo, { cf: { cacheTtl: 3600, cacheEverything: true } }).catch(() => null);
+      if (!img || !img.ok) return new Response('no photo', { status: 404 });
+      const h = new Headers(img.headers);
+      h.set('Access-Control-Allow-Origin', '*');
+      h.set('Cache-Control', 'public, max-age=3600');
+      return new Response(img.body, { status: 200, headers: h });
+    }
+
     // /c/{slug} — a creator's page: reachable only by its link, never listed
     const cslug = url.pathname.match(/^\/c\/([a-z0-9-]{3,30})$/);
     if (cslug) {
@@ -743,10 +773,28 @@ export default {
         + (pg.look ? '&look=' + encodeURIComponent(pg.look) : '&hue=' + H);
       // the OWNER's seat: with their edit key in the link, the page opens with
       // their numbers - screenshot-able, invisible to everyone else
+      const GIFT_SHELF2 = ['\u{1F98B}','\u{1F308}','\u{1FAE7}','\u{1F451}','\u{1F340}','\u{1F33B}','\u{1F438}','\u{1F369}'];
       const privStrip = pg.canEdit
         ? '<div class="mine"><span class="meye">your numbers \u00b7 only you see this</span>'
           + '<div class="mrow"><b>' + (pg.views || 0) + '</b><i>page visits</i></div>'
-          + songs.map(sg => '<div class="mrow"><b>' + ((pg.plays || {})[sg.p] || 0) + '</b><i>stepped inside \u2018' + esc(sg.title) + '\u2019</i></div>').join('')
+          + songs.map(sg => {
+              const sc = (pg.scans || {})[sg.p] || 0;
+              return '<div class="mrow"><b>' + ((pg.plays || {})[sg.p] || 0) + '</b><i>stepped inside \u2018' + esc(sg.title) + '\u2019'
+                + (sc ? ' \u00b7 ' + sc + ' from scans' : '') + '</i>'
+                + '<button class="mcopy" data-u="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(sg.p) + '">copy promo link</button></div>';
+            }).join('')
+          + '<div class="mgift"><span class="meye">attach a gift \u00b7 anyone who uses your links gets it</span><div class="mgrow">'
+          + GIFT_SHELF2.map(g => '<button class="mg" data-g="' + g + '">' + g + '</button>').join('') + '</div></div>'
+          + '<div class="mshare">'
+          + '<button class="mcopy big" data-u="https://fancy-pants.tupeloghost.workers.dev/c/' + esc(pg.slug) + '">copy your page link</button>'
+          + '<a class="mcopy big" href="' + SITE_URL + '?promo=' + esc(pg.slug) + '">make a promo card \u2192</a>'
+          + '</div>'
+          + '<script>(function(){var G="";'
+          + 'function wire(){var bs=document.querySelectorAll(".mg");for(var i=0;i<bs.length;i++)bs[i].onclick=function(){var on=this.classList.contains("on");var all=document.querySelectorAll(".mg");for(var j=0;j<all.length;j++)all[j].classList.remove("on");G=on?"":this.getAttribute("data-g");if(!on)this.classList.add("on")};'
+          + 'var cs=document.querySelectorAll(".mcopy[data-u]");for(var i=0;i<cs.length;i++)cs[i].onclick=function(){var u=this.getAttribute("data-u");'
+          + 'if(G)u+=(u.indexOf("?")>-1?"&":"?")+"gift="+encodeURIComponent(G);'
+          + 'var me=this;navigator.clipboard.writeText(u).then(function(){var t=me.textContent;me.textContent="copied"+(G?" with "+G:"");setTimeout(function(){me.textContent=t},1800)})}}'
+          + 'wire()})();</scr' + 'ipt>'
           + '</div>'
         : '';
       // the lead song is the page's thesis: one big door. the rest are rows.
@@ -781,6 +829,14 @@ export default {
         + '.mrow{display:flex;align-items:baseline;gap:10px;margin:3px 0}'
         + '.mrow b{font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:24px;min-width:44px;text-align:right;color:#fff}'
         + '.mrow i{font-style:normal;font-size:13px;color:#c4bfe3}'
+        + '.mrow{flex-wrap:wrap}'
+        + '.mcopy{margin-left:auto;padding:6px 12px;border-radius:999px;border:1px solid hsla(var(--h),70%,75%,0.5);background:none;color:hsl(var(--h),75%,85%);font:11px ui-monospace,Menlo,monospace;letter-spacing:1px;cursor:pointer;text-transform:uppercase;text-decoration:none}'
+        + '.mcopy:hover{background:hsla(var(--h),70%,60%,0.25)}'
+        + '.mcopy.big{margin:4px 6px 0 0;display:inline-block}'
+        + '.mgift{margin-top:12px}.mgrow{display:flex;gap:4px;flex-wrap:wrap}'
+        + '.mg{font-size:21px;padding:6px 8px;border-radius:10px;border:1px solid transparent;background:none;cursor:pointer}'
+        + '.mg.on{border-color:hsl(var(--h),80%,75%);background:hsla(var(--h),70%,60%,0.3)}'
+        + '.mshare{margin-top:12px}'
         + '.together{display:block;margin:-8px auto 26px;max-width:420px;padding:14px 18px;border-radius:18px;text-decoration:none;color:#f0eefc;'
         + 'background:rgba(255,255,255,0.07);border:1px solid hsla(var(--h),70%,75%,0.45)}'
         + '.together b{display:block;font-family:Didot,"Bodoni 72",Georgia,serif;font-weight:400;font-size:19px;letter-spacing:1px}'
