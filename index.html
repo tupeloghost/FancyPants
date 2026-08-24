@@ -411,6 +411,7 @@
   .pm-act { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
     color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px; padding: 10px 0; border-radius: 10px; }
   .pm-act:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
+  #gentle-btn.hidden { display: none; }   /* parked: the setting confused more than it helped */
   #page-music:not(.own) #suno-row, #page-music:not(.own) #suno-status, #page-music:not(.own) #suno-rights { display: none; }
   #page-music.own #own-song { display: none; }
   @media (max-width: 620px) {
@@ -2531,7 +2532,7 @@
   </div>
   <div id="maker-line">
     <span id="maker-links"><a href="support.html" target="_blank">&hearts; support this project</a> &nbsp;&middot;&nbsp; <a id="custom-open" href="#">want a custom world?</a></span>
-    <span id="photo-note">this game has flashing lights. to soften them, tap SOFTER LIGHTS in the &#9834; music menu.</span>
+    <span id="photo-note">caution: this game has flashing lights.</span>
   </div>
   <div id="waitlist-form" class="hidden">
     <div id="wl-lead">paste one of your songs and play it in every world, on the house. to share, your song rides TUNNEL or Sunday&rsquo;s best, a brand-new world every sunday. move it any time, links follow. <b>artist access</b> lets your song call any world home, plus your own analytics. leave your email and you&rsquo;re first in line.</div>
@@ -2890,7 +2891,7 @@
           <button id="pm-roll" class="chip">&#9834; NONSTOP SONGS</button>
           <button id="pm-wander" class="chip">&#9670; DRIFT BETWEEN WORLDS</button>
         </div>
-        <button id="gentle-btn" title="softens flashes &amp; pulses, for light-sensitive folks">SOFTER LIGHTS: OFF</button>
+        <button id="gentle-btn" class="hidden" title="softens flashes &amp; pulses, for light-sensitive folks">SOFTER LIGHTS: OFF</button>
         <select id="track-select"><option value="">choose from /audio/ &hellip;</option></select>
       </div>
       <div class="row host-only">
@@ -3010,7 +3011,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 596</div>
+      <div id="build-stamp">build 597</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3052,6 +3053,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=596"></script>
+<script type="module" src="js/main.js?v=597"></script>
 </body>
 </html>
