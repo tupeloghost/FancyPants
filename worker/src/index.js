@@ -875,7 +875,7 @@ export default {
       const pool = ALL.filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer').sort();
       const rot = ['slide', 'surfer', ...pool];
       const SHIFT = 3 * 86400000 + 16 * 3600000;   // sunday 16:00 UTC, matches the client
-      const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 23, 16) - SHIFT) / 604800000);
+      const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 30, 16) - SHIFT) / 604800000);
       const weeksIn = Math.max(0, Math.floor((Date.now() - SHIFT) / 604800000) - LAUNCH_WEEK);
       const wk = rot[weeksIn % rot.length];
       return Response.redirect(SITE_URL + '?world=' + wk, 302);
