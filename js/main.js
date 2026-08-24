@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=613';
-import { drawQR } from './lib/qr.js?v=613';
-import { WORLDS } from './worlds/registry.js?v=613';
-import { Net, PALETTE } from './net.js?v=613';
-import { Presence } from './lib/presence.js?v=613';
-import { Pulses } from './lib/pulse.js?v=613';
-import { BeatClock } from './lib/beatclock.js?v=613';
-import { BeatCue } from './lib/beatcue.js?v=613';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=613';
-import { Race, placeOf, standings } from './lib/race.js?v=613';
-import { Signals } from './lib/signals.js?v=613';
-import { pickShareLine, loadLines } from './lib/lines.js?v=613';
-import { RouteMap } from './lib/map.js?v=613';
-import * as sfx from './lib/sfx.js?v=613';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=613';
-import { glowTexture } from './lib/glow.js?v=613';
+import { AudioEngine } from './audio-engine.js?v=614';
+import { drawQR } from './lib/qr.js?v=614';
+import { WORLDS } from './worlds/registry.js?v=614';
+import { Net, PALETTE } from './net.js?v=614';
+import { Presence } from './lib/presence.js?v=614';
+import { Pulses } from './lib/pulse.js?v=614';
+import { BeatClock } from './lib/beatclock.js?v=614';
+import { BeatCue } from './lib/beatcue.js?v=614';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=614';
+import { Race, placeOf, standings } from './lib/race.js?v=614';
+import { Signals } from './lib/signals.js?v=614';
+import { pickShareLine, loadLines } from './lib/lines.js?v=614';
+import { RouteMap } from './lib/map.js?v=614';
+import * as sfx from './lib/sfx.js?v=614';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=614';
+import { glowTexture } from './lib/glow.js?v=614';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1724,8 +1724,12 @@ function togglePlay() {
   updatePlayBtn();
 }
 
-$('qb-prev').addEventListener('click', playPrev);
-$('qb-next').addEventListener('click', () => playAuto(true));
+// SONG opens the library where the songs actually live
+$('qb-song').addEventListener('click', () => {
+  if ($('panel').classList.contains('collapsed')) $('panel-head').click();
+  document.querySelector('#tabs .tab[data-tab="music"]').click();
+  setTimeout(() => $('track-select').focus(), 250);
+});
 $('qb-home').addEventListener('click', () => {
   // home means home: a clean landing, nothing carried along
   location.assign(location.pathname);
@@ -3335,29 +3339,19 @@ $('mc-host').addEventListener('click', () => {
   askName(() => startRoom(genCode(), ensureName(), true));
 });
 // scheduling lives in the panel now: same form, calmer doorway
-// the world's menu carries the artist and social doors, in plain words
-$('pm-promote').addEventListener('click', e => {
-  e.stopPropagation();
+// HOST and PROMOTE live on the bar — the mini menu is the menu
+$('qb-promote').addEventListener('click', () => {
   $('pl-row').classList.add('hidden');
   $('promote-form').classList.remove('hidden');
   $('mode-card').classList.add('show', 'flow-promote');
 });
-$('pm-invite').addEventListener('click', e => {
-  e.stopPropagation();
+$('qb-host').addEventListener('click', () => {
   if (document.body.classList.contains('hosting')) {
     $('stream-card').classList.toggle('hidden');   // hosts show or hide the QR at will
   } else {
     askName(() => startRoom(genCode(), ensureName(), true));
   }
-  syncInviteLabel();
 });
-// the button says what it will DO next
-function syncInviteLabel() {
-  const b = $('pm-invite'); if (!b) return;
-  if (!document.body.classList.contains('hosting')) { b.textContent = 'invite friends (QR code)'; return; }
-  b.textContent = $('stream-card').classList.contains('hidden') ? 'show QR code' : 'hide QR code';
-}
-setInterval(syncInviteLabel, 1500);
 $('own-song').addEventListener('click', e => {
   e.stopPropagation();
   $('page-music').classList.add('own');

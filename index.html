@@ -211,7 +211,7 @@
   }
 
   /* a guest drives nothing but their own look and their own speakers */
-  body.guest #qb-prev, body.guest #qb-play, body.guest #qb-next,
+  body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-play, body.guest #qb-next,
   body.guest #qb-world, body.guest #qsep-1 { display: none; }
 
   /* clean capture — every control gone, the world alone */
@@ -436,6 +436,8 @@
   .pm-act { width: 100%; text-align: center; background: none; border: 1px dashed hsla(var(--accent-h), 60%, 65%, 0.35);
     color: var(--ink-dim); font: 12px 'Jost', 'Futura', 'Avenir Next', 'Century Gothic', sans-serif; letter-spacing: 1.6px; padding: 10px 0; border-radius: 10px; }
   .pm-act:hover { color: var(--ink); border-color: hsla(var(--accent-h), 70%, 70%, 0.6); }
+  #page-music .chill-row { flex-direction: column; }
+  #page-music .chill-row .chip { width: 100%; }
   #am-row.hidden { display: none; }   /* the library's groups replaced the toggle */
   #track-select optgroup { font-style: normal; color: var(--ink-faint); }
   #gentle-btn.hidden { display: none; }   /* parked: the setting confused more than it helped */
@@ -615,7 +617,7 @@
   body.vibe-card #map-canvas, body.vibe-card #ri-head, body.vibe-card #ri-round { display: none; }
 
   /* a round owns the music — no skipping mid-race */
-  body.play #qb-prev, body.play #qb-play, body.play #qb-next,
+  body.play #qb-song, body.play #qb-prev, body.play #qb-play, body.play #qb-next,
   body.play #qb-world, body.play #qsep-1 { display: none; }
   body.play #page-music, body.play #page-worlds { opacity: 0.32; pointer-events: none; }
 
@@ -2921,13 +2923,14 @@
 
 <div id="qbar">
   <button class="qb" id="qb-home" title="back to the home screen"><i><svg viewBox="0 0 24 24"><path d="M4.5 11 L12 4.5 L19.5 11"/><path d="M6.5 10.5 V19 H17.5 V10.5"/></svg></i><em>home</em></button>
-  <button class="qb" id="qb-prev" title="previous track  ←"><i><svg viewBox="0 0 24 24"><path class="f" d="M17 5.5 L9.5 12 L17 18.5 Z"/><line x1="7" y1="5.5" x2="7" y2="18.5"/></svg></i><em>back</em></button>
+  <button class="qb" id="qb-song" title="change the song"><i><svg viewBox="0 0 24 24"><path d="M9.5 17.5 V6.5 L18 4.8 V15.5"/><circle class="f" cx="7" cy="17.5" r="2.4"/><circle class="f" cx="15.5" cy="15.7" r="2.4"/></svg></i><em>song</em></button>
   <button class="qb" id="qb-play" title="play / pause  space"><i><svg viewBox="0 0 24 24"><path class="f ic-play" d="M8.5 5 L18.5 12 L8.5 19 Z"/><g class="ic-pause"><line x1="9" y1="5.5" x2="9" y2="18.5"/><line x1="15" y1="5.5" x2="15" y2="18.5"/></g></svg></i><em>play</em></button>
-  <button class="qb" id="qb-next" title="next track  →"><i><svg viewBox="0 0 24 24"><path class="f" d="M7 5.5 L14.5 12 L7 18.5 Z"/><line x1="17" y1="5.5" x2="17" y2="18.5"/></svg></i><em>next</em></button>
   <span class="qsep" id="qsep-1"></span>
   <button class="qb" id="qb-world" title="next world  W"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.6"/><circle class="f" cx="12" cy="12" r="1.7"/><line x1="12" y1="2.6" x2="12" y2="4.6"/><line x1="12" y1="19.4" x2="12" y2="21.4"/></svg></i><em>world</em></button>
   <button style="display:none" class="qb" id="qb-look" title="next look  L"><i>&#10022;</i><em>look</em></button>
   <span class="qsep"></span>
+  <button class="qb" id="qb-host" title="open a room. friends scan the QR and drop in"><i><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.2"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.2"/><circle class="f" cx="16.5" cy="16.5" r="1.6"/></svg></i><em>host</em></button>
+  <button class="qb" id="qb-promote" title="make a post from this moment"><i><svg viewBox="0 0 24 24"><path d="M4.5 10 V14 L15 17.5 V6.5 Z"/><path d="M15 9.5 C18 10 18 14 15 14.5"/><line x1="7.5" y1="14.8" x2="8.6" y2="19"/></svg></i><em>promote</em></button>
   <button class="qb" id="qb-mute" title="silence your speakers. the visuals keep dancing  M"><i><svg viewBox="0 0 24 24"><path d="M14.5 5 V15.2"/><circle class="f" cx="12.2" cy="16.4" r="2.6"/><path d="M14.5 5 L18.5 6.6"/><line class="ic-slash" x1="5.5" y1="20" x2="19.5" y2="4.5"/></svg></i><em>mute</em></button>
   <span class="qsep"></span>
 
@@ -2966,8 +2969,7 @@
       </div>
       <div class="row host-only">
         <button id="own-song" class="pm-act">+ play your own song</button>
-        <button id="pm-promote" class="pm-act">promote your song</button>
-        <button id="pm-invite" class="pm-act">invite friends (QR code)</button>
+
         <div id="suno-row">
           <input id="suno-input" placeholder="&#9834; paste a suno song link" autocomplete="off">
           <button id="suno-go" title="load this link">&#9654;</button>
@@ -3078,7 +3080,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 613</div>
+      <div id="build-stamp">build 614</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3120,6 +3122,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=613"></script>
+<script type="module" src="js/main.js?v=614"></script>
 </body>
 </html>
