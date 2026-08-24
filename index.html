@@ -213,6 +213,8 @@
   /* a guest drives nothing but their own look and their own speakers */
   body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-play, body.guest #qb-next,
   body.guest #qb-world, body.guest #qsep-1 { display: none; }
+  /* rooms are for experiencing it TOGETHER: promote lives in solo play only */
+  body.guest #qb-promote, body.hosting #qb-promote { display: none; }
 
   /* clean capture — every control gone, the world alone */
   body.clean #qbar, body.clean #panel, body.clean #plist { display: none !important; }
@@ -3091,7 +3093,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 620</div>
+      <div id="build-stamp">build 621</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3133,6 +3135,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=620"></script>
+<script type="module" src="js/main.js?v=621"></script>
 </body>
 </html>
