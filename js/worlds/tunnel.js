@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=607';
+import { glowTexture } from '../lib/glow.js?v=608';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -607,14 +607,16 @@ export function createTunnel() {
               boost += Math.pow(Math.max(0, Math.cos(a - time * 1.3)), 8) * 0.55;
               break;
             }
+            // duo/triad/neon: colors alternate in bold ARCS around the tube,
+            // never per-tile — every-other-tile complements read as static
             case 'duo':
-              h = ((hueHere / 360) + (s % 2) * 0.5 + depthT * 0.25) % 1;
+              h = ((hueHere / 360) + (Math.floor(s / (SEGS / 4)) % 2) * 0.5 + depthT * 0.25) % 1;
               break;
             case 'triad':
-              h = ((hueHere / 360) + (s % 3) / 3 + depthT * 0.25) % 1;
+              h = ((hueHere / 360) + (Math.floor(s / (SEGS / 3)) % 3) / 3 + depthT * 0.25) % 1;
               break;
             case 'neon':
-              h = ((hueHere / 360) + (s % 3) / 3 + depthT * 0.4) % 1;
+              h = ((hueHere / 360) + (Math.floor(s / (SEGS / 3)) % 3) / 3 + depthT * 0.4) % 1;
               boost = 1.5;
               break;
             case 'cycle':
