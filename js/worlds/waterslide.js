@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=634';
-import { themePaint } from '../lib/themes.js?v=634';
-import { TUNE } from '../lib/tune.js?v=634';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=635';
+import { themePaint } from '../lib/themes.js?v=635';
+import { TUNE } from '../lib/tune.js?v=635';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -61,7 +61,7 @@ export function createWaterslide() {
   const SURFS = [
     { geo: 'box',  start: Math.PI,        span: Math.PI },        // classic half-pipe of tiles
     { geo: 'gem',  start: Math.PI * 1.1,  span: Math.PI * 0.8 },  // a trough of cut gems, steep walls
-    { geo: 'slat', start: Math.PI * 1.22, span: Math.PI * 0.56 }, // a flat ribbon of planks, open air
+    { geo: 'slat', start: Math.PI * 1.32, span: Math.PI * 0.36 }, // a flat ribbon of planks, open air — kept shallow so the outer planks never rear up
     { geo: 'box',  start: Math.PI * 0.72, span: Math.PI * 1.56 }, // the storm drain: walls wrap overhead
   ];
   let surfA = 0, surfB = 0;
@@ -636,7 +636,7 @@ export function createWaterslide() {
           dummy.rotation.set(0, 0, a + Math.PI / 2);
           // tile width follows the arc: the wrap-around needs wider tiles than
           // the half-pipe, the ribbon narrower — or the wall shows gaps/overlaps
-          const w = (arcSpan * R) / SEGS * 0.85;
+          const w = (arcSpan * R) / SEGS * ((shapeMix >= 0.5 ? sfB : sfA).geo === 'slat' ? 0.98 : 0.85);
           dummy.scale.set(w, 1 + level * 1.6 * reactivity, 1);
           dummy.updateMatrix();
           wall.setMatrixAt(idx, dummy.matrix);
