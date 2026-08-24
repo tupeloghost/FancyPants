@@ -1514,20 +1514,20 @@
     letter-spacing: normal;
   }
   #join-card input {
-    padding: 10px 12px; border-radius: 10px; text-align: center;
-    background: rgba(10, 16, 30, 0.85); color: var(--ink);
-    border: 1px solid var(--accent-line); font: 14px 'SF Mono', ui-monospace, Menlo, monospace;
+    padding: 13px 12px; border-radius: 10px; text-align: center;
+    background: rgba(10, 16, 30, 0.85); color: #fff;
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.45); font: 15px 'SF Mono', ui-monospace, Menlo, monospace;
     letter-spacing: 2px; outline: none;
   }
   #join-card input:focus { border-color: var(--accent); box-shadow: 0 0 14px hsla(var(--accent-h), 90%, 65%, 0.4); }
-  #join-card input::placeholder { color: var(--ink-faint); letter-spacing: 1px; }
+  #join-card input::placeholder { color: hsl(var(--accent-h), 25%, 72%); letter-spacing: 1px; }
   #join-room { text-transform: uppercase; }
   .join-row { display: flex; gap: 7px; }
   .join-row button {
-    flex: 1; padding: 9px 0; border-radius: 10px; cursor: pointer;
-    background: var(--accent-soft); color: var(--accent);
-    border: 1px solid var(--accent-line);
-    font: 700 12px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 2px;
+    flex: 1; padding: 13px 0; border-radius: 10px; cursor: pointer;
+    background: hsla(var(--accent-h), 80%, 65%, 0.22); color: #fff;
+    border: 1px solid hsla(var(--accent-h), 85%, 75%, 0.6);
+    font: 700 13px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 2.4px;
   }
   .join-row button:hover { background: hsla(var(--accent-h), 90%, 65%, 0.3); }
   #join-msg { color: #ff8fa3; font-size: 11px; min-height: 14px; letter-spacing: 1px; }
@@ -1678,7 +1678,7 @@
     margin-top: 18px;
     font: 12px 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: 1.1px;
   }
-  #side-doors a { color: var(--ink-faint); text-decoration: none; border-bottom: 1px solid transparent; }
+  #side-doors a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid hsla(var(--accent-h), 60%, 70%, 0.25); padding-bottom: 1px; }
   #side-doors a:hover { color: var(--ink); border-bottom-color: hsla(var(--accent-h), 70%, 70%, 0.5); }
   #side-doors .sd-dot { color: var(--ink-faint); opacity: 0.6; }
   #side-doors a.hidden { display: none; }
@@ -3080,7 +3080,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 614</div>
+      <div id="build-stamp">build 615</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3122,6 +3122,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=614"></script>
+<script type="module" src="js/main.js?v=615"></script>
 </body>
 </html>
