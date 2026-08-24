@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=638';
-import { themePaint } from '../lib/themes.js?v=638';
-import { TUNE } from '../lib/tune.js?v=638';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=639';
+import { themePaint } from '../lib/themes.js?v=639';
+import { TUNE } from '../lib/tune.js?v=639';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -340,7 +340,7 @@ export function createWaterslide() {
             // the wonder hole: rare, never where a black hole is, and a size
             // bigger — a swirling rainbow door. Enter it and the whole world
             // changes clothes.
-            h.wonder = !h.red && (hoopCount % 16) === 13;
+            h.wonder = !h.red && ((hoopCount % 16) === 13 || (window.__doorDebt && hoopCount === 4));
             // the bender: same rarity as the wonder door, offset half a lap —
             // enter it and the PIPE ITSELF re-bends into a new shape
             h.bend = !h.red && !h.wonder && (hoopCount % 16) === 5;

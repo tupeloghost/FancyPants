@@ -5,7 +5,7 @@
 // cross-section silhouette. Color modes are themed behaviors, not tints.
 
 import * as THREE from 'three';
-import { glowTexture } from '../lib/glow.js?v=638';
+import { glowTexture } from '../lib/glow.js?v=639';
 
 const RINGS = 60;           // rings alive at once
 const SEGS = 30;            // wall elements per ring
@@ -258,7 +258,7 @@ export function createTunnel() {
         door.visible = false;
         group.add(door);
       }
-      doorOn = false; doorNextAt = 500; doorPop = 0;
+      doorOn = false; doorNextAt = window.__doorDebt ? 260 : 500; doorPop = 0;
 
       travel = 0; rush = 0;
       baseFov = camera.fov;

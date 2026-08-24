@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=638';
-import { drawQR } from './lib/qr.js?v=638';
-import { WORLDS } from './worlds/registry.js?v=638';
-import { Net, PALETTE } from './net.js?v=638';
-import { Presence } from './lib/presence.js?v=638';
-import { Pulses } from './lib/pulse.js?v=638';
-import { BeatClock } from './lib/beatclock.js?v=638';
-import { BeatCue } from './lib/beatcue.js?v=638';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=638';
-import { Race, placeOf, standings } from './lib/race.js?v=638';
-import { Signals } from './lib/signals.js?v=638';
-import { pickShareLine, loadLines } from './lib/lines.js?v=638';
-import { RouteMap } from './lib/map.js?v=638';
-import * as sfx from './lib/sfx.js?v=638';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=638';
-import { glowTexture } from './lib/glow.js?v=638';
+import { AudioEngine } from './audio-engine.js?v=639';
+import { drawQR } from './lib/qr.js?v=639';
+import { WORLDS } from './worlds/registry.js?v=639';
+import { Net, PALETTE } from './net.js?v=639';
+import { Presence } from './lib/presence.js?v=639';
+import { Pulses } from './lib/pulse.js?v=639';
+import { BeatClock } from './lib/beatclock.js?v=639';
+import { BeatCue } from './lib/beatcue.js?v=639';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=639';
+import { Race, placeOf, standings } from './lib/race.js?v=639';
+import { Signals } from './lib/signals.js?v=639';
+import { pickShareLine, loadLines } from './lib/lines.js?v=639';
+import { RouteMap } from './lib/map.js?v=639';
+import * as sfx from './lib/sfx.js?v=639';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=639';
+import { glowTexture } from './lib/glow.js?v=639';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1973,6 +1973,15 @@ function dealNextLook() {
   window.__nextLook = { name: cfg.colorMode, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
 }
 dealNextLook();
+// ── the first-door promise ── a first-time visit OWES its rider a wonder
+// door inside the first stretch: the paint wave is the product's best
+// argument, and it must land before attention wanders. Worlds read the
+// debt to pull their first door close; any door pass pays it for the visit.
+window.__doorDebt = !sessionStorage.getItem('fp_door_paid');
+document.addEventListener('fp-lookspark', () => {
+  window.__doorDebt = false;
+  try { sessionStorage.setItem('fp_door_paid', '1'); } catch { /* private mode */ }
+});
 // ── the room wears ONE look ── in a hosted room, a wonder door redresses
 // EVERY screen. With a crowd, doors take turns: after a room-wide change the
 // room holds its look for a breath that grows with the headcount, and any
@@ -2547,6 +2556,15 @@ let bloomKick = 0;
 // (Android honours vibrate(); iOS Safari has no web haptics API at all.)
 const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
   || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// the iPhone silent-switch trap: the song routes through WebAudio, which the
+// hardware switch mutes — the game looks alive and sounds dead. One hint, once.
+if (IS_IOS && !localStorage.getItem('fp_silent_hint')) {
+  audio.el.addEventListener('playing', () => {
+    if (localStorage.getItem('fp_silent_hint')) return;
+    localStorage.setItem('fp_silent_hint', '1');
+    setTimeout(() => flash('NO SOUND? FLIP YOUR SILENT SWITCH', 3200), 1600);
+  }, { once: true });
+}
 function haptic(pattern) {
   if (!IS_MOBILE) return;
   if (navigator.vibrate) {
@@ -4962,7 +4980,8 @@ $('name-dice').addEventListener('click', () => {
   localStorage.setItem('fp_name', pick);
 });
 $('btn-join').addEventListener('click', () => {
-  const code = $('join-room').value.trim().toUpperCase();
+  // forgive everything forgivable: case, spaces, dashes, stray punctuation
+  const code = $('join-room').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (code.length < 4) { $('join-msg').textContent = "we'll need that room code, sugar"; return; }
   startRoom(code, $('join-name').value.trim(), false);
 });
