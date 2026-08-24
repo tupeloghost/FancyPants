@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=599';
-import { drawQR } from './lib/qr.js?v=599';
-import { WORLDS } from './worlds/registry.js?v=599';
-import { Net, PALETTE } from './net.js?v=599';
-import { Presence } from './lib/presence.js?v=599';
-import { Pulses } from './lib/pulse.js?v=599';
-import { BeatClock } from './lib/beatclock.js?v=599';
-import { BeatCue } from './lib/beatcue.js?v=599';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=599';
-import { Race, placeOf, standings } from './lib/race.js?v=599';
-import { Signals } from './lib/signals.js?v=599';
-import { pickShareLine, loadLines } from './lib/lines.js?v=599';
-import { RouteMap } from './lib/map.js?v=599';
-import * as sfx from './lib/sfx.js?v=599';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=599';
-import { glowTexture } from './lib/glow.js?v=599';
+import { AudioEngine } from './audio-engine.js?v=600';
+import { drawQR } from './lib/qr.js?v=600';
+import { WORLDS } from './worlds/registry.js?v=600';
+import { Net, PALETTE } from './net.js?v=600';
+import { Presence } from './lib/presence.js?v=600';
+import { Pulses } from './lib/pulse.js?v=600';
+import { BeatClock } from './lib/beatclock.js?v=600';
+import { BeatCue } from './lib/beatcue.js?v=600';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=600';
+import { Race, placeOf, standings } from './lib/race.js?v=600';
+import { Signals } from './lib/signals.js?v=600';
+import { pickShareLine, loadLines } from './lib/lines.js?v=600';
+import { RouteMap } from './lib/map.js?v=600';
+import * as sfx from './lib/sfx.js?v=600';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=600';
+import { glowTexture } from './lib/glow.js?v=600';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4969,7 +4969,7 @@ const shareableFree = k => window.__devPaid || FEATURED.includes(k) || k === WEE
         return;
       }
       $('sun-main').textContent = 'this sunday\u2019s best: ' + WORLDS[WEEK_WORLD].label;
-      $('sun-text').textContent = 'next world in ' + fmt(left);
+      $('sun-text').textContent = 'new world in ' + fmt(left);
     };
     tick(); setInterval(tick, 30000);
     const dt = new Date(nextFlip());
