@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=621';
-import { drawQR } from './lib/qr.js?v=621';
-import { WORLDS } from './worlds/registry.js?v=621';
-import { Net, PALETTE } from './net.js?v=621';
-import { Presence } from './lib/presence.js?v=621';
-import { Pulses } from './lib/pulse.js?v=621';
-import { BeatClock } from './lib/beatclock.js?v=621';
-import { BeatCue } from './lib/beatcue.js?v=621';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=621';
-import { Race, placeOf, standings } from './lib/race.js?v=621';
-import { Signals } from './lib/signals.js?v=621';
-import { pickShareLine, loadLines } from './lib/lines.js?v=621';
-import { RouteMap } from './lib/map.js?v=621';
-import * as sfx from './lib/sfx.js?v=621';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=621';
-import { glowTexture } from './lib/glow.js?v=621';
+import { AudioEngine } from './audio-engine.js?v=622';
+import { drawQR } from './lib/qr.js?v=622';
+import { WORLDS } from './worlds/registry.js?v=622';
+import { Net, PALETTE } from './net.js?v=622';
+import { Presence } from './lib/presence.js?v=622';
+import { Pulses } from './lib/pulse.js?v=622';
+import { BeatClock } from './lib/beatclock.js?v=622';
+import { BeatCue } from './lib/beatcue.js?v=622';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=622';
+import { Race, placeOf, standings } from './lib/race.js?v=622';
+import { Signals } from './lib/signals.js?v=622';
+import { pickShareLine, loadLines } from './lib/lines.js?v=622';
+import { RouteMap } from './lib/map.js?v=622';
+import * as sfx from './lib/sfx.js?v=622';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=622';
+import { glowTexture } from './lib/glow.js?v=622';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1718,8 +1718,24 @@ function toggleMute() {
   $('qb-mute').querySelector('em').textContent = audio.muted ? 'muted' : 'mute';
 }
 
+let guestPaused = false;
 function togglePlay() {
-  if (document.body.classList.contains('guest')) return; // host drives the music
+  if (document.body.classList.contains('guest')) {
+    // a guest's pause is THEIR pause only: their music stops and the room
+    // sees them leave — play steps them right back in, mid-song
+    guestPaused = !guestPaused;
+    if (guestPaused) {
+      audio.pause();
+      net.stepOut();
+      $('guest-pause').classList.remove('hidden');
+    } else {
+      $('guest-pause').classList.add('hidden');
+      net.stepIn();
+      audio.play().catch(() => {});   // the welcome re-syncs to the host's spot
+    }
+    updatePlayBtn();
+    return;
+  }
   audio.playing ? audio.pause() : audio.play().catch(() => {});
   updatePlayBtn();
 }

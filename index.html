@@ -211,8 +211,27 @@
   }
 
   /* a guest drives nothing but their own look and their own speakers */
-  body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-play, body.guest #qb-next,
+  body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-next,
   body.guest #qb-world, body.guest #qsep-1 { display: none; }
+  /* the guest's own pause card — their break, nobody else's */
+  #guest-pause {
+    position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    z-index: 56; text-align: center; pointer-events: none;
+    display: flex; flex-direction: column; gap: 8px; align-items: center;
+    padding: 22px 34px; border-radius: 18px;
+    background: rgba(6, 9, 20, 0.78);
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  #guest-pause.hidden { display: none; }
+  #guest-pause b {
+    font: 400 26px 'Didot', 'Bodoni MT', 'Playfair Display', serif;
+    color: #fff; letter-spacing: 6px;
+  }
+  #guest-pause span {
+    font: 12px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    color: var(--ink-dim); letter-spacing: 1.5px;
+  }
   /* rooms are for experiencing it TOGETHER: promote lives in solo play only */
   body.guest #qb-promote, body.hosting #qb-promote { display: none; }
 
@@ -2881,7 +2900,8 @@
   <div id="il-num"></div>
   <div id="il-board"></div>
 </div>
-<div id="name-gate" class="hidden">
+<div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
+  <div id="name-gate" class="hidden">
   <div id="ng-inner">
     <div id="ng-title">Player Name</div>
     <div id="ng-row"><input id="ng-in" maxlength="14" autocomplete="off" spellcheck="false"><button id="ng-dice" title="deal me one">&#127922;</button></div>
@@ -3093,7 +3113,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 621</div>
+      <div id="build-stamp">build 622</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3135,6 +3155,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=621"></script>
+<script type="module" src="js/main.js?v=622"></script>
 </body>
 </html>

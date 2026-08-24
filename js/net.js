@@ -166,6 +166,26 @@ export class Net {
     }
   }
 
+  // guest: step OUT of the room without leaving the page — the socket says a
+  // clean goodbye (the room sees a leave), the room code is kept for the way back
+  stepOut() {
+    this._noRetry = true;
+    clearTimeout(this._retryT);
+    try { this._ws && this._ws.close(); } catch { /* already gone */ }
+    this.connected = false;
+    this.participants.length = 1;   // the crowd fades; a fresh welcome redraws it
+    this._targets.clear();
+    this._lastSeen.clear();
+  }
+
+  // ...and step back IN: same room, same name, like nothing happened
+  stepIn() {
+    if (!this.room) return;
+    this._noRetry = false;
+    this._retry = 0;
+    this.join(this.room, this.local.name, this.owner);
+  }
+
   // host: the starting gun — the round begins NOW, everywhere
   sendGo(at) {
     if (!this.owner || !this.connected || !this._ws || this._ws.readyState !== 1) return;
