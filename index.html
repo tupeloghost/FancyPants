@@ -55,6 +55,12 @@
     -webkit-user-select: none; user-select: none;
     -webkit-touch-callout: none;
   }
+  /* iOS 17's loupe ignores body-level rules some days: say it on EVERY
+     element, then let real inputs opt back in */
+  *:not(input):not(textarea) {
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
   input, textarea, [contenteditable] {
     -webkit-user-select: text; user-select: text;
   }
@@ -3310,7 +3316,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 637</div>
+      <div id="build-stamp">build 638</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3352,6 +3358,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=637"></script>
+<script type="module" src="js/main.js?v=638"></script>
 </body>
 </html>
