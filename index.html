@@ -2062,6 +2062,8 @@
     white-space: pre-wrap; word-break: break-word;
   }
   #shc-actions { flex-wrap: wrap; }
+  #shc-say-label { font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif; letter-spacing: 1.2px;
+    color: var(--ink-dim); text-align: left; margin: 10px 2px 4px; }
   #shc-actions button { min-width: 0; padding: 11px 8px; letter-spacing: 1.6px; font-size: 12px; }
   #shc-actions #shc-reroll { flex: 0 0 auto; padding: 11px 14px; }
   #shc-video.hidden { display: none; }
@@ -2720,7 +2722,8 @@
       <img id="shc-still" class="hidden" alt="">
       <div id="shc-words" class="hidden"></div>
     </div>
-    <textarea id="shc-say" maxlength="120" rows="2" placeholder="say somethin&rsquo;, sugar. your words go right on the picture"></textarea>
+    <div id="shc-say-label">&#9998; tap to write your own. your words show on the clip</div>
+    <textarea id="shc-say" maxlength="120" rows="2" placeholder="write your caption"></textarea>
     <div id="shc-emoji"></div>
     <div id="shc-actions">
       <button id="shc-share">SHARE THIS POST</button>
@@ -3062,7 +3065,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 610</div>
+      <div id="build-stamp">build 611</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3104,6 +3107,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=610"></script>
+<script type="module" src="js/main.js?v=611"></script>
 </body>
 </html>

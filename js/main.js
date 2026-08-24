@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=610';
-import { drawQR } from './lib/qr.js?v=610';
-import { WORLDS } from './worlds/registry.js?v=610';
-import { Net, PALETTE } from './net.js?v=610';
-import { Presence } from './lib/presence.js?v=610';
-import { Pulses } from './lib/pulse.js?v=610';
-import { BeatClock } from './lib/beatclock.js?v=610';
-import { BeatCue } from './lib/beatcue.js?v=610';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=610';
-import { Race, placeOf, standings } from './lib/race.js?v=610';
-import { Signals } from './lib/signals.js?v=610';
-import { pickShareLine, loadLines } from './lib/lines.js?v=610';
-import { RouteMap } from './lib/map.js?v=610';
-import * as sfx from './lib/sfx.js?v=610';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=610';
-import { glowTexture } from './lib/glow.js?v=610';
+import { AudioEngine } from './audio-engine.js?v=611';
+import { drawQR } from './lib/qr.js?v=611';
+import { WORLDS } from './worlds/registry.js?v=611';
+import { Net, PALETTE } from './net.js?v=611';
+import { Presence } from './lib/presence.js?v=611';
+import { Pulses } from './lib/pulse.js?v=611';
+import { BeatClock } from './lib/beatclock.js?v=611';
+import { BeatCue } from './lib/beatcue.js?v=611';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=611';
+import { Race, placeOf, standings } from './lib/race.js?v=611';
+import { Signals } from './lib/signals.js?v=611';
+import { pickShareLine, loadLines } from './lib/lines.js?v=611';
+import { RouteMap } from './lib/map.js?v=611';
+import * as sfx from './lib/sfx.js?v=611';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=611';
+import { glowTexture } from './lib/glow.js?v=611';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3907,7 +3907,7 @@ function burnWords(videoEl, srcBlob, words, mimeType) {
 }
 
 function openShareCard() {
-  $('shc-say').value = 'y\u2019all have to try this';
+  $('shc-say').value = 'y\u2019all check this out';
   $('shc-words').textContent = $('shc-say').value;
   $('shc-words').classList.remove('hidden');
   $('shc-share').disabled = false;
