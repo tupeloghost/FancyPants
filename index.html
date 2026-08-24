@@ -218,8 +218,8 @@
 
   /* a guest drives nothing but their own look and their own speakers */
   /* the gift door belongs to the HOST alone */
-  #qb-gift { display: none; }
-  body.hosting #qb-gift { display: flex; }
+  #qbar #qb-gift { display: none; }
+  body.hosting #qbar #qb-gift { display: flex; }
   body.guest #qb-song, body.guest #qb-host, body.guest #qb-prev, body.guest #qb-next,
   body.guest #qb-world, body.guest #qsep-1 { display: none; }
   /* the guest's own pause card — their break, nobody else's */
@@ -393,9 +393,9 @@
     color: var(--ink-dim); letter-spacing: 1.5px;
   }
   /* CLIP THAT is the promo artist's button alone */
-  #qb-clipthat { display: none; }
-  body.promo #qb-clipthat { display: flex; }
-  body.guest #qb-clipthat { display: none; }
+  #qbar #qb-clipthat { display: none; }
+  body.promo #qbar #qb-clipthat { display: flex; }
+  body.guest #qbar #qb-clipthat { display: none; }
   /* rooms are for experiencing it TOGETHER: promote lives in solo play only */
   body.guest #qb-promote, body.hosting #qb-promote { display: none; }
 
@@ -3321,7 +3321,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 643</div>
+      <div id="build-stamp">build 644</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3363,6 +3363,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=643"></script>
+<script type="module" src="js/main.js?v=644"></script>
 </body>
 </html>
