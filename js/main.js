@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=611';
-import { drawQR } from './lib/qr.js?v=611';
-import { WORLDS } from './worlds/registry.js?v=611';
-import { Net, PALETTE } from './net.js?v=611';
-import { Presence } from './lib/presence.js?v=611';
-import { Pulses } from './lib/pulse.js?v=611';
-import { BeatClock } from './lib/beatclock.js?v=611';
-import { BeatCue } from './lib/beatcue.js?v=611';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=611';
-import { Race, placeOf, standings } from './lib/race.js?v=611';
-import { Signals } from './lib/signals.js?v=611';
-import { pickShareLine, loadLines } from './lib/lines.js?v=611';
-import { RouteMap } from './lib/map.js?v=611';
-import * as sfx from './lib/sfx.js?v=611';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=611';
-import { glowTexture } from './lib/glow.js?v=611';
+import { AudioEngine } from './audio-engine.js?v=612';
+import { drawQR } from './lib/qr.js?v=612';
+import { WORLDS } from './worlds/registry.js?v=612';
+import { Net, PALETTE } from './net.js?v=612';
+import { Presence } from './lib/presence.js?v=612';
+import { Pulses } from './lib/pulse.js?v=612';
+import { BeatClock } from './lib/beatclock.js?v=612';
+import { BeatCue } from './lib/beatcue.js?v=612';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=612';
+import { Race, placeOf, standings } from './lib/race.js?v=612';
+import { Signals } from './lib/signals.js?v=612';
+import { pickShareLine, loadLines } from './lib/lines.js?v=612';
+import { RouteMap } from './lib/map.js?v=612';
+import * as sfx from './lib/sfx.js?v=612';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=612';
+import { glowTexture } from './lib/glow.js?v=612';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -734,20 +734,29 @@ function hideResults() {
   clearTimeout(resultsTimer);
   $('results').classList.remove('show');
   const v = $('rs-clip');
-  if (v && v.src) { v.pause(); URL.revokeObjectURL(v.src); v.removeAttribute('src'); v.classList.add('hidden'); }
+  if (v && v.src) { v.pause(); URL.revokeObjectURL(v.src); v.removeAttribute('src'); }
+  const fr = $('rs-frame'); if (fr) fr.classList.add('hidden');
+  $('rs-say').classList.add('hidden'); $('rs-say-label').classList.add('hidden');
+  $('results-sub').style.display = '';
 }
 // the results card SHOWS the clip and the worlds: see the goods, pick the door
 function dressResults() {
+  // the joke caption retires; the player's OWN words take the stage
+  $('results-sub').style.display = 'none';
+  if (!$('rs-say').value.trim()) $('rs-say').value = 'y\u2019all check this out';
+  $('rs-words').textContent = $('rs-say').value;
+  $('rs-say').classList.remove('hidden'); $('rs-say-label').classList.remove('hidden');
   const v = $('rs-clip');
   const attach = () => {
     v.src = URL.createObjectURL(clipSaved.blob);
-    v.classList.remove('hidden');
+    $('rs-frame').classList.remove('hidden');
     v.play().catch(() => {});
   };
+  const frame = $('rs-frame');
   if (clipSaved && clipSaved.blob) attach();
   else {
     // the clip finishes pressing a beat after the card opens — wait for it
-    v.classList.add('hidden');
+    frame.classList.add('hidden');
     let tries = 0;
     const wait = setInterval(() => {
       if (!resultsShown || ++tries > 12) { clearInterval(wait); return; }
@@ -3747,6 +3756,7 @@ function shareThis() {
     }).catch(() => {});
   }
 }
+$('rs-say').addEventListener('input', () => { $('rs-words').textContent = $('rs-say').value; });
 $('rb-share').addEventListener('click', () => {
   if (window.__sunoShare && !shareableFree(currentWorldKey)) {
     ropeGate('YOUR SONG SHARES FROM TUNNEL \u00b7 ' + WORLDS[WEEK_WORLD].label
@@ -3907,7 +3917,7 @@ function burnWords(videoEl, srcBlob, words, mimeType) {
 }
 
 function openShareCard() {
-  $('shc-say').value = 'y\u2019all check this out';
+  $('shc-say').value = ($('rs-say') && $('rs-say').value.trim()) || 'y\u2019all check this out';
   $('shc-words').textContent = $('shc-say').value;
   $('shc-words').classList.remove('hidden');
   $('shc-share').disabled = false;

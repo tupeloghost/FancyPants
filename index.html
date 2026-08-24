@@ -327,10 +327,18 @@
     font: 400 13px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 2.4px;
   }
   #rb-clip.rec i { color: #ff5a4e; text-shadow: 0 0 9px rgba(255,90,78,0.8); }
-  /* the clip preview: see the goods before pressing SHARE */
-  #rs-clip { width: 100%; max-height: 200px; object-fit: cover; border-radius: 14px; margin-top: 14px;
+  /* the clip preview: see the goods before pressing SHARE — with YOUR words on it */
+  #rs-frame { position: relative; margin-top: 14px; border-radius: 14px; overflow: hidden;
     border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.3); }
-  #rs-clip.hidden { display: none; }
+  #rs-frame.hidden { display: none; }
+  #rs-clip { width: 100%; max-height: 200px; object-fit: cover; display: block; }
+  #rs-words { position: absolute; top: 7%; left: 6%; right: 6%; text-align: center; pointer-events: none;
+    font: italic 400 18px 'Didot', 'Bodoni 72', Georgia, serif; color: #fff;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.85); }
+  #rs-say-label { font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif; letter-spacing: 1.2px;
+    color: var(--ink-dim); text-align: left; margin: 8px 2px 4px; }
+  #rs-say { width: 100%; resize: none; }
+  #rs-say.hidden, #rs-say-label.hidden { display: none; }
   /* next world as picture tiles: a glimpse, not a guess */
   #rs-worlds-cap { margin-top: 14px; font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif;
     letter-spacing: 2.4px; color: var(--ink-dim); text-align: center; }
@@ -2874,8 +2882,13 @@
   <hr id="results-rule">
   <div id="results-board"></div>
   <div id="awards"></div>
-  <video id="rs-clip" class="hidden" muted loop playsinline></video>
-  <div id="rs-worlds-cap" class="hidden">NEXT WORLD</div>
+  <div id="rs-frame" class="hidden">
+    <video id="rs-clip" muted loop playsinline></video>
+    <div id="rs-words"></div>
+  </div>
+  <div id="rs-say-label" class="hidden">&#9998; write your own. your words show on the clip</div>
+  <textarea id="rs-say" class="hidden" maxlength="120" rows="1"></textarea>
+  <div id="rs-worlds-cap" class="hidden">CHOOSE YOUR WORLD</div>
   <div id="rs-worlds" class="hidden"></div>
   <div id="results-actions">
     <button class="rbtn hero" id="rb-share">SHARE</button>
@@ -3065,7 +3078,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 611</div>
+      <div id="build-stamp">build 612</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3107,6 +3120,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=611"></script>
+<script type="module" src="js/main.js?v=612"></script>
 </body>
 </html>
