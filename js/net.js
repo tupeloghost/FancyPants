@@ -31,6 +31,7 @@ export class Net {
     this.onRemoteTap = null; // (participant) => {} — someone else clicked their world
     this.onWorld = null;   // (key) => {} — the host moved the room to another world
     this.onEmote = null;   // (participant, idx) => {} — someone reacted
+    this.onLook = null;    // (participant|null, cfg) => {} — the room changed clothes (null = quiet catch-up)
     this._ws = null;
     this._sendTimer = 0;
     this._targets = new Map(); // id -> {x,y,z,heading} for interpolation
@@ -111,6 +112,7 @@ export class Net {
       this.local.id = m.id;
       this.local.color = m.color;
       for (const p of m.roster || []) this._addPeer(p);
+      if (m.look && this.onLook) this.onLook(null, m.look);
       if (m.song && !this.owner && this.onSong) this.onSong(m.song);
       if (m.world && !this.owner && this.onWorld) this.onWorld(m.world);
     } else if (m.t === 'join') {
@@ -152,6 +154,9 @@ export class Net {
       const p = this.participants.find(x => x.id === m.id);
       if (!p) this._who(m.id);
       if (this.onEmote) this.onEmote(p || { name: 'someone', color: 0 }, m.i, m.to, m.e);
+    } else if (m.t === 'look') {
+      const p = this.participants.find(x => x.id === m.id);
+      if (this.onLook) this.onLook(p || { name: m.name || 'someone', color: 0 }, m);
     } else if (m.t === 'leave') {
       this._removePeer(m.id);
     } else if (m.t === 'reject') {
@@ -181,6 +186,15 @@ export class Net {
     if (!this.connected || !this._ws || this._ws.readyState !== 1) return;
     // the character rides the wire so sender and receiver can never disagree
     this._ws.send(JSON.stringify({ t: 'emote', i: idx, to, e: char }));
+  }
+
+  // anyone: a wonder door's new look, worn by the whole room (throttled)
+  sendLook(cfg) {
+    const now = performance.now();
+    if ((this._lastLook || 0) > now - 1500) return;
+    this._lastLook = now;
+    if (!this.connected || this.spectator || !this._ws || this._ws.readyState !== 1) return;
+    this._ws.send(JSON.stringify({ t: 'look', colorMode: cfg.colorMode, pattern: cfg.pattern, shape: cfg.shape, hue: cfg.hue }));
   }
 
   // host: move the whole room to another world
@@ -265,11 +279,16 @@ export class Net {
       p.heading += (t.heading - p.heading) * k;
     }
 
-    // prune silent peers
+    // prune silent peers — walk the PARTICIPANTS, not the lastSeen map: a
+    // peer whose lastSeen entry was ever lost would otherwise stand as a
+    // ghost forever, name and all
     if (this.connected) {
       const now = performance.now();
-      for (const [id, seen] of this._lastSeen) {
-        if (now - seen > DROP_AFTER) this._removePeer(id);
+      for (let i = this.participants.length - 1; i > 0; i--) {
+        const p = this.participants[i];
+        if (p.id.startsWith('sim')) continue;
+        const seen = this._lastSeen.get(p.id) || p.joinedAt || 0;
+        if (now - seen > DROP_AFTER) this._removePeer(p.id);
       }
     }
 

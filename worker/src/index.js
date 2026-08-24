@@ -328,6 +328,7 @@ export class FancyPantsRoom {
 
       ws.send(JSON.stringify({
         t: 'welcome', id: connId, color: p.color, spectator, song: this.songNow(), world: this.worldKey,
+        look: this.lookNow || undefined,
         owner: connId === this.ownerId,
         promo: this.promo,
         roster: [...this.peers.entries()]
@@ -338,6 +339,25 @@ export class FancyPantsRoom {
         JSON.stringify({ t: 'join', p: { id: connId, name: p.name, color: p.color } }),
         connId
       );
+      return;
+    }
+
+    // the room wears ONE look: any player's wonder door redresses everyone.
+    // The sender's name rides along so every screen can say who did it.
+    if (m.t === 'look') {
+      const p = this.peers.get(connId);
+      if (!p || p.spectator) return;
+      if (p.lastLook && now - p.lastLook < 1500) return;   // one change per breath
+      p.lastLook = now;
+      const cfg = {
+        colorMode: String(m.colorMode || '').slice(0, 24),
+        pattern: String(m.pattern || '').slice(0, 24),
+        shape: String(m.shape || '').slice(0, 24),
+        hue: Math.max(0, Math.min(360, Number(m.hue) || 0)),
+      };
+      if (!cfg.colorMode) return;
+      this.lookNow = cfg;
+      this.broadcast(JSON.stringify({ t: 'look', id: connId, name: p.name, ...cfg }), connId);
       return;
     }
 

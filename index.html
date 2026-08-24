@@ -1839,7 +1839,17 @@
     transform-origin: 50% 100%;
     will-change: transform, opacity;
   }
+  .ptag { pointer-events: auto; cursor: pointer; }
   .ptag i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  /* the picker that opens ON a player's nameplate in the world */
+  .ghost-pick {
+    position: fixed; z-index: 66;
+    border: 1px solid hsla(var(--accent-h), 70%, 70%, 0.35);
+    background: rgba(8, 12, 24, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  }
   .ptag.pop { animation: tagpop 0.8s ease-out; }
   @keyframes tagpop {
     0% { opacity: 0; filter: brightness(3) blur(4px); }
@@ -3081,7 +3091,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 618</div>
+      <div id="build-stamp">build 620</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3123,6 +3133,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=618"></script>
+<script type="module" src="js/main.js?v=620"></script>
 </body>
 </html>

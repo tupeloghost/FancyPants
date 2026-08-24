@@ -4,8 +4,8 @@
 // Worlds only supply placeGhost(participant, index, outVector3).
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints } from './glow.js?v=618';
-import { PALETTE } from '../net.js?v=618';
+import { glowSprite, glowPoints } from './glow.js?v=620';
+import { PALETTE } from '../net.js?v=620';
 
 const RANK_MARK = ['', '\u2022', '\u2022\u2022', '\u2666', '\u2666\u2666'];
 const RANK_AT = [0, 120, 350, 800, 1600];
@@ -30,6 +30,7 @@ export class Presence {
     this._pos = new THREE.Vector3();
     this._proj = new THREE.Vector3();
     this._layer = null;
+    this.colorShift = 0;  // a local flourish: spins everyone's crowd colors on YOUR screen
   }
 
   init(scene) {
@@ -91,11 +92,13 @@ export class Presence {
     for (let i = 1; i < participants.length && gi < MAX_GHOSTS; i++) {
       const p = participants[i];
       const g = this._ghosts[gi++];
-      const colorHex = PALETTE[p.color % PALETTE.length];
+      const colorHex = PALETTE[(p.color + this.colorShift) % PALETTE.length];
 
       const rk = rankOf(p.score);
-      if (g.id !== p.id || g.rank !== rk) {
+      if (g.id !== p.id || g.rank !== rk || g.pname !== p.name) {
         g.rank = rk;
+        g.pname = p.name;
+        g.tag.dataset.pname = p.name;
         const css = '#' + colorHex.toString(16).padStart(6, '0');
         g.txt.textContent = (RANK_MARK[rk] ? RANK_MARK[rk] + ' ' : '') + p.name;
         g.dot.style.background = css;
@@ -218,6 +221,17 @@ export class Presence {
       g.tag.style.display = 'none';
       g.id = null;
       g.seeded = false;
+    }
+  }
+
+  // a spent wonder door sparkles the CROWD instead: every ghost flares and
+  // the whole room's colors deal again — on this screen only
+  crowdSpark() {
+    this.colorShift = (this.colorShift + 1 + ((Math.random() * (PALETTE.length - 1)) | 0)) % PALETTE.length;
+    for (const g of this._ghosts) {
+      if (!g.id) continue;
+      g.flare = 1.4;
+      g.rank = -1;   // force the nameplate to re-dress in the new color
     }
   }
 

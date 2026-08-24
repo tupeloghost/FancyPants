@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=618';
-import { drawQR } from './lib/qr.js?v=618';
-import { WORLDS } from './worlds/registry.js?v=618';
-import { Net, PALETTE } from './net.js?v=618';
-import { Presence } from './lib/presence.js?v=618';
-import { Pulses } from './lib/pulse.js?v=618';
-import { BeatClock } from './lib/beatclock.js?v=618';
-import { BeatCue } from './lib/beatcue.js?v=618';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=618';
-import { Race, placeOf, standings } from './lib/race.js?v=618';
-import { Signals } from './lib/signals.js?v=618';
-import { pickShareLine, loadLines } from './lib/lines.js?v=618';
-import { RouteMap } from './lib/map.js?v=618';
-import * as sfx from './lib/sfx.js?v=618';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=618';
-import { glowTexture } from './lib/glow.js?v=618';
+import { AudioEngine } from './audio-engine.js?v=620';
+import { drawQR } from './lib/qr.js?v=620';
+import { WORLDS } from './worlds/registry.js?v=620';
+import { Net, PALETTE } from './net.js?v=620';
+import { Presence } from './lib/presence.js?v=620';
+import { Pulses } from './lib/pulse.js?v=620';
+import { BeatClock } from './lib/beatclock.js?v=620';
+import { BeatCue } from './lib/beatcue.js?v=620';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=620';
+import { Race, placeOf, standings } from './lib/race.js?v=620';
+import { Signals } from './lib/signals.js?v=620';
+import { pickShareLine, loadLines } from './lib/lines.js?v=620';
+import { RouteMap } from './lib/map.js?v=620';
+import * as sfx from './lib/sfx.js?v=620';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=620';
+import { glowTexture } from './lib/glow.js?v=620';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1940,7 +1940,27 @@ function dealNextLook() {
   window.__nextLook = { name: cfg.colorMode, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
 }
 dealNextLook();
+// ── the room wears ONE look ── in a hosted room, a wonder door redresses
+// EVERY screen. With a crowd, doors take turns: after a room-wide change the
+// room holds its look for a breath that grows with the headcount, and any
+// door hit during the hold spends its magic on the crowd instead — the
+// ghosts flare and re-deal their colors on your screen only.
+let lastRoomLook = 0;
+let lookFromRemote = null;   // set when the change arrived over the wire
+function roomLookOpen() {
+  const crowd = Math.max(1, net.participants.length - 1);
+  const hold = Math.min(12000, 2200 * crowd);
+  return performance.now() - lastRoomLook > hold;
+}
 document.addEventListener('fp-lookspark', () => {
+  if (net.connected && !lookFromRemote && !roomLookOpen()) {
+    // the hold is on: this door sparkles the CROWD instead of the walls
+    haptic([12, 40, 18]);
+    const ring = $('look-ring');
+    ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
+    presence.crowdSpark();
+    return;
+  }
   if (!lookBefore) lookBefore = { colorMode: settings.colorMode, pattern: settings.pattern, shape: settings.shape, hue: settings.hue };
   preDarkLook = null;   // the door is the rescue: whatever it deals, the dark is over
   if (!window.__nextLook) dealNextLook();
@@ -1963,6 +1983,11 @@ document.addEventListener('fp-lookspark', () => {
     // your hands to the horizon, so you watch the new world arrive
     window.__lookWave = { at: performance.now(), dur: 2200, from: { colorMode: settings.colorMode, hue: settings.hue } };
     applyPreset({ ...cfg, hue: fromHue });
+    if (net.connected) {
+      lastRoomLook = performance.now();
+      if (!lookFromRemote) net.sendLook(cfg);   // my door: dress the room
+    }
+    lookFromRemote = null;
     let d = ((cfg.hue - fromHue) % 360 + 540) % 360 - 180;   // shortest way round
     const t0 = performance.now(), dur = 1700;
     (function glide(now) {
@@ -5651,10 +5676,10 @@ const RAIN_STYLE = {
   '\u{1F61B}': { cls: 'rain-boing', n: 16 },
   '\u{1F618}': { cls: 'rain-smooch', n: 8 },
 };
-function emojiRain(char, fromName) {
+function emojiRain(char, fromName, scale = 1) {
   const box = $('emoji-rain');
   const style = RAIN_STYLE[char] || { cls: '', n: 34 };
-  for (let i = 0; i < style.n; i++) {
+  for (let i = 0; i < Math.max(6, Math.round(style.n * scale)); i++) {
     const sp = document.createElement('span');
     sp.textContent = char;
     if (style.cls) sp.className = style.cls;
@@ -5681,6 +5706,32 @@ function sendBomb(toName, idx) {
   sfx.hit(6, true);
 }
 
+// a look arrives over the wire: the room redresses, and the screen says who
+net.onLook = (p, cfg) => {
+  const clean = {
+    colorMode: String(cfg.colorMode || ''), pattern: String(cfg.pattern || ''),
+    shape: String(cfg.shape || ''), hue: Number(cfg.hue) || 0,
+  };
+  if (!clean.colorMode) return;
+  if (!p) {
+    // welcome catch-up: match the room quietly, no ceremony, no credit line
+    applyPreset(clean);
+    lastRoomLook = performance.now();
+    return;
+  }
+  // name what changed in one plain word (usually all of it: THE LOOK)
+  const diffs = [];
+  if (clean.colorMode !== settings.colorMode || Math.abs(clean.hue - settings.hue) > 12) diffs.push('THE COLORS');
+  if (clean.pattern !== settings.pattern) diffs.push('THE PATTERN');
+  if (clean.shape !== settings.shape) diffs.push('THE SHAPE');
+  const what = diffs.length === 1 ? diffs[0] : 'THE LOOK';
+  flash((p.name || 'SOMEONE').toUpperCase() + ' CHANGED ' + what, 2200);
+  lastRoomLook = performance.now();
+  lookFromRemote = clean;
+  window.__nextLook = { name: clean.colorMode, hue: clean.hue, colorMode: clean.colorMode, cfg: clean };
+  document.dispatchEvent(new CustomEvent('fp-lookspark'));
+};
+
 net.onEmote = (p, i, to, e) => {
   if (to && to === net.local.name && i >= 100) {
     // a trick landed ON YOU — four seconds of somebody's hand on your wheel
@@ -5694,9 +5745,65 @@ net.onEmote = (p, i, to, e) => {
   }
   if (to && to === net.local.name) emojiRain(e || EMOJIS[i] || EMOJIS[0], p.name);
   else if (to) {
-    flash((p.name || '?').toUpperCase() + ' ' + (EMOJIS[i] || '') + ' ' + to.toUpperCase(), 1400);
+    // everyone shares the moment: a lighter rain plus who sent it to who
+    emojiRain(e || EMOJIS[i] || EMOJIS[0], null, 0.35);
+    flash((p.name || '?').toUpperCase() + ' ' + (e || EMOJIS[i] || '') + ' \u2192 ' + to.toUpperCase(), 1800);
   }
 };
+
+// ── click a player IN THE WORLD to send them something ── their floating
+// nameplate is the door: tap it and the emoji picker opens right there
+{
+  let gpick = null;
+  const closeGhostPick = () => { if (gpick) { gpick.remove(); gpick = null; } };
+  document.addEventListener('pointerdown', e => {
+    const tag = e.target.closest ? e.target.closest('.ptag') : null;
+    if (!tag) { if (gpick && !gpick.contains(e.target)) closeGhostPick(); return; }
+    e.stopPropagation();   // a tap on a NAME is never a tap on the world
+  }, true);
+  document.addEventListener('click', e => {
+    const tag = e.target.closest ? e.target.closest('.ptag') : null;
+    if (!tag || !tag.dataset.pname) return;
+    e.stopPropagation();
+    const name = tag.dataset.pname;
+    if (gpick && gpick.dataset.pname === name) { closeGhostPick(); return; }
+    closeGhostPick();
+    const pick = document.createElement('div');
+    pick.className = 'bomb-picker ghost-pick';
+    pick.dataset.pname = name;
+    EMOJIS.forEach((e2, k) => {
+      const b = document.createElement('button');
+      b.textContent = e2;
+      b.addEventListener('click', ev => { ev.stopPropagation(); sendBomb(name, k); closeGhostPick(); });
+      pick.appendChild(b);
+    });
+    TRICKS.forEach(t => {
+      const b = document.createElement('button');
+      b.textContent = t.e; b.title = t.name;
+      b.addEventListener('click', ev => {
+        ev.stopPropagation();
+        if (!rateOk(trickLog, 30000, 2)) { flash('EASY, SUGAR. GIVE IT A BREATH', 1600, true); return; }
+        myStats.bombs++; statsPush();
+        net.sendEmote(t.i, name, t.e);
+        flash(t.e + ' \u2192 ' + name.toUpperCase(), 1600);
+        sfx.hit(9, true);
+        closeGhostPick();
+      });
+      pick.appendChild(b);
+    });
+    const em = document.createElement('em');
+    em.textContent = '\u2192 ' + name;
+    pick.appendChild(em);
+    document.body.appendChild(pick);
+    const r = tag.getBoundingClientRect();
+    const w = Math.min(300, window.innerWidth - 16);
+    pick.style.maxWidth = w + 'px';
+    pick.style.flexWrap = 'wrap';
+    pick.style.left = Math.max(8, Math.min(window.innerWidth - 8 - w, r.left + r.width / 2 - w / 2)) + 'px';
+    pick.style.top = Math.min(window.innerHeight - 110, r.bottom + 10) + 'px';
+    gpick = pick;
+  });
+}
 
 function renderPlist() {
   const box = $('plist-rows');
