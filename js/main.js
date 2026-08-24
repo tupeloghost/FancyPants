@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=594';
-import { drawQR } from './lib/qr.js?v=594';
-import { WORLDS } from './worlds/registry.js?v=594';
-import { Net, PALETTE } from './net.js?v=594';
-import { Presence } from './lib/presence.js?v=594';
-import { Pulses } from './lib/pulse.js?v=594';
-import { BeatClock } from './lib/beatclock.js?v=594';
-import { BeatCue } from './lib/beatcue.js?v=594';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=594';
-import { Race, placeOf, standings } from './lib/race.js?v=594';
-import { Signals } from './lib/signals.js?v=594';
-import { pickShareLine, loadLines } from './lib/lines.js?v=594';
-import { RouteMap } from './lib/map.js?v=594';
-import * as sfx from './lib/sfx.js?v=594';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=594';
-import { glowTexture } from './lib/glow.js?v=594';
+import { AudioEngine } from './audio-engine.js?v=595';
+import { drawQR } from './lib/qr.js?v=595';
+import { WORLDS } from './worlds/registry.js?v=595';
+import { Net, PALETTE } from './net.js?v=595';
+import { Presence } from './lib/presence.js?v=595';
+import { Pulses } from './lib/pulse.js?v=595';
+import { BeatClock } from './lib/beatclock.js?v=595';
+import { BeatCue } from './lib/beatcue.js?v=595';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=595';
+import { Race, placeOf, standings } from './lib/race.js?v=595';
+import { Signals } from './lib/signals.js?v=595';
+import { pickShareLine, loadLines } from './lib/lines.js?v=595';
+import { RouteMap } from './lib/map.js?v=595';
+import * as sfx from './lib/sfx.js?v=595';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=595';
+import { glowTexture } from './lib/glow.js?v=595';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -4890,7 +4890,8 @@ $('btn-solo').addEventListener('click', () => {
   ensureName();
   dismissOverlay();
 });
-$('btn-host-promote').addEventListener('click', () => {
+$('btn-host-promote').addEventListener('click', e => {
+  e.preventDefault();
   ensureName();
   dismissOverlay();
   setTimeout(askMode, 400);
