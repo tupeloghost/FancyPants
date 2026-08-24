@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=630';
-import { drawQR } from './lib/qr.js?v=630';
-import { WORLDS } from './worlds/registry.js?v=630';
-import { Net, PALETTE } from './net.js?v=630';
-import { Presence } from './lib/presence.js?v=630';
-import { Pulses } from './lib/pulse.js?v=630';
-import { BeatClock } from './lib/beatclock.js?v=630';
-import { BeatCue } from './lib/beatcue.js?v=630';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=630';
-import { Race, placeOf, standings } from './lib/race.js?v=630';
-import { Signals } from './lib/signals.js?v=630';
-import { pickShareLine, loadLines } from './lib/lines.js?v=630';
-import { RouteMap } from './lib/map.js?v=630';
-import * as sfx from './lib/sfx.js?v=630';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=630';
-import { glowTexture } from './lib/glow.js?v=630';
+import { AudioEngine } from './audio-engine.js?v=631';
+import { drawQR } from './lib/qr.js?v=631';
+import { WORLDS } from './worlds/registry.js?v=631';
+import { Net, PALETTE } from './net.js?v=631';
+import { Presence } from './lib/presence.js?v=631';
+import { Pulses } from './lib/pulse.js?v=631';
+import { BeatClock } from './lib/beatclock.js?v=631';
+import { BeatCue } from './lib/beatcue.js?v=631';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=631';
+import { Race, placeOf, standings } from './lib/race.js?v=631';
+import { Signals } from './lib/signals.js?v=631';
+import { pickShareLine, loadLines } from './lib/lines.js?v=631';
+import { RouteMap } from './lib/map.js?v=631';
+import * as sfx from './lib/sfx.js?v=631';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=631';
+import { glowTexture } from './lib/glow.js?v=631';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -3387,7 +3387,7 @@ $('opt-promote').addEventListener('click', () => {
 $('mc-host').addEventListener('click', () => {
   // OPEN A ROOM opens a room, after the one question that matters to a host
   $('mode-card').classList.remove('show', 'sched-only', 'flow-promote', 'flow-set');
-  askName(() => startRoom(genCode(), ensureName(), true), "LET'S GO!");
+  askName(() => startRoom(genCode(), ensureName(), true), "LET'S GO!", 'Host Name');
 });
 // scheduling lives in the panel now: same form, calmer doorway
 // HOST and PROMOTE live on the bar — the mini menu is the menu
@@ -3400,7 +3400,7 @@ $('qb-host').addEventListener('click', () => {
   if (document.body.classList.contains('hosting')) {
     $('stream-card').classList.toggle('hidden');   // hosts show or hide the QR at will
   } else {
-    askName(() => startRoom(genCode(), ensureName(), true), "LET'S GO!");
+    askName(() => startRoom(genCode(), ensureName(), true), "LET'S GO!", 'Host Name');
   }
 });
 $('own-song').addEventListener('click', e => {
@@ -5063,11 +5063,12 @@ if (window.__STAGE) {
 // Prefilled (kept name, or a dealt one), dice to reroll, Enter to go. The
 // QR auto-drop and stage mode skip it — those doors are already open.
 let ngThen = null;
-function askName(then, goWord) {
+function askName(then, goWord, title) {
   if (window.__STAGE || window.__autoGo) { then(); return; }
   ngThen = then;
-  // the button speaks to where you STAND: at the front door it invites you
-  // in; already inside (hosting), it just says go
+  // the gate speaks to where you STAND: at the front door it asks a player
+  // name and invites you in; opening a room it asks the HOST's name
+  $('ng-title').textContent = title || 'Player Name';
   $('ng-go').textContent = goWord || 'STEP INSIDE';
   if (!$('ng-in').value) $('ng-in').value = localStorage.getItem('fp_name') || '';
   if (!$('ng-in').value) { $('name-dice').click(); $('ng-in').value = $('join-name').value; }

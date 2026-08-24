@@ -11,23 +11,23 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=630';
-import { createSurfer } from './surfer.js?v=630';
-import { createOrbit } from './orbit.js?v=630';
-import { createBloom } from './bloom.js?v=630';
-import { createTrail } from './trail.js?v=630';
-import { createSignal } from './signal.js?v=630';
-import { createRiver } from './river.js?v=630';
-import { createFunhouse } from './funhouse.js?v=630';
-import { createLavaLamp } from './lavalamp.js?v=630';
-import { createPlasma } from './plasma.js?v=630';
-import { createCherryLand } from './cherryland.js?v=630';
-import { createSlinky } from './slinky.js?v=630';
-import { createBlacktop } from './blacktop.js?v=630';
-import { createWaterslide } from './waterslide.js?v=630';
-import { createGarden } from './garden.js?v=630';
-import { createPaint } from './paint.js?v=630';
-import { createComets } from './comets.js?v=630';
+import { createTunnel } from './tunnel.js?v=631';
+import { createSurfer } from './surfer.js?v=631';
+import { createOrbit } from './orbit.js?v=631';
+import { createBloom } from './bloom.js?v=631';
+import { createTrail } from './trail.js?v=631';
+import { createSignal } from './signal.js?v=631';
+import { createRiver } from './river.js?v=631';
+import { createFunhouse } from './funhouse.js?v=631';
+import { createLavaLamp } from './lavalamp.js?v=631';
+import { createPlasma } from './plasma.js?v=631';
+import { createCherryLand } from './cherryland.js?v=631';
+import { createSlinky } from './slinky.js?v=631';
+import { createBlacktop } from './blacktop.js?v=631';
+import { createWaterslide } from './waterslide.js?v=631';
+import { createGarden } from './garden.js?v=631';
+import { createPaint } from './paint.js?v=631';
+import { createComets } from './comets.js?v=631';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe. clicks send shockwaves', label: 'TUNNEL',
