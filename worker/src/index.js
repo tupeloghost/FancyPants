@@ -165,6 +165,12 @@ export class FancyPantsRoom {
         prompts: (Array.isArray(b.prompts) ? b.prompts : []).slice(0, 3).map(x => ({
           q: String((x && x.q) || '').slice(0, 60), a: String((x && x.a) || '').slice(0, 160),
         })).filter(x => x.q && x.a),
+        // house songs: the site's own catalog, named explicitly on the page
+        // (outside artists' songs attach via their promote links instead)
+        house: (Array.isArray(b.house) ? b.house : []).slice(0, 12).map(x => ({
+          file: String((x && x.file) || '').replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60),
+          world: String((x && x.world) || 'tunnel').replace(/[^a-z]/g, '').slice(0, 24),
+        })).filter(x => /\.mp3$/.test(x.file)),
         hidden: [],
         at: Date.now(),
       };
@@ -198,6 +204,10 @@ export class FancyPantsRoom {
         label: String(l.label || '').slice(0, 40), url: String(l.url || '').slice(0, 300),
       })).filter(l => l.label && /^https?:\/\//.test(l.url));
       if ('hidden' in b) page.hidden = (Array.isArray(b.hidden) ? b.hidden : []).map(x => String(x).slice(0, 90)).slice(0, 50);
+      if (Array.isArray(b.house)) page.house = b.house.slice(0, 12).map(x => ({
+        file: String((x && x.file) || '').replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60),
+        world: String((x && x.world) || 'tunnel').replace(/[^a-z]/g, '').slice(0, 24),
+      })).filter(x => /\.mp3$/.test(x.file));
       await this.state.storage.put('cp:' + slug, page);
       return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
@@ -220,7 +230,7 @@ export class FancyPantsRoom {
         const home = v && v.song ? await this.state.storage.get('sh:' + v.song) : null;
         songs.push({ path, world: (home && home.world) || '' });
       }
-      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '',
+      const out = { slug: page.slug, name: page.name, bio: page.bio, links: page.links, next: page.next, nextAt: page.nextAt || '', tip: page.tip || '', house: page.house || [],
         type: page.type || 'artist', photo: page.photo || '', watch: page.watch || '', hue: Number.isFinite(+page.hue) ? +page.hue : 265,
         look: page.look || '', mood: page.mood || '', intents: page.intents || [], prompts: page.prompts || [], quiz: page.quiz || '', songs };
       if (url.searchParams.get('key') === page.editKey) {
@@ -630,6 +640,11 @@ export default {
         const world = (typeof o === 'string' ? '' : o.world) || 'tunnel';
         return { p: p2, world, label: world.toUpperCase(), title: (p2.split('/')[1] || '').replace(/-/g, ' ') };
       });
+      // house songs stand in the same doorway, linked through /p/
+      for (const h of (pg.house || [])) {
+        songs.push({ p: '', house: h, world: h.world, label: h.world.toUpperCase(),
+          title: h.file.replace(/\.mp3$/, '').replace(/_/g, ' ') });
+      }
       const lead = songs[0];
       const heroImg = lead ? SITE_URL + 'previews/' + esc(lead.world) + '.jpg' : SITE_URL + 'og.jpg';
       const H = Number.isFinite(+pg.hue) ? +pg.hue : 265;
@@ -802,12 +817,15 @@ export default {
           + '</div>'
         : '';
       // the lead song is the page's thesis: one big door. the rest are rows.
+      const doorHref = sg => sg.house
+        ? 'https://fancy-pants.tupeloghost.workers.dev/p/' + esc(sg.house.world) + '/' + esc(sg.house.file)
+        : 'https://fancy-pants.tupeloghost.workers.dev/w/' + esc(sg.p);
       const heroBtn = lead
-        ? '<a class="hero" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(lead.p) + '">'
+        ? '<a class="hero" href="' + doorHref(lead) + '">'
           + '<span class="eyebrow">step inside</span><b>' + esc(lead.title) + '</b><i>in ' + esc(lead.label) + '</i></a>'
         : '';
       const songRows = songs.slice(1).map(sg =>
-        '<a class="song" href="https://fancy-pants.tupeloghost.workers.dev/w/' + esc(sg.p) + '">'
+        '<a class="song" href="' + doorHref(sg) + '">'
         + '<img src="' + SITE_URL + 'previews/' + esc(sg.world) + '.jpg" alt="">'
         + '<span class="t">' + esc(sg.title) + '<em>in ' + esc(sg.label) + '</em></span>'
         + '<span class="go">step inside →</span></a>').join('');
