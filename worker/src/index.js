@@ -576,6 +576,9 @@ export default {
         + '</head><body style="background:#07060f"></body></html>', {
         headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     };
+    // the gift rider: validated once, carried by BOTH song-door flavors
+    const GIFT_SHELF = ['\u{1F98B}','\u{1F308}','\u{1FAE7}','\u{1F451}','\u{1F340}','\u{1F33B}','\u{1F438}','\u{1F369}'];
+    const grider = GIFT_SHELF.includes(url.searchParams.get('gift') || '') ? '&gift=' + encodeURIComponent(url.searchParams.get('gift')) : '';
     const wslug = url.pathname.match(/^\/w\/([a-z0-9-]{1,40})\/([a-z0-9-]{1,40})$/);
     if (wslug) {
       const id = env.ROOMS.idFromName('THE-WAITING-LIST');
@@ -583,8 +586,6 @@ export default {
         + (url.searchParams.get('go') === '1' ? '?go=1' : '')));
       const row = await r.json().catch(() => ({}));
       const go = url.searchParams.get('go') === '1' ? '&go=1' : '';
-      const GIFT_SHELF = ['\u{1F98B}','\u{1F308}','\u{1FAE7}','\u{1F451}','\u{1F340}','\u{1F33B}','\u{1F438}','\u{1F369}'];
-      const grider = GIFT_SHELF.includes(url.searchParams.get('gift') || '') ? '&gift=' + encodeURIComponent(url.searchParams.get('gift')) : '';
       const dest = (row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
         : SITE_URL + '?_=1') + go + grider;
