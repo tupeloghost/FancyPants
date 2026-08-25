@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=647';
-import { themePaint } from '../lib/themes.js?v=647';
-import { TUNE } from '../lib/tune.js?v=647';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=648';
+import { themePaint } from '../lib/themes.js?v=648';
+import { TUNE } from '../lib/tune.js?v=648';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -493,6 +493,8 @@ export function createWaterslide() {
             } else if (through) {
               race.collect((hoopBoost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
               hoopBoost = Math.min(1, hoopBoost + 0.85);
+              // any hoop is a hand reaching for a pending gift
+              document.dispatchEvent(new CustomEvent('fp-hoop'));
               // five in a row: the water goes gold and the slide LAUNCHES you
               if (++chain >= 5) {
                 chain = 0; leapT = 1; goldT = 4; gulp = Math.max(gulp, 0.6);
