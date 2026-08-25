@@ -77,7 +77,7 @@ export class Net {
     localStorage.setItem('fp_name', name);
     try {
       const proto = PARTYKIT_HOST.startsWith('localhost') ? 'ws' : 'wss';
-      this._ws = new WebSocket(`${proto}://${PARTYKIT_HOST}/party/${this.room}`);
+      this._ws = new WebSocket(`${proto}://${PARTYKIT_HOST}/party/${encodeURIComponent(this.room)}`);
       this._ws.onopen = () => {
         this._ws.send(JSON.stringify({ t: 'join', name, owner: asOwner }));
       };

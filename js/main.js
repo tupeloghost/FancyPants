@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=645';
-import { drawQR } from './lib/qr.js?v=645';
-import { WORLDS } from './worlds/registry.js?v=645';
-import { Net, PALETTE } from './net.js?v=645';
-import { Presence } from './lib/presence.js?v=645';
-import { Pulses } from './lib/pulse.js?v=645';
-import { BeatClock } from './lib/beatclock.js?v=645';
-import { BeatCue } from './lib/beatcue.js?v=645';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=645';
-import { Race, placeOf, standings } from './lib/race.js?v=645';
-import { Signals } from './lib/signals.js?v=645';
-import { pickShareLine, loadLines } from './lib/lines.js?v=645';
-import { RouteMap } from './lib/map.js?v=645';
-import * as sfx from './lib/sfx.js?v=645';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=645';
-import { glowTexture } from './lib/glow.js?v=645';
+import { AudioEngine } from './audio-engine.js?v=646';
+import { drawQR } from './lib/qr.js?v=646';
+import { WORLDS } from './worlds/registry.js?v=646';
+import { Net, PALETTE } from './net.js?v=646';
+import { Presence } from './lib/presence.js?v=646';
+import { Pulses } from './lib/pulse.js?v=646';
+import { BeatClock } from './lib/beatclock.js?v=646';
+import { BeatCue } from './lib/beatcue.js?v=646';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=646';
+import { Race, placeOf, standings } from './lib/race.js?v=646';
+import { Signals } from './lib/signals.js?v=646';
+import { pickShareLine, loadLines } from './lib/lines.js?v=646';
+import { RouteMap } from './lib/map.js?v=646';
+import * as sfx from './lib/sfx.js?v=646';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=646';
+import { glowTexture } from './lib/glow.js?v=646';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -287,12 +287,12 @@ const settings = {
   if (qp.get('colors')) settings.colorMode = qp.get('colors');
   if (qp.get('pattern')) settings.pattern = qp.get('pattern');
   if (qp.get('shape')) settings.shape = qp.get('shape');
-  if (qp.get('hue')) settings.hue = +qp.get('hue') || 210;
+  if (qp.get('hue')) { const h = +qp.get('hue'); settings.hue = Number.isFinite(h) ? ((h % 360) + 360) % 360 : 210; }
   if (qp.get('dust') === 'off') settings.stardust = false;
   if (qp.get('chime') === 'off') settings.chime = false;
   if (qp.get('names') === 'off') window.__namesOff = true;
   // a shared link names a world and a song — the visitor lands inside both
-  if (qp.get('world') && WORLDS[qp.get('world')]) window.__shareWorld = qp.get('world');
+  if (qp.get('world') && Object.hasOwn(WORLDS, qp.get('world'))) window.__shareWorld = qp.get('world');
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
   // a scanned QR carries maximum intent: go=1 skips the landing entirely
@@ -306,7 +306,7 @@ const settings = {
     if (look[0]) settings.colorMode = look[0];
     if (look[1]) settings.pattern = look[1];
     if (look[2]) settings.shape = look[2];
-    if (look[3] && !isNaN(+look[3])) settings.hue = +look[3];
+    if (look[3] && Number.isFinite(+look[3])) settings.hue = ((+look[3] % 360) + 360) % 360;
     settings.attract = true;
     document.body.classList.add('clean', 'stage');
   }
@@ -491,28 +491,8 @@ fetch('audio/manifest.json?t=' + Date.now())
     syncAudioModeUI();
     // if the room's already running and silent, start the music now
     if (autoWanted && !audio.el.src) playAuto(false);
-    // ── today's song: one date-picked track, named at the front door ──
-    if (trackList.length) {
-      const d = new Date();
-      const dayN = d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
-      // a name ending in a bare numeral reads as a version number on the
-      // front door ("hello goodbye 2"), so today's pick prefers a clean title
-      const clean = trackList.filter(f => !/_\d+\.mp3$/i.test(f));
-      const pickFrom = clean.length ? clean : trackList;
-      const file = pickFrom[dayN % pickFrom.length];
-      const wkey = Object.keys(WORLD_TRACKS).find(k => 'audio/' + WORLD_TRACKS[k] === file);
-      const el = $('today');
-      if (el) {
-        // one idea: the song. (the ritual line right below already names the world)
-        el.textContent = "today\u2019s song: " + prettyTrack(file) + '. tap to play it';
-        el.classList.remove('hidden');
-        el.onclick = () => {
-          window.__shareTrack = file;
-          window.__shareWorld = window.__WEEK_KEY;
-          $('btn-solo').click();
-        };
-      }
-    }
+    // (the old today's-song front-door line retired with its element - the
+    // landing kept one door and the Sunday ritual)
   })
   .catch(() => {});
 // Autoplay: nobody should have to go hunting for audio. When you start
@@ -1221,7 +1201,6 @@ $('file-input').addEventListener('change', () => {
 $('file-input').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
-  const fl = $('file-label'); if (fl) fl.textContent = '♪ ' + f.name;
   sunoSay('♪ ' + f.name + ' is loaded and yours', 'ok');
   $('mq-title').value = f.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ');
   $('mq-artist').value = '';
@@ -5746,7 +5725,7 @@ if (params.get('dev') === '1') (function devPanel() {
   }
   document.body.appendChild(el);
 })();
-const startWorld = WORLDS[params.get('world')] ? params.get('world') : 'tunnel';
+const startWorld = params.get('world') && Object.hasOwn(WORLDS, params.get('world')) ? params.get('world') : 'tunnel';
 $('world-select').value = startWorld;
 switchWorld(startWorld);
 
@@ -6099,7 +6078,11 @@ function renderPlist() {
   for (const p of ranked) {
     const row = document.createElement('div');
     row.className = 'plist-row' + (presence.hiddenNames.has(p.name) ? ' muted' : '');
-    row.innerHTML = `<span>${p.name}${p.local ? ' ·you' : ''}</span><span>${p.score || 0}</span>`;
+    const nm = document.createElement('span');
+    nm.textContent = p.name + (p.local ? ' ·you' : '');
+    const scv = document.createElement('span');
+    scv.textContent = String(p.score || 0);
+    row.append(nm, scv);
     if (p.local) { box.appendChild(row); continue; }
     // click a rival: the emoji picker unfolds under their name
     row.addEventListener('click', () => {
@@ -6189,7 +6172,7 @@ if (window.__namesOff) presence.namesVisible = false;
   const qp = new URLSearchParams(location.search);
   const sim = parseInt(qp.get('sim') || '0', 10);
   if (sim > 0) net.simulate(Math.min(sim, 60));
-  const room = qp.get('room');
+  const room = (qp.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12) || null;
   if (room) {
     // a scanned QR carries maximum intent: the big button becomes the door
     // to THAT room, name auto-picked — one tap from camera to the game
