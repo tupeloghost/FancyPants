@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=644';
-import { drawQR } from './lib/qr.js?v=644';
-import { WORLDS } from './worlds/registry.js?v=644';
-import { Net, PALETTE } from './net.js?v=644';
-import { Presence } from './lib/presence.js?v=644';
-import { Pulses } from './lib/pulse.js?v=644';
-import { BeatClock } from './lib/beatclock.js?v=644';
-import { BeatCue } from './lib/beatcue.js?v=644';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=644';
-import { Race, placeOf, standings } from './lib/race.js?v=644';
-import { Signals } from './lib/signals.js?v=644';
-import { pickShareLine, loadLines } from './lib/lines.js?v=644';
-import { RouteMap } from './lib/map.js?v=644';
-import * as sfx from './lib/sfx.js?v=644';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=644';
-import { glowTexture } from './lib/glow.js?v=644';
+import { AudioEngine } from './audio-engine.js?v=645';
+import { drawQR } from './lib/qr.js?v=645';
+import { WORLDS } from './worlds/registry.js?v=645';
+import { Net, PALETTE } from './net.js?v=645';
+import { Presence } from './lib/presence.js?v=645';
+import { Pulses } from './lib/pulse.js?v=645';
+import { BeatClock } from './lib/beatclock.js?v=645';
+import { BeatCue } from './lib/beatcue.js?v=645';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=645';
+import { Race, placeOf, standings } from './lib/race.js?v=645';
+import { Signals } from './lib/signals.js?v=645';
+import { pickShareLine, loadLines } from './lib/lines.js?v=645';
+import { RouteMap } from './lib/map.js?v=645';
+import * as sfx from './lib/sfx.js?v=645';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=645';
+import { glowTexture } from './lib/glow.js?v=645';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2561,7 +2561,7 @@ const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
 if (IS_IOS && !localStorage.getItem('fp_silent_hint')) {
   audio.el.addEventListener('playing', () => {
     if (localStorage.getItem('fp_silent_hint')) return;
-    localStorage.setItem('fp_silent_hint', '1');
+    try { localStorage.setItem('fp_silent_hint', '1'); } catch { /* private mode */ }
     setTimeout(() => flash('NO SOUND? FLIP YOUR SILENT SWITCH', 3200), 1600);
   }, { once: true });
 }
@@ -3862,12 +3862,6 @@ $('rb-share').addEventListener('click', () => {
 // this device, and appended to every share their song rides out on. The song
 // is the ad; this is the address on the back of it.
 $('mq-social').value = localStorage.getItem('fp_social') || '';
-// promo mode fills the blanks the artist's page already knows
-setInterval(() => {
-  if (!promoPage) return;
-  if (!$('mq-artist').value) $('mq-artist').value = promoPage.name;
-  if (!$('mq-social').value) $('mq-social').value = promoPage.url.replace(/^https?:\/\//, '');
-}, 1500);
 $('mq-social').addEventListener('input', () => {
   localStorage.setItem('fp_social', $('mq-social').value.trim().slice(0, 80));
 });
@@ -4258,7 +4252,7 @@ function clipBufStart() {
           if (r._claimMoment) {
             // the rider called it: THIS stretch is the clip, no contest
             clipMoment = { blob: new Blob(r._chunks, { type }), type };
-            flash('CLIPPED. IT RIDES YOUR END CARD', 2400);
+            flash('CLIPPED. SEE IT WHEN THE SONG ENDS', 2400);
             haptic([12, 40, 18]);
             return;
           }
@@ -5961,6 +5955,14 @@ const promoSlug = (() => {
 if (promoSlug) document.body.classList.add('promo');   // unlocks CLIP THAT in the bar
 let promoPage = null;       // {name, url, photo} once fetched
 let promoImg = null;        // the pfp, CORS-clean via the worker, for canvases
+// promo mode fills the blanks the artist's page already knows (registered
+// HERE, after the bindings exist - an interval armed earlier would turn a
+// mid-eval crash into a ReferenceError storm)
+setInterval(() => {
+  if (!promoPage) return;
+  if (!$('mq-artist').value) $('mq-artist').value = promoPage.name;
+  if (!$('mq-social').value) $('mq-social').value = promoPage.url.replace(/^https?:\/\//, '');
+}, 1500);
 if (promoSlug) {
   fetch(SUNO_PROXY + 'c-get?slug=' + promoSlug).then(r => r.json()).then(pg => {
     if (!pg || !pg.slug) return;

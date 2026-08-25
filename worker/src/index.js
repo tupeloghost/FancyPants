@@ -578,7 +578,11 @@ export default {
       const dest = (row.song
         ? SITE_URL + '?suno=' + encodeURIComponent(row.song) + (row.world ? '&world=' + row.world : '')
         : SITE_URL + '?_=1') + go + grider;
-      const title = wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ');
+      // a REAL song signs the unfurl; an unknown path must not let a crafted
+      // URL put arbitrary words in our mouth
+      const title = row.song
+        ? wslug[2].replace(/-/g, ' ') + ' by ' + wslug[1].replace(/-/g, ' ')
+        : 'Fancy Britches';
       const image = row.world && ['tunnel', 'surfer', 'slide'].includes(row.world)
         ? SITE_URL + 'previews/' + row.world + '.jpg' : null;
       return unfurl(title, 'hearing it is fine. being in it is better.', dest, image);
