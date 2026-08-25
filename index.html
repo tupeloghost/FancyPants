@@ -375,7 +375,15 @@
     0%, 100% { filter: none; }
     40% { filter: saturate(1.7) hue-rotate(-18deg) brightness(1.1); }
   }
-  #gift-note b { font-size: 22px; }
+  #gift-box { flex: none; animation: giftBob 1.5s ease-in-out infinite; }
+  #gift-box .gb-body { fill: hsl(var(--accent-h), 70%, 42%); }
+  #gift-box .gb-lid { fill: hsl(var(--accent-h), 75%, 55%); }
+  #gift-box .gb-ribbon { fill: hsl(var(--accent-h), 95%, 85%); }
+  #gift-box .gb-bow { fill: none; stroke: hsl(var(--accent-h), 95%, 85%); stroke-width: 1.5; stroke-linecap: round; }
+  @keyframes giftBob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-2.5px) rotate(2deg); }
+  }
   #gift-note span {
     font: 11px 'Jost', 'Futura', 'Avenir Next', sans-serif;
     color: var(--ink-dim); letter-spacing: 1.5px; text-transform: uppercase;
@@ -3105,7 +3113,7 @@
     <div id="gp-row"></div>
     <span>the first player through a hoop gets it</span>
   </div>
-  <div id="gift-note" class="hidden"><b id="gift-emoji"></b><span>the first player through a hoop gets it</span></div>
+  <div id="gift-note" class="hidden"><svg id="gift-box" viewBox="0 0 24 24" width="34" height="34"><rect x="4" y="10" width="16" height="10" rx="1.6" class="gb-body"/><rect x="3" y="7.5" width="18" height="3.4" rx="1.2" class="gb-lid"/><rect x="10.7" y="7.5" width="2.6" height="12.5" class="gb-ribbon"/><path d="M12 7.2 C9.5 7.2 7.8 5.6 8.4 4.2 C9 2.9 11.2 3.4 12 5.6 C12.8 3.4 15 2.9 15.6 4.2 C16.2 5.6 14.5 7.2 12 7.2" class="gb-bow"/></svg><span>a gift is out · first player through a hoop gets it</span></div>
   <div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
   <div id="name-gate" class="hidden">
   <div id="ng-inner">
@@ -3321,7 +3329,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 648</div>
+      <div id="build-stamp">build 649</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3363,6 +3371,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=648"></script>
+<script type="module" src="js/main.js?v=649"></script>
 </body>
 </html>
