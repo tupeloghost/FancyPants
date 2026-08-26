@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=649';
-import { drawQR } from './lib/qr.js?v=649';
-import { WORLDS } from './worlds/registry.js?v=649';
-import { Net, PALETTE } from './net.js?v=649';
-import { Presence } from './lib/presence.js?v=649';
-import { Pulses } from './lib/pulse.js?v=649';
-import { BeatClock } from './lib/beatclock.js?v=649';
-import { BeatCue } from './lib/beatcue.js?v=649';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=649';
-import { Race, placeOf, standings } from './lib/race.js?v=649';
-import { Signals } from './lib/signals.js?v=649';
-import { pickShareLine, loadLines } from './lib/lines.js?v=649';
-import { RouteMap } from './lib/map.js?v=649';
-import * as sfx from './lib/sfx.js?v=649';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=649';
-import { glowTexture } from './lib/glow.js?v=649';
+import { AudioEngine } from './audio-engine.js?v=650';
+import { drawQR } from './lib/qr.js?v=650';
+import { WORLDS } from './worlds/registry.js?v=650';
+import { Net, PALETTE } from './net.js?v=650';
+import { Presence } from './lib/presence.js?v=650';
+import { Pulses } from './lib/pulse.js?v=650';
+import { BeatClock } from './lib/beatclock.js?v=650';
+import { BeatCue } from './lib/beatcue.js?v=650';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=650';
+import { Race, placeOf, standings } from './lib/race.js?v=650';
+import { Signals } from './lib/signals.js?v=650';
+import { pickShareLine, loadLines } from './lib/lines.js?v=650';
+import { RouteMap } from './lib/map.js?v=650';
+import * as sfx from './lib/sfx.js?v=650';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=650';
+import { glowTexture } from './lib/glow.js?v=650';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2364,7 +2364,10 @@ window.addEventListener('pointermove', e => {
 // pointer steering (interactive mode) — screen position, with GAIN: full
 // steer arrives at ~1/3 from center, so a trackpad's short swipes are
 // enough. Mice keep working; they just have slack near the edges.
-const STEER_GAIN = 1.6;
+// trackpad reach: full steer well before the screen edge. 1.6 still asked
+// too much of a small mousepad (her 2026-08-25 note); at 2.4 the full range
+// lives within the middle ~40% of the screen.
+const STEER_GAIN = 2.4;
 function steerFromPointer(cx, cy) {
   const sx = Math.max(-1, Math.min(1, ((cx / window.innerWidth) * 2 - 1) * STEER_GAIN));
   const sy = Math.max(-1, Math.min(1, -((cy / window.innerHeight) * 2 - 1) * STEER_GAIN));
