@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=656';
-import { themePaint } from '../lib/themes.js?v=656';
-import { TUNE } from '../lib/tune.js?v=656';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=657';
+import { themePaint } from '../lib/themes.js?v=657';
+import { TUNE } from '../lib/tune.js?v=657';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -331,6 +331,9 @@ export function createWaterslide() {
             const n = chart[hoopChartAt++];
             if (n.t < songTime - 0.4) { hoopLastT = Math.max(hoopLastT, n.t); continue; }
             if (n.t - hoopLastT < H_SPACING * (1 - 0.4 * Math.min(1, wHeat)) / TUNE.density) continue;
+            // no rings born into a PLUNGE: they'd materialize deep below the
+            // eye line and read as sunken/unreachable until the grade settles
+            if (plungeK > 0.35 || plungeT > 6) continue;
             const h = hoops.find(x => !x.alive);
             if (!h) continue;
             hoopLastT = n.t;
@@ -627,7 +630,7 @@ export function createWaterslide() {
         // back once assumes travel only ever creeps forward; a seek, a rejoin
         // or a race correction can move it by thousands at once, and the flume
         // would then be left behind the rider entirely.
-        const limit = -travel - RING_SPACING * 2;   // keep floor UNDER the rider: recycling tiles 7.5 ahead left hoops hovering over void at the pass moment
+        const limit = -travel + RING_SPACING * 1.5;   // (v656 tried keeping extra floor behind and instead ate the tube's mouth - reverted)
         if (ringZ[r] > limit) {
           const span = RINGS * RING_SPACING;
           ringZ[r] -= Math.ceil((ringZ[r] - limit) / span) * span;
