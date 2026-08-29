@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=661';
-import { themePaint } from '../lib/themes.js?v=661';
-import { TUNE } from '../lib/tune.js?v=661';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=663';
+import { themePaint } from '../lib/themes.js?v=663';
+import { TUNE } from '../lib/tune.js?v=663';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -644,12 +644,23 @@ export function createWaterslide() {
         for (let s2 = 0; s2 < SEGS; s2++) {
           const a = arcStart + (s2 / (SEGS - 1)) * arcSpan;
           const level = audio[['bass', 'lowMid', 'mid', 'high', 'treble'][s2 % 5]];
-          dummy.position.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, ringZ[r]);
-          dummy.rotation.set(0, 0, a + Math.PI / 2);
+          const slatty = (shapeMix >= 0.5 ? sfB : sfA).geo === 'slat';
+          if (slatty) {
+            // the ribbon is a DECK, not a trough slice: near-flat positions,
+            // near-flat planks. Full tangent rotation tipped the edge planks
+            // 45 degrees - star-point teeth on what should be a boardwalk.
+            dummy.position.set(cx + Math.cos(a) * R * 1.15, cy + (Math.sin(a) * 0.4 - 0.6) * R, ringZ[r]);
+            dummy.rotation.set(0, 0, (a + Math.PI / 2 - Math.PI * 2) * 0.35 + Math.PI * 2);
+          } else {
+            dummy.position.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R, ringZ[r]);
+            dummy.rotation.set(0, 0, a + Math.PI / 2);
+          }
           // tile width follows the arc: the wrap-around needs wider tiles than
           // the half-pipe, the ribbon narrower — or the wall shows gaps/overlaps
-          const w = (arcSpan * R) / SEGS * ((shapeMix >= 0.5 ? sfB : sfA).geo === 'slat' ? 0.98 : 0.85);
-          dummy.scale.set(w, 1 + level * 1.6 * reactivity, 1);
+          const w = (arcSpan * R) / SEGS * (slatty ? 1.12 : 0.85);
+          // the half-pipe's walls dance like an equalizer; a flat DECK doing
+          // the same grows serrated teeth - planks breathe, they don't jump
+          dummy.scale.set(w, 1 + level * (slatty ? 0.35 : 1.6) * reactivity, 1);
           dummy.updateMatrix();
           wall.setMatrixAt(idx, dummy.matrix);
 
