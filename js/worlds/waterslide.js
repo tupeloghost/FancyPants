@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=653';
-import { themePaint } from '../lib/themes.js?v=653';
-import { TUNE } from '../lib/tune.js?v=653';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=654';
+import { themePaint } from '../lib/themes.js?v=654';
+import { TUNE } from '../lib/tune.js?v=654';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -67,11 +67,16 @@ export function createWaterslide() {
   let surfA = 0, surfB = 0;
   let surfGeos = null;
   let shapeA = 0, shapeB = 0, shapeMix = 1;
-  const curveX = t => { const a = SHAPES[shapeA].x(t), b = SHAPES[shapeB].x(t); return a + (b - a) * shapeMix; };
+  // mid-morph the slide takes a BREATH: bends damp toward straight and come
+  // back as the new shape lands. Blending two full-amplitude sine paths made
+  // transient hairpins sharper than either shape - the camera ended up
+  // inside the wall with slab tiles filling the screen.
+  const bendDamp = () => 1 - Math.sin(Math.min(1, shapeMix) * Math.PI) * 0.55;
+  const curveX = t => { const a = SHAPES[shapeA].x(t), b = SHAPES[shapeB].x(t); return (a + (b - a) * shapeMix) * bendDamp(); };
   const dropY = t => {
     const A = SHAPES[shapeA], B = SHAPES[shapeB];
     const slope = A.slope + (B.slope - A.slope) * shapeMix;
-    return -t * DROP * slope * (1 + plungeK * 1.1) + A.y(t) + (B.y(t) - A.y(t)) * shapeMix;
+    return -t * DROP * slope * (1 + plungeK * 1.1) + (A.y(t) + (B.y(t) - A.y(t)) * shapeMix) * bendDamp();
   };
   const bendWorld = () => {
     shapeA = shapeMix < 1 ? shapeB : shapeA;   // never snap mid-morph
@@ -527,7 +532,7 @@ export function createWaterslide() {
         travel += speed * dt;
       }
 
-      if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.8);   // ~1.2s: felt, not dizzying
+      if (shapeMix < 1) shapeMix = Math.min(1, shapeMix + dt * 0.55);   // ~1.8s: the breath out and back in
       leapT = Math.max(0, leapT - dt / 1.7); goldT = Math.max(0, goldT - dt);
       warpT = Math.max(0, warpT - dt); rollT = Math.max(0, rollT - dt / 1.5);
       // the plunge: every so often the grade pitches into a real drop for ~8s
