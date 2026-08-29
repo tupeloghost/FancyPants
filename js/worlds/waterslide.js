@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=655';
-import { themePaint } from '../lib/themes.js?v=655';
-import { TUNE } from '../lib/tune.js?v=655';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=656';
+import { themePaint } from '../lib/themes.js?v=656';
+import { TUNE } from '../lib/tune.js?v=656';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -627,7 +627,7 @@ export function createWaterslide() {
         // back once assumes travel only ever creeps forward; a seek, a rejoin
         // or a race correction can move it by thousands at once, and the flume
         // would then be left behind the rider entirely.
-        const limit = -travel + RING_SPACING * 1.5;
+        const limit = -travel - RING_SPACING * 2;   // keep floor UNDER the rider: recycling tiles 7.5 ahead left hoops hovering over void at the pass moment
         if (ringZ[r] > limit) {
           const span = RINGS * RING_SPACING;
           ringZ[r] -= Math.ceil((ringZ[r] - limit) / span) * span;

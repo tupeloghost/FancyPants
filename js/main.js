@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=655';
-import { drawQR } from './lib/qr.js?v=655';
-import { WORLDS } from './worlds/registry.js?v=655';
-import { Net, PALETTE } from './net.js?v=655';
-import { Presence } from './lib/presence.js?v=655';
-import { Pulses } from './lib/pulse.js?v=655';
-import { BeatClock } from './lib/beatclock.js?v=655';
-import { BeatCue } from './lib/beatcue.js?v=655';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=655';
-import { Race, placeOf, standings } from './lib/race.js?v=655';
-import { Signals } from './lib/signals.js?v=655';
-import { pickShareLine, loadLines } from './lib/lines.js?v=655';
-import { RouteMap } from './lib/map.js?v=655';
-import * as sfx from './lib/sfx.js?v=655';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=655';
-import { glowTexture } from './lib/glow.js?v=655';
+import { AudioEngine } from './audio-engine.js?v=656';
+import { drawQR } from './lib/qr.js?v=656';
+import { WORLDS } from './worlds/registry.js?v=656';
+import { Net, PALETTE } from './net.js?v=656';
+import { Presence } from './lib/presence.js?v=656';
+import { Pulses } from './lib/pulse.js?v=656';
+import { BeatClock } from './lib/beatclock.js?v=656';
+import { BeatCue } from './lib/beatcue.js?v=656';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=656';
+import { Race, placeOf, standings } from './lib/race.js?v=656';
+import { Signals } from './lib/signals.js?v=656';
+import { pickShareLine, loadLines } from './lib/lines.js?v=656';
+import { RouteMap } from './lib/map.js?v=656';
+import * as sfx from './lib/sfx.js?v=656';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=656';
+import { glowTexture } from './lib/glow.js?v=656';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -5719,8 +5719,8 @@ if (params.get('dev') === '1') (function devPanel() {
       fired.textContent = 'last joke came from: ' + l.archetype.replace(/-/g, ' ') + (w ? ' (' + w + ')' : '');
     }
   }, 1500);
-  let lastW = currentWorldKey;
-  setInterval(() => { if (currentWorldKey !== lastW) { lastW = currentWorldKey; fillArchetypes(); } }, 1500);
+  // (the archetype refresher retired with the jokes section - its interval
+  // outlived the function and threw every 1.5s in dev mode)
   // fold-up drawers: each colored header tucks its own section away —
   // open what you need, the rest stays out of the way (remembered)
   {
