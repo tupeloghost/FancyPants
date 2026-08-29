@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=652';
-import { drawQR } from './lib/qr.js?v=652';
-import { WORLDS } from './worlds/registry.js?v=652';
-import { Net, PALETTE } from './net.js?v=652';
-import { Presence } from './lib/presence.js?v=652';
-import { Pulses } from './lib/pulse.js?v=652';
-import { BeatClock } from './lib/beatclock.js?v=652';
-import { BeatCue } from './lib/beatcue.js?v=652';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=652';
-import { Race, placeOf, standings } from './lib/race.js?v=652';
-import { Signals } from './lib/signals.js?v=652';
-import { pickShareLine, loadLines } from './lib/lines.js?v=652';
-import { RouteMap } from './lib/map.js?v=652';
-import * as sfx from './lib/sfx.js?v=652';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=652';
-import { glowTexture } from './lib/glow.js?v=652';
+import { AudioEngine } from './audio-engine.js?v=653';
+import { drawQR } from './lib/qr.js?v=653';
+import { WORLDS } from './worlds/registry.js?v=653';
+import { Net, PALETTE } from './net.js?v=653';
+import { Presence } from './lib/presence.js?v=653';
+import { Pulses } from './lib/pulse.js?v=653';
+import { BeatClock } from './lib/beatclock.js?v=653';
+import { BeatCue } from './lib/beatcue.js?v=653';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=653';
+import { Race, placeOf, standings } from './lib/race.js?v=653';
+import { Signals } from './lib/signals.js?v=653';
+import { pickShareLine, loadLines } from './lib/lines.js?v=653';
+import { RouteMap } from './lib/map.js?v=653';
+import * as sfx from './lib/sfx.js?v=653';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=653';
+import { glowTexture } from './lib/glow.js?v=653';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -485,6 +485,17 @@ fetch('audio/manifest.json?t=' + Date.now())
   })
   .then(inst => {
     instrPool = (inst || []).map(f => 'audio/' + f);
+    // shelved songs: hers-but-resting. They ride ONLY in dev mode (?dev=1)
+    // so she can audition them without releasing them.
+    if (new URLSearchParams(location.search).get('dev') === '1') {
+      fetch('audio/shelved.json?t=' + Date.now())
+        .then(r => (r.ok ? r.json() : [])).catch(() => [])
+        .then(shelf => {
+          if (!shelf.length) return;
+          vocalPool = vocalPool.concat(shelf.map(f => 'audio/' + f));
+          rebuildTrackPool();
+        });
+    }
     // never leave the room silent: with no instrumentals, the voices sing
     if (!instrPool.length) wantVocals = true;
     rebuildTrackPool();
