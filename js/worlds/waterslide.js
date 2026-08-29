@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=660';
-import { themePaint } from '../lib/themes.js?v=660';
-import { TUNE } from '../lib/tune.js?v=660';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=661';
+import { themePaint } from '../lib/themes.js?v=661';
+import { TUNE } from '../lib/tune.js?v=661';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -54,14 +54,14 @@ export function createWaterslide() {
     { slope: 1,    x: t => Math.sin(t * 0.03) * 14 + Math.sin(t * 0.011) * 20, y: t => Math.sin(t * 0.02) * 4 },   // the winding river
     { slope: 1.5,  x: t => Math.sin(t * 0.07) * 11,                            y: t => Math.sin(t * 0.05) * 7 },   // corkscrew: tight, fast, steep
     { slope: 0.55, x: t => Math.sin(t * 0.008) * 34,                           y: t => Math.sin(t * 0.03) * 10 },  // one giant lazy S, a near-flat glide
-    { slope: 1.15, x: t => Math.sin(t * 0.04) * 28 + Math.sin(t * 0.013) * 10, y: t => Math.sin(t * 0.012) * 12 },// switchback canyon, wide and deep
+    { slope: 1.15, x: t => Math.sin(t * 0.04) * 21 + Math.sin(t * 0.013) * 8, y: t => Math.sin(t * 0.012) * 9 },// switchback canyon, wide and deep (eased v661: at full violence the ribbon ahead knifed edge-on)
   ];
   // and the SURFACE has a wardrobe of its own: what the pipe is tiled with,
   // and how far around you the wall wraps. The bender changes both.
   const SURFS = [
     { geo: 'box',  start: Math.PI,        span: Math.PI },        // classic half-pipe of tiles
     { geo: 'gem',  start: Math.PI * 1.1,  span: Math.PI * 0.8 },  // a trough of cut gems, steep walls
-    { geo: 'slat', start: Math.PI * 1.32, span: Math.PI * 0.36 }, // a flat ribbon of planks, open air — kept shallow so the outer planks never rear up
+    { geo: 'slat', start: Math.PI * 1.25, span: Math.PI * 0.5 }, // a ribbon of planks, open air — wide enough to ride, shallow enough that the edges never rear up
     { geo: 'box',  start: Math.PI * 0.72, span: Math.PI * 1.56 }, // the storm drain: walls wrap overhead
   ];
   let surfA = 0, surfB = 0;
@@ -123,7 +123,7 @@ export function createWaterslide() {
       surfGeos = {
         box: shade(new THREE.BoxGeometry(1, 0.4, RING_SPACING * 0.9), 0.4),
         gem: shade(new THREE.OctahedronGeometry(0.72), 1.44),
-        slat: shade(new THREE.BoxGeometry(1, 0.1, RING_SPACING * 1.2), 0.1),
+        slat: shade(new THREE.BoxGeometry(1, 0.24, RING_SPACING * 1.2), 0.24),
       };
       surfA = 0; surfB = 0;
       wall = new THREE.InstancedMesh(
