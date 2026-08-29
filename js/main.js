@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=658';
-import { drawQR } from './lib/qr.js?v=658';
-import { WORLDS } from './worlds/registry.js?v=658';
-import { Net, PALETTE } from './net.js?v=658';
-import { Presence } from './lib/presence.js?v=658';
-import { Pulses } from './lib/pulse.js?v=658';
-import { BeatClock } from './lib/beatclock.js?v=658';
-import { BeatCue } from './lib/beatcue.js?v=658';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=658';
-import { Race, placeOf, standings } from './lib/race.js?v=658';
-import { Signals } from './lib/signals.js?v=658';
-import { pickShareLine, loadLines } from './lib/lines.js?v=658';
-import { RouteMap } from './lib/map.js?v=658';
-import * as sfx from './lib/sfx.js?v=658';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=658';
-import { glowTexture } from './lib/glow.js?v=658';
+import { AudioEngine } from './audio-engine.js?v=660';
+import { drawQR } from './lib/qr.js?v=660';
+import { WORLDS } from './worlds/registry.js?v=660';
+import { Net, PALETTE } from './net.js?v=660';
+import { Presence } from './lib/presence.js?v=660';
+import { Pulses } from './lib/pulse.js?v=660';
+import { BeatClock } from './lib/beatclock.js?v=660';
+import { BeatCue } from './lib/beatcue.js?v=660';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=660';
+import { Race, placeOf, standings } from './lib/race.js?v=660';
+import { Signals } from './lib/signals.js?v=660';
+import { pickShareLine, loadLines } from './lib/lines.js?v=660';
+import { RouteMap } from './lib/map.js?v=660';
+import * as sfx from './lib/sfx.js?v=660';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=660';
+import { glowTexture } from './lib/glow.js?v=660';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -514,8 +514,9 @@ fetch('audio/manifest.json?t=' + Date.now())
     if (!instrPool.length) wantVocals = true;
     rebuildTrackPool();
     syncAudioModeUI();
+    setTimeout(primeEntrySong, 1200);   // the landing breathes first, then the pipes warm
     // if the room's already running and silent, start the music now
-    if (autoWanted && !audio.el.src) playAuto(false);
+    if (autoWanted && (!audio.el.src || primed)) playAuto(false);
     // (the old today's-song front-door line retired with its element - the
     // landing kept one door and the Sunday ritual)
   })
@@ -607,12 +608,30 @@ function countdown(fn) {
   tick();
 }
 
+// ── the warm start ── while the landing sits idle, the entry song is
+// already downloading AND its chart is already analysing (the loadstart
+// listener runs chartTrack the moment src is set). PLAY then starts the
+// music in a breath instead of several seconds of silent nothing.
+let primed = false;
+function primeEntrySong() {
+  if (primed || audio.el.src || !trackList.length) return;
+  if (document.body.classList.contains('inside') || document.body.classList.contains('guest') || window.__STAGE) return;
+  const sig = wantVocals ? signatureFor(currentWorldKey) : null;
+  if (!autoOrder.length) { autoOrder = shuffled(trackList); autoAt = 0; }
+  const url = (window.__shareTrack && trackList.includes(window.__shareTrack)) ? window.__shareTrack : (sig || autoOrder[autoAt]);
+  primed = true;
+  audio.el.preload = 'auto';
+  audio.el.src = url;   // bare src, NOT loadURL: no AudioContext before the first gesture
+  audio.el.load();
+  $('track-select').value = url;
+}
+
 function playAuto(next) {
   if (!trackList.length || document.body.classList.contains('guest')) return;
   window.__sunoShare = null;
   if (!next && wantVocals) {   // a world's signature song is a vocal cut
     const sig = signatureFor(currentWorldKey);
-    if (sig && !audio.el.src) {
+    if (sig && !audio.el.src && !primed) {
       audio.loadURL(sig);
       $('track-select').value = sig;
       audio.play().catch(() => {});
@@ -631,6 +650,15 @@ function playAuto(next) {
       return;
     }
   }
+  // the warmed song is already buffered and charted: just press play
+  if (!next && primed && audio.el.src && !audio.playing) {
+    primed = false;
+    audio.ensureContext();
+    audio.play().catch(() => {});
+    updatePlayBtn();
+    return;
+  }
+  primed = false;
   if (!autoOrder.length) { autoOrder = shuffled(trackList); autoAt = 0; }
   if (next) autoAt = (autoAt + 1) % autoOrder.length;
   const url = autoOrder[autoAt];
@@ -2974,7 +3002,7 @@ function dismissOverlay() {
   // start the music by itself — unless we're a guest, who follows the host
   if (!document.body.classList.contains('guest')) {
     autoWanted = true;
-    if (!audio.el.src) setTimeout(() => playAuto(false), 200);
+    if (!audio.el.src || primed) setTimeout(() => playAuto(false), 200);
   }
   tap.classList.add('gone');
   window.__enterSfx();   // now the game may speak
@@ -3037,7 +3065,7 @@ function startRoom(code, name, asOwner, typed) {
     }
     // the crown comes with the music: a room's first arrival (a page's "play
     // together" visitor) must not stand in silence waiting for a host
-    if (!audio.el.src && !window.__STAGE) setTimeout(() => playAuto(false), 200);
+    if ((!audio.el.src || primed) && !window.__STAGE) setTimeout(() => playAuto(false), 200);
     const code = net.room || '';
     if (code) {
       const joinURL = location.origin + location.pathname.replace(/index\.html$/, '') + '?room=' + code;
