@@ -3,9 +3,9 @@
 // splash burst + a shot of speed. Ghost riders slide the same flume.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=650';
-import { themePaint } from '../lib/themes.js?v=650';
-import { TUNE } from '../lib/tune.js?v=650';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=652';
+import { themePaint } from '../lib/themes.js?v=652';
+import { TUNE } from '../lib/tune.js?v=652';
 
 const RINGS = 54;           // half-pipe rings alive at once
 const SEGS = 14;            // arc segments per ring (lower half only)
@@ -331,7 +331,7 @@ export function createWaterslide() {
             hoopLastT = n.t;
             hoopCount++;
             h.alive = true;
-            h.t = travel + 130;                        // fixed distance down the pipe
+            h.t = travel + 60;   // close enough to sit ON the path you can see, not a bend and a cliff away
             h.side = (((hoopChartAt * 48271) % 200) / 100 - 1) * 0.75;  // -0.75..0.75
             // every fourth hoop is RED: lean AWAY. Same signal grammar as the
             // whole game — green means through, red means never — and it gives
@@ -428,11 +428,11 @@ export function createWaterslide() {
           const ahead = t - travel;
           if (ahead < 4) {
             const gap = Math.abs(h.side - steer);
-            const through = gap < 0.42;
+            const through = gap < 0.5;
             const flooring = wThrottle > 0.6;
             if (through && h.bend) {
               // through the lens: the pipe re-bends under everyone at once
-              race.collect(2);
+              race.collect(1);   // a ring is a ring: the counter never inflates
               hoopBoost = 1;
               gulp = Math.max(gulp, 0.5);
               if (opts.impact) opts.impact(0.6);
@@ -451,7 +451,7 @@ export function createWaterslide() {
             } else if (through && h.wonder) {
               // through the door: the whole world repaints (the same
               // ceremony a rainbow spark earns in surfer), and the ride pays
-              race.collect(3);
+              race.collect(1);
               hoopBoost = 1;
               if (opts.impact) opts.impact(0.8);
               document.dispatchEvent(new CustomEvent('fp-lookspark'));
@@ -487,11 +487,10 @@ export function createWaterslide() {
                 b.rotation.copy(h.mesh.rotation);
               }
             } else if (h.red && flooring && gap < 0.8) {
-              // the close call: shave past a red flat out and the near-miss pays
-              race.collect(1);
+              // the close call: the shave pays in FEEL, never in rings you didn't ride
               if (opts.impact) opts.impact(0.35);
             } else if (through) {
-              race.collect((hoopBoost > 0.35 ? 2 : 1) * (flooring ? 2 : 1));
+              race.collect(1);
               hoopBoost = Math.min(1, hoopBoost + 0.85);
               // any hoop is a hand reaching for a pending gift
               document.dispatchEvent(new CustomEvent('fp-hoop'));
@@ -576,7 +575,10 @@ export function createWaterslide() {
         dropY(travel) + 2.6 + Math.abs(steer) * 1.4 + audio.bass * 0.3 + leap * 7.5,
         -travel
       );
-      camera.lookAt(curveX(travel + 34), dropY(travel + 34) + 1.6 + leap * 3, -(travel + 34));
+      // 34 overshot the corkscrew (a third of a full spiral) - the camera was
+      // staring across the bend while the track left the screen. 18 leads the
+      // turn the way a rider's eyes do.
+      camera.lookAt(curveX(travel + 18), dropY(travel + 18) + 1.6 + leap * 3, -(travel + 18));
       camera.rotation.z += -bank + Math.sin(time * 34) * 0.06 * gulp + rollAng;
 
       for (const b of bursts) {
