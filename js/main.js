@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=654';
-import { drawQR } from './lib/qr.js?v=654';
-import { WORLDS } from './worlds/registry.js?v=654';
-import { Net, PALETTE } from './net.js?v=654';
-import { Presence } from './lib/presence.js?v=654';
-import { Pulses } from './lib/pulse.js?v=654';
-import { BeatClock } from './lib/beatclock.js?v=654';
-import { BeatCue } from './lib/beatcue.js?v=654';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=654';
-import { Race, placeOf, standings } from './lib/race.js?v=654';
-import { Signals } from './lib/signals.js?v=654';
-import { pickShareLine, loadLines } from './lib/lines.js?v=654';
-import { RouteMap } from './lib/map.js?v=654';
-import * as sfx from './lib/sfx.js?v=654';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=654';
-import { glowTexture } from './lib/glow.js?v=654';
+import { AudioEngine } from './audio-engine.js?v=655';
+import { drawQR } from './lib/qr.js?v=655';
+import { WORLDS } from './worlds/registry.js?v=655';
+import { Net, PALETTE } from './net.js?v=655';
+import { Presence } from './lib/presence.js?v=655';
+import { Pulses } from './lib/pulse.js?v=655';
+import { BeatClock } from './lib/beatclock.js?v=655';
+import { BeatCue } from './lib/beatcue.js?v=655';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=655';
+import { Race, placeOf, standings } from './lib/race.js?v=655';
+import { Signals } from './lib/signals.js?v=655';
+import { pickShareLine, loadLines } from './lib/lines.js?v=655';
+import { RouteMap } from './lib/map.js?v=655';
+import * as sfx from './lib/sfx.js?v=655';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=655';
+import { glowTexture } from './lib/glow.js?v=655';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -5212,7 +5212,7 @@ const WEEK_POOL = (() => {
 // weeks flip SUNDAY 16:00 UTC (10am Mountain, noon Eastern): a Sunday
 // morning, not Saturday night. Mirrored in the worker's /thisweek.
 const WEEK_SHIFT = 3 * 86400000 + 16 * 3600000;
-const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 7, 30, 16) - WEEK_SHIFT) / 604800000);   // launch Sunday Aug 30: the week that BEGINS at that flip
+const LAUNCH_WEEK = Math.floor((Date.UTC(2026, 8, 6, 16) - WEEK_SHIFT) / 604800000);   // launch Sunday Sep 6 (moved from Aug 30, her call 2026-08-29 - vacation): the week that BEGINS at that flip
 const WEEKS_IN = Math.max(0, Math.floor((Date.now() - WEEK_SHIFT) / 604800000) - LAUNCH_WEEK);
 const WEEK_WORLD = WEEK_POOL[WEEKS_IN % WEEK_POOL.length];
 // the alumni: every special whose week is over, permanent residents now
