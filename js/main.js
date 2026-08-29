@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=657';
-import { drawQR } from './lib/qr.js?v=657';
-import { WORLDS } from './worlds/registry.js?v=657';
-import { Net, PALETTE } from './net.js?v=657';
-import { Presence } from './lib/presence.js?v=657';
-import { Pulses } from './lib/pulse.js?v=657';
-import { BeatClock } from './lib/beatclock.js?v=657';
-import { BeatCue } from './lib/beatcue.js?v=657';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=657';
-import { Race, placeOf, standings } from './lib/race.js?v=657';
-import { Signals } from './lib/signals.js?v=657';
-import { pickShareLine, loadLines } from './lib/lines.js?v=657';
-import { RouteMap } from './lib/map.js?v=657';
-import * as sfx from './lib/sfx.js?v=657';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=657';
-import { glowTexture } from './lib/glow.js?v=657';
+import { AudioEngine } from './audio-engine.js?v=658';
+import { drawQR } from './lib/qr.js?v=658';
+import { WORLDS } from './worlds/registry.js?v=658';
+import { Net, PALETTE } from './net.js?v=658';
+import { Presence } from './lib/presence.js?v=658';
+import { Pulses } from './lib/pulse.js?v=658';
+import { BeatClock } from './lib/beatclock.js?v=658';
+import { BeatCue } from './lib/beatcue.js?v=658';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=658';
+import { Race, placeOf, standings } from './lib/race.js?v=658';
+import { Signals } from './lib/signals.js?v=658';
+import { pickShareLine, loadLines } from './lib/lines.js?v=658';
+import { RouteMap } from './lib/map.js?v=658';
+import * as sfx from './lib/sfx.js?v=658';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=658';
+import { glowTexture } from './lib/glow.js?v=658';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -131,6 +131,20 @@ if (IS_MOBILE && screen.orientation && screen.orientation.lock) {
 
 // ── Audio ──
 const audio = new AudioEngine();
+
+// ── the BLACK BOX ── an always-on flight recorder: the last 20 errors and
+// the last 40 seconds of world state, invisible in play, shipped with every
+// dev-panel screenshot so a glitch report carries its own evidence.
+const blackBox = { errs: [], samples: [], fps: 0 };
+window.addEventListener('error', e => {
+  blackBox.errs.push({ at: new Date().toISOString().slice(11, 19), m: String(e.message || e.error || '?').slice(0, 220), src: String(e.filename || '').split('/').pop().split('?')[0] + ':' + (e.lineno || 0) });
+  if (blackBox.errs.length > 20) blackBox.errs.shift();
+});
+window.addEventListener('unhandledrejection', e => {
+  blackBox.errs.push({ at: new Date().toISOString().slice(11, 19), m: 'promise: ' + String((e.reason && e.reason.message) || e.reason || '?').slice(0, 220) });
+  if (blackBox.errs.length > 20) blackBox.errs.shift();
+});
+window.__blackBox = blackBox;
 
 // ── Net + presence: participants come from the net layer ──
 const net = new Net();
@@ -1963,6 +1977,22 @@ function dealNextLook() {
   window.__nextLook = { name: cfg.colorMode, hue: cfg.hue, colorMode: cfg.colorMode, cfg };
 }
 dealNextLook();
+// the black box takes a state sample every second (last 40 kept)
+setInterval(() => {
+  try {
+    const sm = {
+      at: new Date().toISOString().slice(11, 19),
+      w: currentWorldKey, fps: blackBox.fps,
+      cm: settings.colorMode, pat: settings.pattern, shp: settings.shape, hue: Math.round(settings.hue),
+      songT: Math.round(audio.currentTime || 0),
+      room: net.room || '', crowd: participants.length,
+    };
+    if (window.__slideInfo) sm.slide = window.__slideInfo;
+    blackBox.samples.push(sm);
+    if (blackBox.samples.length > 40) blackBox.samples.shift();
+  } catch { /* the recorder must never be the crash */ }
+}, 1000);
+
 // ── the first-door promise ── a first-time visit OWES its rider a wonder
 // door inside the first stretch: the paint wave is the product's best
 // argument, and it must land before attention wanders. Worlds read the
@@ -5662,7 +5692,8 @@ if (params.get('dev') === '1') (function devPanel() {
     flash('\ud83d\udcf8 UPLOADIN\u2019 THE SHOT\u2026', 1400);
     fetch(`${SUNO_PROXY}shot`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ img: b64, note: text }),
+      body: JSON.stringify({ img: b64, note: text,
+        box: { v: (document.querySelector('script[src*="main.js"]').src.split('v=')[1] || ''), errs: blackBox.errs, samples: blackBox.samples.slice(-20) } }),
     }).then(r => r.json()).then(r => {
       // the shot is up — now ask what it's ABOUT, and tie the two together
       pendingShot = r.url;
@@ -5678,6 +5709,7 @@ if (params.get('dev') === '1') (function devPanel() {
     const cuts = JSON.parse(localStorage.getItem('fp_cutlist') || '[]');
     const out = [];
     if (notes.length) out.push('NOTES:\n' + notes.join('\n'));
+    if (blackBox.errs.length) out.push('BLACK BOX ERRORS:\n' + blackBox.errs.map(e2 => e2.at + ' ' + e2.m + (e2.src ? ' @' + e2.src : '')).join('\n'));
     if (cuts.length) out.push('CUT THESE LINES:\n' + cuts.join('\n'));
     if (!out.length) { flash('NOTHING SAVED YET', 1600); return; }
     navigator.clipboard.writeText(out.join('\n\n'))
@@ -6485,6 +6517,7 @@ function frame(now) {
   if (fpsTime >= 0.5) {
     const fps = Math.round(fpsFrames / fpsTime);
     $('fps').textContent = fps;
+    blackBox.fps = fps;
     fpsFrames = 0; fpsTime = 0;
     lowFpsStreak = fps < (IS_MOBILE ? 48 : 42) ? lowFpsStreak + 1 : 0;
     if (lowFpsStreak >= (IS_MOBILE ? 4 : 8) && bloomPass.enabled) {

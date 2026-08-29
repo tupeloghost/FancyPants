@@ -123,12 +123,20 @@ export class FancyPantsRoom {
         return new Response('bad shot', { status: 400 });
       }
       const id = Math.random().toString(36).slice(2, 10);
-      await this.state.storage.put('shot:' + id, { img, at: Date.now(), note: String(body.note || '').slice(0, 300) });
+      // the black box rides along: errors + state samples from the moment
+      let box = '';
+      try { box = JSON.stringify(body.box || null).slice(0, 24000); } catch { box = ''; }
+      await this.state.storage.put('shot:' + id, { img, at: Date.now(), note: String(body.note || '').slice(0, 300), box });
       return new Response(JSON.stringify({ url: 'https://fancy-pants.tupeloghost.workers.dev/shot/' + id }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
     }
     if (url.pathname.startsWith('/shot/')) {
-      const row = await this.state.storage.get('shot:' + url.pathname.slice(6).replace(/[^a-z0-9]/g, ''));
+      const wantsBox = url.pathname.endsWith('.json');
+      const row = await this.state.storage.get('shot:' + url.pathname.slice(6).replace(/\.json$/, '').replace(/[^a-z0-9]/g, ''));
       if (!row) return new Response('gone', { status: 404 });
+      if (wantsBox) {
+        return new Response(JSON.stringify({ at: row.at, note: row.note || '', box: row.box ? JSON.parse(row.box) : null }),
+          { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+      }
       const bin = Uint8Array.from(atob(row.img), c => c.charCodeAt(0));
       return new Response(bin, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=604800' } });
     }
