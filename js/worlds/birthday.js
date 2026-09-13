@@ -6,8 +6,8 @@
 // lantern richer. Chic and starry, never arcade: the celebration is light.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=666';
-import { themePaint } from '../lib/themes.js?v=666';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=667';
+import { themePaint } from '../lib/themes.js?v=667';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -31,6 +31,7 @@ export function createBirthday() {
   let state = 'gather';                // gather -> hush -> blow -> encore
   let stateT = 0;
   let tapGlit = 0;
+  let wishStar = null, numberPlate = null;
   const color = new THREE.Color();
 
   const mkFlame = () => {
@@ -149,6 +150,29 @@ export function createBirthday() {
       for (let i = 0; i < RAIN; i++) rainDrops.push({ x: 0, y: -99, z: 0, vx: 0, vy: 0, spin: Math.random() * 6, tumble: 1 + Math.random() * 3 });
       rainOn = 0;
 
+      // their number in gold on the middle tier, when the link carries one
+      if (window.__BDAY_N) {
+        const cv = document.createElement('canvas');
+        cv.width = 256; cv.height = 256;
+        const cx2 = cv.getContext('2d');
+        cx2.fillStyle = '#ffd98a';
+        cx2.shadowColor = '#ffb347';
+        cx2.shadowBlur = 26;
+        cx2.font = '400 150px Didot, "Bodoni 72", Georgia, serif';
+        cx2.textAlign = 'center';
+        cx2.textBaseline = 'middle';
+        cx2.fillText(String(CANDLES), 128, 138);
+        const tex = new THREE.CanvasTexture(cv);
+        numberPlate = new THREE.Mesh(
+          new THREE.PlaneGeometry(6.5, 6.5),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, depthWrite: false })
+        );
+        // pinned in front of the middle tier, facing the rider always -
+        // a number that turns its back half the time is no number at all
+        numberPlate.position.set(0, -1.4, -27.4);
+        group.add(numberPlate);
+      }
+
       cake.position.set(0, -10, -40);
       group.add(cake);
 
@@ -222,6 +246,43 @@ export function createBirthday() {
     onTap() {
       tapGlit = 1;
       if (state === 'hush') { state = 'blow'; stateT = 0; }   // a tap blows early
+    },
+
+    // one firework: a spark burst, a halo ring, and a shed of sprinkles
+    _fire(at, opts, paint, tp) {
+      const b = bursts.find(x => !x.visible);
+      if (b) {
+        b.visible = true;
+        b.position.copy(at);
+        b.userData.life = 1;
+        const posA = b.geometry.attributes.position;
+        for (let j = 0; j < b.userData.vel.length; j++) posA.setXYZ(j, 0, 0, 0);
+        posA.needsUpdate = true;
+        paint(Math.random(), 1);
+        color.setHSL(Math.random() < 0.4 ? 0.11 : tp[0], 0.9, 0.62);
+        b.material.color.copy(color);
+      }
+      const m = rings.find(x => !x.visible);
+      if (m) {
+        m.visible = true;
+        m.position.copy(at);
+        m.userData.r = 1;
+        m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        color.setHSL(0.11, 0.9, 0.55);
+        m.material.color.copy(color);
+      }
+      rain.visible = true; rainOn = 6;
+      let seeded = 0;
+      for (const d of rainDrops) {
+        if (d.y > -90 || seeded >= RAIN / 4) continue;
+        seeded++;
+        d.x = at.x + (Math.random() * 2 - 1) * 6;
+        d.y = at.y + (Math.random() * 2 - 1) * 3;
+        d.z = at.z + (Math.random() * 2 - 1) * 6;
+        d.vx = (Math.random() * 2 - 1) * 2.5;
+        d.vy = 1 + Math.random() * 2;
+      }
+      if (opts.impact) opts.impact(0.5);
     },
 
     update(dt, audio, participants, opts) {
@@ -307,6 +368,10 @@ export function createBirthday() {
           lit++;
           tapGlit = Math.max(tapGlit, 0.6);
           if (opts.impact) opts.impact(0.45);
+          // every twelfth candle, the cake celebrates the progress with him
+          if (lit % 12 === 0 && lit < CANDLES) {
+            this._fire(new THREE.Vector3((Math.random() * 2 - 1) * 14, 12, -38), opts, paint, tp);
+          }
           if (lit >= CANDLES) { state = 'hush'; stateT = 0; }
         }
       }
@@ -321,47 +386,16 @@ export function createBirthday() {
           document.dispatchEvent(new CustomEvent('fp-bday'));
           this._volleys = 5;
           this._nextVolley = 0;
+          wishStar = { t: -2.2 };   // waits out the banner, then crosses
         }
         if (this._sung && this._volleys > 0 && stateT > this._nextVolley + 1.1) {
           this._nextVolley = stateT;
           this._volleys--;
           const at = new THREE.Vector3((Math.random() * 2 - 1) * 26, 8 + Math.random() * 14, -46 - Math.random() * 20);
-          const b = bursts.find(x => !x.visible);
-          if (b) {
-            b.visible = true;
-            b.position.copy(at);
-            b.userData.life = 1;
-            const posA = b.geometry.attributes.position;
-            for (let j = 0; j < b.userData.vel.length; j++) posA.setXYZ(j, 0, 0, 0);
-            posA.needsUpdate = true;
-            paint(Math.random(), 1);
-            color.setHSL(Math.random() < 0.4 ? 0.11 : tp[0], 0.9, 0.62);
-            b.material.color.copy(color);
-          }
-          const m = rings.find(x => !x.visible);
-          if (m) {
-            m.visible = true;
-            m.position.copy(at);
-            m.userData.r = 1;
-            m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-            color.setHSL(0.11, 0.9, 0.55);
-            m.material.color.copy(color);
-          }
-          if (opts.impact) opts.impact(0.5);
-          // every burst sheds a handful of falling sprinkles
-          rain.visible = true; rainOn = 6;
-          let seeded = 0;
-          for (const d of rainDrops) {
-            if (d.y > -90 || seeded >= RAIN / 4) continue;
-            seeded++;
-            d.x = at.x + (Math.random() * 2 - 1) * 6;
-            d.y = at.y + (Math.random() * 2 - 1) * 3;
-            d.z = at.z + (Math.random() * 2 - 1) * 6;
-            d.vx = (Math.random() * 2 - 1) * 2.5;
-            d.vy = 1 + Math.random() * 2;
-          }
+          this._fire(at, opts, paint, tp);
           if (this._volleys === 2) document.dispatchEvent(new CustomEvent('fp-lookspark'));
         }
+
         if (this._sung && this._volleys <= 0 && stateT > this._nextVolley + 2.5) {
           // the encore: candles rest, lanterns rise, it begins again
           this._sung = false;
@@ -370,6 +404,37 @@ export function createBirthday() {
           candles.forEach(c => { c.userData.on = false; });
           lit = 0;
           state = 'gather'; stateT = 0;
+        }
+      }
+
+      // the wish star: one streak across the whole sky, the wish leaving
+      if (wishStar) {
+        wishStar.t += dt;
+        if (!wishStar.m && wishStar.t >= 0) {
+          const star = glowSprite(6);
+          const tail = new THREE.Mesh(
+            new THREE.PlaneGeometry(26, 0.5),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false })
+          );
+          tail.position.x = 13.5;
+          const g2 = new THREE.Group();
+          g2.add(star, tail);
+          g2.position.set(46, 34, -70);
+          g2.rotation.z = -0.28;
+          group.add(g2);
+          wishStar.m = g2; wishStar.star = star; wishStar.tail = tail;
+        }
+        if (wishStar.m) {
+          wishStar.m.position.x -= dt * 44;
+          wishStar.m.position.y -= dt * 12;
+          const k = Math.min(1, wishStar.t / 2.4);
+          wishStar.star.material.opacity = 0.9 * (1 - k);
+          wishStar.tail.material.opacity = 0.5 * (1 - k);
+          if (k >= 1) {
+            group.remove(wishStar.m);
+            wishStar.m.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+            wishStar = null;
+          }
         }
       }
 
