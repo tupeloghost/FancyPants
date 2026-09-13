@@ -6,16 +6,18 @@
 // lantern richer. Chic and starry, never arcade: the celebration is light.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=664';
-import { themePaint } from '../lib/themes.js?v=664';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=665';
+import { themePaint } from '../lib/themes.js?v=665';
 
-const CANDLES = 13;
+const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
 const FLAMES = LITE ? 6 : 9;         // drifting catchables alive at once
 const STARS = LITE ? 400 : 700;
 const BURSTS = LITE ? 6 : 10;        // firework spark clouds in the pool
 
 export function createBirthday() {
+  // the cake carries THEIR count when the link says so (candles=age)
+  const CANDLES = window.__BDAY_N || CANDLES_DEFAULT;
   let scene, camera, group;
   let sky, stars, cake, rims = [], candles = [], flames = [], bursts = [], lanterns = [];
   let rings = [];                      // firework halo rings (torus pool)
@@ -95,8 +97,11 @@ export function createBirthday() {
         ty += h;
       }
       // thirteen candles in a circle on the top tier
+      const twoRows = CANDLES > 20;
       for (let i = 0; i < CANDLES; i++) {
-        const a = (i / CANDLES) * Math.PI * 2;
+        const row = twoRows ? i % 2 : 0;
+        const n = twoRows ? Math.ceil(CANDLES / 2) : CANDLES;
+        const a = (Math.floor(i / (twoRows ? 2 : 1)) / n) * Math.PI * 2 + row * 0.35;
         const c = new THREE.Group();
         const stick = new THREE.Mesh(
           new THREE.CylinderGeometry(0.16, 0.16, 2.2, 8),
@@ -107,7 +112,7 @@ export function createBirthday() {
         fl.position.y = 2.6;
         fl.material.opacity = 0.05;          // unlit: an ember of a promise
         c.add(stick, fl);
-        c.position.set(Math.cos(a) * 5.1, ty, Math.sin(a) * 5.1);
+        c.position.set(Math.cos(a) * (5.1 - row * 1.9), ty, Math.sin(a) * (5.1 - row * 1.9));
         c.userData = { fl, on: false, pop: 0, seed: i * 7.3 };
         cake.add(c);
         candles.push(c);

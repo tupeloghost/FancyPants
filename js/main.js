@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=664';
-import { drawQR } from './lib/qr.js?v=664';
-import { WORLDS } from './worlds/registry.js?v=664';
-import { Net, PALETTE } from './net.js?v=664';
-import { Presence } from './lib/presence.js?v=664';
-import { Pulses } from './lib/pulse.js?v=664';
-import { BeatClock } from './lib/beatclock.js?v=664';
-import { BeatCue } from './lib/beatcue.js?v=664';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=664';
-import { Race, placeOf, standings } from './lib/race.js?v=664';
-import { Signals } from './lib/signals.js?v=664';
-import { pickShareLine, loadLines } from './lib/lines.js?v=664';
-import { RouteMap } from './lib/map.js?v=664';
-import * as sfx from './lib/sfx.js?v=664';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=664';
-import { glowTexture } from './lib/glow.js?v=664';
+import { AudioEngine } from './audio-engine.js?v=665';
+import { drawQR } from './lib/qr.js?v=665';
+import { WORLDS } from './worlds/registry.js?v=665';
+import { Net, PALETTE } from './net.js?v=665';
+import { Presence } from './lib/presence.js?v=665';
+import { Pulses } from './lib/pulse.js?v=665';
+import { BeatClock } from './lib/beatclock.js?v=665';
+import { BeatCue } from './lib/beatcue.js?v=665';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=665';
+import { Race, placeOf, standings } from './lib/race.js?v=665';
+import { Signals } from './lib/signals.js?v=665';
+import { pickShareLine, loadLines } from './lib/lines.js?v=665';
+import { RouteMap } from './lib/map.js?v=665';
+import * as sfx from './lib/sfx.js?v=665';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=665';
+import { glowTexture } from './lib/glow.js?v=665';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -307,8 +307,11 @@ const settings = {
   if (qp.get('names') === 'off') window.__namesOff = true;
   // a shared link names a world and a song — the visitor lands inside both
   if (qp.get('world') && Object.hasOwn(WORLDS, qp.get('world'))) window.__shareWorld = qp.get('world');
-  // the birthday link carries a NAME; the sky will say it at the finale
+  // the birthday link carries a NAME; the sky will say it at the finale.
+  // candles= puts their age on the cake; note= is the giver's own words.
   if (qp.get('bday')) window.__BDAY = qp.get('bday').replace(/[^\w '\-]/g, '').slice(0, 20).trim();
+  if (qp.get('candles')) window.__BDAY_N = Math.max(1, Math.min(40, Math.round(+qp.get('candles')) || 0)) || 0;
+  if (qp.get('note')) window.__BDAY_NOTE = qp.get('note').replace(/[^\w ,.'!\-]/g, '').slice(0, 60).trim();
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
   // a scanned QR carries maximum intent: go=1 skips the landing entirely
@@ -2027,7 +2030,7 @@ setInterval(() => {
 // the birthday finale: the world holds its breath, then the sky says the name
 document.addEventListener('fp-bday', () => {
   const name = (window.__BDAY || '').toUpperCase();
-  announce(name ? 'HAPPY BIRTHDAY ' + name : 'HAPPY BIRTHDAY', 'make a wish', 4200, 'ember');
+  announce(name ? 'HAPPY BIRTHDAY ' + name : 'HAPPY BIRTHDAY', window.__BDAY_NOTE || 'make a wish', 4200, 'ember');
   haptic([20, 60, 20, 60, 40]);
 });
 
