@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=663';
-import { drawQR } from './lib/qr.js?v=663';
-import { WORLDS } from './worlds/registry.js?v=663';
-import { Net, PALETTE } from './net.js?v=663';
-import { Presence } from './lib/presence.js?v=663';
-import { Pulses } from './lib/pulse.js?v=663';
-import { BeatClock } from './lib/beatclock.js?v=663';
-import { BeatCue } from './lib/beatcue.js?v=663';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=663';
-import { Race, placeOf, standings } from './lib/race.js?v=663';
-import { Signals } from './lib/signals.js?v=663';
-import { pickShareLine, loadLines } from './lib/lines.js?v=663';
-import { RouteMap } from './lib/map.js?v=663';
-import * as sfx from './lib/sfx.js?v=663';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=663';
-import { glowTexture } from './lib/glow.js?v=663';
+import { AudioEngine } from './audio-engine.js?v=664';
+import { drawQR } from './lib/qr.js?v=664';
+import { WORLDS } from './worlds/registry.js?v=664';
+import { Net, PALETTE } from './net.js?v=664';
+import { Presence } from './lib/presence.js?v=664';
+import { Pulses } from './lib/pulse.js?v=664';
+import { BeatClock } from './lib/beatclock.js?v=664';
+import { BeatCue } from './lib/beatcue.js?v=664';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=664';
+import { Race, placeOf, standings } from './lib/race.js?v=664';
+import { Signals } from './lib/signals.js?v=664';
+import { pickShareLine, loadLines } from './lib/lines.js?v=664';
+import { RouteMap } from './lib/map.js?v=664';
+import * as sfx from './lib/sfx.js?v=664';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=664';
+import { glowTexture } from './lib/glow.js?v=664';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -307,6 +307,8 @@ const settings = {
   if (qp.get('names') === 'off') window.__namesOff = true;
   // a shared link names a world and a song — the visitor lands inside both
   if (qp.get('world') && Object.hasOwn(WORLDS, qp.get('world'))) window.__shareWorld = qp.get('world');
+  // the birthday link carries a NAME; the sky will say it at the finale
+  if (qp.get('bday')) window.__BDAY = qp.get('bday').replace(/[^\w '\-]/g, '').slice(0, 20).trim();
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
   // a scanned QR carries maximum intent: go=1 skips the landing entirely
@@ -459,7 +461,7 @@ document.querySelectorAll('#tabs .tab').forEach(t => {
 // fourteen wait one click behind SEE ALL — a shorter menu reads faster.
 window.__pickerInit = () => {
   const front = [...window.__FEATURED_KEYS, window.__WEEK_KEY].filter((k, i, a) => WORLDS[k] && a.indexOf(k) === i);
-  const rest = Object.keys(WORLDS).filter(k => !front.includes(k));
+  const rest = Object.keys(WORLDS).filter(k => !front.includes(k) && !WORLDS[k].occasion);
   const chips = $('world-chips');
   const mk = (key, extra) => {
     const b = document.createElement('button');
@@ -480,6 +482,7 @@ window.__pickerInit = () => {
   chips.parentElement.insertBefore(cap, chips.nextSibling);
 };
 for (const [key, w] of Object.entries(WORLDS)) {
+  if (w.occasion) continue;   // occasion worlds enter by invitation, not by menu
   const opt = document.createElement('option');
   opt.value = key; opt.textContent = w.label;
   $('world-select').appendChild(opt);
@@ -1729,7 +1732,7 @@ function applyPreset(cfg) {
 // ── Quick bar ── the handful of moves you make mid-song, one press each.
 // Everything here is a shortcut to something the panel can already do; the
 // panel stays for the deep settings nobody touches while a track is playing.
-const WORLD_KEYS = Object.keys(WORLDS);
+const WORLD_KEYS = Object.keys(WORLDS).filter(k => !WORLDS[k].occasion);
 
 // the walkable circuit: the featured pair + this week's guest. The other
 // fourteen are reachable on purpose (SEE ALL), never by accident.
@@ -2020,6 +2023,13 @@ setInterval(() => {
     if (blackBox.samples.length > 40) blackBox.samples.shift();
   } catch { /* the recorder must never be the crash */ }
 }, 1000);
+
+// the birthday finale: the world holds its breath, then the sky says the name
+document.addEventListener('fp-bday', () => {
+  const name = (window.__BDAY || '').toUpperCase();
+  announce(name ? 'HAPPY BIRTHDAY ' + name : 'HAPPY BIRTHDAY', 'make a wish', 4200, 'ember');
+  haptic([20, 60, 20, 60, 40]);
+});
 
 // ── the first-door promise ── a first-time visit OWES its rider a wonder
 // door inside the first stretch: the paint wave is the product's best
@@ -3597,6 +3607,7 @@ $('pl-go').addEventListener('click', () => {
       const wsel = $('pl-world');
       if (!wsel.options.length) {
         for (const k of Object.keys(WORLDS)) {
+          if (WORLDS[k].occasion) continue;
           const o = document.createElement('option');
           o.value = k; o.textContent = WORLDS[k].label;
           wsel.appendChild(o);
@@ -5264,7 +5275,7 @@ const FEATURED = ['tunnel'];
 // Weeks turn on SUNDAYS (epoch shifted 3 days — raw epoch weeks flip on
 // thursdays, which is nobody's church day).
 const WEEK_POOL = (() => {
-  const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer').sort();
+  const pool = Object.keys(WORLDS).filter(k => !FEATURED.includes(k) && k !== 'slide' && k !== 'surfer' && !WORLDS[k].occasion).sort();
   return ['slide', 'surfer', ...pool];
 })();
 // weeks flip SUNDAY 16:00 UTC (10am Mountain, noon Eastern): a Sunday

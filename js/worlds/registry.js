@@ -11,23 +11,24 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=663';
-import { createSurfer } from './surfer.js?v=663';
-import { createOrbit } from './orbit.js?v=663';
-import { createBloom } from './bloom.js?v=663';
-import { createTrail } from './trail.js?v=663';
-import { createSignal } from './signal.js?v=663';
-import { createRiver } from './river.js?v=663';
-import { createFunhouse } from './funhouse.js?v=663';
-import { createLavaLamp } from './lavalamp.js?v=663';
-import { createPlasma } from './plasma.js?v=663';
-import { createCherryLand } from './cherryland.js?v=663';
-import { createSlinky } from './slinky.js?v=663';
-import { createBlacktop } from './blacktop.js?v=663';
-import { createWaterslide } from './waterslide.js?v=663';
-import { createGarden } from './garden.js?v=663';
-import { createPaint } from './paint.js?v=663';
-import { createComets } from './comets.js?v=663';
+import { createTunnel } from './tunnel.js?v=664';
+import { createSurfer } from './surfer.js?v=664';
+import { createOrbit } from './orbit.js?v=664';
+import { createBloom } from './bloom.js?v=664';
+import { createTrail } from './trail.js?v=664';
+import { createSignal } from './signal.js?v=664';
+import { createRiver } from './river.js?v=664';
+import { createFunhouse } from './funhouse.js?v=664';
+import { createLavaLamp } from './lavalamp.js?v=664';
+import { createPlasma } from './plasma.js?v=664';
+import { createCherryLand } from './cherryland.js?v=664';
+import { createSlinky } from './slinky.js?v=664';
+import { createBlacktop } from './blacktop.js?v=664';
+import { createWaterslide } from './waterslide.js?v=664';
+import { createGarden } from './garden.js?v=664';
+import { createPaint } from './paint.js?v=664';
+import { createComets } from './comets.js?v=664';
+import { createBirthday } from './birthday.js?v=664';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe. clicks send shockwaves', label: 'TUNNEL',
@@ -66,4 +67,6 @@ export const WORLDS = {
             goal: 'ride the slide. hold down to go faster', label: 'SLIDE', create: createWaterslide },
   paint:  { pulse: 0.3, goal: 'spray the dead neon alight before it fades', label: 'PAINT', create: createPaint },
   garden: { pulse: 0.45, goal: 'sweep up the runes. three alike fuse', label: 'LUMEN', create: createGarden },
+  // occasion worlds: reached by a link with a name on it, never by rotation
+  birthday: { pulse: 0.7, occasion: true, goal: 'catch the flames. light every candle', label: 'BIRTHDAY', create: createBirthday },
 };
