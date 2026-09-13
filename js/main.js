@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=665';
-import { drawQR } from './lib/qr.js?v=665';
-import { WORLDS } from './worlds/registry.js?v=665';
-import { Net, PALETTE } from './net.js?v=665';
-import { Presence } from './lib/presence.js?v=665';
-import { Pulses } from './lib/pulse.js?v=665';
-import { BeatClock } from './lib/beatclock.js?v=665';
-import { BeatCue } from './lib/beatcue.js?v=665';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=665';
-import { Race, placeOf, standings } from './lib/race.js?v=665';
-import { Signals } from './lib/signals.js?v=665';
-import { pickShareLine, loadLines } from './lib/lines.js?v=665';
-import { RouteMap } from './lib/map.js?v=665';
-import * as sfx from './lib/sfx.js?v=665';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=665';
-import { glowTexture } from './lib/glow.js?v=665';
+import { AudioEngine } from './audio-engine.js?v=666';
+import { drawQR } from './lib/qr.js?v=666';
+import { WORLDS } from './worlds/registry.js?v=666';
+import { Net, PALETTE } from './net.js?v=666';
+import { Presence } from './lib/presence.js?v=666';
+import { Pulses } from './lib/pulse.js?v=666';
+import { BeatClock } from './lib/beatclock.js?v=666';
+import { BeatCue } from './lib/beatcue.js?v=666';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=666';
+import { Race, placeOf, standings } from './lib/race.js?v=666';
+import { Signals } from './lib/signals.js?v=666';
+import { pickShareLine, loadLines } from './lib/lines.js?v=666';
+import { RouteMap } from './lib/map.js?v=666';
+import * as sfx from './lib/sfx.js?v=666';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=666';
+import { glowTexture } from './lib/glow.js?v=666';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -310,7 +310,7 @@ const settings = {
   // the birthday link carries a NAME; the sky will say it at the finale.
   // candles= puts their age on the cake; note= is the giver's own words.
   if (qp.get('bday')) window.__BDAY = qp.get('bday').replace(/[^\w '\-]/g, '').slice(0, 20).trim();
-  if (qp.get('candles')) window.__BDAY_N = Math.max(1, Math.min(40, Math.round(+qp.get('candles')) || 0)) || 0;
+  if (qp.get('candles')) window.__BDAY_N = Math.max(1, Math.min(72, Math.round(+qp.get('candles')) || 0)) || 0;
   if (qp.get('note')) window.__BDAY_NOTE = qp.get('note').replace(/[^\w ,.'!\-]/g, '').slice(0, 60).trim();
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');

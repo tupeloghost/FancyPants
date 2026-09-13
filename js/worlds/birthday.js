@@ -6,14 +6,16 @@
 // lantern richer. Chic and starry, never arcade: the celebration is light.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=665';
-import { themePaint } from '../lib/themes.js?v=665';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=666';
+import { themePaint } from '../lib/themes.js?v=666';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
 const FLAMES = LITE ? 6 : 9;         // drifting catchables alive at once
 const STARS = LITE ? 400 : 700;
 const BURSTS = LITE ? 6 : 10;        // firework spark clouds in the pool
+const SPRINKLES = LITE ? 80 : 140;   // candy specks scattered on the tier tops
+const RAIN = LITE ? 120 : 220;       // sprinkles falling from the fireworks
 
 export function createBirthday() {
   // the cake carries THEIR count when the link says so (candles=age)
@@ -21,6 +23,8 @@ export function createBirthday() {
   let scene, camera, group;
   let sky, stars, cake, rims = [], candles = [], flames = [], bursts = [], lanterns = [];
   let rings = [];                      // firework halo rings (torus pool)
+  let sprinkles = null, rain = null;   // candy on the cake; candy from the sky
+  let rainDrops = [], rainOn = 0;
   let player, halo;
   let steer = { x: 0, y: 0 }, steerTarget = { x: 0, y: 0 };
   let lit = 0, finales = 0;
@@ -117,6 +121,34 @@ export function createBirthday() {
         cake.add(c);
         candles.push(c);
       }
+      // ── sprinkles: candy specks scattered on every tier top, glinting ──
+      const sprGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.5, 6);
+      const sprMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+      sprinkles = new THREE.InstancedMesh(sprGeo, sprMat, SPRINKLES);
+      const dum = new THREE.Object3D();
+      const tierTops = [[17, 12, 6], [12, 7.6, 11.2], [7.6, 5.6, 15.8]];
+      for (let i = 0; i < SPRINKLES; i++) {
+        const [ro, ri, y] = tierTops[i % 3];
+        const rr = ri + Math.random() * (ro - ri - 0.6);
+        const aa = Math.random() * Math.PI * 2;
+        dum.position.set(Math.cos(aa) * rr, y + 0.12, Math.sin(aa) * rr);
+        dum.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.5, 0, Math.random() * Math.PI);
+        dum.updateMatrix();
+        sprinkles.setMatrixAt(i, dum.matrix);
+      }
+      sprinkles.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(SPRINKLES * 3), 3);
+      cake.add(sprinkles);
+
+      // ── sprinkle RAIN: falls from the fireworks, tumbling ──
+      rain = new THREE.InstancedMesh(sprGeo.clone(), new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.95 }), RAIN);
+      rain.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(RAIN * 3), 3);
+      rain.visible = false;
+      rain.frustumCulled = false;
+      group.add(rain);
+      rainDrops = [];
+      for (let i = 0; i < RAIN; i++) rainDrops.push({ x: 0, y: -99, z: 0, vx: 0, vy: 0, spin: Math.random() * 6, tumble: 1 + Math.random() * 3 });
+      rainOn = 0;
+
       cake.position.set(0, -10, -40);
       group.add(cake);
 
@@ -225,6 +257,17 @@ export function createBirthday() {
         cake.children[i * 2].material.color.copy(color);
       });
       cake.rotation.y = time * 0.05;
+      {
+        const ic = sprinkles.instanceColor;
+        for (let i = 0; i < SPRINKLES; i++) {
+          const sd = i * 0.618 % 1;
+          paint(sd, audio.treble);
+          const glint = 0.45 + Math.abs(Math.sin(time * 3 + i * 1.7)) * 0.25 + audio.treble * 0.25;
+          color.setHSL(tp[0], Math.max(0.55, tp[1]), Math.min(0.75, glint) * dim);
+          ic.setXYZ(i, color.r, color.g, color.b);
+        }
+        ic.needsUpdate = true;
+      }
 
       // candles: lit ones flicker like real flames, unlit ones wait
       candles.forEach((c, i) => {
@@ -305,6 +348,18 @@ export function createBirthday() {
             m.material.color.copy(color);
           }
           if (opts.impact) opts.impact(0.5);
+          // every burst sheds a handful of falling sprinkles
+          rain.visible = true; rainOn = 6;
+          let seeded = 0;
+          for (const d of rainDrops) {
+            if (d.y > -90 || seeded >= RAIN / 4) continue;
+            seeded++;
+            d.x = at.x + (Math.random() * 2 - 1) * 6;
+            d.y = at.y + (Math.random() * 2 - 1) * 3;
+            d.z = at.z + (Math.random() * 2 - 1) * 6;
+            d.vx = (Math.random() * 2 - 1) * 2.5;
+            d.vy = 1 + Math.random() * 2;
+          }
           if (this._volleys === 2) document.dispatchEvent(new CustomEvent('fp-lookspark'));
         }
         if (this._sung && this._volleys <= 0 && stateT > this._nextVolley + 2.5) {
@@ -331,6 +386,31 @@ export function createBirthday() {
         }
         posA.needsUpdate = true;
         b.material.opacity = Math.min(1, b.userData.life * 1.6);
+      }
+      if (rain.visible) {
+        rainOn -= dt;
+        const dum2 = this._dum2 || (this._dum2 = new THREE.Object3D());
+        const ic = rain.instanceColor;
+        let alive = 0;
+        for (let i = 0; i < RAIN; i++) {
+          const d = rainDrops[i];
+          if (d.y <= -90) { dum2.position.set(0, -999, 0); dum2.updateMatrix(); rain.setMatrixAt(i, dum2.matrix); continue; }
+          alive++;
+          d.vy -= dt * 5;
+          d.x += d.vx * dt;
+          d.y += d.vy * dt;
+          if (d.y < -14) { d.y = -99; continue; }
+          dum2.position.set(d.x, d.y, d.z);
+          dum2.rotation.set(time * d.tumble + d.spin, d.spin, time * d.tumble * 0.7);
+          dum2.updateMatrix();
+          rain.setMatrixAt(i, dum2.matrix);
+          paint((i * 0.618) % 1, 1);
+          color.setHSL(tp[0], Math.max(0.6, tp[1]), 0.6);
+          ic.setXYZ(i, color.r, color.g, color.b);
+        }
+        rain.instanceMatrix.needsUpdate = true;
+        ic.needsUpdate = true;
+        if (!alive && rainOn <= 0) rain.visible = false;
       }
       for (const m of rings) {
         if (!m.visible) continue;
