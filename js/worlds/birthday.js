@@ -1,21 +1,24 @@
 // BIRTHDAY — an occasion world, reached by a link with a name on it, never
-// by the weekly rotation. A grand dark cake stands on a night horizon under
-// drifting golden flames. Catch a flame and a candle lights; light them all
-// and the world holds its breath, the candles go out together, and the sky
-// answers with fireworks and their name. Then it all begins again, one
-// lantern richer. Chic and starry, never arcade: the celebration is light.
+// by the weekly rotation. You FLY the night in a slow orbit around a grand
+// velvet cake, chasing golden flames. Catch up to three, they ride your
+// tail like fireflies, and a swoop past the cake delivers them: candles
+// light in a run of pops. Tap and the nearest flame answers, darting to
+// your hand. Light them all and the world holds its breath, the candles go
+// out together, and the sky answers with fireworks and their name. Then it
+// begins again, one lantern richer. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=667';
-import { themePaint } from '../lib/themes.js?v=667';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=668';
+import { themePaint } from '../lib/themes.js?v=668';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
-const FLAMES = LITE ? 6 : 9;         // drifting catchables alive at once
+const FLAMES = LITE ? 7 : 10;        // flames alive in the orbit at once
 const STARS = LITE ? 400 : 700;
 const BURSTS = LITE ? 6 : 10;        // firework spark clouds in the pool
 const SPRINKLES = LITE ? 80 : 140;   // candy specks scattered on the tier tops
 const RAIN = LITE ? 120 : 220;       // sprinkles falling from the fireworks
+const CARRY = 3;                     // fireflies your light can tow at once
 
 export function createBirthday() {
   // the cake carries THEIR count when the link says so (candles=age)
@@ -27,12 +30,17 @@ export function createBirthday() {
   let rainDrops = [], rainOn = 0;
   let player, halo;
   let steer = { x: 0, y: 0 }, steerTarget = { x: 0, y: 0 };
+  let ang = 0, orbitR = 22, heightY = 3;
+  let carried = [];                    // flames riding the tail
+  let deliverT = 0, deliverQueue = 0;  // candles waiting to pop after a swoop
+  let surge = 0;                       // HOLD: the night rushes
   let lit = 0, finales = 0;
   let state = 'gather';                // gather -> hush -> blow -> encore
   let stateT = 0;
-  let tapGlit = 0;
+  let tapGlit = 0, callPulse = 0;
   let wishStar = null, numberPlate = null;
   const color = new THREE.Color();
+  const CAKE_POS = new THREE.Vector3(0, -10, 0);   // the cake IS the center now
 
   const mkFlame = () => {
     const g = new THREE.Group();
@@ -42,19 +50,21 @@ export function createBirthday() {
       new THREE.MeshBasicMaterial({ color: 0xfff2d0, toneMapped: false })
     );
     g.add(s, core);
-    g.userData = { s, core, seed: Math.random() * 100, live: false };
+    g.userData = { s, core, seed: Math.random() * 100, live: false, dart: 0, a: 0, r: 0, y: 0 };
     return g;
   };
 
-  const dealFlame = (f, far) => {
-    f.userData.live = true;
+  // flames live in the ORBIT: an angle, a radius, a height, all drifting
+  const dealFlame = (f) => {
+    const u = f.userData;
+    u.live = true;
+    u.dart = 0;
     f.visible = true;
-    f.position.set(
-      (Math.random() * 2 - 1) * 9,
-      (Math.random() * 2 - 1) * 5.5,
-      far ? -70 - Math.random() * 30 : -20 - Math.random() * 60
-    );
-    f.userData.seed = Math.random() * 100;
+    u.a = Math.random() * Math.PI * 2;
+    u.r = 17 + Math.random() * 16;
+    u.y = -1 + Math.random() * 9;
+    u.seed = Math.random() * 100;
+    f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
   };
 
   return {
@@ -64,7 +74,7 @@ export function createBirthday() {
       scene = _scene; camera = _camera;
       group = new THREE.Group();
       scene.add(group);
-      scene.fog = new THREE.FogExp2(0x05030a, 0.007);
+      scene.fog = new THREE.FogExp2(0x05030a, 0.0065);
 
       sky = skyDome(300, 0);
       group.add(sky);
@@ -101,7 +111,6 @@ export function createBirthday() {
         rims.push(rim);
         ty += h;
       }
-      // thirteen candles in a circle on the top tier
       const twoRows = CANDLES > 20;
       for (let i = 0; i < CANDLES; i++) {
         const row = twoRows ? i % 2 : 0;
@@ -150,7 +159,8 @@ export function createBirthday() {
       for (let i = 0; i < RAIN; i++) rainDrops.push({ x: 0, y: -99, z: 0, vx: 0, vy: 0, spin: Math.random() * 6, tumble: 1 + Math.random() * 3 });
       rainOn = 0;
 
-      // their number in gold on the middle tier, when the link carries one
+      // their number in gold, riding just above the candles so it reads
+      // from every side of the orbit (it turns to face the rider each frame)
       if (window.__BDAY_N) {
         const cv = document.createElement('canvas');
         cv.width = 256; cv.height = 256;
@@ -167,19 +177,17 @@ export function createBirthday() {
           new THREE.PlaneGeometry(6.5, 6.5),
           new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false, depthWrite: false })
         );
-        // pinned in front of the middle tier, facing the rider always -
-        // a number that turns its back half the time is no number at all
-        numberPlate.position.set(0, -1.4, -27.4);
+        numberPlate.position.set(0, CAKE_POS.y + ty + 7.5, 0);
         group.add(numberPlate);
       }
 
-      cake.position.set(0, -10, -40);
+      cake.position.copy(CAKE_POS);
       group.add(cake);
 
-      // ── the drifting flames you catch ──
+      // ── the flames, dealt into the orbit ──
       for (let i = 0; i < FLAMES; i++) {
         const f = mkFlame();
-        dealFlame(f, false);
+        dealFlame(f);
         group.add(f);
         flames.push(f);
       }
@@ -215,7 +223,7 @@ export function createBirthday() {
       lanterns = [];
       this._lanternWant = 4;
 
-      // the player's mote: a soft light with a halo, steered through the field
+      // the player's light, towing its fireflies
       player = new THREE.Mesh(
         new THREE.SphereGeometry(0.5, 12, 12),
         new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })
@@ -225,27 +233,38 @@ export function createBirthday() {
       group.add(player);
 
       lit = 0; finales = 0; state = 'gather'; stateT = 0;
+      ang = 0; orbitR = 22; heightY = 3; carried = []; deliverQueue = 0; surge = 0;
       // dev handle: light every candle and audition the ceremony
       window.__bdayFinale = () => {
         candles.forEach(c => { c.userData.on = true; });
         lit = CANDLES;
         state = 'hush'; stateT = 0;
       };
-      camera.position.set(0, 1.5, 14);
-      camera.lookAt(0, 0, -30);
       camera.fov = 74;
       camera.updateProjectionMatrix();
     },
 
     setInput(x, y) { steerTarget.x = x || 0; steerTarget.y = y || 0; },
 
+    // everyone flies the same orbit, offset around the ring
     placeGhost(p, i, out) {
-      out.set((p.x || 0) * 8, (p.y || 0) * 5, -8 - (i % 6) * 4);
+      const r = 22 + (p.x || 0) * 8;
+      const a = ang + 0.9 + i * 1.3;
+      out.set(Math.cos(a) * r, 3 + (p.y || 0) * 5, Math.sin(a) * r);
     },
 
     onTap() {
       tapGlit = 1;
-      if (state === 'hush') { state = 'blow'; stateT = 0; }   // a tap blows early
+      callPulse = 1;
+      if (state === 'hush') { state = 'blow'; stateT = 0; return; }
+      // the CALL: the nearest free flame answers your light and darts to you
+      let best = null, bd = 40;
+      for (const f of flames) {
+        if (!f.userData.live || f.userData.dart > 0) continue;
+        const d = f.position.distanceTo(player.position);
+        if (d < bd) { bd = d; best = f; }
+      }
+      if (best) best.userData.dart = 1.6;
     },
 
     // one firework: a spark burst, a halo ring, and a shed of sprinkles
@@ -291,10 +310,18 @@ export function createBirthday() {
       const paint = (u, lvl) => { themePaint(colorMode, hue / 360, u, time * 0.15, time, lvl, (u * 7.13) % 1, tp); return tp; };
       const chorus = opts.chorus || 0;
 
-      if (attract) { steerTarget.x = Math.sin(time * 0.4) * 0.7; steerTarget.y = Math.cos(time * 0.3) * 0.5; }
+      if (attract) { steerTarget.x = Math.sin(time * 0.3) * 0.6; steerTarget.y = Math.sin(time * 0.23) * 0.5; }
       steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 7);
       steer.y += (steerTarget.y - steer.y) * Math.min(1, dt * 7);
-      player.position.set(steer.x * 8, steer.y * 5, 0);
+
+      // ── the RIDE: a night orbit around the cake, always moving ──
+      // steer x picks how wide you fly, y how high; HOLD opens the throttle
+      surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * 4);
+      const gatherK = state === 'gather' ? 1 : 0.25;   // the ceremony slows the sky
+      ang += dt * (0.42 + audio.volume * 0.25 * reactivity + surge * 0.5 + chorus * 0.12) * gatherK;
+      orbitR += ((26 + steer.x * 10) - orbitR) * Math.min(1, dt * 5);
+      heightY += ((3.5 + steer.y * 6) - heightY) * Math.min(1, dt * 5);
+      player.position.set(Math.cos(ang) * orbitR, heightY, Math.sin(ang) * orbitR);
       if (participants && participants[0]) { participants[0].x = steer.x; participants[0].y = steer.y; }
 
       const hushK = state === 'hush' ? Math.min(1, stateT / 0.8) : (state === 'blow' ? Math.max(0, 1 - stateT / 1.5) : 0);
@@ -307,8 +334,7 @@ export function createBirthday() {
       stars.material.opacity = (0.5 + audio.high * 0.3) * dim;
       stars.rotation.y = time * 0.004;
 
-      // cake rims breathe with the bass, each tier its own voice; the velvet
-      // bodies carry a whisper of the same color so the silhouette reads
+      // cake rims breathe with the bass; the velvet carries a whisper of theme
       rims.forEach((rim, i) => {
         paint(0.15 + i * 0.25, audio.bass);
         color.setHSL(tp[0], tp[1], Math.min(0.62, (0.4 + audio.bass * 0.3) * Math.min(1.3, tp[2])) * dim);
@@ -318,6 +344,7 @@ export function createBirthday() {
         cake.children[i * 2].material.color.copy(color);
       });
       cake.rotation.y = time * 0.05;
+      if (numberPlate) numberPlate.lookAt(camera.position);
       {
         const ic = sprinkles.instanceColor;
         for (let i = 0; i < SPRINKLES; i++) {
@@ -346,34 +373,78 @@ export function createBirthday() {
         }
       });
 
-      // ── the drifting flames ──
-      const speed = (7 + audio.volume * 6 * reactivity) * (state === 'gather' ? 1 : 0.15);
-      for (const f of flames) {
-        if (!f.userData.live) continue;
-        f.position.z += speed * dt;
-        f.position.x += Math.sin(time * 1.3 + f.userData.seed) * dt * 1.6;
-        f.position.y += Math.cos(time * 1.1 + f.userData.seed) * dt * 1.2;
-        const flick = 0.8 + Math.sin(time * 8 + f.userData.seed) * 0.2;
-        color.setHSL(0.1, 0.85, 0.55 + audio.treble * 0.2);
-        f.userData.s.material.color.copy(color);
-        f.userData.s.material.opacity = (0.55 + audio.treble * 0.3) * flick * dim;
-        f.userData.s.scale.setScalar((1 + chorus * 0.5) * flick);
-        if (f.position.z > 6) dealFlame(f, true);   // sailed past: comes back around
-        // the catch: close enough is caught, and a candle answers
-        if (state === 'gather' && lit < CANDLES && f.position.distanceTo(player.position) < 2.4) {
-          dealFlame(f, true);
-          const c = candles[lit];
-          c.userData.on = true;
-          c.userData.pop = 1;
-          lit++;
-          tapGlit = Math.max(tapGlit, 0.6);
-          if (opts.impact) opts.impact(0.45);
-          // every twelfth candle, the cake celebrates the progress with him
-          if (lit % 12 === 0 && lit < CANDLES) {
-            this._fire(new THREE.Vector3((Math.random() * 2 - 1) * 14, 12, -38), opts, paint, tp);
+      // a swoop's delivery lights candles one by one, each with a pop
+      if (deliverQueue > 0) {
+        deliverT -= dt;
+        if (deliverT <= 0) {
+          deliverT = 0.16;
+          deliverQueue--;
+          if (lit < CANDLES) {
+            const c = candles[lit];
+            c.userData.on = true;
+            c.userData.pop = 1;
+            lit++;
+            if (opts.impact) opts.impact(0.35);
+            // every twelfth candle, the cake celebrates the progress
+            if (lit % 12 === 0 && lit < CANDLES) {
+              this._fire(new THREE.Vector3((Math.random() * 2 - 1) * 14, 14, (Math.random() * 2 - 1) * 14), opts, paint, tp);
+            }
+            if (lit >= CANDLES) { state = 'hush'; stateT = 0; }
           }
-          if (lit >= CANDLES) { state = 'hush'; stateT = 0; }
         }
+      }
+
+      // ── the flames: drifting the orbit, answering the call, riding the tail ──
+      for (const f of flames) {
+        const u = f.userData;
+        if (!u.live) continue;
+        const flick = 0.8 + Math.sin(time * 8 + u.seed) * 0.2;
+        color.setHSL(0.1, 0.85, 0.55 + audio.treble * 0.2);
+        u.s.material.color.copy(color);
+        u.s.material.opacity = (0.55 + audio.treble * 0.3) * flick * dim;
+        u.s.scale.setScalar((1 + chorus * 0.5 + (u.dart > 0 ? 0.5 : 0)) * flick);
+        if (u.dart > 0) {
+          // called: it darts for your light
+          u.dart -= dt;
+          f.position.lerp(player.position, Math.min(1, dt * 3.2));
+        } else {
+          // drifting its own slow lap, breathing up and down
+          u.a += dt * 0.06 * (state === 'gather' ? 1 : 0.2);
+          u.y += Math.sin(time * 0.8 + u.seed) * dt * 0.6;
+          f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
+        }
+        // the catch: your light takes it, up to three at a time
+        if (state === 'gather' && carried.length < CARRY && f.position.distanceTo(player.position) < 3.1) {
+          u.live = false;
+          f.visible = true;             // it stays visible: now it rides the tail
+          carried.push(f);
+          tapGlit = Math.max(tapGlit, 0.6);
+          if (opts.impact) opts.impact(0.3 + carried.length * 0.1);
+        }
+      }
+
+      // carried flames trail the player like fireflies on a string
+      carried.forEach((f, i) => {
+        const back = ang - (i + 1) * 0.14;
+        const target = this._tv || (this._tv = new THREE.Vector3());
+        target.set(Math.cos(back) * orbitR, heightY + 0.4 + i * 0.3, Math.sin(back) * orbitR);
+        f.position.lerp(target, Math.min(1, dt * 6));
+        f.userData.s.material.opacity = 0.8;
+        f.userData.s.scale.setScalar(0.8);
+      });
+
+      // ── the delivery: swoop CLOSE over the cake and the candles take them ──
+      const flat = Math.hypot(player.position.x, player.position.z);
+      if (state === 'gather' && carried.length && flat < 15.5) {
+        deliverQueue += carried.length;
+        if (carried.length === CARRY) {
+          // a full string of three earns its own firework
+          this._fire(player.position.clone(), opts, paint, tp);
+        }
+        for (const f of carried) { dealFlame(f); }
+        carried = [];
+        deliverT = 0;
+        if (opts.impact) opts.impact(0.5);
       }
 
       // ── the ceremony ──
@@ -382,7 +453,6 @@ export function createBirthday() {
       if (state === 'blow') {
         if (stateT > 1.1 && !this._sung) {
           this._sung = true;
-          // the sky answers: fireworks, their name, and the house repaint
           document.dispatchEvent(new CustomEvent('fp-bday'));
           this._volleys = 5;
           this._nextVolley = 0;
@@ -391,13 +461,11 @@ export function createBirthday() {
         if (this._sung && this._volleys > 0 && stateT > this._nextVolley + 1.1) {
           this._nextVolley = stateT;
           this._volleys--;
-          const at = new THREE.Vector3((Math.random() * 2 - 1) * 26, 8 + Math.random() * 14, -46 - Math.random() * 20);
+          const at = new THREE.Vector3((Math.random() * 2 - 1) * 26, 8 + Math.random() * 14, (Math.random() * 2 - 1) * 26);
           this._fire(at, opts, paint, tp);
           if (this._volleys === 2) document.dispatchEvent(new CustomEvent('fp-lookspark'));
         }
-
         if (this._sung && this._volleys <= 0 && stateT > this._nextVolley + 2.5) {
-          // the encore: candles rest, lanterns rise, it begins again
           this._sung = false;
           finales++;
           this._lanternWant = Math.min(20, 4 + finales * 3);
@@ -419,7 +487,7 @@ export function createBirthday() {
           tail.position.x = 13.5;
           const g2 = new THREE.Group();
           g2.add(star, tail);
-          g2.position.set(46, 34, -70);
+          g2.position.set(camera.position.x + 46, 34, camera.position.z - 40);
           g2.rotation.z = -0.28;
           group.add(g2);
           wishStar.m = g2; wishStar.star = star; wishStar.tail = tail;
@@ -488,7 +556,7 @@ export function createBirthday() {
       // lanterns drift up forever, one warm light per finale survived
       while (lanterns.length < this._lanternWant) {
         const l = glowSprite(5);
-        l.position.set((Math.random() * 2 - 1) * 50, -12 + Math.random() * 8, -30 - Math.random() * 60);
+        l.position.set((Math.random() * 2 - 1) * 50, -12 + Math.random() * 8, (Math.random() * 2 - 1) * 50);
         l.userData = { seed: Math.random() * 100, rise: 0.5 + Math.random() * 0.6 };
         group.add(l);
         lanterns.push(l);
@@ -503,30 +571,39 @@ export function createBirthday() {
         l.scale.setScalar(0.8 + Math.sin(time * 1.5 + l.userData.seed) * 0.15);
       }
 
-      // the player's light answers taps with a glitter swell
+      // the player's light answers taps; the call sends a visible pulse ring
       tapGlit = Math.max(0, tapGlit - dt * 1.6);
+      callPulse = Math.max(0, callPulse - dt * 2.2);
       paint(0.5, audio.mid);
       color.setHSL(tp[0], tp[1], Math.min(0.75, 0.55 + tapGlit * 0.3));
       player.material.color.copy(color);
       halo.material.color.copy(color);
       halo.material.opacity = 0.35 + tapGlit * 0.4 + audio.beatIntensity * 0.15;
-      halo.scale.setScalar(1 + tapGlit * 1.2 + audio.bass * 0.3);
+      halo.scale.setScalar(1 + tapGlit * 1.2 + callPulse * 1.8 + audio.bass * 0.3 + carried.length * 0.25);
 
-      // camera: a slow waltz, leaning where you steer
-      camera.position.set(steer.x * 2.5 + Math.sin(time * 0.1) * 1.5, 1.5 + steer.y * 1.5, 14 - chorus * 1.5);
-      camera.lookAt(steer.x * 3, steer.y * 2, -40);
-      const fovT = 74 + audio.volume * 6 * reactivity + hushK * -6;
+      // ── the chase camera: behind the rider, the night streaming past ──
+      const camBack = ang - 0.34;
+      const camR = orbitR + 7 - surge * 2.5;
+      const cx = Math.cos(camBack) * camR, cz = Math.sin(camBack) * camR;
+      camera.position.lerp(this._cv || (this._cv = new THREE.Vector3(cx, heightY + 3.2, cz)), 0);
+      this._cv.set(cx, heightY + 3.2 + Math.sin(time * 0.3) * 0.6, cz);
+      camera.position.lerp(this._cv, Math.min(1, dt * 4));
+      const look = this._lv || (this._lv = new THREE.Vector3());
+      // look ahead of the rider, with the cake sweeping through frame
+      look.set(Math.cos(ang + 0.5) * orbitR * 0.55, heightY * 0.6 + 1.5, Math.sin(ang + 0.5) * orbitR * 0.55);
+      camera.lookAt(look);
+      const fovT = 74 + audio.volume * 6 * reactivity + surge * 8 + hushK * -6;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
       camera.updateProjectionMatrix();
 
-      // the quiet HUD: how many candles wait (the cake shows it, this confirms)
+      // the quiet HUD: candles lit, and fireflies on the string
       if (window.__setFigure) window.__setFigure('CANDLES', lit, CANDLES);
     },
 
     dispose() {
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       scene.remove(group);
-      rims = []; candles = []; flames = []; bursts = []; rings = []; lanterns = [];
+      rims = []; candles = []; flames = []; bursts = []; rings = []; lanterns = []; carried = [];
       if (window.__setFigure) window.__setFigure(null);
     },
   };
