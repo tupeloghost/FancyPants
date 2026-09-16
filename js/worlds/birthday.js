@@ -8,8 +8,8 @@
 // begins again, one lantern richer. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=676';
-import { themePaint } from '../lib/themes.js?v=676';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=679';
+import { themePaint } from '../lib/themes.js?v=679';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -56,15 +56,17 @@ export function createBirthday() {
     return g;
   };
 
-  // flames live in the ORBIT: an angle, a radius, a height, all drifting
+  // flames deal AHEAD of the rider on the orbit: they come to meet you like
+  // gates, and catching is a matter of lane (how wide, how high) - the same
+  // steering grammar as the slide's rings
   const dealFlame = (f) => {
     const u = f.userData;
     u.live = true;
     u.dart = 0;
     f.visible = true;
-    u.a = Math.random() * Math.PI * 2;
-    u.r = 17 + Math.random() * 16;
-    u.y = -1 + Math.random() * 9;
+    u.a = ang + 0.7 + Math.random() * 3.6;
+    u.r = 19 + Math.random() * 14;
+    u.y = 0 + Math.random() * 8;
     u.seed = Math.random() * 100;
     f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
   };
@@ -225,6 +227,15 @@ export function createBirthday() {
       lanterns = [];
       this._lanternWant = 4;
 
+      // the delivery beacon: a pillar of light over the candles that only
+      // stands while you carry - the unmistakable 'bring them here'
+      this._beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.6, 2.6, 46, 16, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0, side: THREE.DoubleSide, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false })
+      );
+      this._beam.position.set(0, CAKE_POS.y + 38, 0);
+      group.add(this._beam);
+
       // the player's light, towing its fireflies
       player = new THREE.Mesh(
         new THREE.SphereGeometry(0.5, 12, 12),
@@ -322,8 +333,8 @@ export function createBirthday() {
       const aliveK = Math.min(1, Math.max(lit / CANDLES, finales > 0 ? 0.35 : 0));
 
       if (attract) { steerTarget.x = Math.sin(time * 0.3) * 0.6; steerTarget.y = Math.sin(time * 0.23) * 0.5; }
-      steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 7);
-      steer.y += (steerTarget.y - steer.y) * Math.min(1, dt * 7);
+      steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 3);
+      steer.y += (steerTarget.y - steer.y) * Math.min(1, dt * 3);
 
       // ── the RIDE: a night orbit around the cake, always moving ──
       // steer x picks how wide you fly, y how high; HOLD opens the throttle
@@ -440,31 +451,52 @@ export function createBirthday() {
       }
 
       // ── the flames: drifting the orbit, answering the call, riding the tail ──
+      // which flame is NEXT on the path? it wears a beacon so there is
+      // always exactly one visible thing to want, a few seconds away
+      let nextF = null, nextGap = 9;
+      for (const f of flames) {
+        const u = f.userData;
+        if (!u.live || u.dart > 0) continue;
+        const gap = ((u.a - ang) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        if (gap > 0.1 && gap < nextGap) { nextGap = gap; nextF = f; }
+      }
       for (const f of flames) {
         const u = f.userData;
         if (!u.live) continue;
         const flick = 0.8 + Math.sin(time * 8 + u.seed) * 0.2;
-        color.setHSL(0.1, 0.85, 0.55 + audio.treble * 0.2);
+        const isNext = f === nextF;
+        color.setHSL(0.1, 0.85, (isNext ? 0.68 : 0.5) + audio.treble * 0.2);
         u.s.material.color.copy(color);
-        u.s.material.opacity = (0.55 + audio.treble * 0.3) * flick * dim;
-        u.s.scale.setScalar((1 + chorus * 0.5 + (u.dart > 0 ? 0.5 : 0)) * flick);
+        u.s.material.opacity = ((isNext ? 0.85 : 0.45) + audio.treble * 0.25) * flick * dim;
+        u.s.scale.setScalar((1 + chorus * 0.5 + (u.dart > 0 ? 0.5 : 0) + (isNext ? 0.45 + Math.sin(time * 4) * 0.15 : 0)) * flick);
         if (u.dart > 0) {
           // called: it darts for your light
           u.dart -= dt;
           f.position.lerp(player.position, Math.min(1, dt * 3.2));
-        } else {
-          // drifting its own slow lap, breathing up and down
-          u.a += dt * (0.05 + 0.06 * aliveK) * (state === 'gather' ? 1 : 0.2);
-          u.y += Math.sin(time * 0.8 + u.seed) * dt * 0.6;
-          f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
+          if (state === 'gather' && carried.length < CARRY && f.position.distanceTo(player.position) < 4) {
+            u.live = false;
+            carried.push(f);
+            tapGlit = Math.max(tapGlit, 0.6);
+            if (opts.impact) opts.impact(0.3 + carried.length * 0.1);
+          }
+          continue;
         }
-        // the catch: your light takes it, up to three at a time
-        if (state === 'gather' && carried.length < CARRY && f.position.distanceTo(player.position) < 3.1) {
-          u.live = false;
-          f.visible = true;             // it stays visible: now it rides the tail
-          carried.push(f);
-          tapGlit = Math.max(tapGlit, 0.6);
-          if (opts.impact) opts.impact(0.3 + carried.length * 0.1);
+        // it holds its post, breathing, waiting for you to come around
+        u.y += Math.sin(time * 0.8 + u.seed) * dt * 0.5;
+        f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
+        // fell behind the rider? deal it ahead again
+        const behind = ((ang - u.a) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        if (behind > 0.25 && behind < Math.PI) dealFlame(f);
+        // the catch is CYLINDRICAL and generous: right lane, right height,
+        // as your sweep carries you through - tangential speed never punishes
+        if (state === 'gather' && carried.length < CARRY) {
+          const gap = Math.abs(((u.a - ang + Math.PI) % (Math.PI * 2)) - Math.PI);
+          if (gap < 0.14 && Math.abs(u.r - orbitR) < 6 && Math.abs(u.y - heightY) < 4.5) {
+            u.live = false;
+            carried.push(f);
+            tapGlit = Math.max(tapGlit, 0.6);
+            if (opts.impact) opts.impact(0.3 + carried.length * 0.1);
+          }
         }
       }
 
@@ -479,8 +511,12 @@ export function createBirthday() {
       });
 
       // ── the delivery: swoop CLOSE over the cake and the candles take them ──
+      this._beam.material.opacity = carried.length
+        ? (0.1 + carried.length * 0.06 + Math.sin(time * 3) * 0.05) * dim
+        : Math.max(0, this._beam.material.opacity - dt * 2);
+      this._beam.rotation.y = time * 0.4;
       const flat = Math.hypot(player.position.x, player.position.z);
-      if (state === 'gather' && carried.length && flat < 15.5) {
+      if (state === 'gather' && carried.length && flat < 20) {
         deliverQueue += carried.length;
         if (carried.length === CARRY) {
           // a full string of three earns its own firework
@@ -659,7 +695,7 @@ export function createBirthday() {
       camera.position.lerp(this._cv, Math.min(1, dt * 4));
       const look = this._lv || (this._lv = new THREE.Vector3());
       // look ahead of the rider, with the cake sweeping through frame
-      look.set(Math.cos(ang + 0.5) * orbitR * 0.55, heightY * 0.6 + 1.5, Math.sin(ang + 0.5) * orbitR * 0.55);
+      look.set(Math.cos(ang + 0.55) * orbitR * 0.85, heightY * 0.75 + 1, Math.sin(ang + 0.55) * orbitR * 0.85);
       camera.lookAt(look);
       const fovT = 74 + aliveK * 2 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * 8 + hushK * -6;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
@@ -667,7 +703,7 @@ export function createBirthday() {
 
       // the quiet HUD: candles lit, and fireflies on the string
       if (window.__setFigure) window.__setFigure('CANDLES', lit, CANDLES);
-      window.__bdayInfo = { state, lit, blowProg: Math.round(blowProg * 100) / 100, stateT: Math.round(stateT * 10) / 10, dt: Math.round(dt * 1000), mic: window.__blowLevel === undefined ? 'undef' : window.__blowLevel === null ? 'null' : 'live' };
+      window.__bdayInfo = { state, lit, carried: carried.length, r: Math.round(orbitR), sx: Math.round(steer.x * 100) / 100, att: !!attract, blowProg: Math.round(blowProg * 100) / 100, stateT: Math.round(stateT * 10) / 10, dt: Math.round(dt * 1000), mic: window.__blowLevel === undefined ? 'undef' : window.__blowLevel === null ? 'null' : 'live' };
     },
 
     dispose() {
