@@ -4,8 +4,8 @@
 // explosive. No fail state.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=668';
-import { themePaint } from '../lib/themes.js?v=668';
+import { glowSprite, glowPoints, glowTexture, skyDome } from '../lib/glow.js?v=671';
+import { themePaint } from '../lib/themes.js?v=671';
 
 
 const MAX_CRYSTALS = 3200;

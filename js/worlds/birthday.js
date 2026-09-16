@@ -8,8 +8,8 @@
 // begins again, one lantern richer. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=668';
-import { themePaint } from '../lib/themes.js?v=668';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=671';
+import { themePaint } from '../lib/themes.js?v=671';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -35,7 +35,8 @@ export function createBirthday() {
   let deliverT = 0, deliverQueue = 0;  // candles waiting to pop after a swoop
   let surge = 0;                       // HOLD: the night rushes
   let lit = 0, finales = 0;
-  let state = 'gather';                // gather -> hush -> blow -> encore
+  let state = 'gather';                // gather -> wish -> blowing -> out -> sing -> encore
+  let blowProg = 0;                    // how far their breath has gotten
   let stateT = 0;
   let tapGlit = 0, callPulse = 0;
   let wishStar = null, numberPlate = null;
@@ -238,8 +239,11 @@ export function createBirthday() {
       window.__bdayFinale = () => {
         candles.forEach(c => { c.userData.on = true; });
         lit = CANDLES;
-        state = 'hush'; stateT = 0;
+        state = 'wish'; stateT = 0; blowProg = 0;
+        document.dispatchEvent(new CustomEvent('fp-bday-wish'));
       };
+      this._onBlow = () => { if (state === 'wish') { state = 'blowing'; stateT = 0; blowProg = 0; } };
+      document.addEventListener('fp-bday-blow', this._onBlow);
       camera.fov = 74;
       camera.updateProjectionMatrix();
     },
@@ -256,7 +260,9 @@ export function createBirthday() {
     onTap() {
       tapGlit = 1;
       callPulse = 1;
-      if (state === 'hush') { state = 'blow'; stateT = 0; return; }
+      // no mic: every quick tap is a puff of breath
+      if (state === 'blowing' && window.__blowLevel == null) { blowProg = Math.min(1, blowProg + 0.12); return; }
+      if (state !== 'gather') return;
       // the CALL: the nearest free flame answers your light and darts to you
       let best = null, bd = 40;
       for (const f of flames) {
@@ -318,39 +324,60 @@ export function createBirthday() {
       // steer x picks how wide you fly, y how high; HOLD opens the throttle
       surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * 4);
       const gatherK = state === 'gather' ? 1 : 0.25;   // the ceremony slows the sky
-      ang += dt * (0.42 + audio.volume * 0.25 * reactivity + surge * 0.5 + chorus * 0.12) * gatherK;
+      ang += dt * (0.3 + 0.18 * aliveK + audio.volume * (0.08 + 0.3 * aliveK) * reactivity + surge * 0.5 + chorus * 0.12) * gatherK;
       orbitR += ((26 + steer.x * 10) - orbitR) * Math.min(1, dt * 5);
       heightY += ((3.5 + steer.y * 6) - heightY) * Math.min(1, dt * 5);
       player.position.set(Math.cos(ang) * orbitR, heightY, Math.sin(ang) * orbitR);
       if (participants && participants[0]) { participants[0].x = steer.x; participants[0].y = steer.y; }
 
-      const hushK = state === 'hush' ? Math.min(1, stateT / 0.8) : (state === 'blow' ? Math.max(0, 1 - stateT / 1.5) : 0);
-      const dim = 1 - hushK * 0.65;   // the held breath: the world lowers its voice
+      const hushK = (state === 'wish' || state === 'blowing') ? Math.min(1, stateT / 0.8 + (state === 'blowing' ? 1 : 0))
+        : state === 'out' ? 1
+        : state === 'sing' ? Math.max(0, 1 - stateT / 1.5) : 0;
+      const dim = 1 - hushK * (state === 'out' ? 0.85 : 0.65);   // the held breath, then near-dark
+      // ── the WAKING: every lit candle turns the world's aliveness up ──
+      // it opens half-asleep; each candle brightens it, quickens the music's
+      // grip on everything, and after the first finale it never fully sleeps
+      const aliveK = Math.min(1, Math.max(lit / CANDLES, finales > 0 ? 0.35 : 0) + hushK * 0);
 
       // sky and stars
       paint(0.9, audio.mid);
-      color.setHSL(tp[0], tp[1] * 0.6, Math.min(0.4, (0.2 + audio.energy * 0.2) * tp[2]) * dim);
+      color.setHSL(tp[0], tp[1] * 0.6, Math.min(0.4, (0.1 + 0.14 * aliveK + audio.energy * (0.06 + 0.2 * aliveK)) * tp[2]) * dim);
       sky.material.color.copy(color);
-      stars.material.opacity = (0.5 + audio.high * 0.3) * dim;
+      stars.material.opacity = (0.32 + 0.22 * aliveK + audio.high * 0.35 * aliveK) * dim;
       stars.rotation.y = time * 0.004;
 
       // cake rims breathe with the bass; the velvet carries a whisper of theme
       rims.forEach((rim, i) => {
         paint(0.15 + i * 0.25, audio.bass);
-        color.setHSL(tp[0], tp[1], Math.min(0.62, (0.4 + audio.bass * 0.3) * Math.min(1.3, tp[2])) * dim);
+        color.setHSL(tp[0], tp[1], Math.min(0.62, (0.22 + 0.22 * aliveK + audio.bass * (0.08 + 0.3 * aliveK)) * Math.min(1.3, tp[2])) * dim);
         rim.material.color.copy(color);
-        rim.scale.setScalar(1 + audio.bass * 0.03 * reactivity);
-        color.setHSL(tp[0], tp[1] * 0.7, (0.07 + audio.bass * 0.04) * dim);
+        rim.scale.setScalar(1 + audio.bass * (0.01 + 0.06 * aliveK) * reactivity);
+        color.setHSL(tp[0], tp[1] * 0.7, (0.04 + 0.05 * aliveK + audio.bass * 0.05 * aliveK) * dim);
         cake.children[i * 2].material.color.copy(color);
       });
-      cake.rotation.y = time * 0.05;
+      cake.rotation.y = time * (0.05 + 0.06 * aliveK);
+      // half awake, the cake starts breathing with the beat outright
+      cake.scale.y = 1 + audio.beatIntensity * 0.05 * aliveK;
+      // fully waking, the cake rings the sky on the big beats
+      if (audio.beat && aliveK > 0.35 && Math.random() < aliveK * 0.5) {
+        const m = rings.find(x => !x.visible);
+        if (m) {
+          m.visible = true;
+          m.position.set(0, CAKE_POS.y + 17, 0);
+          m.userData.r = 3;
+          m.rotation.set(Math.PI / 2, 0, 0);
+          paint(0.4, audio.beatIntensity);
+          color.setHSL(tp[0], tp[1], 0.5);
+          m.material.color.copy(color);
+        }
+      }
       if (numberPlate) numberPlate.lookAt(camera.position);
       {
         const ic = sprinkles.instanceColor;
         for (let i = 0; i < SPRINKLES; i++) {
           const sd = i * 0.618 % 1;
           paint(sd, audio.treble);
-          const glint = 0.45 + Math.abs(Math.sin(time * 3 + i * 1.7)) * 0.25 + audio.treble * 0.25;
+          const glint = 0.3 + 0.15 * aliveK + Math.abs(Math.sin(time * (2 + 2 * aliveK) + i * 1.7)) * (0.12 + 0.18 * aliveK) + audio.treble * (0.08 + 0.3 * aliveK);
           color.setHSL(tp[0], Math.max(0.55, tp[1]), Math.min(0.75, glint) * dim);
           ic.setXYZ(i, color.r, color.g, color.b);
         }
@@ -365,8 +392,18 @@ export function createBirthday() {
         if (u.on) {
           color.setHSL(0.09, 0.9, 0.6);
           u.fl.material.color.copy(color);
-          u.fl.material.opacity = (state === 'blow' && stateT > i * 0.06 ? Math.max(0, 0.9 - (stateT - i * 0.06) * 3) : flick * 0.9) * (state === 'blow' ? 1 : dim + hushK * 0.9);
-          u.fl.scale.setScalar((1 + u.pop * 1.6 + chorus * 0.4) * (0.8 + flick * 0.3));
+          const lvl = (state === 'blowing' && typeof window.__blowLevel === 'number') ? window.__blowLevel : 0;
+          const gone = state === 'blowing' && i < Math.floor(blowProg * CANDLES);
+          if (gone || state === 'out' || state === 'sing') {
+            u.fl.material.opacity = Math.max(0, u.fl.material.opacity - dt * 4);
+            u.fl.scale.setScalar(0.6);
+          } else {
+            // the flames LEAN and shrink under the breath - the magic trick
+            const bend = 1 - lvl * (0.45 + Math.sin(time * 14 + u.seed) * 0.25);
+            u.fl.material.opacity = flick * 0.9 * (dim + hushK * 0.9) * Math.max(0.25, bend);
+            u.fl.scale.setScalar((1 + u.pop * 1.6 + chorus * 0.4) * (0.8 + flick * 0.3) * Math.max(0.35, bend));
+            u.fl.position.x = lvl * 0.5 * Math.sin(u.seed);   // flames lean away together
+          }
         } else {
           u.fl.material.opacity = 0.05;
           u.fl.scale.setScalar(0.7);
@@ -389,7 +426,10 @@ export function createBirthday() {
             if (lit % 12 === 0 && lit < CANDLES) {
               this._fire(new THREE.Vector3((Math.random() * 2 - 1) * 14, 14, (Math.random() * 2 - 1) * 14), opts, paint, tp);
             }
-            if (lit >= CANDLES) { state = 'hush'; stateT = 0; }
+            if (lit >= CANDLES) {
+              state = 'wish'; stateT = 0; blowProg = 0;
+              document.dispatchEvent(new CustomEvent('fp-bday-wish'));
+            }
           }
         }
       }
@@ -409,7 +449,7 @@ export function createBirthday() {
           f.position.lerp(player.position, Math.min(1, dt * 3.2));
         } else {
           // drifting its own slow lap, breathing up and down
-          u.a += dt * 0.06 * (state === 'gather' ? 1 : 0.2);
+          u.a += dt * (0.05 + 0.06 * aliveK) * (state === 'gather' ? 1 : 0.2);
           u.y += Math.sin(time * 0.8 + u.seed) * dt * 0.6;
           f.position.set(Math.cos(u.a) * u.r, u.y, Math.sin(u.a) * u.r);
         }
@@ -449,8 +489,19 @@ export function createBirthday() {
 
       // ── the ceremony ──
       stateT += dt;
-      if (state === 'hush' && stateT > 2.2) { state = 'blow'; stateT = 0; }
-      if (state === 'blow') {
+      // blowing: their real breath (or their taps) puts the candles out
+      if (state === 'blowing') {
+        const lvl = (typeof window.__blowLevel === 'number') ? window.__blowLevel : 0;
+        blowProg = Math.min(1, blowProg + lvl * dt * 0.5);
+        if (blowProg >= 1) {
+          state = 'out'; stateT = 0;
+          document.dispatchEvent(new CustomEvent('fp-bday-blown'));
+          if (opts.impact) opts.impact(0.3);
+        }
+      }
+      // out: one dark beat with nothing in it - the room before the cheer
+      if (state === 'out' && stateT > 0.9) { state = 'sing'; stateT = 0; }
+      if (state === 'sing') {
         if (stateT > 1.1 && !this._sung) {
           this._sung = true;
           document.dispatchEvent(new CustomEvent('fp-bday'));
@@ -592,7 +643,7 @@ export function createBirthday() {
       // look ahead of the rider, with the cake sweeping through frame
       look.set(Math.cos(ang + 0.5) * orbitR * 0.55, heightY * 0.6 + 1.5, Math.sin(ang + 0.5) * orbitR * 0.55);
       camera.lookAt(look);
-      const fovT = 74 + audio.volume * 6 * reactivity + surge * 8 + hushK * -6;
+      const fovT = 74 + aliveK * 2 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * 8 + hushK * -6;
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
       camera.updateProjectionMatrix();
 

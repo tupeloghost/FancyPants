@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=668';
-import { drawQR } from './lib/qr.js?v=668';
-import { WORLDS } from './worlds/registry.js?v=668';
-import { Net, PALETTE } from './net.js?v=668';
-import { Presence } from './lib/presence.js?v=668';
-import { Pulses } from './lib/pulse.js?v=668';
-import { BeatClock } from './lib/beatclock.js?v=668';
-import { BeatCue } from './lib/beatcue.js?v=668';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=668';
-import { Race, placeOf, standings } from './lib/race.js?v=668';
-import { Signals } from './lib/signals.js?v=668';
-import { pickShareLine, loadLines } from './lib/lines.js?v=668';
-import { RouteMap } from './lib/map.js?v=668';
-import * as sfx from './lib/sfx.js?v=668';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=668';
-import { glowTexture } from './lib/glow.js?v=668';
+import { AudioEngine } from './audio-engine.js?v=671';
+import { drawQR } from './lib/qr.js?v=671';
+import { WORLDS } from './worlds/registry.js?v=671';
+import { Net, PALETTE } from './net.js?v=671';
+import { Presence } from './lib/presence.js?v=671';
+import { Pulses } from './lib/pulse.js?v=671';
+import { BeatClock } from './lib/beatclock.js?v=671';
+import { BeatCue } from './lib/beatcue.js?v=671';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=671';
+import { Race, placeOf, standings } from './lib/race.js?v=671';
+import { Signals } from './lib/signals.js?v=671';
+import { pickShareLine, loadLines } from './lib/lines.js?v=671';
+import { RouteMap } from './lib/map.js?v=671';
+import * as sfx from './lib/sfx.js?v=671';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=671';
+import { glowTexture } from './lib/glow.js?v=671';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2026,6 +2026,65 @@ setInterval(() => {
     if (blackBox.samples.length > 40) blackBox.samples.shift();
   } catch { /* the recorder must never be the crash */ }
 }, 1000);
+
+// ── the birthday breath ── the mic borrowed for one moment: blowing out the
+// candles. Asked ONLY from the wish button's gesture, stopped the instant
+// the candles are out, never recorded, never sent anywhere.
+let blowStream = null, blowCtx = null, blowAn = null, blowData = null, blowRAF = 0;
+async function startBlowMic() {
+  try {
+    // a permission dialog left hanging must not freeze the ritual: after
+    // 3.5s we fall back to taps, and a late grant is stopped on arrival
+    const ask = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+    const winner = await Promise.race([ask, new Promise(r => setTimeout(() => r('timeout'), 3500))]);
+    if (winner === 'timeout') {
+      ask.then(st => st.getTracks().forEach(t => t.stop())).catch(() => {});
+      throw new Error('mic ask timed out');
+    }
+    blowStream = winner;
+    blowCtx = new AudioContext();
+    const src = blowCtx.createMediaStreamSource(blowStream);
+    blowAn = blowCtx.createAnalyser();
+    blowAn.fftSize = 512;
+    src.connect(blowAn);
+    blowData = new Uint8Array(blowAn.frequencyBinCount);
+    window.__blowLevel = 0;
+    (function tick() {
+      if (!blowAn) return;
+      blowAn.getByteFrequencyData(blowData);
+      // a blow is broadband rumble, strongest low: average the lower half
+      let sum = 0;
+      const n = blowData.length >> 1;
+      for (let i = 0; i < n; i++) sum += blowData[i];
+      window.__blowLevel = Math.max(0, Math.min(1, ((sum / n) / 255 - 0.16) / 0.4));
+      blowRAF = requestAnimationFrame(tick);
+    })();
+    return true;
+  } catch {
+    window.__blowLevel = null;
+    return false;
+  }
+}
+function stopBlowMic() {
+  cancelAnimationFrame(blowRAF);
+  if (blowStream) blowStream.getTracks().forEach(t => t.stop());
+  if (blowCtx) blowCtx.close().catch(() => {});
+  blowStream = null; blowCtx = null; blowAn = null;
+  window.__blowLevel = undefined;
+}
+// all candles lit: the world asks for the wish
+document.addEventListener('fp-bday-wish', () => {
+  $('bday-wish').classList.remove('hidden');
+  haptic([15, 50, 15]);
+});
+$('bw-go').addEventListener('click', async () => {
+  $('bday-wish').classList.add('hidden');
+  const mic = await startBlowMic();
+  flash(mic ? 'NOW BLOW OUT THE CANDLES' : 'TAP FAST TO BLOW THEM OUT', 3200);
+  document.dispatchEvent(new CustomEvent('fp-bday-blow'));
+});
+// the candles are out: give the breath back immediately
+document.addEventListener('fp-bday-blown', () => stopBlowMic());
 
 // the birthday finale: the world holds its breath, then the sky says the name
 document.addEventListener('fp-bday', () => {

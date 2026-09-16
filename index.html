@@ -244,6 +244,32 @@
     animation: giftGlow 1.6s ease-in-out infinite;
   }
   #gift-note.hidden { display: none; }
+  /* the wish card: the one held breath in the birthday night */
+  #bday-wish {
+    position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%);
+    z-index: 70; display: flex; flex-direction: column; gap: 12px; align-items: center;
+    padding: 30px 44px; border-radius: 22px; text-align: center;
+    background: rgba(6, 8, 18, 0.82);
+    border: 1px solid hsla(40, 90%, 70%, 0.45);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 60px hsla(40, 90%, 60%, 0.18);
+  }
+  #bday-wish.hidden { display: none; }
+  #bday-wish b {
+    font: 400 34px 'Didot', 'Bodoni MT', 'Playfair Display', serif;
+    color: #fff; letter-spacing: 5px; font-weight: 400;
+  }
+  #bday-wish span {
+    font: 12px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    color: hsl(40, 40%, 75%); letter-spacing: 2px; text-transform: uppercase;
+  }
+  #bday-wish button {
+    margin-top: 8px; padding: 14px 30px; border-radius: 999px; cursor: pointer;
+    border: 1px solid hsla(40, 90%, 75%, 0.7);
+    background: hsla(40, 80%, 60%, 0.2); color: #fff;
+    font: 400 15px 'Didot', 'Bodoni 72', Georgia, serif; letter-spacing: 3px;
+  }
+  #bday-wish button:hover { background: hsla(40, 80%, 60%, 0.35); }
   /* the world is a PORTRAIT: sideways phones get a gentle ask, not a reflow */
   #turn-note {
     display: none; position: fixed; inset: 0; z-index: 300;
@@ -3113,6 +3139,11 @@
     <div id="gp-row"></div>
     <span>the first player through a hoop gets it</span>
   </div>
+  <div id="bday-wish" class="hidden">
+    <b>MAKE A WISH</b>
+    <span>take your time</span>
+    <button id="bw-go">I MADE MY WISH</button>
+  </div>
   <div id="gift-note" class="hidden"><svg id="gift-box" viewBox="0 0 24 24" width="34" height="34"><rect x="4" y="10" width="16" height="10" rx="1.6" class="gb-body"/><rect x="3" y="7.5" width="18" height="3.4" rx="1.2" class="gb-lid"/><rect x="10.7" y="7.5" width="2.6" height="12.5" class="gb-ribbon"/><path d="M12 7.2 C9.5 7.2 7.8 5.6 8.4 4.2 C9 2.9 11.2 3.4 12 5.6 C12.8 3.4 15 2.9 15.6 4.2 C16.2 5.6 14.5 7.2 12 7.2" class="gb-bow"/></svg><span>a gift is out · first player through a hoop gets it</span></div>
   <div id="guest-pause" class="hidden"><b>PAUSED</b><span>press play to come back in</span></div>
   <div id="name-gate" class="hidden">
@@ -3329,7 +3360,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 668</div>
+      <div id="build-stamp">build 671</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3371,6 +3402,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=668"></script>
+<script type="module" src="js/main.js?v=671"></script>
 </body>
 </html>
