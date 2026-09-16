@@ -8,8 +8,8 @@
 // begins again, one lantern richer. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=671';
-import { themePaint } from '../lib/themes.js?v=671';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=675';
+import { themePaint } from '../lib/themes.js?v=675';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -315,6 +315,10 @@ export function createBirthday() {
       const tp = this._tp || (this._tp = [0, 0, 0]);
       const paint = (u, lvl) => { themePaint(colorMode, hue / 360, u, time * 0.15, time, lvl, (u * 7.13) % 1, tp); return tp; };
       const chorus = opts.chorus || 0;
+      // ── the WAKING: every lit candle turns the world's aliveness up ──
+      // it opens half-asleep; each candle brightens it, quickens the music's
+      // grip on everything, and after the first finale it never fully sleeps
+      const aliveK = Math.min(1, Math.max(lit / CANDLES, finales > 0 ? 0.35 : 0));
 
       if (attract) { steerTarget.x = Math.sin(time * 0.3) * 0.6; steerTarget.y = Math.sin(time * 0.23) * 0.5; }
       steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 7);
@@ -334,10 +338,7 @@ export function createBirthday() {
         : state === 'out' ? 1
         : state === 'sing' ? Math.max(0, 1 - stateT / 1.5) : 0;
       const dim = 1 - hushK * (state === 'out' ? 0.85 : 0.65);   // the held breath, then near-dark
-      // ── the WAKING: every lit candle turns the world's aliveness up ──
-      // it opens half-asleep; each candle brightens it, quickens the music's
-      // grip on everything, and after the first finale it never fully sleeps
-      const aliveK = Math.min(1, Math.max(lit / CANDLES, finales > 0 ? 0.35 : 0) + hushK * 0);
+
 
       // sky and stars
       paint(0.9, audio.mid);
@@ -649,6 +650,7 @@ export function createBirthday() {
 
       // the quiet HUD: candles lit, and fireflies on the string
       if (window.__setFigure) window.__setFigure('CANDLES', lit, CANDLES);
+      window.__bdayInfo = { state, lit, blowProg: Math.round(blowProg * 100) / 100, stateT: Math.round(stateT * 10) / 10, dt: Math.round(dt * 1000), mic: window.__blowLevel === undefined ? 'undef' : window.__blowLevel === null ? 'null' : 'live' };
     },
 
     dispose() {

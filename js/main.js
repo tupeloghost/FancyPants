@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=671';
-import { drawQR } from './lib/qr.js?v=671';
-import { WORLDS } from './worlds/registry.js?v=671';
-import { Net, PALETTE } from './net.js?v=671';
-import { Presence } from './lib/presence.js?v=671';
-import { Pulses } from './lib/pulse.js?v=671';
-import { BeatClock } from './lib/beatclock.js?v=671';
-import { BeatCue } from './lib/beatcue.js?v=671';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=671';
-import { Race, placeOf, standings } from './lib/race.js?v=671';
-import { Signals } from './lib/signals.js?v=671';
-import { pickShareLine, loadLines } from './lib/lines.js?v=671';
-import { RouteMap } from './lib/map.js?v=671';
-import * as sfx from './lib/sfx.js?v=671';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=671';
-import { glowTexture } from './lib/glow.js?v=671';
+import { AudioEngine } from './audio-engine.js?v=675';
+import { drawQR } from './lib/qr.js?v=675';
+import { WORLDS } from './worlds/registry.js?v=675';
+import { Net, PALETTE } from './net.js?v=675';
+import { Presence } from './lib/presence.js?v=675';
+import { Pulses } from './lib/pulse.js?v=675';
+import { BeatClock } from './lib/beatclock.js?v=675';
+import { BeatCue } from './lib/beatcue.js?v=675';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=675';
+import { Race, placeOf, standings } from './lib/race.js?v=675';
+import { Signals } from './lib/signals.js?v=675';
+import { pickShareLine, loadLines } from './lib/lines.js?v=675';
+import { RouteMap } from './lib/map.js?v=675';
+import * as sfx from './lib/sfx.js?v=675';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=675';
+import { glowTexture } from './lib/glow.js?v=675';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -648,7 +648,9 @@ function playAuto(next) {
   // a shared link's song plays first — the whole point of following the link
   if (window.__shareTrack) {
     const want = window.__shareTrack; window.__shareTrack = null;
-    if (trackList.includes(want)) {
+    // a birthday link is a hand-built invitation: its song may live outside
+    // the library (a track made for one person, listed nowhere)
+    if (trackList.includes(want) || (window.__BDAY && /^audio\/[\w.-]+\.(mp3|m4a)$/.test(want))) {
       audio.loadURL(want);
       $('track-select').value = want;
       audio.play().catch(() => {});
