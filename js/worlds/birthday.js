@@ -8,8 +8,8 @@
 // begins again, one lantern richer. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=675';
-import { themePaint } from '../lib/themes.js?v=675';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=676';
+import { themePaint } from '../lib/themes.js?v=676';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -39,6 +39,7 @@ export function createBirthday() {
   let blowProg = 0;                    // how far their breath has gotten
   let stateT = 0;
   let tapGlit = 0, callPulse = 0;
+  let hintT = 0, hintedFly = false, hintedCarry = false;
   let wishStar = null, numberPlate = null;
   const color = new THREE.Color();
   const CAKE_POS = new THREE.Vector3(0, -10, 0);   // the cake IS the center now
@@ -120,7 +121,7 @@ export function createBirthday() {
         const c = new THREE.Group();
         const stick = new THREE.Mesh(
           new THREE.CylinderGeometry(0.16, 0.16, 2.2, 8),
-          new THREE.MeshBasicMaterial({ color: 0xd8cfee, toneMapped: false })
+          new THREE.MeshBasicMaterial({ color: 0x453f66, toneMapped: false })   // asleep until its flame arrives
         );
         stick.position.y = 1.1;
         const fl = glowSprite(2.6);
@@ -128,7 +129,7 @@ export function createBirthday() {
         fl.material.opacity = 0.05;          // unlit: an ember of a promise
         c.add(stick, fl);
         c.position.set(Math.cos(a) * (5.1 - row * 1.9), ty, Math.sin(a) * (5.1 - row * 1.9));
-        c.userData = { fl, on: false, pop: 0, seed: i * 7.3 };
+        c.userData = { fl, stick, on: false, pop: 0, seed: i * 7.3 };
         cake.add(c);
         candles.push(c);
       }
@@ -405,9 +406,12 @@ export function createBirthday() {
             u.fl.scale.setScalar((1 + u.pop * 1.6 + chorus * 0.4) * (0.8 + flick * 0.3) * Math.max(0.35, bend));
             u.fl.position.x = lvl * 0.5 * Math.sin(u.seed);   // flames lean away together
           }
+          u.stick.material.color.set(0xd8cfee);
         } else {
-          u.fl.material.opacity = 0.05;
-          u.fl.scale.setScalar(0.7);
+          // truly out: 48 faint sprites once STACKED into a lit-looking blaze
+          u.fl.material.opacity = 0.012;
+          u.fl.scale.setScalar(0.4);
+          u.stick.material.color.set(0x453f66);
         }
       });
 
@@ -486,6 +490,19 @@ export function createBirthday() {
         carried = [];
         deliverT = 0;
         if (opts.impact) opts.impact(0.5);
+      }
+
+      // the world whispers what to do, once, at the moment it helps
+      if (state === 'gather') {
+        hintT += dt;
+        if (!hintedFly && hintT > 8 && lit === 0 && !carried.length) {
+          hintedFly = true;
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'fly into a flame to catch it' }));
+        }
+        if (!hintedCarry && carried.length) {
+          hintedCarry = true;
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'now carry it to the cake' }));
+        }
       }
 
       // ── the ceremony ──

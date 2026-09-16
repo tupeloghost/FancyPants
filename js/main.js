@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=675';
-import { drawQR } from './lib/qr.js?v=675';
-import { WORLDS } from './worlds/registry.js?v=675';
-import { Net, PALETTE } from './net.js?v=675';
-import { Presence } from './lib/presence.js?v=675';
-import { Pulses } from './lib/pulse.js?v=675';
-import { BeatClock } from './lib/beatclock.js?v=675';
-import { BeatCue } from './lib/beatcue.js?v=675';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=675';
-import { Race, placeOf, standings } from './lib/race.js?v=675';
-import { Signals } from './lib/signals.js?v=675';
-import { pickShareLine, loadLines } from './lib/lines.js?v=675';
-import { RouteMap } from './lib/map.js?v=675';
-import * as sfx from './lib/sfx.js?v=675';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=675';
-import { glowTexture } from './lib/glow.js?v=675';
+import { AudioEngine } from './audio-engine.js?v=676';
+import { drawQR } from './lib/qr.js?v=676';
+import { WORLDS } from './worlds/registry.js?v=676';
+import { Net, PALETTE } from './net.js?v=676';
+import { Presence } from './lib/presence.js?v=676';
+import { Pulses } from './lib/pulse.js?v=676';
+import { BeatClock } from './lib/beatclock.js?v=676';
+import { BeatCue } from './lib/beatcue.js?v=676';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=676';
+import { Race, placeOf, standings } from './lib/race.js?v=676';
+import { Signals } from './lib/signals.js?v=676';
+import { pickShareLine, loadLines } from './lib/lines.js?v=676';
+import { RouteMap } from './lib/map.js?v=676';
+import * as sfx from './lib/sfx.js?v=676';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=676';
+import { glowTexture } from './lib/glow.js?v=676';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2088,6 +2088,9 @@ $('bw-go').addEventListener('click', async () => {
 // the candles are out: give the breath back immediately
 document.addEventListener('fp-bday-blown', () => stopBlowMic());
 
+// the birthday world teaches by whispering at the right moment
+document.addEventListener('fp-bday-hint', e => flash(String(e.detail || '').toUpperCase(), 3000));
+
 // the birthday finale: the world holds its breath, then the sky says the name
 document.addEventListener('fp-bday', () => {
   const name = (window.__BDAY || '').toUpperCase();
@@ -2945,9 +2948,10 @@ function showWorldIntro(key) {
   $('intro-name').textContent = (key === 'birthday' && window.__BDAY)
     ? 'HAPPY BIRTHDAY ' + window.__BDAY.toUpperCase()
     : w.label;
-  // the name IS the greeting: instructions live in the tutorial now, and a
-  // world that needs a caption to make sense isn't finished
-  $('intro-goal').textContent = '';
+  // the name IS the greeting: instructions live in the tutorial now — EXCEPT
+  // occasion worlds, whose guests may have never played anything: they say
+  // their one line plainly
+  $('intro-goal').textContent = (w.occasion && w.goal) ? w.goal : '';
   el.classList.toggle('long', $('intro-name').textContent.length > 10);
   // "show me how" appears where showing helps: a world you steer or tap,
   // watched by somebody actually playing (never lean-back, never a guest).
