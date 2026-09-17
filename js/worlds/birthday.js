@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=738';
-import { themePaint } from '../lib/themes.js?v=738';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=740';
+import { themePaint } from '../lib/themes.js?v=740';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -873,7 +873,7 @@ export function createBirthday() {
       // the cake is out it stays fully awake
       const aliveK = state === 'radio' ? 0.05
         : (state === 'fly' || state === 'rush' || state === 'gift' || state === 'unwrap' || state === 'open')
-        ? 0.15 + 0.85 * Math.min(1, caught / CANDLES)
+        ? 0.5 + 0.5 * Math.min(1, caught / CANDLES)
         : 1;
       const ceremonyDim = (state === 'wish' || state === 'blowing') ? 0.45 : state === 'out' ? 0.18 : 1;
 
@@ -1268,7 +1268,7 @@ export function createBirthday() {
 
       // sky and stars
       paint(0.9, audio.mid);
-      color.setHSL(tp[0], tp[1] * 0.6, Math.min(0.38, (0.08 + 0.18 * aliveK + audio.energy * 0.18 * aliveK) * tp[2]) * ceremonyDim);
+      color.setHSL(tp[0], tp[1] * 0.6, Math.min(0.42, (0.08 + 0.18 * aliveK + audio.energy * 0.18 * aliveK + (flying ? audio.beatIntensity * 0.12 : 0)) * tp[2]) * ceremonyDim);
       sky.material.color.copy(color);
       stars.material.opacity = (0.3 + 0.3 * aliveK + audio.high * 0.3 * aliveK) * ceremonyDim;
       stars.rotation.z = time * 0.003;
@@ -1286,18 +1286,71 @@ export function createBirthday() {
             c2.y = (Math.random() * 2 - 1) * 20;
           }
           dum2.position.set(c2.x, c2.y, c2.z);
-          dum2.rotation.set(time * c2.tumble + c2.spin, c2.spin, time * c2.tumble * 0.6);
-          const sc = 0.7 + 0.5 * aliveK + audio.beatIntensity * 0.35 * aliveK;
+          const spinK = 1 + chorus * 2.5 + audio.beatIntensity * 1.5;
+          dum2.rotation.set(time * c2.tumble * spinK + c2.spin, c2.spin, time * c2.tumble * 0.6 * spinK);
+          const sc = 0.7 + 0.5 * aliveK + audio.beatIntensity * 0.9 + audio.bass * 0.25;
           dum2.scale.setScalar(sc);
           dum2.updateMatrix();
           confetti.setMatrixAt(i, dum2.matrix);
           paint(c2.hueSeed, audio.mid);
-          const lum = (0.16 + 0.22 * aliveK + audio.treble * 0.16 * aliveK) * ceremonyDim;
+          const lum = (0.16 + 0.22 * aliveK + audio.treble * 0.16 * aliveK + audio.beatIntensity * 0.22) * ceremonyDim;
           color.setHSL(tp[0], Math.max(0.55, tp[1]), Math.min(0.7, lum));
           ic.setXYZ(i, color.r, color.g, color.b);
         }
         confetti.instanceMatrix.needsUpdate = true;
         ic.needsUpdate = true;
+      }
+
+      // ── BEAT HOOPS: every kick throws a ring of light down the tunnel at you ──
+      {
+        if (!this._gates) {
+          this._gates = [];
+          for (let i = 0; i < 12; i++) {
+            const gm = new THREE.Mesh(
+              new THREE.TorusGeometry(1, 0.012, 6, 72),
+              new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false })
+            );
+            gm.visible = false;
+            group.add(gm);
+            this._gates.push(gm);
+          }
+          this._gateCd = 0; this._boomCd = 3;
+        }
+        const chasing = state === 'fly' || state === 'rush' || state === 'after';
+        this._gateCd -= dt;
+        this._boomCd -= dt;
+        if (chasing && audio.beat && this._gateCd <= 0) {
+          this._gateCd = 0.26;
+          const gm = this._gates.find(x => !x.visible);
+          if (gm) {
+            gm.visible = true;
+            gm.position.set(0, 0, -150);
+            gm.userData.hueU = (time * 0.07) % 1;
+            gm.userData.base = 15 + audio.beatIntensity * 6;
+          }
+        }
+        for (const gm of this._gates) {
+          if (!gm.visible) continue;
+          gm.position.z += (speed * 1.7 + 30) * dt;
+          const near = gm.position.z;
+          if (near > 10 || !chasing) { gm.visible = false; gm.material.opacity = 0; continue; }
+          gm.position.x = player.position.x * 0.25;
+          gm.position.y = player.position.y * 0.25;
+          gm.rotation.z += dt * 0.6;
+          gm.scale.setScalar(gm.userData.base * (1 + audio.bass * 0.18));
+          paint(gm.userData.hueU, audio.bass);
+          color.setHSL(tp[0], Math.max(0.6, tp[1]), 0.6);
+          gm.material.color.copy(color);
+          const fadeIn = Math.min(1, (near + 150) / 35);
+          const fadeOut = Math.min(1, (10 - near) / 18);
+          gm.material.opacity = 0.6 * fadeIn * fadeOut * ceremonyDim;
+        }
+        // big hits and choruses light the sky far ahead
+        if (chasing && this._boomCd <= 0 && (audio.beatIntensity > 0.72 || chorus > 0.6)) {
+          this._boomCd = chorus > 0.6 ? 2.6 : 5.5;
+          const side = Math.random() < 0.5 ? -1 : 1;
+          this._fire(new THREE.Vector3(side * (8 + Math.random() * 12), 6 + Math.random() * 10, -70 - Math.random() * 30), { impact: null }, paint, tp);
+        }
       }
 
       // ── ACT I: the flames come to meet you ──
@@ -1778,7 +1831,11 @@ export function createBirthday() {
       const lv = this._lv || (this._lv = new THREE.Vector3(0, 0, -40));
       lv.lerp(lookT, Math.min(1, dt * 3));
       camera.lookAt(lv);
-      const fovT = 76 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * 8 - (state === 'wish' || state === 'blowing' ? 6 : 0);
+      if (flying) {
+        this._bank = (this._bank || 0) + ((-steer.x * 0.16) - (this._bank || 0)) * Math.min(1, dt * 3);
+        camera.rotateZ(this._bank + Math.sin(time * 37) * audio.bass * 0.006 * reactivity);
+      }
+      const fovT = 76 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * 8 + (flying ? audio.beatIntensity * 6 * reactivity : 0) - (state === 'wish' || state === 'blowing' ? 6 : 0);
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
       camera.updateProjectionMatrix();
 

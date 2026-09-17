@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=738';
-import { drawQR } from './lib/qr.js?v=738';
-import { WORLDS } from './worlds/registry.js?v=738';
-import { Net, PALETTE } from './net.js?v=738';
-import { Presence } from './lib/presence.js?v=738';
-import { Pulses } from './lib/pulse.js?v=738';
-import { BeatClock } from './lib/beatclock.js?v=738';
-import { BeatCue } from './lib/beatcue.js?v=738';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=738';
-import { Race, placeOf, standings } from './lib/race.js?v=738';
-import { Signals } from './lib/signals.js?v=738';
-import { pickShareLine, loadLines } from './lib/lines.js?v=738';
-import { RouteMap } from './lib/map.js?v=738';
-import * as sfx from './lib/sfx.js?v=738';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=738';
-import { glowTexture } from './lib/glow.js?v=738';
+import { AudioEngine } from './audio-engine.js?v=740';
+import { drawQR } from './lib/qr.js?v=740';
+import { WORLDS } from './worlds/registry.js?v=740';
+import { Net, PALETTE } from './net.js?v=740';
+import { Presence } from './lib/presence.js?v=740';
+import { Pulses } from './lib/pulse.js?v=740';
+import { BeatClock } from './lib/beatclock.js?v=740';
+import { BeatCue } from './lib/beatcue.js?v=740';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=740';
+import { Race, placeOf, standings } from './lib/race.js?v=740';
+import { Signals } from './lib/signals.js?v=740';
+import { pickShareLine, loadLines } from './lib/lines.js?v=740';
+import { RouteMap } from './lib/map.js?v=740';
+import * as sfx from './lib/sfx.js?v=740';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=740';
+import { glowTexture } from './lib/glow.js?v=740';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -1176,6 +1176,15 @@ audio.el.addEventListener('seeked', () => beatCue.seek(audio.currentTime));
 // when a track runs out, roll straight into the next one — unless a toy
 // round is on: those END, with a tally and a share moment, like a real round
 audio.el.addEventListener('ended', () => {
+  // the birthday is a gift, not a round: no SONG COMPLETE card - the song
+  // just plays again so the flight and the after-party never go silent
+  if (window.__BDAY && currentWorldKey === 'birthday') {
+    toyRound = null;
+    clipBufStop(true);
+    audio.el.currentTime = 0;
+    audio.play().catch(() => {});
+    return;
+  }
   if (toyRound) {
     if (chillRoll && !setList && !document.body.classList.contains('guest')) {
       // lean-back: the run still goes in the ledger, but no card interrupts —
