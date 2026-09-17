@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=713';
-import { themePaint } from '../lib/themes.js?v=713';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=714';
+import { themePaint } from '../lib/themes.js?v=714';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -366,7 +366,7 @@ export function createBirthday() {
         road.add(pk);
       }
       traffic = [];
-      for (let i = 0; i < 3; i++) {
+      const mkCar = (oncoming) => {
         const car = new THREE.Group();
         const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.1, 5),
           new THREE.MeshBasicMaterial({ color: 0x1c1830, toneMapped: false }));
@@ -375,20 +375,37 @@ export function createBirthday() {
         cabin.position.set(0, 1, -0.3);
         const shield = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.7),
           new THREE.MeshBasicMaterial({ color: 0x0a0818, toneMapped: false }));
-        shield.position.set(0, 1, 1.02);
-        shield.rotation.x = -0.25;
-        const hl1 = glowSprite(2.4), hl2 = glowSprite(2.4);
-        hl1.material.color.set(0xfff4cc); hl2.material.color.set(0xfff4cc);
-        hl1.position.set(-0.85, -0.1, 2.6); hl2.position.set(0.85, -0.1, 2.6);
-        const hglow = glowSprite(5);
-        hglow.material.color.set(0xfff4cc);
-        hglow.material.opacity = 0.16;
-        hglow.position.set(0, -0.6, 3.6);
-        car.add(bodyC, cabin, shield, hl1, hl2, hglow);
-        car.position.set(-4.5, -3.1, -180 - i * 170);
-        car.userData = { z0: car.position.z, hit: false };
+        shield.position.set(0, 1, oncoming ? 1.02 : -1.62);
+        shield.rotation.x = oncoming ? -0.25 : 0.25;
+        shield.rotation.y = oncoming ? 0 : Math.PI;
+        if (oncoming) {
+          const hl1 = glowSprite(2.4), hl2 = glowSprite(2.4);
+          hl1.material.color.set(0xfff4cc); hl2.material.color.set(0xfff4cc);
+          hl1.position.set(-0.85, -0.1, 2.6); hl2.position.set(0.85, -0.1, 2.6);
+          const hglow = glowSprite(5);
+          hglow.material.color.set(0xfff4cc);
+          hglow.material.opacity = 0.16;
+          hglow.position.set(0, -0.6, 3.6);
+          car.add(bodyC, cabin, shield, hl1, hl2, hglow);
+        } else {
+          const tl1 = glowSprite(1.6), tl2 = glowSprite(1.6);
+          tl1.material.color.set(0xff2a30); tl2.material.color.set(0xff2a30);
+          tl1.position.set(-0.9, 0, 2.6); tl2.position.set(0.9, 0, 2.6);
+          car.add(bodyC, cabin, shield, tl1, tl2);
+        }
         road.add(car);
         traffic.push(car);
+        return car;
+      };
+      for (let i = 0; i < 5; i++) {
+        const car = mkCar(true);
+        car.position.set(-4.5, -3.1, -90 - i * 115 - Math.random() * 40);
+        car.userData = { z0: car.position.z, sp: 1.6 + Math.random() * 0.7, wrap: 580, hit: false };
+      }
+      for (let i = 0; i < 3; i++) {
+        const car = mkCar(false);
+        car.position.set(3.2 + Math.random() * 2.2, -3.1, -70 - i * 150 - Math.random() * 50);
+        car.userData = { z0: car.position.z, sp: 0.45, wrap: 470, hit: false, ahead: true };
       }
       // the FIRE: layered flames licking up from the porch line, tall not round
       houseFires = [];
@@ -843,18 +860,23 @@ export function createBirthday() {
               ch.position.z = z;
             }
           });
-          // oncoming traffic: headlights in the left lane, weave or wear it
+          // traffic both ways: oncoming headlights to your left, slower
+          // taillights ahead in your lane. weave or wear it
           for (const car of traffic) {
-            let z = car.userData.z0 + drove * 1.8;
-            while (z > 20) { z -= 560; car.userData.hit = false; car.position.x = -4.5 + (Math.random() - 0.5) * 1.6; }
+            const u4 = car.userData;
+            let z = u4.z0 + drove * u4.sp;
+            while (z > 20) {
+              z -= u4.wrap; u4.hit = false;
+              car.position.x = u4.ahead ? 3.2 + Math.random() * 2.2 : -4.5 + (Math.random() - 0.5) * 1.6;
+            }
             car.position.z = z;
             const dzc = Math.abs(car.position.z);
-            if (dzc < 5 && Math.abs(car.position.x - lane) < 2.4 && coneSlowT <= 0 && !car.userData.hit) {
-              car.userData.hit = true;
+            if (dzc < 5 && Math.abs(car.position.x - lane) < 2.4 && coneSlowT <= 0 && !u4.hit) {
+              u4.hit = true;
               coneSlowT = 1.4;
               driveT += 3;
               if (opts.impact) opts.impact(0.9);
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that was a PRIUS. dispatch saw nothing' }));
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: u4.ahead ? 'you rear-ended a MINIVAN. it was already like that. drive' : 'that was a PRIUS. dispatch saw nothing' } }));
             }
           }
           house.position.z = -DRIVE_DIST - 30 + drove;
