@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=699';
-import { drawQR } from './lib/qr.js?v=699';
-import { WORLDS } from './worlds/registry.js?v=699';
-import { Net, PALETTE } from './net.js?v=699';
-import { Presence } from './lib/presence.js?v=699';
-import { Pulses } from './lib/pulse.js?v=699';
-import { BeatClock } from './lib/beatclock.js?v=699';
-import { BeatCue } from './lib/beatcue.js?v=699';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=699';
-import { Race, placeOf, standings } from './lib/race.js?v=699';
-import { Signals } from './lib/signals.js?v=699';
-import { pickShareLine, loadLines } from './lib/lines.js?v=699';
-import { RouteMap } from './lib/map.js?v=699';
-import * as sfx from './lib/sfx.js?v=699';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=699';
-import { glowTexture } from './lib/glow.js?v=699';
+import { AudioEngine } from './audio-engine.js?v=701';
+import { drawQR } from './lib/qr.js?v=701';
+import { WORLDS } from './worlds/registry.js?v=701';
+import { Net, PALETTE } from './net.js?v=701';
+import { Presence } from './lib/presence.js?v=701';
+import { Pulses } from './lib/pulse.js?v=701';
+import { BeatClock } from './lib/beatclock.js?v=701';
+import { BeatCue } from './lib/beatcue.js?v=701';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=701';
+import { Race, placeOf, standings } from './lib/race.js?v=701';
+import { Signals } from './lib/signals.js?v=701';
+import { pickShareLine, loadLines } from './lib/lines.js?v=701';
+import { RouteMap } from './lib/map.js?v=701';
+import * as sfx from './lib/sfx.js?v=701';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=701';
+import { glowTexture } from './lib/glow.js?v=701';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2096,6 +2096,76 @@ $('bw-go').addEventListener('click', async () => {
   flash(mic ? 'NOW BLOW OUT THE CANDLES' : 'TAP FAST TO BLOW THEM OUT', 3200);
   document.dispatchEvent(new CustomEvent('fp-bday-blow'));
 });
+// ── the prologue soundscape ── siren on the drive, crackle at the fire,
+// water while spraying, vinyl dust in her front room. All generated,
+// all ambient weather under the music, all gone the moment the sky opens.
+let sfxNodes = null, sfxTick = 0;
+function sfxEnsure() {
+  if (sfxNodes || !audio.ctx) return;
+  const ctx2 = audio.ctx;
+  const len = ctx2.sampleRate * 2;
+  const buf = ctx2.createBuffer(1, len, ctx2.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const mkNoise = (type, freq, q) => {
+    const src = ctx2.createBufferSource();
+    src.buffer = buf; src.loop = true;
+    const f = ctx2.createBiquadFilter();
+    f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+    const g = ctx2.createGain(); g.gain.value = 0;
+    src.connect(f); f.connect(g); g.connect(ctx2.destination);
+    src.start();
+    return g;
+  };
+  // the siren: two soft triangles a fifth apart, wailing slowly
+  const sirGain = ctx2.createGain(); sirGain.gain.value = 0;
+  sirGain.connect(ctx2.destination);
+  const mkWail = (base) => {
+    const o = ctx2.createOscillator();
+    o.type = 'triangle'; o.frequency.value = base;
+    const lfo = ctx2.createOscillator();
+    lfo.type = 'sine'; lfo.frequency.value = 0.55;
+    const lfoG = ctx2.createGain(); lfoG.gain.value = base * 0.28;
+    lfo.connect(lfoG); lfoG.connect(o.frequency);
+    o.connect(sirGain); o.start(); lfo.start();
+  };
+  mkWail(660); mkWail(495);
+  sfxNodes = {
+    siren: sirGain,
+    crackle: mkNoise('lowpass', 420),
+    spray: mkNoise('highpass', 1400),
+    vinyl: mkNoise('lowpass', 2600),
+    scene: '',
+  };
+  sfxTick = setInterval(() => {
+    if (!sfxNodes) return;
+    const t = ctx2.currentTime;
+    const flick = Math.random();
+    if (sfxNodes.scene === 'drive') {
+      sfxNodes.siren.gain.setTargetAtTime(0.028, t, 0.2);
+      sfxNodes.crackle.gain.setTargetAtTime(0.004 + flick * 0.004, t, 0.1);
+    } else if (sfxNodes.scene === 'douse') {
+      sfxNodes.siren.gain.setTargetAtTime(0.006, t, 0.4);
+      const fire = typeof window.__bdayFires === 'number' ? window.__bdayFires : 1;
+      sfxNodes.crackle.gain.setTargetAtTime((0.01 + flick * 0.02) * fire, t, 0.08);
+      sfxNodes.spray.gain.setTargetAtTime(pointerHeld ? 0.035 : 0, t, 0.12);
+    } else if (sfxNodes.scene === 'record') {
+      sfxNodes.siren.gain.setTargetAtTime(0, t, 0.3);
+      sfxNodes.crackle.gain.setTargetAtTime(0, t, 0.3);
+      sfxNodes.spray.gain.setTargetAtTime(0, t, 0.1);
+      sfxNodes.vinyl.gain.setTargetAtTime(0.006 + (flick < 0.12 ? 0.02 : 0), t, 0.05);
+    } else {
+      for (const k of ['siren', 'crackle', 'spray', 'vinyl']) sfxNodes[k].gain.setTargetAtTime(0, t, 0.25);
+    }
+  }, 70);
+}
+document.addEventListener('fp-bday-scene', e => {
+  audio.ensureContext();
+  sfxEnsure();
+  if (sfxNodes) sfxNodes.scene = String(e.detail || '');
+  if (e.detail === 'fly') setTimeout(() => { clearInterval(sfxTick); sfxNodes = null; }, 1500);
+});
+
 // the transport: one hard burst of static as the record swallows the room
 document.addEventListener('fp-bday-glitch', () => {
   const box = $('bday-radio');
@@ -2122,6 +2192,7 @@ document.addEventListener('fp-bday-needle', () => {
   }
   setTimeout(() => {
     if (window.__BDAY_TRACK) {
+      audio.el.loop = false;
       audio.loadURL(window.__BDAY_TRACK);
       $('track-select').value = window.__BDAY_TRACK;
       audio.play().catch(() => {});
@@ -2210,6 +2281,7 @@ document.addEventListener('fp-bday-radio', () => {
         primed = false;
         if (window.__BDAY_INTRO) {
           audio.loadURL(window.__BDAY_INTRO);   // the fire call rides an instrumental
+          audio.el.loop = true;                 // and it LOOPS: the call takes as long as it takes
           $('track-select').value = '';
         }
         audio.play().catch(() => {});
@@ -2239,13 +2311,16 @@ document.addEventListener('fp-bday-radio', () => {
 // ── mission control ── every birthday message arrives ON THE WIRE: a
 // crackle, then the line types itself out. One channel for the whole
 // adventure - hints and story alike.
-let bcTimer = 0, bcHide = 0;
+let bcTimer = 0, bcHide = 0, bcBusy = false;
+const bcQueue = [];
 function bdayComm(text) {
+  // one voice, one line at a time: a busy wire QUEUES, never stomps
+  if (bcBusy) { if (bcQueue.length < 3) bcQueue.push(text); return; }
+  bcBusy = true;
   const box = $('bday-comm'), el = $('bc-text');
   clearInterval(bcTimer); clearTimeout(bcHide);
   box.classList.remove('hidden');
   el.textContent = '';
-  // a breath of static announces the voice (only if the radio built its nodes)
   if (brNoiseGain && audio.ctx) {
     brNoiseGain.gain.cancelScheduledValues(audio.ctx.currentTime);
     brNoiseGain.gain.setValueAtTime(0.05, audio.ctx.currentTime);
@@ -2257,9 +2332,14 @@ function bdayComm(text) {
     el.textContent = t.slice(0, ++i);
     if (i >= t.length) {
       clearInterval(bcTimer);
-      bcHide = setTimeout(() => box.classList.add('hidden'), 3600);
+      // reading time earns its length: ~3s plus a beat per word
+      bcHide = setTimeout(() => {
+        box.classList.add('hidden');
+        bcBusy = false;
+        if (bcQueue.length) bdayComm(bcQueue.shift());
+      }, 2600 + t.length * 55);
     }
-  }, 26);
+  }, 34);
 }
 document.addEventListener('fp-bday-hint', e => bdayComm(String(e.detail || '')));
 

@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=699';
-import { themePaint } from '../lib/themes.js?v=699';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=701';
+import { themePaint } from '../lib/themes.js?v=701';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -291,29 +291,63 @@ export function createBirthday() {
         road.add(cone);
         cones.push(cone);
       }
-      // the house: dark gable, amber windows, smoke climbing off the porch
+      // the house: a real one - lawn, porch, door, framed windows - and the
+      // fire lives ON THE PORCH where mrs. dumplin's trouble started
       house = new THREE.Group();
-      const walls = new THREE.Mesh(new THREE.BoxGeometry(16, 10, 10),
-        new THREE.MeshBasicMaterial({ color: 0x171226, toneMapped: false }));
-      walls.position.y = 1;
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(13, 6, 4),
+      const lawn = new THREE.Mesh(new THREE.PlaneGeometry(70, 60),
+        new THREE.MeshBasicMaterial({ color: 0x0a1208, toneMapped: false }));
+      lawn.rotation.x = -Math.PI / 2;
+      lawn.position.set(0, -3, 5);
+      house.add(lawn);
+      const walls = new THREE.Mesh(new THREE.BoxGeometry(18, 9, 10),
+        new THREE.MeshBasicMaterial({ color: 0x1a1430, toneMapped: false }));
+      walls.position.y = 1.5;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(14, 5.5, 4),
         new THREE.MeshBasicMaterial({ color: 0x0d0a18, toneMapped: false }));
-      roof.position.y = 9; roof.rotation.y = Math.PI / 4;
+      roof.position.y = 8.7; roof.rotation.y = Math.PI / 4;
       house.add(walls, roof);
-      for (const wx of [-4.5, 0, 4.5]) {
-        const win = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.8),
-          new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }));
-        win.position.set(wx, 1, 5.06);
-        house.add(win);
+      // the porch: slab, four posts, its own little roof
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(18, 0.5, 5),
+        new THREE.MeshBasicMaterial({ color: 0x241c38, toneMapped: false }));
+      slab.position.set(0, -2.8, 7.4);
+      const pRoof = new THREE.Mesh(new THREE.BoxGeometry(19, 0.4, 5.6),
+        new THREE.MeshBasicMaterial({ color: 0x110d20, toneMapped: false }));
+      pRoof.position.set(0, 3.4, 7.4);
+      house.add(slab, pRoof);
+      for (const px of [-8.2, -2.8, 2.8, 8.2]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 6.2, 8),
+          new THREE.MeshBasicMaterial({ color: 0x8a84b8, toneMapped: false }));
+        post.position.set(px, 0.3, 9.6);
+        house.add(post);
       }
+      // door and framed windows
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 4.6),
+        new THREE.MeshBasicMaterial({ color: 0x090714, toneMapped: false }));
+      door.position.set(0, -0.4, 5.06);
+      house.add(door);
+      for (const wx of [-5.6, 5.6]) {
+        const frame = new THREE.Mesh(new THREE.PlaneGeometry(3, 3.4),
+          new THREE.MeshBasicMaterial({ color: 0x2c2450, toneMapped: false }));
+        frame.position.set(wx, 1.2, 5.05);
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.8),
+          new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }));
+        win.position.set(wx, 1.2, 5.08);
+        house.add(frame, win);
+      }
+      // the FIRE: layered flames licking up from the porch line, tall not round
       houseFires = [];
       for (let i = 0; i < 8; i++) {
-        const fl = glowSprite(4.6);
-        fl.material.color.set(0xff7722);
-        fl.position.set(-6 + (i % 4) * 4, -1.5 + Math.floor(i / 4) * 5, 5.4);
-        fl.userData = { hp: 1, seed: Math.random() * 100 };
-        house.add(fl);
-        houseFires.push(fl);
+        const g3 = new THREE.Group();
+        const outer = glowSprite(5.2);
+        outer.material.color.set(0xff5511);
+        const inner = glowSprite(2.8);
+        inner.material.color.set(0xffd060);
+        inner.position.y = 0.7;
+        g3.add(outer, inner);
+        g3.position.set(-7.7 + i * 2.2, -1.4, 8.2);
+        g3.userData = { hp: 1, seed: Math.random() * 100, outer, inner };
+        house.add(g3);
+        houseFires.push(g3);
       }
       smoke = [];
       for (let i = 0; i < 7; i++) {
@@ -504,6 +538,7 @@ export function createBirthday() {
         if (state !== 'radio') return;
         state = 'drive'; stateT = 0; drove = 0;
         road.visible = true;
+        document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'drive' }));
         document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. she says it can wait until wheel of fortune ends. it cannot" }));
       };
       document.addEventListener('fp-bday-go', this._onGo);
@@ -682,8 +717,11 @@ export function createBirthday() {
             sm2.material.opacity = 0.2 + near * 0.25 + Math.sin(time + sm2.userData.seed) * 0.06;
           });
           houseFires.forEach(fl2 => {
-            fl2.material.opacity = 0.5 + Math.sin(time * 7 + fl2.userData.seed) * 0.25;
-            fl2.scale.setScalar(0.8 + Math.sin(time * 9 + fl2.userData.seed) * 0.2);
+            const u3 = fl2.userData;
+            const lick = 0.8 + Math.sin(time * 9 + u3.seed) * 0.25 + Math.sin(time * 23 + u3.seed * 2) * 0.1;
+            fl2.scale.set(0.8, 1.5 * lick, 1);
+            u3.outer.material.opacity = 0.6 + Math.sin(time * 7 + u3.seed) * 0.2;
+            u3.inner.material.opacity = 0.75 + Math.sin(time * 11 + u3.seed) * 0.2;
           });
           // the lightbar: red and blue washing the sky in turns
           const bar = Math.sin(time * 7) > 0;
@@ -707,6 +745,7 @@ export function createBirthday() {
           }
           if (drove >= DRIVE_DIST) {
             state = 'douse'; stateT = 0;
+            document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'douse' }));
             this._cab.visible = false;
             scene.fog.density = 0.009;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'on scene. hold to spray. aim for the fire, not the flamingo' }));
@@ -737,15 +776,22 @@ export function createBirthday() {
           let out = 0;
           houseFires.forEach(fl2 => {
             const u2 = fl2.userData;
-            if (u2.hp <= 0) { out++; fl2.material.opacity = Math.max(0, fl2.material.opacity - dt); return; }
+            if (u2.hp <= 0) {
+              out++;
+              u2.outer.material.opacity = Math.max(0, u2.outer.material.opacity - dt);
+              u2.inner.material.opacity = Math.max(0, u2.inner.material.opacity - dt);
+              return;
+            }
             const fw = this._fw || (this._fw = new THREE.Vector3());
             fl2.getWorldPosition(fw);
             if (spraying && Math.hypot(fw.x - aim.x, fw.y - aim.y) < 3.2) {
               u2.hp -= dt * 0.8;
               if (u2.hp <= 0 && opts.impact) opts.impact(0.4);
             }
-            fl2.material.opacity = (0.35 + u2.hp * 0.35) + Math.sin(time * 7 + u2.seed) * 0.15;
-            fl2.scale.setScalar((0.4 + u2.hp * 0.6) * (0.85 + Math.sin(time * 9 + u2.seed) * 0.15));
+            const lick2 = 0.85 + Math.sin(time * 9 + u2.seed) * 0.25 + Math.sin(time * 21 + u2.seed * 2) * 0.1;
+            fl2.scale.set(0.4 + u2.hp * 0.5, (0.4 + u2.hp * 1.1) * lick2, 1);
+            u2.outer.material.opacity = (0.3 + u2.hp * 0.4) + Math.sin(time * 7 + u2.seed) * 0.12;
+            u2.inner.material.opacity = (0.35 + u2.hp * 0.45) + Math.sin(time * 11 + u2.seed) * 0.15;
           });
           smoke.forEach(sm2 => {
             sm2.position.y += sm2.userData.rise * dt;
@@ -760,6 +806,7 @@ export function createBirthday() {
           camera.fov += (76 - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure('FIRES OUT', out, houseFires.length);
+          window.__bdayFires = 1 - out / houseFires.length;   // the crackle dies with the fire
           if (out >= houseFires.length && !dousedAll) {
             dousedAll = true;
             sprayPts.visible = false;
@@ -767,6 +814,7 @@ export function createBirthday() {
             setTimeout(() => {
               if (state !== 'douse') return;
               state = 'record'; stateT = 0;
+              document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
               road.visible = false;
               room.visible = true;
               document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me? my hip says no but my heart says boogie" }));
@@ -794,6 +842,7 @@ export function createBirthday() {
             room.visible = false;
             confetti.visible = true;
             state = 'fly'; stateT = 0; hintT = 0;
+            document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'fly' }));
             sky.material.color.setRGB(0, 0, 0);
             document.dispatchEvent(new CustomEvent('fp-bday-glitch'));
           }
