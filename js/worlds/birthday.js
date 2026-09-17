@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=682';
-import { themePaint } from '../lib/themes.js?v=682';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=683';
+import { themePaint } from '../lib/themes.js?v=683';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -34,7 +34,7 @@ export function createBirthday() {
   let steer = { x: 0, y: 0 }, steerTarget = { x: 0, y: 0 };
   let caught = 0, lit = 0, finales = 0;
   let travel = 0, surge = 0;
-  // fly -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
+  // fly -> rush -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
   let state = 'fly';
   let stateT = 0, blowProg = 0, cascadeT = 0;
   let tapGlit = 0, callPulse = 0;
@@ -45,13 +45,18 @@ export function createBirthday() {
 
   const mkFlame = () => {
     const g = new THREE.Group();
-    const s = glowSprite(4.4);
+    const s = glowSprite(5.4);
     const core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 10, 10),
+      new THREE.SphereGeometry(0.26, 10, 10),
       new THREE.MeshBasicMaterial({ color: 0xfff2d0, toneMapped: false })
     );
-    g.add(s, core);
-    g.userData = { s, core, seed: Math.random() * 100, live: false, dart: 0 };
+    // the slim gold ring is the house word for GO THROUGH THIS
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.7, 0.06, 8, 40),
+      new THREE.MeshBasicMaterial({ color: 0xffce70, transparent: true, opacity: 0.85, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    g.add(s, core, ring);
+    g.userData = { s, core, ring, seed: Math.random() * 100, live: false, dart: 0 };
     return g;
   };
 
@@ -360,7 +365,7 @@ export function createBirthday() {
       const chorus = opts.chorus || 0;
       // the waking: the universe brightens with every flame taken, and once
       // the cake is out it stays fully awake
-      const aliveK = (state === 'fly' || state === 'gift' || state === 'open')
+      const aliveK = (state === 'fly' || state === 'rush' || state === 'gift' || state === 'open')
         ? 0.15 + 0.85 * Math.min(1, caught / CANDLES)
         : 1;
       const ceremonyDim = (state === 'wish' || state === 'blowing') ? 0.45 : state === 'out' ? 0.18 : 1;
@@ -372,9 +377,10 @@ export function createBirthday() {
       if (participants && participants[0]) { participants[0].x = steer.x; participants[0].y = steer.y; }
 
       // ── the flight itself: the universe streams past, faster on HOLD ──
-      surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * 4);
-      const flying = state === 'fly' || state === 'gift' || state === 'after';
-      const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 16 + chorus * 4) : 2;
+      surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * (opts.holding ? 4 : 1.6));
+      const flying = state === 'fly' || state === 'rush' || state === 'gift' || state === 'after';
+      const rushK = state === 'rush' ? Math.min(1, stateT / 0.5) : 0;
+      const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 16 + chorus * 4 + rushK * 34) : 2;
       travel += speed * dt;
 
       // sky and stars
@@ -403,7 +409,7 @@ export function createBirthday() {
           dum2.updateMatrix();
           confetti.setMatrixAt(i, dum2.matrix);
           paint(c2.hueSeed, audio.mid);
-          const lum = (0.22 + 0.3 * aliveK + audio.treble * 0.2 * aliveK) * ceremonyDim;
+          const lum = (0.16 + 0.22 * aliveK + audio.treble * 0.16 * aliveK) * ceremonyDim;
           color.setHSL(tp[0], Math.max(0.55, tp[1]), Math.min(0.7, lum));
           ic.setXYZ(i, color.r, color.g, color.b);
         }
@@ -412,6 +418,7 @@ export function createBirthday() {
       }
 
       // ── ACT I: the flames come to meet you ──
+      if (state === 'rush' && stateT > 2.4) { state = 'gift'; stateT = 0; }
       if (state === 'fly' || state === 'after') {
         for (const f of flames) {
           const u = f.userData;
@@ -422,6 +429,9 @@ export function createBirthday() {
           u.s.material.color.copy(color);
           u.s.material.opacity = (0.7 + audio.treble * 0.25) * flick;
           u.s.scale.setScalar((1 + chorus * 0.4 + (u.dart > 0 ? 0.5 : 0)) * flick);
+          u.ring.rotation.y = time * 1.4 + u.seed;
+          u.ring.rotation.x = 0.4;
+          u.ring.material.opacity = 0.55 + Math.sin(time * 3 + u.seed) * 0.2;
           if (u.dart > 0) {
             u.dart -= dt;
             f.position.lerp(player.position, Math.min(1, dt * 3.4));
@@ -436,11 +446,22 @@ export function createBirthday() {
           if (dz < 3.5 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 3.4) {
             if (state === 'fly') {
               caught = Math.min(CANDLES, caught + 1);
-              if (caught >= CANDLES) { state = 'gift'; stateT = 0; }
+              if (caught >= CANDLES) { state = 'rush'; stateT = 0; }
             }
             dealFlame(f);
-            tapGlit = Math.max(tapGlit, 0.6);
-            if (opts.impact) opts.impact(0.3);
+            // the catch LANDS: a gold ring blooms from your light, the night
+            // lurches forward, your halo flares - unmistakable, every time
+            tapGlit = 1;
+            surge = Math.min(1, surge + 0.55);
+            const m2 = rings.find(x => !x.visible);
+            if (m2) {
+              m2.visible = true;
+              m2.position.copy(player.position);
+              m2.userData.r = 0.6;
+              m2.rotation.set(0, 0, 0);
+              m2.material.color.setHSL(0.11, 0.9, 0.6);
+            }
+            if (opts.impact) opts.impact(0.45);
             if (state === 'after') this._fire(player.position.clone().add(new THREE.Vector3(0, 3, -8)), opts, paint, tp);
           }
         }
@@ -463,11 +484,19 @@ export function createBirthday() {
         t.scale.setScalar(0.7 + Math.sin(time * 5 + i) * 0.15);
       });
 
-      // ── ACT II: the gift drifts in from the deep ──
+      // ── ACT II: the gift drifts in from the deep, under a pillar of light ──
       if (state === 'gift') {
         if (!giftBox.visible) {
           giftBox.visible = true;
           giftBox.position.set(0, -9, -130);
+          if (!this._pillar) {
+            this._pillar = new THREE.Mesh(
+              new THREE.CylinderGeometry(2.2, 3.6, 70, 16, 1, true),
+              new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.14, side: THREE.DoubleSide, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false })
+            );
+            group.add(this._pillar);
+          }
+          this._pillar.visible = true;
           if (!hintedGift) {
             hintedGift = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'a gift! fly into it' }));
@@ -476,6 +505,9 @@ export function createBirthday() {
         giftBox.position.z = Math.min(-16, giftBox.position.z + speed * dt * 0.55);
         giftBox.rotation.y = Math.sin(time * 0.4) * 0.12;
         giftBox.position.y = -9 + Math.sin(time * 0.9) * 0.5;
+        this._pillar.position.set(giftBox.position.x, giftBox.position.y + 40, giftBox.position.z);
+        this._pillar.rotation.y = time * 0.3;
+        this._pillar.material.opacity = 0.1 + audio.bass * 0.08 + Math.sin(time * 2) * 0.03;
         const gl = 0.5 + audio.bass * 0.4 + Math.sin(time * 2.5) * 0.15;
         [ribbonV, ribbonH, bowKnot, lid.children[1], lid.children[2]].forEach(rb => {
           if (rb && rb.material) rb.material.color.setHSL(0.11, 0.85, Math.min(0.72, gl));
@@ -483,8 +515,11 @@ export function createBirthday() {
         // flying INTO it opens it
         if (giftBox.position.z >= -20 && Math.hypot(player.position.x, player.position.y + 4) < 9) {
           state = 'open'; stateT = 0;
-          this._fire(giftBox.position.clone().add(new THREE.Vector3(0, 12, 0)), opts, paint, tp);
-          if (opts.impact) opts.impact(0.8);
+          if (this._pillar) this._pillar.visible = false;
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(0, 14, 0)), opts, paint, tp);
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(-9, 8, 4)), opts, paint, tp);
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(9, 8, -4)), opts, paint, tp);
+          if (opts.impact) opts.impact(1);
         }
       }
 
@@ -497,11 +532,13 @@ export function createBirthday() {
         giftBox.children[0].material.opacity = 1 - k;
         giftBox.children[0].material.transparent = true;
         [ribbonV, ribbonH].forEach(rb => { rb.material.opacity = 1 - k; rb.material.transparent = true; });
-        if (!cake.visible && k > 0.35) cake.visible = true;
+        if (!cake.visible && k > 0.3) cake.visible = true;
         if (cake.visible) {
-          const ck = Math.min(1, Math.max(0, (k - 0.35) / 0.6));
+          const ck = Math.min(1, Math.max(0, (k - 0.3) / 0.7));
           const e = 1 - Math.pow(1 - ck, 3);
           cake.scale.setScalar(0.001 + e * 0.999);
+          // the tiers IGNITE bottom-up as it rises - a reveal, not an appearance
+          this._igniteK = ck;
         }
         if (k >= 1) {
           giftBox.visible = false;
@@ -510,12 +547,22 @@ export function createBirthday() {
         }
       }
 
-      // ── ACT III: the cascade - every gathered flame finds its candle ──
+      // ── ACT III: the cascade - every flame STREAKS from you to its candle ──
       if (state === 'cascade') {
+        if (!this._streak) {
+          this._streak = glowSprite(3.2);
+          this._streak.material.color.setHSL(0.1, 0.9, 0.65);
+          group.add(this._streak);
+          this._streakV = new THREE.Vector3();
+        }
         cascadeT -= dt;
         if (cascadeT <= 0 && lit < CANDLES) {
-          cascadeT = Math.max(0.06, 1.6 / CANDLES + 0.04);
+          cascadeT = 0.13;
           const c = candles[lit];
+          c.getWorldPosition(this._streakV);
+          this._streakFrom = player.position.clone();
+          this._streakTo = this._streakV.clone().add(new THREE.Vector3(0, 2.4, 0));
+          this._streakK = 0;
           c.userData.on = true;
           c.userData.pop = 1;
           lit++;
@@ -525,13 +572,23 @@ export function createBirthday() {
             document.dispatchEvent(new CustomEvent('fp-bday-wish'));
           }
         }
+        if (this._streakFrom) {
+          this._streakK = Math.min(1, (this._streakK || 0) + dt * 8);
+          this._streak.visible = true;
+          this._streak.position.lerpVectors(this._streakFrom, this._streakTo, this._streakK);
+          this._streak.material.opacity = 0.9 * (1 - this._streakK * 0.4);
+        }
+      } else if (this._streak) {
+        this._streak.visible = false;
       }
 
       // ── the cake lives (once it exists) ──
       if (cake.visible) {
+        const ign = state === 'open' ? (this._igniteK || 0) : 1;
         rims.forEach((rim, i) => {
           paint(0.15 + i * 0.25, audio.bass);
-          color.setHSL(tp[0], tp[1], Math.min(0.62, (0.34 + audio.bass * 0.3) * Math.min(1.3, tp[2])) * ceremonyDim);
+          const tierOn = ign >= (i + 1) / 3.2;   // bottom tier first, crown last
+          color.setHSL(tp[0], tp[1], Math.min(0.62, (0.34 + audio.bass * 0.3) * Math.min(1.3, tp[2])) * ceremonyDim * (tierOn ? 1 : 0.06));
           rim.material.color.copy(color);
           rim.scale.setScalar(1 + audio.bass * 0.05 * reactivity);
           color.setHSL(tp[0], tp[1] * 0.7, (0.08 + audio.bass * 0.05) * ceremonyDim);
@@ -733,7 +790,7 @@ export function createBirthday() {
       // ── the camera: a steady flight; the ceremony draws it to the cake ──
       const camT = this._camT || (this._camT = new THREE.Vector3(0, 0.5, 12));
       const lookT = this._lookT || (this._lookT = new THREE.Vector3(0, 0, -40));
-      if (flying || state === 'open') {
+      if (flying) {
         camT.set(steer.x * 3, 0.5 + steer.y * 2 + Math.sin(time * 0.3) * 0.5, 12 - surge * 2.5);
         lookT.set(steer.x * 4, steer.y * 2.5, -50);
       } else {
