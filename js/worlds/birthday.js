@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=696';
-import { themePaint } from '../lib/themes.js?v=696';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=699';
+import { themePaint } from '../lib/themes.js?v=699';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -326,6 +326,57 @@ export function createBirthday() {
       }
       house.position.set(0, -1, -DRIVE_DIST - 30);
       road.add(house);
+      // ── the neighborhood: dark houses asleep on both sides ──
+      const hoodGeo = new THREE.BoxGeometry(8, 6, 8);
+      const hoodMat = new THREE.MeshBasicMaterial({ color: 0x100d1d, toneMapped: false });
+      for (let i = 0; i < 16; i++) {
+        const hb = new THREE.Mesh(hoodGeo, hoodMat);
+        const side = i % 2 ? 1 : -1;
+        hb.position.set(side * (16 + Math.random() * 5), -1, -20 - i * 24 - Math.random() * 8);
+        hb.scale.y = 0.8 + Math.random() * 0.7;
+        hb.userData = { z0: hb.position.z };
+        road.add(hb);
+        if (Math.random() < 0.4) {
+          const win = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.2),
+            new THREE.MeshBasicMaterial({ color: 0x8a7448, toneMapped: false }));
+          win.position.set(side * (16 + Math.random() * 3) - side * 4.2, 0.5, hb.position.z);
+          win.rotation.y = side * -Math.PI / 2;
+          win.userData = { z0: hb.position.z };
+          road.add(win);
+        }
+      }
+      // ── the SMOKE COLUMN: the beacon he follows, visible from blocks out ──
+      this._plume = [];
+      for (let i = 0; i < 6; i++) {
+        const pl = glowSprite(16 + i * 5);
+        pl.material.color.set(0x3d3d4d);
+        pl.position.set(2, 10 + i * 9, -DRIVE_DIST - 30);
+        pl.userData = { seed: Math.random() * 100, y0: 10 + i * 9 };
+        road.add(pl);
+        this._plume.push(pl);
+      }
+      const glow2 = glowSprite(22);
+      glow2.material.color.set(0xff5511);
+      glow2.material.opacity = 0.4;
+      glow2.position.set(0, 4, -DRIVE_DIST - 29);
+      road.add(glow2);
+      this._fireGlow = glow2;
+      // ── the truck cab: the red hood under your eyes, the lightbar above ──
+      this._cab = new THREE.Group();
+      const hood = new THREE.Mesh(
+        new THREE.BoxGeometry(5.6, 0.5, 2.0),
+        new THREE.MeshBasicMaterial({ color: 0x8a1420, toneMapped: false })
+      );
+      hood.position.set(0, -1.85, -3.1);
+      hood.rotation.x = 0.16;
+      const barL = glowSprite(3.2), barR = glowSprite(3.2);
+      barL.position.set(-1.9, 1.6, -2);
+      barR.position.set(1.9, 1.6, -2);
+      this._cab.add(hood, barL, barR);
+      this._barL = barL; this._barR = barR;
+      this._cab.visible = false;
+      camera.add(this._cab);
+      scene.add(camera);
       // the water: a stream of droplets while dousing
       const spn = 60;
       const spp = new Float32Array(spn * 3);
@@ -453,7 +504,7 @@ export function createBirthday() {
         if (state !== 'radio') return;
         state = 'drive'; stateT = 0; drove = 0;
         road.visible = true;
-        document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. get there" }));
+        document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. she says it can wait until wheel of fortune ends. it cannot" }));
       };
       document.addEventListener('fp-bday-go', this._onGo);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
@@ -572,11 +623,27 @@ export function createBirthday() {
         for (const f of flames) f.visible = false;
         for (const t2 of tailFlies) t2.material.opacity = 0;
         if (state === 'drive') {
+          this._cab.visible = true;
+          scene.fog.density = 0.0032;   // the smoke column must read from blocks away
           // the midnight run: steer the lane, hold for the siren push
           surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * 4);
           coneSlowT = Math.max(0, coneSlowT - dt);
-          const runSpeed = (26 + surge * 20) * (coneSlowT > 0 ? 0.45 : 1);
+          const nearing = Math.max(0, Math.min(1, (drove - DRIVE_DIST * 0.9) / (DRIVE_DIST * 0.1)));
+          const runSpeed = (26 + surge * 20) * (coneSlowT > 0 ? 0.45 : 1) * (1 - nearing * 0.75);
           drove += runSpeed * dt;
+          // the lightbar washes the hood red and blue in turns
+          const barPhase = Math.sin(time * 8) > 0;
+          this._barL.material.color.set(barPhase ? 0xff2233 : 0x2244ff);
+          this._barR.material.color.set(barPhase ? 0x2244ff : 0xff2233);
+          this._barL.material.opacity = 0.35 + (barPhase ? 0.3 : 0);
+          this._barR.material.opacity = 0.35 + (barPhase ? 0 : 0.3);
+          // the plume breathes and leans; the fire glow pulses at its root
+          this._plume.forEach(pl => {
+            pl.position.y = pl.userData.y0 + Math.sin(time * 0.6 + pl.userData.seed) * 2;
+            pl.position.x = 2 + Math.sin(time * 0.4 + pl.userData.seed) * 3 + (pl.userData.y0 - 10) * 0.12;
+            pl.material.opacity = 0.24 + Math.sin(time * 0.8 + pl.userData.seed) * 0.06;
+          });
+          this._fireGlow.material.opacity = 0.3 + Math.sin(time * 6) * 0.12;
           steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 5);
           const lane = steer.x * 6;
           // the road streams; the lightbar washes the night red and blue
@@ -603,7 +670,7 @@ export function createBirthday() {
             if (dzc < 4 && Math.abs(cone.userData.x - lane) < 1.8 && coneSlowT <= 0) {
               coneSlowT = 1.1;
               if (opts.impact) opts.impact(0.7);
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'easy! mind the cones' }));
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'the cones! those cost nine dollars each' }));
             }
           }
           house.position.z = -DRIVE_DIST - 30 + drove;
@@ -630,9 +697,19 @@ export function createBirthday() {
           camera.fov += ((78 + surge * 8) - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure('BLOCKS', Math.min(9, Math.floor(near * 10)), 10);
+          if (!this._droveHint1 && drove > 40) {
+            this._droveHint1 = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'lights on. follow the smoke. not the taco truck. the smoke' }));
+          }
+          if (!this._droveHint2 && near > 0.55) {
+            this._droveHint2 = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'she is out front waving. she is also spraying it with a garden hose. it is not helping' }));
+          }
           if (drove >= DRIVE_DIST) {
             state = 'douse'; stateT = 0;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'you made it. hold to spray - put it out' }));
+            this._cab.visible = false;
+            scene.fog.density = 0.009;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'on scene. hold to spray. aim for the fire, not the flamingo' }));
           }
         }
         if (state === 'douse') {
@@ -686,13 +763,13 @@ export function createBirthday() {
           if (out >= houseFires.length && !dousedAll) {
             dousedAll = true;
             sprayPts.visible = false;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. good work' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. the lawn flamingo made it. hero' }));
             setTimeout(() => {
               if (state !== 'douse') return;
               state = 'record'; stateT = 0;
               road.visible = false;
               room.visible = true;
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me?" }));
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me? my hip says no but my heart says boogie" }));
             }, 2000);
           }
         }
@@ -800,14 +877,14 @@ export function createBirthday() {
               if (q > commsSent && caught < CANDLES) {
                 commsSent = q;
                 const lines = [
-                  '', 'first dozen contained. they are moving faster',
-                  'halfway. watch the red embers',
-                  'almost all of them. where are they going?'];
+                  '', 'first dozen contained. they are moving faster. rude',
+                  'halfway. watch the red embers. gary touched one. gary is fine. ish',
+                  'almost all of them. gary thinks they are migrating. gary is not a scientist'];
                 if (lines[q]) document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: lines[q] }));
               }
               if (caught >= CANDLES) {
                 state = 'rush'; stateT = 0;
-                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all ' + CANDLES + ' contained. wait... something is coming' }));
+                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all ' + CANDLES + ' contained. the paperwork will be enormous. wait... something is coming' }));
               }
             }
             dealFlame(f);
@@ -855,7 +932,7 @@ export function createBirthday() {
             commsSent = Math.min(commsSent, Math.floor((caught / CANDLES) * 4));
             const runaway = flames.find(x => !x.userData.live) || null;
             if (runaway) dealFlame(runaway);
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'one broke loose! stay off the red' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'one broke loose! stay off the red. we talked about this' }));
           }
           if (opts.impact) opts.impact(0.85);
         }
@@ -891,7 +968,7 @@ export function createBirthday() {
           this._pillar.visible = true;
           if (!hintedGift) {
             hintedGift = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that is no fire. get closer' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that is either a gift or the biggest cone yet. get closer' }));
           }
         }
         giftBox.position.z = Math.min(-16, giftBox.position.z + speed * dt * 0.55);
@@ -1032,11 +1109,11 @@ export function createBirthday() {
         // the transport is a TWIST: dispatch is as lost as he is
         if (!briefed && hintT > 2.4) {
           briefed = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens just went rainbow' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens went full rainbow. gary fainted' }));
         }
         if (!this._brief2 && hintT > 8.5) {
           this._brief2 = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'no time to explain. ' + CANDLES + ' flames loose in there. bring them in' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'no time to explain. ' + CANDLES + ' flames loose in there. bring them in. do NOT lick them' }));
         }
         if (!hintedFly && hintT > 15 && caught === 0) {
           hintedFly = true;
@@ -1217,6 +1294,7 @@ export function createBirthday() {
     },
 
     dispose() {
+      if (this._cab) { camera.remove(this._cab); }
       document.removeEventListener('fp-bday-blow', this._onBlow);
       document.removeEventListener('fp-bday-go', this._onGo);
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
