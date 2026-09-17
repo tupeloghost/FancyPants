@@ -244,6 +244,9 @@
     animation: giftGlow 1.6s ease-in-out infinite;
   }
   #gift-note.hidden { display: none; }
+  /* QUEST MODE: a birthday link opens as a pure adventure - no brand, no
+     bar, no tutor. Fancy Britches introduces itself when the mission ends. */
+  body.quest #panel, body.quest #qbar, body.quest #show-me { display: none !important; }
   /* mission control on the wire: messages type themselves out */
   #bday-comm {
     position: fixed; left: 50%; bottom: 118px; transform: translateX(-50%);
@@ -3434,7 +3437,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 689</div>
+      <div id="build-stamp">build 691</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3476,6 +3479,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=689"></script>
+<script type="module" src="js/main.js?v=691"></script>
 </body>
 </html>

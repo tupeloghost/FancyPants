@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=689';
-import { themePaint } from '../lib/themes.js?v=689';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=691';
+import { themePaint } from '../lib/themes.js?v=691';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -710,6 +710,7 @@ export function createBirthday() {
           // the candles stay LIT and the party stays: flames keep coming for
           // the joy of it, every catch its own small firework
           state = 'after'; stateT = 0;
+          document.dispatchEvent(new CustomEvent('fp-bday-after'));
           courseAt = travel + 46;
           for (const f of flames) dealFlame(f);
         }
