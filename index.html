@@ -259,6 +259,20 @@
     pointer-events: none;
   }
   #bday-comm.hidden { display: none; }
+  #bday-cta {
+    position: fixed; left: 50%; bottom: 250px; transform: translateX(-50%);
+    width: auto; max-width: 88vw; white-space: nowrap;
+    z-index: 58; padding: 14px 26px; border-radius: 999px;
+    background: rgba(5, 4, 12, 0.92);
+    border: 1px solid hsl(45, 85%, 62%);
+    color: hsl(45, 90%, 70%);
+    font: 600 13px 'SF Mono', ui-monospace, Menlo, monospace;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    cursor: pointer;
+    animation: ctaBreathe 1.8s ease-in-out infinite;
+  }
+  #bday-cta.hidden { display: none; }
+  @keyframes ctaBreathe { 50% { box-shadow: 0 0 22px hsla(45, 85%, 62%, 0.45); } }
   #bday-comm i {
     font-style: normal; color: hsl(45, 85%, 62%); font-size: 11px; flex: none;
     animation: bcBlink 1.1s steps(2) infinite;
@@ -3196,6 +3210,7 @@
     <span>the first player through a hoop gets it</span>
   </div>
   <div id="bday-comm" class="hidden"><i>&#9656;&#9656;</i><span id="bc-text"></span></div>
+  <button id="bday-cta" class="hidden"></button>
   <div id="bday-radio" class="hidden">
     <canvas id="br-static"></canvas>
     <div id="br-set">
@@ -3437,7 +3452,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 730</div>
+      <div id="build-stamp">build 733</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3479,6 +3494,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=730"></script>
+<script type="module" src="js/main.js?v=733"></script>
 </body>
 </html>

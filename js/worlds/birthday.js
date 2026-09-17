@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=730';
-import { themePaint } from '../lib/themes.js?v=730';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=733';
+import { themePaint } from '../lib/themes.js?v=733';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -494,6 +494,7 @@ export function createBirthday() {
       lady.scale.setScalar(1.45);
       lady.position.set(6.5, -3, 13.5);
       house.add(lady);
+      this._lady = lady;
       this._lady = lady; this._ladyArm = wavArm;
       // the lawn flamingo (it will make it. hero.)
       const mingo = new THREE.Group();
@@ -731,6 +732,15 @@ export function createBirthday() {
         document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. she says it can wait until wheel of fortune ends. it cannot" }));
       };
       document.addEventListener('fp-bday-go', this._onGo);
+      this._onCta = () => {
+        if (state !== 'lady') return;
+        state = 'record'; stateT = 0;
+        document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
+        road.visible = false;
+        room.visible = true;
+        document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' }));
+      };
+      document.addEventListener('fp-bday-ctago', this._onCta);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
       // dev handles: skip to the gift, or straight to the ceremony
       window.__bdayGift = () => { caught = CANDLES; state = 'gift'; stateT = 0; if (this._cab) this._cab.visible = false; if (road) road.visible = false; player.visible = true; };
@@ -866,7 +876,7 @@ export function createBirthday() {
         return;
       }
       // ── THE FIRE CALL ── three scenes before the sky
-      if (state === 'drive' || state === 'arrive' || state === 'douse' || state === 'record') {
+      if (state === 'drive' || state === 'arrive' || state === 'douse' || state === 'lady' || state === 'record') {
         stateT += dt;
         confetti.visible = false;
         player.visible = false;   // the light of the flight waits its turn
@@ -1131,14 +1141,30 @@ export function createBirthday() {
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. the lawn flamingo made it. hero' }));
             setTimeout(() => {
               if (state !== 'douse') return;
-              state = 'record'; stateT = 0;
-              document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
-              road.visible = false;
-              room.visible = true;
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me? my hip says no but my heart says boogie" }));
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' }));
+              state = 'lady'; stateT = 0;
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: you saved my porch, sugar. one favor before you go... put a record on for me? my hip says no but my heart says boogie" }));
+              document.dispatchEvent(new CustomEvent('fp-bday-cta', { detail: 'put the record on' }));
             }, 2000);
           }
+        }
+        if (state === 'lady') {
+          sprayPts.visible = false;
+          if (this._ret) this._ret.visible = false;
+          window.__bdayFires = 0;
+          // she gets the floor: the camera walks over, her arm chats along,
+          // and the gold button is the only way forward - zero ambiguity
+          const lw = this._lw || (this._lw = new THREE.Vector3());
+          this._lady.getWorldPosition(lw);
+          this._ladyArm.rotation.z = 0.35 + Math.sin(time * 3) * 0.28;   // talking now, not flagging down a truck
+          camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
+          this._cv2.set(lw.x - 7, lw.y + 5.5, lw.z + 17);
+          camera.position.lerp(this._cv2, Math.min(1, dt * 2));
+          const lv4 = this._lv4 || (this._lv4 = new THREE.Vector3());
+          lv4.lerp(new THREE.Vector3(lw.x - 2, lw.y + 3, lw.z), Math.min(1, dt * 2.5));
+          camera.lookAt(lv4);
+          camera.fov += (64 - camera.fov) * Math.min(1, dt * 3);
+          camera.updateProjectionMatrix();
+          if (window.__setFigure) window.__setFigure(null);
         }
         if (state === 'record') {
           // her front room: put the record ON, then drop the needle. two taps,
@@ -1721,6 +1747,7 @@ export function createBirthday() {
       if (this._cab) { camera.remove(this._cab); }
       document.removeEventListener('fp-bday-blow', this._onBlow);
       document.removeEventListener('fp-bday-go', this._onGo);
+      document.removeEventListener('fp-bday-ctago', this._onCta);
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       scene.remove(group);
       rims = []; candles = []; flames = []; bursts = []; rings = []; lanterns = []; confBits = []; tailFlies = [];

@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=730';
-import { drawQR } from './lib/qr.js?v=730';
-import { WORLDS } from './worlds/registry.js?v=730';
-import { Net, PALETTE } from './net.js?v=730';
-import { Presence } from './lib/presence.js?v=730';
-import { Pulses } from './lib/pulse.js?v=730';
-import { BeatClock } from './lib/beatclock.js?v=730';
-import { BeatCue } from './lib/beatcue.js?v=730';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=730';
-import { Race, placeOf, standings } from './lib/race.js?v=730';
-import { Signals } from './lib/signals.js?v=730';
-import { pickShareLine, loadLines } from './lib/lines.js?v=730';
-import { RouteMap } from './lib/map.js?v=730';
-import * as sfx from './lib/sfx.js?v=730';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=730';
-import { glowTexture } from './lib/glow.js?v=730';
+import { AudioEngine } from './audio-engine.js?v=733';
+import { drawQR } from './lib/qr.js?v=733';
+import { WORLDS } from './worlds/registry.js?v=733';
+import { Net, PALETTE } from './net.js?v=733';
+import { Presence } from './lib/presence.js?v=733';
+import { Pulses } from './lib/pulse.js?v=733';
+import { BeatClock } from './lib/beatclock.js?v=733';
+import { BeatCue } from './lib/beatcue.js?v=733';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=733';
+import { Race, placeOf, standings } from './lib/race.js?v=733';
+import { Signals } from './lib/signals.js?v=733';
+import { pickShareLine, loadLines } from './lib/lines.js?v=733';
+import { RouteMap } from './lib/map.js?v=733';
+import * as sfx from './lib/sfx.js?v=733';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=733';
+import { glowTexture } from './lib/glow.js?v=733';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2159,7 +2159,19 @@ function sfxEnsure() {
     }
   }, 70);
 }
+// the quest button: a world asks for it by label, the click answers back
+document.addEventListener('fp-bday-cta', e => {
+  const b = $('bday-cta');
+  if (!e.detail) { b.classList.add('hidden'); return; }
+  b.textContent = String(e.detail);
+  b.classList.remove('hidden');
+});
+$('bday-cta').addEventListener('click', () => {
+  $('bday-cta').classList.add('hidden');
+  document.dispatchEvent(new CustomEvent('fp-bday-ctago'));
+});
 document.addEventListener('fp-bday-scene', e => {
+  $('bday-cta').classList.add('hidden');   // a scene change retires its button
   bcQueue.length = 0;   // a new scene never replays the old scene's lines
   audio.ensureContext();
   sfxEnsure();
