@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=687';
-import { themePaint } from '../lib/themes.js?v=687';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=688';
+import { themePaint } from '../lib/themes.js?v=688';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -60,17 +60,21 @@ export function createBirthday() {
     return g;
   };
 
-  // flames come to meet you out of the deep: pick a lane, hold it
-  const dealFlame = (f, first) => {
+  // ── the COURSE ── flames are not scattered: they hang on one winding
+  // trail through the night, each leading the eye to the next. Following
+  // the string IS the flying.
+  let courseAt = 70;                     // course-distance of the next flame dealt
+  const COURSE_GAP = 26;                 // spacing along the trail
+  const laneX = d => Math.sin(d * 0.021) * 5.5 + Math.sin(d * 0.0072) * 2.4;
+  const laneY = d => Math.sin(d * 0.0137) * 2.8 + Math.cos(d * 0.019) * 1.4;
+  const dealFlame = (f) => {
     const u = f.userData;
     u.live = true;
     u.dart = 0;
     f.visible = true;
-    f.position.set(
-      (Math.random() * 2 - 1) * 8,
-      (Math.random() * 2 - 1) * 4.5,
-      -60 - Math.random() * (first ? 40 : 70)
-    );
+    courseAt += COURSE_GAP;
+    u.d = courseAt;
+    f.position.set(laneX(u.d), laneY(u.d), -(u.d - travel));
     u.seed = Math.random() * 100;
   };
 
@@ -221,10 +225,11 @@ export function createBirthday() {
       giftBox.visible = false;
       group.add(giftBox);
 
-      // flames
+      // flames: the opening stretch of the course, strung in order
+      courseAt = 46;
       for (let i = 0; i < FLAMES; i++) {
         const f = mkFlame();
-        dealFlame(f, true);
+        dealFlame(f);
         group.add(f);
         flames.push(f);
       }
@@ -446,9 +451,9 @@ export function createBirthday() {
             f.position.lerp(player.position, Math.min(1, dt * 3.4));
           } else {
             f.position.z += speed * dt;
-            f.position.x += Math.sin(time * 1.1 + u.seed) * dt * 1.1;
-            f.position.y += Math.cos(time * 0.9 + u.seed) * dt * 0.8;
-            if (f.position.z > 8) dealFlame(f);
+            f.position.x = laneX(u.d) + Math.sin(time * 1.4 + u.seed) * 0.25;
+            f.position.y = laneY(u.d) + Math.cos(time * 1.1 + u.seed) * 0.25;
+            if (f.position.z > 8) dealFlame(f);   // missed: it rejoins the course's end
           }
           // the catch: lane and height, generous, as it reaches you
           const dz = Math.abs(f.position.z - player.position.z);
@@ -686,7 +691,8 @@ export function createBirthday() {
           // the candles stay LIT and the party stays: flames keep coming for
           // the joy of it, every catch its own small firework
           state = 'after'; stateT = 0;
-          for (const f of flames) dealFlame(f, true);
+          courseAt = travel + 46;
+          for (const f of flames) dealFlame(f);
         }
       }
 

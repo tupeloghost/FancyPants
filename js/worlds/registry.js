@@ -11,24 +11,24 @@
 // `pulse` is how much of the shared tap-ring a world can carry (1 full, 0 off).
 // Dark sparse worlds take it happily; worlds drawn from fine lines, or already
 // dense with colour, get swamped by one and ask for less.
-import { createTunnel } from './tunnel.js?v=687';
-import { createSurfer } from './surfer.js?v=687';
-import { createOrbit } from './orbit.js?v=687';
-import { createBloom } from './bloom.js?v=687';
-import { createTrail } from './trail.js?v=687';
-import { createSignal } from './signal.js?v=687';
-import { createRiver } from './river.js?v=687';
-import { createFunhouse } from './funhouse.js?v=687';
-import { createLavaLamp } from './lavalamp.js?v=687';
-import { createPlasma } from './plasma.js?v=687';
-import { createCherryLand } from './cherryland.js?v=687';
-import { createSlinky } from './slinky.js?v=687';
-import { createBlacktop } from './blacktop.js?v=687';
-import { createWaterslide } from './waterslide.js?v=687';
-import { createGarden } from './garden.js?v=687';
-import { createPaint } from './paint.js?v=687';
-import { createComets } from './comets.js?v=687';
-import { createBirthday } from './birthday.js?v=687';
+import { createTunnel } from './tunnel.js?v=688';
+import { createSurfer } from './surfer.js?v=688';
+import { createOrbit } from './orbit.js?v=688';
+import { createBloom } from './bloom.js?v=688';
+import { createTrail } from './trail.js?v=688';
+import { createSignal } from './signal.js?v=688';
+import { createRiver } from './river.js?v=688';
+import { createFunhouse } from './funhouse.js?v=688';
+import { createLavaLamp } from './lavalamp.js?v=688';
+import { createPlasma } from './plasma.js?v=688';
+import { createCherryLand } from './cherryland.js?v=688';
+import { createSlinky } from './slinky.js?v=688';
+import { createBlacktop } from './blacktop.js?v=688';
+import { createWaterslide } from './waterslide.js?v=688';
+import { createGarden } from './garden.js?v=688';
+import { createPaint } from './paint.js?v=688';
+import { createComets } from './comets.js?v=688';
+import { createBirthday } from './birthday.js?v=688';
 
 export const WORLDS = {
   tunnel: { pulse: 0.55, quietPoints: true, goal: 'float and vibe. clicks send shockwaves', label: 'TUNNEL',
