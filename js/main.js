@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=736';
-import { drawQR } from './lib/qr.js?v=736';
-import { WORLDS } from './worlds/registry.js?v=736';
-import { Net, PALETTE } from './net.js?v=736';
-import { Presence } from './lib/presence.js?v=736';
-import { Pulses } from './lib/pulse.js?v=736';
-import { BeatClock } from './lib/beatclock.js?v=736';
-import { BeatCue } from './lib/beatcue.js?v=736';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=736';
-import { Race, placeOf, standings } from './lib/race.js?v=736';
-import { Signals } from './lib/signals.js?v=736';
-import { pickShareLine, loadLines } from './lib/lines.js?v=736';
-import { RouteMap } from './lib/map.js?v=736';
-import * as sfx from './lib/sfx.js?v=736';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=736';
-import { glowTexture } from './lib/glow.js?v=736';
+import { AudioEngine } from './audio-engine.js?v=737';
+import { drawQR } from './lib/qr.js?v=737';
+import { WORLDS } from './worlds/registry.js?v=737';
+import { Net, PALETTE } from './net.js?v=737';
+import { Presence } from './lib/presence.js?v=737';
+import { Pulses } from './lib/pulse.js?v=737';
+import { BeatClock } from './lib/beatclock.js?v=737';
+import { BeatCue } from './lib/beatcue.js?v=737';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=737';
+import { Race, placeOf, standings } from './lib/race.js?v=737';
+import { Signals } from './lib/signals.js?v=737';
+import { pickShareLine, loadLines } from './lib/lines.js?v=737';
+import { RouteMap } from './lib/map.js?v=737';
+import * as sfx from './lib/sfx.js?v=737';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=737';
+import { glowTexture } from './lib/glow.js?v=737';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2210,27 +2210,40 @@ document.addEventListener('fp-bday-needle', () => {
     brNoiseGain.gain.setValueAtTime(0.06, audio.ctx.currentTime);
     brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.5, 0.2);
   }
-  // the SCRATCH: a real needle landing - noise swept down through a bandpass,
-  // then the groove settles into crackle
+  // the SCRATCH: a DJ baby-scratch - a gritty tone dragged forward and back
+  // under the needle, so the pitch whips up and down ("wicka-wicka")
   if (audio.ctx) {
-    const ctx = audio.ctx, t = ctx.currentTime;
-    const len = Math.floor(ctx.sampleRate * 0.5);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const ctx = audio.ctx, t = ctx.currentTime, sr = ctx.sampleRate;
+    const S = Math.floor(sr * 2);
+    const srcS = new Float32Array(S);
+    let lp = 0;
+    for (let i = 0; i < S; i++) {
+      const saw = ((i * 150 / sr) % 1) * 2 - 1;
+      lp += ((Math.random() * 2 - 1) - lp) * 0.3;
+      srcS[i] = saw * 0.5 + lp * 0.9;
+    }
+    const N = Math.floor(sr * 0.66);
+    const buf = ctx.createBuffer(1, N, sr);
+    const out = buf.getChannelData(0);
+    let pos = S * 0.4;
+    for (let i = 0; i < N; i++) {
+      const tt = i / sr;
+      const env = tt < 0.58 ? 1 : Math.max(0, 1 - (tt - 0.58) / 0.08);
+      const sp = Math.sin(2 * Math.PI * tt / 0.2) * 2.2;   // three strokes, fwd/back
+      pos += sp;
+      if (pos < 1) pos += S - 2; else if (pos >= S - 1) pos -= S - 2;
+      const i0 = pos | 0, fr = pos - i0;
+      const v = srcS[i0] * (1 - fr) + srcS[i0 + 1] * fr;
+      out[i] = v * Math.min(1, Math.abs(sp) / 1.1) * env;
+    }
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.Q.value = 2.5;
-    bp.frequency.setValueAtTime(3200, t);
-    bp.frequency.exponentialRampToValueAtTime(280, t + 0.42);
+    bp.type = 'bandpass'; bp.frequency.value = 1300; bp.Q.value = 0.7;
     const g = ctx.createGain();
-    g.gain.setValueAtTime(0.16, t + 0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    g.gain.value = 0.2;
     src.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    src.start(t + 0.03);
-    src.stop(t + 0.6);
+    src.start(t + 0.06);
     // the THUMP of the stylus meeting vinyl, felt as much as heard
     const th = ctx.createOscillator();
     th.type = 'sine';
@@ -2374,6 +2387,66 @@ document.addEventListener('fp-bday-radio', () => {
 // adventure - hints and story alike.
 let bcTimer = 0, bcHide = 0, bcBusy = false;
 const bcQueue = [];
+// dispatch talks through a RADIO: squelch pop and hiss as the key opens,
+// a thin static bed under the words, a roger beep and hiss when it closes
+let wkNoiseBuf = null, wkBed = null;
+function wkNoise(ctx) {
+  if (wkNoiseBuf) return wkNoiseBuf;
+  const n = Math.floor(ctx.sampleRate * 1.5);
+  wkNoiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = wkNoiseBuf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  return wkNoiseBuf;
+}
+function wkBurst(ctx, t, dur, gain, freq) {
+  const src = ctx.createBufferSource();
+  src.buffer = wkNoise(ctx);
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 0.9;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+  src.start(t, Math.random() * 0.5);
+  src.stop(t + dur + 0.02);
+}
+function walkieOpen() {
+  if (!audio.ctx) return;
+  const ctx = audio.ctx, t = ctx.currentTime;
+  wkBurst(ctx, t, 0.03, 0.12, 3000);    // the key click
+  wkBurst(ctx, t + 0.02, 0.28, 0.07, 1800);   // squelch opens
+  if (wkBed) { try { wkBed.src.stop(); } catch (e) {} }
+  const src = ctx.createBufferSource();
+  src.buffer = wkNoise(ctx); src.loop = true;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.2;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.014, t + 0.25);
+  src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+  src.start(t);
+  wkBed = { src, g };
+}
+function walkieClose() {
+  if (!audio.ctx) return;
+  const ctx = audio.ctx, t = ctx.currentTime;
+  if (wkBed) {
+    wkBed.g.gain.cancelScheduledValues(t);
+    wkBed.g.gain.setTargetAtTime(0.0001, t, 0.04);
+    const b = wkBed; setTimeout(() => { try { b.src.stop(); } catch (e) {} }, 400);
+    wkBed = null;
+  }
+  const beep = ctx.createOscillator();
+  beep.type = 'sine'; beep.frequency.value = 1320;
+  const bg = ctx.createGain();
+  bg.gain.setValueAtTime(0.0001, t);
+  bg.gain.exponentialRampToValueAtTime(0.045, t + 0.01);
+  bg.gain.setValueAtTime(0.045, t + 0.09);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+  beep.connect(bg); bg.connect(ctx.destination);
+  beep.start(t); beep.stop(t + 0.13);
+  wkBurst(ctx, t + 0.12, 0.2, 0.06, 1800);   // squelch tail
+}
 function bdayComm(text, now) {
   // one voice, one line at a time: a busy wire QUEUES, never stomps -
   // except a reaction to something that JUST happened, which cuts in
@@ -2385,17 +2458,21 @@ function bdayComm(text, now) {
   clearInterval(bcTimer); clearTimeout(bcHide);
   box.classList.remove('hidden');
   el.textContent = '';
-  if (brNoiseGain && audio.ctx) {
+  const t = String(text || '');
+  const radio = /^dispatch/i.test(t);
+  if (radio) walkieOpen();
+  else if (wkBed) walkieClose();
+  else if (brNoiseGain && audio.ctx) {
     brNoiseGain.gain.cancelScheduledValues(audio.ctx.currentTime);
     brNoiseGain.gain.setValueAtTime(0.05, audio.ctx.currentTime);
     brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.12, 0.06);
   }
-  const t = String(text || '');
   let i = 0;
   bcTimer = setInterval(() => {
     el.textContent = t.slice(0, ++i);
     if (i >= t.length) {
       clearInterval(bcTimer);
+      if (radio) setTimeout(walkieClose, 250);
       // reading time earns its length: ~3s plus a beat per word
       bcHide = setTimeout(() => {
         box.classList.add('hidden');

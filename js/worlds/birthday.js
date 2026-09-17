@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=736';
-import { themePaint } from '../lib/themes.js?v=736';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=737';
+import { themePaint } from '../lib/themes.js?v=737';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -751,7 +751,6 @@ export function createBirthday() {
         document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
         road.visible = false;
         room.visible = true;
-        document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' }));
       };
       document.addEventListener('fp-bday-ctago', this._onCta);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
@@ -1243,7 +1242,11 @@ export function createBirthday() {
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'her record leans by the sleeve. tap it to put it on the player' }));
           }
           window.__bdayArm = { phase: this._recPhase, armT: +(this._armT || 0).toFixed(2), y: +tonearm.position.y.toFixed(2), rot: +tonearm.rotation.y.toFixed(2), down: !!this._needleDown };
-          if (this._needleDown && stateT - this._needleAt > 3.2) {
+          if (this._needleDown && !this._batterSaid && stateT - this._needleAt > 2.6) {
+            this._batterSaid = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' } }));
+          }
+          if (this._needleDown && stateT - this._needleAt > 7.4) {
             // the groove catches - and the world comes apart
             room.visible = false;
             confetti.visible = true;
