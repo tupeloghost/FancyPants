@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=740';
-import { themePaint } from '../lib/themes.js?v=740';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=741';
+import { themePaint } from '../lib/themes.js?v=741';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -77,8 +77,13 @@ export function createBirthday() {
   const COURSE_GAP = 84;                 // spacing along the trail - long reaches, every catch earned
   // the chase ESCALATES: each quarter contained, the course swings wider
   const heat = () => 1 + Math.min(0.8, (caught / CANDLES) * 0.8);
-  const laneX = d => (Math.sin(d * 0.021) * 7 + Math.sin(d * 0.0072) * 3.2) * heat();
-  const laneY = d => (Math.sin(d * 0.0137) * 3.4 + Math.cos(d * 0.019) * 1.7) * heat();
+  // REACH CONTRACT: the player's light spans x +-8, y +-4.5. The course may
+  // swing up to x +-6 and y +-3.3 (growing from 70% to 100% as candles light),
+  // plus each flame's wander (<=1.1 x, <=0.77 y) - so the farthest flame
+  // still sits inside reach, before the 2.4 catch radius even helps
+  const reachK = () => 0.7 + 0.3 * Math.min(1, caught / CANDLES);
+  const laneX = d => (Math.sin(d * 0.021) * 0.69 + Math.sin(d * 0.0072) * 0.31) * 6 * reachK();
+  const laneY = d => (Math.sin(d * 0.0137) * 0.67 + Math.cos(d * 0.019) * 0.33) * 3.3 * reachK();
   const mkEmber = () => {
     const g = new THREE.Group();
     const glow = glowSprite(4.6);
