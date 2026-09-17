@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=737';
-import { themePaint } from '../lib/themes.js?v=737';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=738';
+import { themePaint } from '../lib/themes.js?v=738';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -1606,7 +1606,7 @@ export function createBirthday() {
         // the transport is a TWIST: dispatch is as lost as he is
         if (!briefed && hintT > 2.4) {
           briefed = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens went full rainbow. gary fainted' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens went full rainbow. fowler fainted' }));
         }
         if (!this._brief2 && hintT > 8.5) {
           this._brief2 = true;
