@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=711';
-import { themePaint } from '../lib/themes.js?v=711';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=713';
+import { themePaint } from '../lib/themes.js?v=713';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -681,7 +681,7 @@ export function createBirthday() {
       document.addEventListener('fp-bday-go', this._onGo);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
       // dev handles: skip to the gift, or straight to the ceremony
-      window.__bdayGift = () => { caught = CANDLES; state = 'gift'; stateT = 0; };
+      window.__bdayGift = () => { caught = CANDLES; state = 'gift'; stateT = 0; if (this._cab) this._cab.visible = false; if (road) road.visible = false; player.visible = true; };
       window.__bdayFinale = () => {
         candles.forEach(c => { c.userData.on = true; });
         cake.visible = true; cake.scale.setScalar(1);
@@ -1016,6 +1016,7 @@ export function createBirthday() {
               road.visible = false;
               room.visible = true;
               document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me? my hip says no but my heart says boogie" }));
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' }));
             }, 2000);
           }
         }
@@ -1259,7 +1260,7 @@ export function createBirthday() {
         if (k >= 1) {
           giftBox.visible = false;
           state = 'cascade'; stateT = 0; cascadeT = 0;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'so that is where they belong' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: final report came in. cause of the fire: a birthday cake in the oven. she was baking it for you' }));
         }
       }
 
