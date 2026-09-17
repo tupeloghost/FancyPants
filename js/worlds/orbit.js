@@ -4,8 +4,8 @@
 // deadly from both sides, so every flare demands a real decision.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=743';
-import { themePaint } from '../lib/themes.js?v=743';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=744';
+import { themePaint } from '../lib/themes.js?v=744';
 
 
 const SHAPE_POOL = 24;

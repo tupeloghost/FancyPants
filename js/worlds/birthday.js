@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=743';
-import { themePaint } from '../lib/themes.js?v=743';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=744';
+import { themePaint } from '../lib/themes.js?v=744';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
