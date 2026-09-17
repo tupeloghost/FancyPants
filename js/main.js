@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=692';
-import { drawQR } from './lib/qr.js?v=692';
-import { WORLDS } from './worlds/registry.js?v=692';
-import { Net, PALETTE } from './net.js?v=692';
-import { Presence } from './lib/presence.js?v=692';
-import { Pulses } from './lib/pulse.js?v=692';
-import { BeatClock } from './lib/beatclock.js?v=692';
-import { BeatCue } from './lib/beatcue.js?v=692';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=692';
-import { Race, placeOf, standings } from './lib/race.js?v=692';
-import { Signals } from './lib/signals.js?v=692';
-import { pickShareLine, loadLines } from './lib/lines.js?v=692';
-import { RouteMap } from './lib/map.js?v=692';
-import * as sfx from './lib/sfx.js?v=692';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=692';
-import { glowTexture } from './lib/glow.js?v=692';
+import { AudioEngine } from './audio-engine.js?v=695';
+import { drawQR } from './lib/qr.js?v=695';
+import { WORLDS } from './worlds/registry.js?v=695';
+import { Net, PALETTE } from './net.js?v=695';
+import { Presence } from './lib/presence.js?v=695';
+import { Pulses } from './lib/pulse.js?v=695';
+import { BeatClock } from './lib/beatclock.js?v=695';
+import { BeatCue } from './lib/beatcue.js?v=695';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=695';
+import { Race, placeOf, standings } from './lib/race.js?v=695';
+import { Signals } from './lib/signals.js?v=695';
+import { pickShareLine, loadLines } from './lib/lines.js?v=695';
+import { RouteMap } from './lib/map.js?v=695';
+import * as sfx from './lib/sfx.js?v=695';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=695';
+import { glowTexture } from './lib/glow.js?v=695';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -315,6 +315,11 @@ const settings = {
   if (qp.get('call')) window.__BDAY_CALL = qp.get('call').replace(/[^\w ,.'!\-]/g, '').slice(0, 40).trim();
   // the transmission opening: only for a birthday link, riding solo
   window.__radioWaiting = !!(qp.get('bday') && qp.get('world') === 'birthday' && !qp.get('room'));
+  // the prologue rides an INSTRUMENTAL; the main song ignites at the needle
+  if (window.__radioWaiting) {
+    window.__BDAY_TRACK = qp.get('track') ? 'audio/' + qp.get('track').replace(/[^\w.-]/g, '') : null;
+    window.__BDAY_INTRO = 'audio/' + (qp.get('intro') ? qp.get('intro').replace(/[^\w.-]/g, '') : 'static_sos.m4a');   // her Static SOS: the fire call's own score
+  }
   // and a birthday link opens as a pure adventure: no chrome, no brand -
   // the game introduces itself only when the mission is complete
   if (window.__radioWaiting) document.body.classList.add('quest');
@@ -2091,6 +2096,40 @@ $('bw-go').addEventListener('click', async () => {
   flash(mic ? 'NOW BLOW OUT THE CANDLES' : 'TAP FAST TO BLOW THEM OUT', 3200);
   document.dispatchEvent(new CustomEvent('fp-bday-blow'));
 });
+// the transport: one hard burst of static as the record swallows the room
+document.addEventListener('fp-bday-glitch', () => {
+  const box = $('bday-radio');
+  box.classList.remove('hidden', 'tuned', 'holding');
+  $('br-set').style.display = 'none';
+  const cvs = $('br-static');
+  cvs.style.opacity = '0.85';
+  const t0 = performance.now();
+  (function burst() {
+    brDrawStatic();
+    if (performance.now() - t0 < 650) { requestAnimationFrame(burst); return; }
+    cvs.style.opacity = '0';
+    box.classList.add('hidden');
+    $('br-set').style.display = '';
+  })();
+  haptic([30, 40, 30, 40, 50]);
+});
+
+// the needle drops: a breath of crackle, then THE SONG takes over the night
+document.addEventListener('fp-bday-needle', () => {
+  if (brNoiseGain && audio.ctx) {
+    brNoiseGain.gain.setValueAtTime(0.06, audio.ctx.currentTime);
+    brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.5, 0.2);
+  }
+  setTimeout(() => {
+    if (window.__BDAY_TRACK) {
+      audio.loadURL(window.__BDAY_TRACK);
+      $('track-select').value = window.__BDAY_TRACK;
+      audio.play().catch(() => {});
+      updatePlayBtn();
+    }
+  }, 900);
+});
+
 // the mission complete: the chrome returns, and the game finally says its name
 document.addEventListener('fp-bday-after', () => {
   if (!document.body.classList.contains('quest')) return;
@@ -2169,6 +2208,10 @@ document.addEventListener('fp-bday-radio', () => {
         $('br-static').style.opacity = '0';
         audio.ensureContext();
         primed = false;
+        if (window.__BDAY_INTRO) {
+          audio.loadURL(window.__BDAY_INTRO);   // the fire call rides an instrumental
+          $('track-select').value = '';
+        }
         audio.play().catch(() => {});
         updatePlayBtn();
         haptic([25, 50, 25, 50, 60]);

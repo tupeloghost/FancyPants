@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=692';
-import { themePaint } from '../lib/themes.js?v=692';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=695';
+import { themePaint } from '../lib/themes.js?v=695';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -35,13 +35,18 @@ export function createBirthday() {
   let steer = { x: 0, y: 0 }, steerTarget = { x: 0, y: 0 };
   let caught = 0, lit = 0, finales = 0;
   let travel = 0, surge = 0;
-  // radio -> fly -> rush -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
+  // radio -> drive -> douse -> record -> fly -> rush -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
   let state = window.__radioWaiting ? 'radio' : 'fly';
   let stateT = 0, blowProg = 0, cascadeT = 0;
   let tapGlit = 0, callPulse = 0;
   let hintT = 0, hintedFly = false, hintedGift = false;
   let commsSent = 0, briefed = false;   // dispatch speaks in quarters
   let embers = [], emberHurtT = 0;      // red heat on the course; clip one and a flame breaks loose
+  // ── the PROLOGUE: the fire call ──
+  let road = null, dashes = null, dashBits = [], cones = [], house = null, houseFires = [], smoke = [];
+  let room = null, platter = null, tonearm = null;
+  let drove = 0, coneSlowT = 0, dousedAll = false, sprayPts = null, sprayBits = [];
+  const DRIVE_DIST = 520;
   let wishStar = null;
   const color = new THREE.Color();
   const CAKE_POS = new THREE.Vector3(0, -9, -34);
@@ -252,6 +257,125 @@ export function createBirthday() {
       giftBox.visible = false;
       group.add(giftBox);
 
+      // ── PROLOGUE SET 1: the midnight street, the smoky house far ahead ──
+      road = new THREE.Group();
+      const tarmac = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 400),
+        new THREE.MeshBasicMaterial({ color: 0x0a0912, toneMapped: false })
+      );
+      tarmac.rotation.x = -Math.PI / 2;
+      tarmac.position.set(0, -4, -160);
+      road.add(tarmac);
+      dashes = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.5, 0.05, 4),
+        new THREE.MeshBasicMaterial({ color: 0xbfb89a, toneMapped: false }), 24);
+      dashBits = [];
+      for (let i = 0; i < 24; i++) dashBits.push({ z: -i * 14 });
+      road.add(dashes);
+      for (let i = 0; i < 10; i++) {
+        const lamp = glowSprite(3.4);
+        lamp.material.color.set(0xffc879);
+        lamp.material.opacity = 0.5;
+        lamp.position.set(i % 2 ? 14 : -14, 3.5, -30 - i * 34);
+        lamp.userData = { z0: -30 - i * 34 };
+        road.add(lamp);
+      }
+      cones = [];
+      for (let i = 0; i < 5; i++) {
+        const cone = new THREE.Mesh(
+          new THREE.ConeGeometry(0.9, 2, 10),
+          new THREE.MeshBasicMaterial({ color: 0xff5533, toneMapped: false })
+        );
+        cone.position.set((i % 2 ? -1 : 1) * (2 + (i % 3)), -3, -80 - i * 90);
+        cone.userData = { z0: cone.position.z, x: cone.position.x };
+        road.add(cone);
+        cones.push(cone);
+      }
+      // the house: dark gable, amber windows, smoke climbing off the porch
+      house = new THREE.Group();
+      const walls = new THREE.Mesh(new THREE.BoxGeometry(16, 10, 10),
+        new THREE.MeshBasicMaterial({ color: 0x171226, toneMapped: false }));
+      walls.position.y = 1;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(13, 6, 4),
+        new THREE.MeshBasicMaterial({ color: 0x0d0a18, toneMapped: false }));
+      roof.position.y = 9; roof.rotation.y = Math.PI / 4;
+      house.add(walls, roof);
+      for (const wx of [-4.5, 0, 4.5]) {
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.8),
+          new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }));
+        win.position.set(wx, 1, 5.06);
+        house.add(win);
+      }
+      houseFires = [];
+      for (let i = 0; i < 8; i++) {
+        const fl = glowSprite(4.6);
+        fl.material.color.set(0xff7722);
+        fl.position.set(-6 + (i % 4) * 4, -1.5 + Math.floor(i / 4) * 5, 5.4);
+        fl.userData = { hp: 1, seed: Math.random() * 100 };
+        house.add(fl);
+        houseFires.push(fl);
+      }
+      smoke = [];
+      for (let i = 0; i < 7; i++) {
+        const sm = glowSprite(8);
+        sm.material.color.set(0x555566);
+        sm.userData = { seed: Math.random() * 100, rise: 0.8 + Math.random() * 0.8 };
+        sm.position.set(-4 + Math.random() * 8, 6 + Math.random() * 6, 5.2);
+        house.add(sm);
+        smoke.push(sm);
+      }
+      house.position.set(0, -1, -DRIVE_DIST - 30);
+      road.add(house);
+      // the water: a stream of droplets while dousing
+      const spn = 60;
+      const spp = new Float32Array(spn * 3);
+      const spg = new THREE.BufferGeometry();
+      spg.setAttribute('position', new THREE.BufferAttribute(spp, 3).setUsage(THREE.DynamicDrawUsage));
+      sprayPts = new THREE.Points(spg, glowPoints(1.1, 0.9));
+      sprayPts.material.color.set(0x7fd4ff);
+      sprayPts.visible = false;
+      sprayPts.frustumCulled = false;
+      sprayBits = [];
+      for (let i = 0; i < spn; i++) sprayBits.push({ t: Math.random() });
+      road.add(sprayPts);
+      road.visible = false;
+      group.add(road);
+
+      // ── PROLOGUE SET 2: mrs. dumplin's front room, one record player ──
+      room = new THREE.Group();
+      const table = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, 6),
+        new THREE.MeshBasicMaterial({ color: 0x241a30, toneMapped: false }));
+      table.position.y = -3;
+      platter = new THREE.Group();
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.18, 48),
+        new THREE.MeshBasicMaterial({ color: 0x0b0a12, toneMapped: false }));
+      const grooves = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.03, 6, 64),
+        new THREE.MeshBasicMaterial({ color: 0x3c3654, toneMapped: false }));
+      grooves.rotation.x = Math.PI / 2;
+      grooves.position.y = 0.12;
+      const label = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.2, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffd98a, toneMapped: false }));
+      platter.add(disc, grooves, label);
+      platter.position.set(-1, -2.5, 0);
+      tonearm = new THREE.Group();
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 4.4),
+        new THREE.MeshBasicMaterial({ color: 0xb9b3da, toneMapped: false }));
+      arm.position.z = -2.2;
+      tonearm.add(arm);
+      tonearm.position.set(3.2, -2.2, 1.6);
+      tonearm.rotation.y = -0.7;   // resting off the record
+      room.add(table, platter, tonearm);
+      const lampGlow = glowSprite(14);
+      lampGlow.material.color.set(0xffb968);
+      lampGlow.material.opacity = 0.3;
+      lampGlow.position.set(5, 3, -3);
+      room.add(lampGlow);
+      room.position.set(0, 1, -10);
+      room.visible = false;
+      group.add(room);
+
+      drove = 0; coneSlowT = 0; dousedAll = false;
+
       // embers: the danger on the course (asleep until the chase heats up)
       embers = [];
       for (let i = 0; i < EMBERS; i++) {
@@ -325,7 +449,12 @@ export function createBirthday() {
 
       this._onBlow = () => { if (state === 'wish') { state = 'blowing'; stateT = 0; blowProg = 0; } };
       document.addEventListener('fp-bday-blow', this._onBlow);
-      this._onGo = () => { if (state === 'radio') { state = 'fly'; stateT = 0; hintT = 0; } };
+      this._onGo = () => {
+        if (state !== 'radio') return;
+        state = 'drive'; stateT = 0; drove = 0;
+        road.visible = true;
+        document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. get there" }));
+      };
       document.addEventListener('fp-bday-go', this._onGo);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
       // dev handles: skip to the gift, or straight to the ceremony
@@ -352,6 +481,13 @@ export function createBirthday() {
     onTap() {
       tapGlit = 1;
       callPulse = 1;
+      if (state === 'record' && !this._needleDown) {
+        this._needleDown = true;
+        this._needleAt = stateT;
+        document.dispatchEvent(new CustomEvent('fp-bday-needle'));
+        return;
+      }
+      if (state === 'drive' || state === 'douse') return;
       if (state === 'blowing' && window.__blowLevel == null) { blowProg = Math.min(1, blowProg + 0.12); return; }
       if (state !== 'fly' && state !== 'after') return;
       // the CALL: the nearest oncoming flame answers and darts to your light
@@ -427,6 +563,170 @@ export function createBirthday() {
         window.__bdayInfo = { state, caught, lit, stateT: Math.round(stateT * 10) / 10 };
         return;
       }
+      // ── THE FIRE CALL ── three scenes before the sky
+      if (state === 'drive' || state === 'douse' || state === 'record') {
+        stateT += dt;
+        confetti.visible = false;
+        player.visible = false;   // the light of the flight waits its turn
+        stars.visible = state !== 'record';
+        for (const f of flames) f.visible = false;
+        for (const t2 of tailFlies) t2.material.opacity = 0;
+        if (state === 'drive') {
+          // the midnight run: steer the lane, hold for the siren push
+          surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * 4);
+          coneSlowT = Math.max(0, coneSlowT - dt);
+          const runSpeed = (26 + surge * 20) * (coneSlowT > 0 ? 0.45 : 1);
+          drove += runSpeed * dt;
+          steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 5);
+          const lane = steer.x * 6;
+          // the road streams; the lightbar washes the night red and blue
+          const dum4 = this._dum4 || (this._dum4 = new THREE.Object3D());
+          for (let i = 0; i < dashBits.length; i++) {
+            let z = dashBits[i].z + drove % (24 * 14);
+            z = ((z + 30) % (24 * 14)) - (24 * 14) + 30;
+            dum4.position.set(0, -3.9, z);
+            dum4.rotation.set(0, 0, 0);
+            dum4.scale.setScalar(1);
+            dum4.updateMatrix();
+            dashes.setMatrixAt(i, dum4.matrix);
+          }
+          dashes.instanceMatrix.needsUpdate = true;
+          road.children.forEach(ch => {
+            if (ch.userData && ch.userData.z0 !== undefined && ch !== house) {
+              let z = ch.userData.z0 + drove;
+              while (z > 20) z -= 380;
+              ch.position.z = z;
+            }
+          });
+          for (const cone of cones) {
+            const dzc = Math.abs(cone.position.z);
+            if (dzc < 4 && Math.abs(cone.userData.x - lane) < 1.8 && coneSlowT <= 0) {
+              coneSlowT = 1.1;
+              if (opts.impact) opts.impact(0.7);
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'easy! mind the cones' }));
+            }
+          }
+          house.position.z = -DRIVE_DIST - 30 + drove;
+          const near = Math.max(0, Math.min(1, drove / DRIVE_DIST));
+          // smoke breathes harder as you close in
+          smoke.forEach(sm2 => {
+            sm2.position.y += sm2.userData.rise * dt;
+            if (sm2.position.y > 16) sm2.position.y = 6;
+            sm2.material.opacity = 0.2 + near * 0.25 + Math.sin(time + sm2.userData.seed) * 0.06;
+          });
+          houseFires.forEach(fl2 => {
+            fl2.material.opacity = 0.5 + Math.sin(time * 7 + fl2.userData.seed) * 0.25;
+            fl2.scale.setScalar(0.8 + Math.sin(time * 9 + fl2.userData.seed) * 0.2);
+          });
+          // the lightbar: red and blue washing the sky in turns
+          const bar = Math.sin(time * 7) > 0;
+          sky.material.color.setRGB(bar ? 0.10 : 0.02, 0.02, bar ? 0.03 : 0.12);
+          camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
+          this._cv2.set(lane, 0.6 + Math.sin(drove * 0.06) * 0.12, 8);
+          camera.position.lerp(this._cv2, Math.min(1, dt * 5));
+          const lv2 = this._lv2 || (this._lv2 = new THREE.Vector3(0, 0, -60));
+          lv2.lerp(new THREE.Vector3(lane * 0.4, 0, -60), Math.min(1, dt * 3));
+          camera.lookAt(lv2);
+          camera.fov += ((78 + surge * 8) - camera.fov) * Math.min(1, dt * 5);
+          camera.updateProjectionMatrix();
+          if (window.__setFigure) window.__setFigure('BLOCKS', Math.min(9, Math.floor(near * 10)), 10);
+          if (drove >= DRIVE_DIST) {
+            state = 'douse'; stateT = 0;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'you made it. hold to spray - put it out' }));
+          }
+        }
+        if (state === 'douse') {
+          // the hose: aim with your hand, HOLD to spray
+          steer.x += (steerTarget.x - steer.x) * Math.min(1, dt * 6);
+          steer.y += (steerTarget.y - steer.y) * Math.min(1, dt * 6);
+          house.position.z = -26;
+          const aim = this._aim || (this._aim = new THREE.Vector3());
+          aim.set(steer.x * 9, steer.y * 6 + 1, -20.5);
+          const spraying = !!opts.holding;
+          sprayPts.visible = spraying;
+          if (spraying) {
+            const posA = sprayPts.geometry.attributes.position;
+            for (let i = 0; i < sprayBits.length; i++) {
+              const b2 = sprayBits[i];
+              b2.t += dt * 2.2;
+              if (b2.t > 1) b2.t -= 1;
+              const px = b2.t * aim.x + (Math.random() - 0.5) * 0.5;
+              const py = -3 + b2.t * (aim.y + 3) + Math.sin(b2.t * Math.PI) * 2.2;
+              const pz = 6 - b2.t * 26.5;
+              posA.setXYZ(i, px, py, pz);
+            }
+            posA.needsUpdate = true;
+          }
+          let out = 0;
+          houseFires.forEach(fl2 => {
+            const u2 = fl2.userData;
+            if (u2.hp <= 0) { out++; fl2.material.opacity = Math.max(0, fl2.material.opacity - dt); return; }
+            const fw = this._fw || (this._fw = new THREE.Vector3());
+            fl2.getWorldPosition(fw);
+            if (spraying && Math.hypot(fw.x - aim.x, fw.y - aim.y) < 3.2) {
+              u2.hp -= dt * 0.8;
+              if (u2.hp <= 0 && opts.impact) opts.impact(0.4);
+            }
+            fl2.material.opacity = (0.35 + u2.hp * 0.35) + Math.sin(time * 7 + u2.seed) * 0.15;
+            fl2.scale.setScalar((0.4 + u2.hp * 0.6) * (0.85 + Math.sin(time * 9 + u2.seed) * 0.15));
+          });
+          smoke.forEach(sm2 => {
+            sm2.position.y += sm2.userData.rise * dt;
+            if (sm2.position.y > 16) sm2.position.y = 6;
+            sm2.material.opacity = (0.12 + (1 - out / houseFires.length) * 0.3);
+          });
+          sky.material.color.setRGB(0.03, 0.02, 0.07);
+          camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
+          this._cv2.set(steer.x * 1.5, 0.8, 6);
+          camera.position.lerp(this._cv2, Math.min(1, dt * 4));
+          camera.lookAt(aim.x * 0.5, aim.y * 0.5, -24);
+          camera.fov += (76 - camera.fov) * Math.min(1, dt * 5);
+          camera.updateProjectionMatrix();
+          if (window.__setFigure) window.__setFigure('FIRES OUT', out, houseFires.length);
+          if (out >= houseFires.length && !dousedAll) {
+            dousedAll = true;
+            sprayPts.visible = false;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. good work' }));
+            setTimeout(() => {
+              if (state !== 'douse') return;
+              state = 'record'; stateT = 0;
+              road.visible = false;
+              room.visible = true;
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: before you go, sugar... put a record on for me?" }));
+            }, 2000);
+          }
+        }
+        if (state === 'record') {
+          // her front room: one lamp, one player. the tap drops the needle
+          platter.rotation.y += dt * (this._needleDown ? 2.6 : 0.15);
+          if (this._needleDown) tonearm.rotation.y += ((-0.12) - tonearm.rotation.y) * Math.min(1, dt * 3);
+          sky.material.color.setRGB(0.05, 0.03, 0.03);
+          camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
+          this._cv2.set(Math.sin(time * 0.2) * 0.8, 1.6, 2.5);
+          camera.position.lerp(this._cv2, Math.min(1, dt * 3));
+          camera.lookAt(-1, -1.6, -10);
+          camera.fov += (66 - camera.fov) * Math.min(1, dt * 4);
+          camera.updateProjectionMatrix();
+          if (window.__setFigure) window.__setFigure(null);
+          if (stateT > 4.5 && !this._recordHinted) {
+            this._recordHinted = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'tap the record player' }));
+          }
+          if (this._needleDown && stateT - this._needleAt > 2.2) {
+            // the groove catches - and the world comes apart
+            room.visible = false;
+            confetti.visible = true;
+            state = 'fly'; stateT = 0; hintT = 0;
+            sky.material.color.setRGB(0, 0, 0);
+            document.dispatchEvent(new CustomEvent('fp-bday-glitch'));
+          }
+        }
+        window.__bdayInfo = { state, caught, lit, stateT: Math.round(stateT * 10) / 10, drove: Math.round(drove) };
+        return;
+      }
+      confetti.visible = true;
+      player.visible = true;
+      stars.visible = true;
       const rushK = state === 'rush' ? Math.min(1, stateT / 0.5) : 0;
       const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 16 + chorus * 4 + rushK * 34) : 2;
       travel += speed * dt;
