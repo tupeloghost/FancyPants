@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=720';
-import { themePaint } from '../lib/themes.js?v=720';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=721';
+import { themePaint } from '../lib/themes.js?v=721';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -1272,7 +1272,7 @@ export function createBirthday() {
             commsSent = Math.min(commsSent, Math.floor((caught / CANDLES) * 4));
             const runaway = flames.find(x => !x.userData.live) || null;
             if (runaway) dealFlame(runaway);
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'one broke loose! stay off the red. we talked about this' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'an ember knocked one loose! catch it again' }));
           }
           if (opts.impact) opts.impact(0.85);
         }
