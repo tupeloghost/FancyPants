@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=701';
-import { themePaint } from '../lib/themes.js?v=701';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=702';
+import { themePaint } from '../lib/themes.js?v=702';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -46,7 +46,9 @@ export function createBirthday() {
   let road = null, dashes = null, dashBits = [], cones = [], house = null, houseFires = [], smoke = [];
   let room = null, platter = null, tonearm = null;
   let drove = 0, coneSlowT = 0, dousedAll = false, sprayPts = null, sprayBits = [];
+  let driveT = 0, traffic = [], reigniteWarnT = 0;
   const DRIVE_DIST = 520;
+  const DRIVE_PAR = 26;   // beat the par or the porch spreads
   let wishStar = null;
   const color = new THREE.Color();
   const CAKE_POS = new THREE.Vector3(0, -9, -34);
@@ -334,9 +336,37 @@ export function createBirthday() {
         win.position.set(wx, 1.2, 5.08);
         house.add(frame, win);
       }
+      // ── the street furniture: curbs, parked cars, oncoming headlights ──
+      for (const cx3 of [-11.5, 11.5]) {
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 400),
+          new THREE.MeshBasicMaterial({ color: 0x3a3560, toneMapped: false }));
+        curb.position.set(cx3, -3.9, -160);
+        road.add(curb);
+      }
+      for (let i = 0; i < 4; i++) {
+        const pk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.5, 5),
+          new THREE.MeshBasicMaterial({ color: 0x141126, toneMapped: false }));
+        pk.position.set(i % 2 ? 9.5 : -9.5, -3.1, -50 - i * 85);
+        pk.userData = { z0: pk.position.z };
+        road.add(pk);
+      }
+      traffic = [];
+      for (let i = 0; i < 3; i++) {
+        const car = new THREE.Group();
+        const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.6, 5),
+          new THREE.MeshBasicMaterial({ color: 0x1c1830, toneMapped: false }));
+        const hl1 = glowSprite(2.4), hl2 = glowSprite(2.4);
+        hl1.material.color.set(0xfff4cc); hl2.material.color.set(0xfff4cc);
+        hl1.position.set(-0.8, 0.1, 2.6); hl2.position.set(0.8, 0.1, 2.6);
+        car.add(bodyC, hl1, hl2);
+        car.position.set(-4.5, -3.1, -180 - i * 170);
+        car.userData = { z0: car.position.z, hit: false };
+        road.add(car);
+        traffic.push(car);
+      }
       // the FIRE: layered flames licking up from the porch line, tall not round
       houseFires = [];
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 12; i++) {
         const g3 = new THREE.Group();
         const outer = glowSprite(5.2);
         outer.material.color.set(0xff5511);
@@ -344,7 +374,9 @@ export function createBirthday() {
         inner.material.color.set(0xffd060);
         inner.position.y = 0.7;
         g3.add(outer, inner);
-        g3.position.set(-7.7 + i * 2.2, -1.4, 8.2);
+        g3.position.set(-7.7 + (i % 8) * 2.2 + (i >= 8 ? 1.1 : 0), -1.4 + (i >= 8 ? 1.6 : 0), 8.2);
+        g3.userData = {};   // filled below
+        if (i >= 8) g3.visible = false;   // the SPREAD: lit only if the drive runs long
         g3.userData = { hp: 1, seed: Math.random() * 100, outer, inner };
         house.add(g3);
         houseFires.push(g3);
@@ -658,6 +690,11 @@ export function createBirthday() {
         for (const f of flames) f.visible = false;
         for (const t2 of tailFlies) t2.material.opacity = 0;
         if (state === 'drive') {
+          driveT += dt;
+          if (!this._spreadWarned && driveT > DRIVE_PAR) {
+            this._spreadWarned = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'the fire is SPREADING. drive' }));
+          }
           this._cab.visible = true;
           scene.fog.density = 0.0032;   // the smoke column must read from blocks away
           // the midnight run: steer the lane, hold for the siren push
@@ -704,8 +741,23 @@ export function createBirthday() {
             const dzc = Math.abs(cone.position.z);
             if (dzc < 4 && Math.abs(cone.userData.x - lane) < 1.8 && coneSlowT <= 0) {
               coneSlowT = 1.1;
+              driveT += 2;   // every hit feeds the fire
               if (opts.impact) opts.impact(0.7);
               document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'the cones! those cost nine dollars each' }));
+            }
+          }
+          // oncoming traffic: headlights in the left lane, weave or wear it
+          for (const car of traffic) {
+            let z = car.userData.z0 + drove * 1.8;
+            while (z > 20) { z -= 560; car.userData.hit = false; }
+            car.position.z = z;
+            const dzc = Math.abs(car.position.z);
+            if (dzc < 5 && Math.abs(car.position.x - lane) < 2.4 && coneSlowT <= 0 && !car.userData.hit) {
+              car.userData.hit = true;
+              coneSlowT = 1.4;
+              driveT += 3;
+              if (opts.impact) opts.impact(0.9);
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that was a PRIUS. dispatch saw nothing' }));
             }
           }
           house.position.z = -DRIVE_DIST - 30 + drove;
@@ -748,7 +800,11 @@ export function createBirthday() {
             document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'douse' }));
             this._cab.visible = false;
             scene.fog.density = 0.009;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'on scene. hold to spray. aim for the fire, not the flamingo' }));
+            // the drive's bill comes due: overtime lights extra fires
+            const spread = Math.min(4, Math.max(0, Math.floor((driveT - DRIVE_PAR) / 7)));
+            for (let i2 = 8; i2 < 8 + spread; i2++) houseFires[i2].visible = true;
+            houseFires.forEach((fh, i2) => { fh.userData.active = fh.visible; if (!fh.visible) fh.userData.hp = 0; });
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: spread > 0 ? 'it spread to ' + (8 + spread) + ' fires. hold to spray' : 'on scene. hold to spray. aim for the fire, not the flamingo' }));
           }
         }
         if (state === 'douse') {
@@ -773,10 +829,22 @@ export function createBirthday() {
             }
             posA.needsUpdate = true;
           }
-          let out = 0;
+          let out = 0, activeN = 0, burning = 0;
+          houseFires.forEach(f2 => { if (f2.userData.active && f2.userData.hp > 0) burning++; });
+          reigniteWarnT = Math.max(0, reigniteWarnT - dt);
           houseFires.forEach(fl2 => {
             const u2 = fl2.userData;
+            if (!u2.active) return;
+            activeN++;
             if (u2.hp <= 0) {
+              // a dead fire beside a living one CREEPS BACK - keep sweeping
+              if (burning > 0) {
+                u2.hp = Math.min(0.4, (u2.hp || 0) + dt * 0.045);
+                if (u2.hp > 0.22 && reigniteWarnT <= 0) {
+                  reigniteWarnT = 7;
+                  document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'it is coming back! hit it again' }));
+                }
+              }
               out++;
               u2.outer.material.opacity = Math.max(0, u2.outer.material.opacity - dt);
               u2.inner.material.opacity = Math.max(0, u2.inner.material.opacity - dt);
@@ -805,9 +873,9 @@ export function createBirthday() {
           camera.lookAt(aim.x * 0.5, aim.y * 0.5, -24);
           camera.fov += (76 - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
-          if (window.__setFigure) window.__setFigure('FIRES OUT', out, houseFires.length);
-          window.__bdayFires = 1 - out / houseFires.length;   // the crackle dies with the fire
-          if (out >= houseFires.length && !dousedAll) {
+          if (window.__setFigure) window.__setFigure('FIRES OUT', out, activeN);
+          window.__bdayFires = activeN ? 1 - out / activeN : 0;   // the crackle dies with the fire
+          if (activeN > 0 && out >= activeN && !dousedAll) {
             dousedAll = true;
             sprayPts.visible = false;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. the lawn flamingo made it. hero' }));

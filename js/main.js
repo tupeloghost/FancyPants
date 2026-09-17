@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=701';
-import { drawQR } from './lib/qr.js?v=701';
-import { WORLDS } from './worlds/registry.js?v=701';
-import { Net, PALETTE } from './net.js?v=701';
-import { Presence } from './lib/presence.js?v=701';
-import { Pulses } from './lib/pulse.js?v=701';
-import { BeatClock } from './lib/beatclock.js?v=701';
-import { BeatCue } from './lib/beatcue.js?v=701';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=701';
-import { Race, placeOf, standings } from './lib/race.js?v=701';
-import { Signals } from './lib/signals.js?v=701';
-import { pickShareLine, loadLines } from './lib/lines.js?v=701';
-import { RouteMap } from './lib/map.js?v=701';
-import * as sfx from './lib/sfx.js?v=701';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=701';
-import { glowTexture } from './lib/glow.js?v=701';
+import { AudioEngine } from './audio-engine.js?v=702';
+import { drawQR } from './lib/qr.js?v=702';
+import { WORLDS } from './worlds/registry.js?v=702';
+import { Net, PALETTE } from './net.js?v=702';
+import { Presence } from './lib/presence.js?v=702';
+import { Pulses } from './lib/pulse.js?v=702';
+import { BeatClock } from './lib/beatclock.js?v=702';
+import { BeatCue } from './lib/beatcue.js?v=702';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=702';
+import { Race, placeOf, standings } from './lib/race.js?v=702';
+import { Signals } from './lib/signals.js?v=702';
+import { pickShareLine, loadLines } from './lib/lines.js?v=702';
+import { RouteMap } from './lib/map.js?v=702';
+import * as sfx from './lib/sfx.js?v=702';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=702';
+import { glowTexture } from './lib/glow.js?v=702';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2162,6 +2162,12 @@ function sfxEnsure() {
 document.addEventListener('fp-bday-scene', e => {
   audio.ensureContext();
   sfxEnsure();
+  // the wheels roll: NOW the instrumental begins
+  if (e.detail === 'drive' && !window.__bdayRolling) {
+    window.__bdayRolling = true;
+    audio.play().catch(() => {});
+    updatePlayBtn();
+  }
   if (sfxNodes) sfxNodes.scene = String(e.detail || '');
   if (e.detail === 'fly') setTimeout(() => { clearInterval(sfxTick); sfxNodes = null; }, 1500);
 });
@@ -2280,11 +2286,16 @@ document.addEventListener('fp-bday-radio', () => {
         audio.ensureContext();
         primed = false;
         if (window.__BDAY_INTRO) {
-          audio.loadURL(window.__BDAY_INTRO);   // the fire call rides an instrumental
-          audio.el.loop = true;                 // and it LOOPS: the call takes as long as it takes
+          // the dispatch call plays DRY - static and the wire only. The score
+          // waits for the wheels. The gesture-blessed play-pause here unlocks
+          // the element so the road can start the song without a tap.
+          audio.loadURL(window.__BDAY_INTRO);
+          audio.el.loop = true;
           $('track-select').value = '';
+          audio.play().then(() => setTimeout(() => { if (!window.__bdayRolling) { audio.pause(); audio.el.currentTime = 0; } }, 60)).catch(() => {});
+        } else {
+          audio.play().catch(() => {});
         }
-        audio.play().catch(() => {});
         updatePlayBtn();
         haptic([25, 50, 25, 50, 60]);
         flash((window.__BDAY_CALL || 'transmission received').toUpperCase(), 3000);
