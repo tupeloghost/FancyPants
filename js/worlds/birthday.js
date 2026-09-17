@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=741';
-import { themePaint } from '../lib/themes.js?v=741';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=743';
+import { themePaint } from '../lib/themes.js?v=743';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -81,9 +81,9 @@ export function createBirthday() {
   // swing up to x +-6 and y +-3.3 (growing from 70% to 100% as candles light),
   // plus each flame's wander (<=1.1 x, <=0.77 y) - so the farthest flame
   // still sits inside reach, before the 2.4 catch radius even helps
-  const reachK = () => 0.7 + 0.3 * Math.min(1, caught / CANDLES);
-  const laneX = d => (Math.sin(d * 0.021) * 0.69 + Math.sin(d * 0.0072) * 0.31) * 6 * reachK();
-  const laneY = d => (Math.sin(d * 0.0137) * 0.67 + Math.cos(d * 0.019) * 0.33) * 3.3 * reachK();
+  const reachK = () => 0.75 + 0.25 * Math.min(1, caught / CANDLES);
+  const laneX = d => (Math.sin(d * 0.021) * 0.69 + Math.sin(d * 0.0072) * 0.31) * 4.8 * reachK();
+  const laneY = d => (Math.sin(d * 0.0137) * 0.67 + Math.cos(d * 0.019) * 0.33) * 2.6 * reachK();
   const mkEmber = () => {
     const g = new THREE.Group();
     const glow = glowSprite(4.6);
@@ -115,7 +115,7 @@ export function createBirthday() {
     const roll = Math.random();
     courseAt += roll < 0.35 ? COURSE_GAP * 0.4 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 2;
     u.d = courseAt;
-    u.wob = 0.3 + Math.random() * 0.8;   // each flame wanders its own amount (fair against the ring)
+    u.wob = 0.25 + Math.random() * 0.5;   // each flame wanders its own amount (fair against the ring)
     f.position.set(laneX(u.d), laneY(u.d), -(u.d - travel));
     u.seed = Math.random() * 100;
   };
@@ -1386,7 +1386,7 @@ export function createBirthday() {
           // the catch is the ring, slide-style: thread it or it passes and
           // rejoins the end of the course
           const dz = Math.abs(f.position.z - player.position.z);
-          if (dz < 2.8 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 2.4) {
+          if (dz < 3.2 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 2.9) {
             if (state === 'fly') {
               caught = Math.min(CANDLES, caught + 1);
               // mission control checks in at the quarter marks - never
@@ -1395,9 +1395,9 @@ export function createBirthday() {
               if (q > commsSent && caught < CANDLES) {
                 commsSent = q;
                 const lines = [
-                  '', 'first dozen contained. dispatch is impressed. gary says hi',
-                  'halfway. watch the red embers. gary touched one. gary is fine. ish',
-                  'almost all of them. gary thinks they are migrating. gary is not a scientist'];
+                  '', 'first dozen contained. dispatch is impressed. Fowler says hi',
+                  'halfway. watch the red embers. Fowler touched one. Fowler is fine. ish',
+                  'almost all of them. Fowler thinks they are migrating. Fowler is not a scientist'];
                 if (lines[q]) document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: lines[q] }));
               }
               if (caught >= CANDLES) {
@@ -1664,7 +1664,7 @@ export function createBirthday() {
         // the transport is a TWIST: dispatch is as lost as he is
         if (!briefed && hintT > 2.4) {
           briefed = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens went full rainbow. fowler fainted' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens went full rainbow. Fowler fainted' }));
         }
         if (!this._brief2 && hintT > 8.5) {
           this._brief2 = true;
