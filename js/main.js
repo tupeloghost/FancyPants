@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=683';
-import { drawQR } from './lib/qr.js?v=683';
-import { WORLDS } from './worlds/registry.js?v=683';
-import { Net, PALETTE } from './net.js?v=683';
-import { Presence } from './lib/presence.js?v=683';
-import { Pulses } from './lib/pulse.js?v=683';
-import { BeatClock } from './lib/beatclock.js?v=683';
-import { BeatCue } from './lib/beatcue.js?v=683';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=683';
-import { Race, placeOf, standings } from './lib/race.js?v=683';
-import { Signals } from './lib/signals.js?v=683';
-import { pickShareLine, loadLines } from './lib/lines.js?v=683';
-import { RouteMap } from './lib/map.js?v=683';
-import * as sfx from './lib/sfx.js?v=683';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=683';
-import { glowTexture } from './lib/glow.js?v=683';
+import { AudioEngine } from './audio-engine.js?v=687';
+import { drawQR } from './lib/qr.js?v=687';
+import { WORLDS } from './worlds/registry.js?v=687';
+import { Net, PALETTE } from './net.js?v=687';
+import { Presence } from './lib/presence.js?v=687';
+import { Pulses } from './lib/pulse.js?v=687';
+import { BeatClock } from './lib/beatclock.js?v=687';
+import { BeatCue } from './lib/beatcue.js?v=687';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=687';
+import { Race, placeOf, standings } from './lib/race.js?v=687';
+import { Signals } from './lib/signals.js?v=687';
+import { pickShareLine, loadLines } from './lib/lines.js?v=687';
+import { RouteMap } from './lib/map.js?v=687';
+import * as sfx from './lib/sfx.js?v=687';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=687';
+import { glowTexture } from './lib/glow.js?v=687';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -312,6 +312,9 @@ const settings = {
   if (qp.get('bday')) window.__BDAY = qp.get('bday').replace(/[^\w '\-]/g, '').slice(0, 20).trim();
   if (qp.get('candles')) window.__BDAY_N = Math.max(1, Math.min(72, Math.round(+qp.get('candles')) || 0)) || 0;
   if (qp.get('note')) window.__BDAY_NOTE = qp.get('note').replace(/[^\w ,.'!\-]/g, '').slice(0, 60).trim();
+  if (qp.get('call')) window.__BDAY_CALL = qp.get('call').replace(/[^\w ,.'!\-]/g, '').slice(0, 40).trim();
+  // the transmission opening: only for a birthday link, riding solo
+  window.__radioWaiting = !!(qp.get('bday') && qp.get('world') === 'birthday' && !qp.get('room'));
   if (qp.get('track')) window.__shareTrack = 'audio/' + qp.get('track');
   if (qp.get('suno')) window.__shareSuno = qp.get('suno');
   // a scanned QR carries maximum intent: go=1 skips the landing entirely
@@ -2088,6 +2091,98 @@ $('bw-go').addEventListener('click', async () => {
 // the candles are out: give the breath back immediately
 document.addEventListener('fp-bday-blown', () => stopBlowMic());
 
+// ── the TRANSMISSION ── a walkie-talkie alone in the dark. Hold the button:
+// static builds, the screen shivers, and the static resolves INTO the song.
+let brNoise = null, brNoiseGain = null, brHold = 0, brHeld = false, brRAF = 0;
+function brStaticStart() {
+  audio.ensureContext();
+  if (!audio.ctx) return;
+  if (!brNoise) {
+    const len = audio.ctx.sampleRate * 2;
+    const buf = audio.ctx.createBuffer(1, len, audio.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
+    brNoise = audio.ctx.createBufferSource();
+    brNoise.buffer = buf;
+    brNoise.loop = true;
+    const bp = audio.ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.6;
+    brNoiseGain = audio.ctx.createGain();
+    brNoiseGain.gain.value = 0;
+    brNoise.connect(bp); bp.connect(brNoiseGain); brNoiseGain.connect(audio.ctx.destination);
+    brNoise.start();
+  }
+  brNoiseGain.gain.cancelScheduledValues(audio.ctx.currentTime);
+  brNoiseGain.gain.setTargetAtTime(0.09, audio.ctx.currentTime, 0.15);
+}
+function brStaticStop(now) {
+  if (brNoiseGain && audio.ctx) {
+    brNoiseGain.gain.cancelScheduledValues(audio.ctx.currentTime);
+    brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime, now ? 0.05 : 0.3);
+  }
+}
+function brDrawStatic() {
+  const cvs = $('br-static');
+  const ctx2 = cvs.getContext('2d');
+  if (cvs.width !== 240) { cvs.width = 240; cvs.height = Math.round(240 * innerHeight / innerWidth) || 320; }
+  const img = ctx2.createImageData(cvs.width, cvs.height);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = (Math.random() * 255) | 0;
+    img.data[i] = v; img.data[i + 1] = v; img.data[i + 2] = v;
+    img.data[i + 3] = 255;
+  }
+  ctx2.putImageData(img, 0, 0);
+}
+document.addEventListener('fp-bday-radio', () => {
+  $('bday-radio').classList.remove('hidden');
+});
+{
+  const box = $('bday-radio');
+  const tuneIn = () => {
+    if (brHeld || box.classList.contains('tuned')) return;
+    brHeld = true;
+    box.classList.add('holding');
+    brStaticStart();
+    haptic([10, 30, 10]);
+    const t0 = performance.now();
+    (function tick() {
+      if (!brHeld) return;
+      brDrawStatic();
+      const k = (performance.now() - t0) / 1400;
+      $('br-static').style.opacity = Math.min(0.55, k * 0.55);
+      if (k >= 1) {
+        // TUNED: the static resolves into the song
+        brHeld = false;
+        box.classList.remove('holding');
+        box.classList.add('tuned');
+        brStaticStop(true);
+        $('br-static').style.opacity = '0';
+        audio.ensureContext();
+        primed = false;
+        audio.play().catch(() => {});
+        updatePlayBtn();
+        haptic([25, 50, 25, 50, 60]);
+        flash((window.__BDAY_CALL || 'transmission received').toUpperCase(), 3000);
+        document.dispatchEvent(new CustomEvent('fp-bday-go'));
+        setTimeout(() => { box.classList.add('hidden'); showWorldIntro(currentWorldKey); }, 550);
+        return;
+      }
+      brRAF = requestAnimationFrame(tick);
+    })();
+  };
+  const tuneOut = () => {
+    if (!brHeld) return;
+    brHeld = false;
+    cancelAnimationFrame(brRAF);
+    box.classList.remove('holding');
+    brStaticStop(false);
+    $('br-static').style.opacity = '0';
+  };
+  box.addEventListener('pointerdown', tuneIn);
+  box.addEventListener('pointerup', tuneOut);
+  box.addEventListener('pointercancel', tuneOut);
+}
+
 // the birthday world teaches by whispering at the right moment
 document.addEventListener('fp-bday-hint', e => flash(String(e.detail || '').toUpperCase(), 3000));
 
@@ -2944,9 +3039,10 @@ function showWorldIntro(key) {
   // the landing screen owns its moment — the greeting waits for entry
   if (!$('tap-to-start').classList.contains('gone')) return;
   const el = $('world-intro');
-  // the birthday world greets by NAME: the intro is the gift tag
+  // the birthday world stays a MYSTERY: no name at the door - the sky says
+  // it at the finale. The intro is a mission brief.
   $('intro-name').textContent = (key === 'birthday' && window.__BDAY)
-    ? 'HAPPY BIRTHDAY ' + window.__BDAY.toUpperCase()
+    ? 'THE MISSION'
     : w.label;
   // the name IS the greeting: instructions live in the tutorial now — EXCEPT
   // occasion worlds, whose guests may have never played anything: they say
@@ -3083,7 +3179,7 @@ function dismissOverlay() {
   // start the music by itself — unless we're a guest, who follows the host
   if (!document.body.classList.contains('guest')) {
     autoWanted = true;
-    if (!audio.el.src || primed) setTimeout(() => playAuto(false), 200);
+    if ((!audio.el.src || primed) && !window.__radioWaiting) setTimeout(() => playAuto(false), 200);
   }
   tap.classList.add('gone');
   window.__enterSfx();   // now the game may speak

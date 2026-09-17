@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=683';
-import { themePaint } from '../lib/themes.js?v=683';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=687';
+import { themePaint } from '../lib/themes.js?v=687';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -34,8 +34,8 @@ export function createBirthday() {
   let steer = { x: 0, y: 0 }, steerTarget = { x: 0, y: 0 };
   let caught = 0, lit = 0, finales = 0;
   let travel = 0, surge = 0;
-  // fly -> rush -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
-  let state = 'fly';
+  // radio -> fly -> rush -> gift -> open -> cascade -> wish -> blowing -> out -> sing -> after
+  let state = window.__radioWaiting ? 'radio' : 'fly';
   let stateT = 0, blowProg = 0, cascadeT = 0;
   let tapGlit = 0, callPulse = 0;
   let hintT = 0, hintedFly = false, hintedGift = false;
@@ -280,12 +280,15 @@ export function createBirthday() {
       group.add(player);
 
       caught = 0; lit = 0; finales = 0; travel = 0; surge = 0;
-      state = 'fly'; stateT = 0; blowProg = 0; cascadeT = 0;
+      state = window.__radioWaiting ? 'radio' : 'fly'; stateT = 0; blowProg = 0; cascadeT = 0;
       hintT = 0; hintedFly = false; hintedGift = false;
       this._sung = false;
 
       this._onBlow = () => { if (state === 'wish') { state = 'blowing'; stateT = 0; blowProg = 0; } };
       document.addEventListener('fp-bday-blow', this._onBlow);
+      this._onGo = () => { if (state === 'radio') { state = 'fly'; stateT = 0; hintT = 0; } };
+      document.addEventListener('fp-bday-go', this._onGo);
+      if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
       // dev handles: skip to the gift, or straight to the ceremony
       window.__bdayGift = () => { caught = CANDLES; state = 'gift'; stateT = 0; };
       window.__bdayFinale = () => {
@@ -365,7 +368,8 @@ export function createBirthday() {
       const chorus = opts.chorus || 0;
       // the waking: the universe brightens with every flame taken, and once
       // the cake is out it stays fully awake
-      const aliveK = (state === 'fly' || state === 'rush' || state === 'gift' || state === 'open')
+      const aliveK = state === 'radio' ? 0.05
+        : (state === 'fly' || state === 'rush' || state === 'gift' || state === 'open')
         ? 0.15 + 0.85 * Math.min(1, caught / CANDLES)
         : 1;
       const ceremonyDim = (state === 'wish' || state === 'blowing') ? 0.45 : state === 'out' ? 0.18 : 1;
@@ -379,6 +383,11 @@ export function createBirthday() {
       // ── the flight itself: the universe streams past, faster on HOLD ──
       surge += ((opts.holding ? 1 : 0) - surge) * Math.min(1, dt * (opts.holding ? 4 : 1.6));
       const flying = state === 'fly' || state === 'rush' || state === 'gift' || state === 'after';
+      if (state === 'radio') {
+        stateT += dt;
+        window.__bdayInfo = { state, caught, lit, stateT: Math.round(stateT * 10) / 10 };
+        return;
+      }
       const rushK = state === 'rush' ? Math.min(1, stateT / 0.5) : 0;
       const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 16 + chorus * 4 + rushK * 34) : 2;
       travel += speed * dt;
@@ -815,6 +824,7 @@ export function createBirthday() {
 
     dispose() {
       document.removeEventListener('fp-bday-blow', this._onBlow);
+      document.removeEventListener('fp-bday-go', this._onGo);
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
       scene.remove(group);
       rims = []; candles = []; flames = []; bursts = []; rings = []; lanterns = []; confBits = []; tailFlies = [];

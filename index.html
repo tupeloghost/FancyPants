@@ -244,6 +244,38 @@
     animation: giftGlow 1.6s ease-in-out infinite;
   }
   #gift-note.hidden { display: none; }
+  /* the transmission: a walkie-talkie alone in the dark */
+  #bday-radio {
+    position: fixed; inset: 0; z-index: 72; background: #030208;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #bday-radio.hidden { display: none; }
+  #br-static { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+  #br-set {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px;
+    transition: opacity 400ms ease, transform 400ms ease;
+  }
+  #bday-radio.tuned #br-set { opacity: 0; transform: scale(1.5); }
+  #bday-radio.tuned { background: transparent; pointer-events: none; transition: background 500ms ease; }
+  #br-radio { cursor: pointer; filter: drop-shadow(0 0 24px rgba(120, 110, 190, 0.35)); }
+  #bday-radio.holding #br-radio { animation: brJitter 90ms steps(2) infinite; }
+  #bday-radio.holding #br-lamp { fill: #ffd98a; }
+  @keyframes brJitter {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(1.6px, -1px); }
+    50% { transform: translate(-1.4px, 1.2px); }
+    75% { transform: translate(1px, 1.4px); }
+  }
+  #br-ptt { cursor: pointer; }
+  #bday-radio.holding #br-ptt { fill: #4a3a7e; }
+  #br-title {
+    font: 400 22px 'Didot', 'Bodoni MT', 'Playfair Display', serif;
+    color: #efeaff; letter-spacing: 5px;
+  }
+  #br-hint {
+    font: 12px 'Jost', 'Futura', 'Avenir Next', sans-serif;
+    color: #9a94c4; letter-spacing: 2px; text-transform: uppercase;
+  }
   /* the wish card: the one held breath in the birthday night */
   #bday-wish {
     position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%);
@@ -3139,6 +3171,26 @@
     <div id="gp-row"></div>
     <span>the first player through a hoop gets it</span>
   </div>
+  <div id="bday-radio" class="hidden">
+    <canvas id="br-static"></canvas>
+    <div id="br-set">
+      <svg id="br-radio" viewBox="0 0 120 200" width="150" height="250">
+        <line x1="88" y1="38" x2="112" y2="6" stroke="#8a84b8" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="113" cy="5" r="3.4" fill="#b9b3da"/>
+        <rect x="18" y="36" width="84" height="150" rx="14" fill="#131022" stroke="#6a639e" stroke-width="2.5"/>
+        <g stroke="#7d76ad" stroke-width="3" stroke-linecap="round">
+          <line x1="34" y1="58" x2="86" y2="58"/><line x1="34" y1="68" x2="86" y2="68"/>
+          <line x1="34" y1="78" x2="86" y2="78"/><line x1="34" y1="88" x2="86" y2="88"/>
+        </g>
+        <rect x="34" y="104" width="52" height="14" rx="7" fill="#0a0818" stroke="#5a538c" stroke-width="2"/>
+        <circle id="br-lamp" cx="60" cy="111" r="3.6" fill="#3c355f"/>
+        <circle id="br-ptt" cx="60" cy="152" r="21" fill="#241c45" stroke="#ffd98a" stroke-width="3"/>
+        <text x="60" y="157" text-anchor="middle" fill="#ffd98a" font-size="10" font-family="Jost, Futura, sans-serif" letter-spacing="1">TALK</text>
+      </svg>
+      <b id="br-title">INCOMING TRANSMISSION</b>
+      <span id="br-hint">hold the button to receive</span>
+    </div>
+  </div>
   <div id="bday-wish" class="hidden">
     <b>MAKE A WISH</b>
     <span>take your time</span>
@@ -3360,7 +3412,7 @@
       </div>
       <div id="rights">© 2026 RockyPaw Beats · all rights reserved</div>
       <div id="audio-stamp">audio: none yet</div>
-      <div id="build-stamp">build 683</div>
+      <div id="build-stamp">build 687</div>
       <div class="hint"><kbd>H</kbd> panel &middot; <kbd>B</kbd> broadcast &middot; <kbd>N</kbd> names &middot; <kbd>P</kbd> people &middot; <kbd>space</kbd> play &middot; <kbd>S</kbd> png</div>
       </details>
     </div>
@@ -3402,6 +3454,6 @@
   "three/addons/": "./vendor/three/addons/"
 } }
 </script>
-<script type="module" src="js/main.js?v=683"></script>
+<script type="module" src="js/main.js?v=687"></script>
 </body>
 </html>
