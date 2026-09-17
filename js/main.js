@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=688';
-import { drawQR } from './lib/qr.js?v=688';
-import { WORLDS } from './worlds/registry.js?v=688';
-import { Net, PALETTE } from './net.js?v=688';
-import { Presence } from './lib/presence.js?v=688';
-import { Pulses } from './lib/pulse.js?v=688';
-import { BeatClock } from './lib/beatclock.js?v=688';
-import { BeatCue } from './lib/beatcue.js?v=688';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=688';
-import { Race, placeOf, standings } from './lib/race.js?v=688';
-import { Signals } from './lib/signals.js?v=688';
-import { pickShareLine, loadLines } from './lib/lines.js?v=688';
-import { RouteMap } from './lib/map.js?v=688';
-import * as sfx from './lib/sfx.js?v=688';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=688';
-import { glowTexture } from './lib/glow.js?v=688';
+import { AudioEngine } from './audio-engine.js?v=689';
+import { drawQR } from './lib/qr.js?v=689';
+import { WORLDS } from './worlds/registry.js?v=689';
+import { Net, PALETTE } from './net.js?v=689';
+import { Presence } from './lib/presence.js?v=689';
+import { Pulses } from './lib/pulse.js?v=689';
+import { BeatClock } from './lib/beatclock.js?v=689';
+import { BeatCue } from './lib/beatcue.js?v=689';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=689';
+import { Race, placeOf, standings } from './lib/race.js?v=689';
+import { Signals } from './lib/signals.js?v=689';
+import { pickShareLine, loadLines } from './lib/lines.js?v=689';
+import { RouteMap } from './lib/map.js?v=689';
+import * as sfx from './lib/sfx.js?v=689';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=689';
+import { glowTexture } from './lib/glow.js?v=689';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2183,8 +2183,32 @@ document.addEventListener('fp-bday-radio', () => {
   box.addEventListener('pointercancel', tuneOut);
 }
 
-// the birthday world teaches by whispering at the right moment
-document.addEventListener('fp-bday-hint', e => flash(String(e.detail || '').toUpperCase(), 3000));
+// ── mission control ── every birthday message arrives ON THE WIRE: a
+// crackle, then the line types itself out. One channel for the whole
+// adventure - hints and story alike.
+let bcTimer = 0, bcHide = 0;
+function bdayComm(text) {
+  const box = $('bday-comm'), el = $('bc-text');
+  clearInterval(bcTimer); clearTimeout(bcHide);
+  box.classList.remove('hidden');
+  el.textContent = '';
+  // a breath of static announces the voice (only if the radio built its nodes)
+  if (brNoiseGain && audio.ctx) {
+    brNoiseGain.gain.cancelScheduledValues(audio.ctx.currentTime);
+    brNoiseGain.gain.setValueAtTime(0.05, audio.ctx.currentTime);
+    brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.12, 0.06);
+  }
+  const t = String(text || '');
+  let i = 0;
+  bcTimer = setInterval(() => {
+    el.textContent = t.slice(0, ++i);
+    if (i >= t.length) {
+      clearInterval(bcTimer);
+      bcHide = setTimeout(() => box.classList.add('hidden'), 3600);
+    }
+  }, 26);
+}
+document.addEventListener('fp-bday-hint', e => bdayComm(String(e.detail || '')));
 
 // the birthday finale: the world holds its breath, then the sky says the name
 document.addEventListener('fp-bday', () => {

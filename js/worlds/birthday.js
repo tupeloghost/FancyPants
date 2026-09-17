@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=688';
-import { themePaint } from '../lib/themes.js?v=688';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=689';
+import { themePaint } from '../lib/themes.js?v=689';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -39,6 +39,7 @@ export function createBirthday() {
   let stateT = 0, blowProg = 0, cascadeT = 0;
   let tapGlit = 0, callPulse = 0;
   let hintT = 0, hintedFly = false, hintedGift = false;
+  let commsSent = 0, briefed = false;   // mission control speaks in quarters
   let wishStar = null;
   const color = new THREE.Color();
   const CAKE_POS = new THREE.Vector3(0, -9, -34);
@@ -460,7 +461,21 @@ export function createBirthday() {
           if (dz < 3.5 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 3.4) {
             if (state === 'fly') {
               caught = Math.min(CANDLES, caught + 1);
-              if (caught >= CANDLES) { state = 'rush'; stateT = 0; }
+              // mission control checks in at the quarter marks - never
+              // explaining, always promising
+              const q = Math.floor((caught / CANDLES) * 4);
+              if (q > commsSent && caught < CANDLES) {
+                commsSent = q;
+                const lines = [
+                  '', 'first quarter secured. keep flying',
+                  'halfway. it is waiting for you',
+                  'almost there. mission control is smiling'];
+                if (lines[q]) document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: lines[q] }));
+              }
+              if (caught >= CANDLES) {
+                state = 'rush'; stateT = 0;
+                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all ' + CANDLES + ' secured. hold on' }));
+              }
             }
             dealFlame(f);
             // the catch LANDS: a gold ring blooms from your light, the night
@@ -513,7 +528,7 @@ export function createBirthday() {
           this._pillar.visible = true;
           if (!hintedGift) {
             hintedGift = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'a gift! fly into it' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'there it is. fly into it' }));
           }
         }
         giftBox.position.z = Math.min(-16, giftBox.position.z + speed * dt * 0.55);
@@ -651,9 +666,13 @@ export function createBirthday() {
       // whispers at the right moment
       if (state === 'fly') {
         hintT += dt;
-        if (!hintedFly && hintT > 8 && caught === 0) {
+        if (!briefed && hintT > 2.2) {
+          briefed = true;
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'mission control: bring us ' + CANDLES + ' flames. you will understand at the end' }));
+        }
+        if (!hintedFly && hintT > 11 && caught === 0) {
           hintedFly = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'fly into the flames. tap and one comes to you' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'follow the trail of flames. tap and one comes to you' }));
         }
       }
 
