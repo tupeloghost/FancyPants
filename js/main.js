@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=695';
-import { drawQR } from './lib/qr.js?v=695';
-import { WORLDS } from './worlds/registry.js?v=695';
-import { Net, PALETTE } from './net.js?v=695';
-import { Presence } from './lib/presence.js?v=695';
-import { Pulses } from './lib/pulse.js?v=695';
-import { BeatClock } from './lib/beatclock.js?v=695';
-import { BeatCue } from './lib/beatcue.js?v=695';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=695';
-import { Race, placeOf, standings } from './lib/race.js?v=695';
-import { Signals } from './lib/signals.js?v=695';
-import { pickShareLine, loadLines } from './lib/lines.js?v=695';
-import { RouteMap } from './lib/map.js?v=695';
-import * as sfx from './lib/sfx.js?v=695';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=695';
-import { glowTexture } from './lib/glow.js?v=695';
+import { AudioEngine } from './audio-engine.js?v=696';
+import { drawQR } from './lib/qr.js?v=696';
+import { WORLDS } from './worlds/registry.js?v=696';
+import { Net, PALETTE } from './net.js?v=696';
+import { Presence } from './lib/presence.js?v=696';
+import { Pulses } from './lib/pulse.js?v=696';
+import { BeatClock } from './lib/beatclock.js?v=696';
+import { BeatCue } from './lib/beatcue.js?v=696';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=696';
+import { Race, placeOf, standings } from './lib/race.js?v=696';
+import { Signals } from './lib/signals.js?v=696';
+import { pickShareLine, loadLines } from './lib/lines.js?v=696';
+import { RouteMap } from './lib/map.js?v=696';
+import * as sfx from './lib/sfx.js?v=696';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=696';
+import { glowTexture } from './lib/glow.js?v=696';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2217,7 +2217,7 @@ document.addEventListener('fp-bday-radio', () => {
         haptic([25, 50, 25, 50, 60]);
         flash((window.__BDAY_CALL || 'transmission received').toUpperCase(), 3000);
         document.dispatchEvent(new CustomEvent('fp-bday-go'));
-        setTimeout(() => { box.classList.add('hidden'); showWorldIntro(currentWorldKey); }, 550);
+        setTimeout(() => box.classList.add('hidden'), 550);   // no title card: the wire tells the story
         return;
       }
       brRAF = requestAnimationFrame(tick);

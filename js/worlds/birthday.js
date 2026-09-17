@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=695';
-import { themePaint } from '../lib/themes.js?v=695';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=696';
+import { themePaint } from '../lib/themes.js?v=696';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -1027,15 +1027,20 @@ export function createBirthday() {
       }
 
       // whispers at the right moment
-      if (state === 'fly') {
+      if (state === 'fly' && finales === 0) {
         hintT += dt;
-        if (!briefed && hintT > 2.2) {
+        // the transport is a TWIST: dispatch is as lost as he is
+        if (!briefed && hintT > 2.4) {
           briefed = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: ' + CANDLES + ' flames loose in the night. bring them in' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: where ARE you? our screens just went rainbow' }));
         }
-        if (!hintedFly && hintT > 11 && caught === 0) {
+        if (!this._brief2 && hintT > 8.5) {
+          this._brief2 = true;
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'no time to explain. ' + CANDLES + ' flames loose in there. bring them in' }));
+        }
+        if (!hintedFly && hintT > 15 && caught === 0) {
           hintedFly = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'follow the trail of flames. tap and one comes to you' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'follow the trail. tap and one comes to you' }));
         }
       }
 
