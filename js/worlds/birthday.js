@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=719';
-import { themePaint } from '../lib/themes.js?v=719';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=720';
+import { themePaint } from '../lib/themes.js?v=720';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -1217,7 +1217,7 @@ export function createBirthday() {
               if (q > commsSent && caught < CANDLES) {
                 commsSent = q;
                 const lines = [
-                  '', 'first dozen contained. they are moving faster. rude',
+                  '', 'first dozen contained. dispatch is impressed. gary says hi',
                   'halfway. watch the red embers. gary touched one. gary is fine. ish',
                   'almost all of them. gary thinks they are migrating. gary is not a scientist'];
                 if (lines[q]) document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: lines[q] }));
@@ -1308,7 +1308,7 @@ export function createBirthday() {
           this._pillar.visible = true;
           if (!hintedGift) {
             hintedGift = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that is either a gift or the biggest cone yet. get closer' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that is either a gift or a very fancy trap. get closer' }));
           }
         }
         giftBox.position.z = Math.min(-16, giftBox.position.z + speed * dt * 0.55);
