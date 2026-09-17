@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=727';
-import { themePaint } from '../lib/themes.js?v=727';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=728';
+import { themePaint } from '../lib/themes.js?v=728';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -370,17 +370,26 @@ export function createBirthday() {
       }
       traffic = [];
       const mkCar = (oncoming) => {
+        // a car you can READ at night: visible body, glass band lighter than
+        // the paint, four wheels on the road - not a floating box with lights
         const car = new THREE.Group();
-        const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.1, 5),
-          new THREE.MeshBasicMaterial({ color: 0x1c1830, toneMapped: false }));
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 2.6),
-          new THREE.MeshBasicMaterial({ color: 0x14102a, toneMapped: false }));
-        cabin.position.set(0, 1, -0.3);
-        const shield = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.7),
-          new THREE.MeshBasicMaterial({ color: 0x0a0818, toneMapped: false }));
-        shield.position.set(0, 1, oncoming ? 1.02 : -1.62);
-        shield.rotation.x = oncoming ? -0.25 : 0.25;
-        shield.rotation.y = oncoming ? 0 : Math.PI;
+        const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.9, 5.2),
+          new THREE.MeshBasicMaterial({ color: 0x2a2342, toneMapped: false }));
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.75, 2.5),
+          new THREE.MeshBasicMaterial({ color: 0x1a1530, toneMapped: false }));
+        cabin.position.set(0, 0.8, -0.3);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(2.34, 0.42, 2.4),
+          new THREE.MeshBasicMaterial({ color: 0x4b4670, toneMapped: false }));
+        glass.position.set(0, 0.88, -0.3);
+        const wheelG = new THREE.CylinderGeometry(0.42, 0.42, 0.26, 10);
+        const wheelM = new THREE.MeshBasicMaterial({ color: 0x07060e, toneMapped: false });
+        for (const [wx, wz] of [[-1.25, 1.7], [1.25, 1.7], [-1.25, -1.7], [1.25, -1.7]]) {
+          const wh = new THREE.Mesh(wheelG, wheelM);
+          wh.rotation.z = Math.PI / 2;
+          wh.position.set(wx, -0.55, wz);
+          car.add(wh);
+        }
+        car.add(glass);
         if (oncoming) {
           const hl1 = glowSprite(2.4), hl2 = glowSprite(2.4);
           hl1.material.color.set(0xfff4cc); hl2.material.color.set(0xfff4cc);
@@ -389,12 +398,12 @@ export function createBirthday() {
           hglow.material.color.set(0xfff4cc);
           hglow.material.opacity = 0.16;
           hglow.position.set(0, -0.6, 3.6);
-          car.add(bodyC, cabin, shield, hl1, hl2, hglow);
+          car.add(bodyC, cabin, hl1, hl2, hglow);
         } else {
           const tl1 = glowSprite(1.6), tl2 = glowSprite(1.6);
           tl1.material.color.set(0xff2a30); tl2.material.color.set(0xff2a30);
           tl1.position.set(-0.9, 0, 2.6); tl2.position.set(0.9, 0, 2.6);
-          car.add(bodyC, cabin, shield, tl1, tl2);
+          car.add(bodyC, cabin, tl1, tl2);
         }
         road.add(car);
         traffic.push(car);
