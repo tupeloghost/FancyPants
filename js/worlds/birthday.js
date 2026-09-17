@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=728';
-import { themePaint } from '../lib/themes.js?v=728';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=730';
+import { themePaint } from '../lib/themes.js?v=730';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -727,7 +727,7 @@ export function createBirthday() {
         if (state !== 'radio') return;
         state = 'drive'; stateT = 0; drove = 0;
         road.visible = true;
-        document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'drive' }));
+        document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'call' }));
         document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "dispatch: mrs. dumplin's porch is on fire. she says it can wait until wheel of fortune ends. it cannot" }));
       };
       document.addEventListener('fp-bday-go', this._onGo);
@@ -874,7 +874,13 @@ export function createBirthday() {
         for (const f of flames) f.visible = false;
         for (const t2 of tailFlies) t2.material.opacity = 0;
         if (state === 'drive') {
-          driveT += dt;
+          // parked until the call lands: the wheels (and the song) wait
+          const rolling = stateT > 5;
+          if (rolling && !this._rolled) {
+            this._rolled = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'drive' }));
+          }
+          if (rolling) driveT += dt;
           if (!this._spreadWarned && driveT > DRIVE_PAR) {
             this._spreadWarned = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'the fire is SPREADING. drive' }));
@@ -886,7 +892,7 @@ export function createBirthday() {
           coneSlowT = Math.max(0, coneSlowT - dt);
           const nearing = Math.max(0, Math.min(1, (drove - DRIVE_DIST * 0.9) / (DRIVE_DIST * 0.1)));
           const runSpeed = (26 + surge * 20) * (coneSlowT > 0 ? 0.45 : 1) * (1 - nearing * 0.75);
-          drove += runSpeed * dt;
+          if (rolling) drove += runSpeed * dt;
           // the lightbar washes the hood red and blue in turns
           const barPhase = Math.sin(time * 8) > 0;
           this._barL.material.color.set(barPhase ? 0xff2233 : 0x2244ff);
@@ -938,7 +944,11 @@ export function createBirthday() {
               coneSlowT = 1.4;
               driveT += 3;
               if (opts.impact) opts.impact(0.9);
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: u4.ahead ? 'you rear-ended a MINIVAN. it was already like that. drive' : 'that was a PRIUS. dispatch saw nothing' } }));
+              const saidKey = u4.ahead ? '_minivanSaid' : '_priusSaid';
+              if (!this[saidKey]) {
+                this[saidKey] = true;
+                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: u4.ahead ? 'you rear-ended a MINIVAN. it was already like that. drive' : 'that was a PRIUS. dispatch saw nothing' } }));
+              }
             }
           }
           house.position.z = -DRIVE_DIST - 30 + drove;
@@ -968,7 +978,7 @@ export function createBirthday() {
           camera.fov += ((78 + surge * 8) - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure('BLOCKS', Math.min(9, Math.floor(near * 10)), 10);
-          if (!this._droveHint2 && near > 0.55) {
+          if (!this._droveHint2 && near > 0.3) {
             this._droveHint2 = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'she is out front waving. she is also spraying it with a garden hose. it is not helping' }));
           }
@@ -981,7 +991,7 @@ export function createBirthday() {
             for (let i2 = 8; i2 < 8 + spread; i2++) houseFires[i2].visible = true;
             houseFires.forEach(fh => { fh.userData.active = fh.visible; if (!fh.visible) fh.userData.hp = 0; });
             this._spreadN = 8 + spread;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'on scene. mrs. dumplin made it out. the porch did not' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'on scene. mrs. dumplin made it out. the porch did not' } }));
           }
         }
         // ── the ARRIVAL: the truck stops, you take the scene in, you grab the hose ──
