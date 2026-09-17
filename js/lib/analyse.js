@@ -17,7 +17,7 @@
 //
 // The grid is still fitted, but only to report a tempo and to mark accents.
 
-import { fitGrid } from './beatclock.js?v=724';
+import { fitGrid } from './beatclock.js?v=726';
 
 const FFT_N = 1024;
 const HOP = 512;              // ~11.6ms at 44.1k — 86 frames a second

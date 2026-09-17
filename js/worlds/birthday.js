@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=724';
-import { themePaint } from '../lib/themes.js?v=724';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=726';
+import { themePaint } from '../lib/themes.js?v=726';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -74,7 +74,7 @@ export function createBirthday() {
   // trail through the night, each leading the eye to the next. Following
   // the string IS the flying.
   let courseAt = 70;                     // course-distance of the next flame dealt
-  const COURSE_GAP = 26;                 // spacing along the trail
+  const COURSE_GAP = 54;                 // spacing along the trail - the flight should live as long as the song
   // the chase ESCALATES: each quarter contained, the course swings wider
   const heat = () => 1 + Math.min(0.8, (caught / CANDLES) * 0.8);
   const laneX = d => (Math.sin(d * 0.021) * 7 + Math.sin(d * 0.0072) * 3.2) * heat();
@@ -108,9 +108,9 @@ export function createBirthday() {
     f.visible = true;
     // the chase breathes: tight clusters (grab grab grab), then a long reach
     const roll = Math.random();
-    courseAt += roll < 0.35 ? COURSE_GAP * 0.45 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 1.7;
+    courseAt += roll < 0.35 ? COURSE_GAP * 0.55 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 1.8;
     u.d = courseAt;
-    u.wob = 0.4 + Math.random() * 1.1;   // each flame wanders its own amount
+    u.wob = 0.3 + Math.random() * 0.8;   // each flame wanders its own amount (fair against the ring)
     f.position.set(laneX(u.d), laneY(u.d), -(u.d - travel));
     u.seed = Math.random() * 100;
   };
@@ -1137,7 +1137,11 @@ export function createBirthday() {
             }
           }
           if (this._recPhase >= 2) platter.rotation.y += dt * (this._needleDown ? 2.6 : 0.3);
-          if (this._needleDown) tonearm.rotation.y += ((-0.12) - tonearm.rotation.y) * Math.min(1, dt * 3);
+          if (this._needleDown) {
+            tonearm.rotation.y += ((-0.12) - tonearm.rotation.y) * Math.min(1, dt * 3);
+            tonearm.position.y += ((-2.31) - tonearm.position.y) * Math.min(1, dt * 3);
+            tonearm.rotation.x += (0.04 - tonearm.rotation.x) * Math.min(1, dt * 3);
+          }
           sky.material.color.setRGB(0.05, 0.03, 0.03);
           camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
           this._cv2.set(Math.sin(time * 0.2) * 0.8, 1.6, 2.5);
@@ -1229,9 +1233,10 @@ export function createBirthday() {
             f.position.y = laneY(u.d) + Math.cos(time * 2.1 + u.seed) * wob * 0.7;
             if (f.position.z > 8) dealFlame(f);   // missed: it rejoins the course's end
           }
-          // the catch: lane and height, generous, as it reaches you
+          // the catch is the ring, slide-style: thread it or it passes and
+          // rejoins the end of the course
           const dz = Math.abs(f.position.z - player.position.z);
-          if (dz < 3.5 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 3.4) {
+          if (dz < 2.8 && Math.hypot(f.position.x - player.position.x, f.position.y - player.position.y) < 2.4) {
             if (state === 'fly') {
               caught = Math.min(CANDLES, caught + 1);
               // mission control checks in at the quarter marks - never

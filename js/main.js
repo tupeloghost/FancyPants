@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=724';
-import { drawQR } from './lib/qr.js?v=724';
-import { WORLDS } from './worlds/registry.js?v=724';
-import { Net, PALETTE } from './net.js?v=724';
-import { Presence } from './lib/presence.js?v=724';
-import { Pulses } from './lib/pulse.js?v=724';
-import { BeatClock } from './lib/beatclock.js?v=724';
-import { BeatCue } from './lib/beatcue.js?v=724';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=724';
-import { Race, placeOf, standings } from './lib/race.js?v=724';
-import { Signals } from './lib/signals.js?v=724';
-import { pickShareLine, loadLines } from './lib/lines.js?v=724';
-import { RouteMap } from './lib/map.js?v=724';
-import * as sfx from './lib/sfx.js?v=724';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=724';
-import { glowTexture } from './lib/glow.js?v=724';
+import { AudioEngine } from './audio-engine.js?v=726';
+import { drawQR } from './lib/qr.js?v=726';
+import { WORLDS } from './worlds/registry.js?v=726';
+import { Net, PALETTE } from './net.js?v=726';
+import { Presence } from './lib/presence.js?v=726';
+import { Pulses } from './lib/pulse.js?v=726';
+import { BeatClock } from './lib/beatclock.js?v=726';
+import { BeatCue } from './lib/beatcue.js?v=726';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=726';
+import { Race, placeOf, standings } from './lib/race.js?v=726';
+import { Signals } from './lib/signals.js?v=726';
+import { pickShareLine, loadLines } from './lib/lines.js?v=726';
+import { RouteMap } from './lib/map.js?v=726';
+import * as sfx from './lib/sfx.js?v=726';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=726';
+import { glowTexture } from './lib/glow.js?v=726';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2197,6 +2197,28 @@ document.addEventListener('fp-bday-needle', () => {
   if (brNoiseGain && audio.ctx) {
     brNoiseGain.gain.setValueAtTime(0.06, audio.ctx.currentTime);
     brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.5, 0.2);
+  }
+  // the SCRATCH: a real needle landing - noise swept down through a bandpass,
+  // then the groove settles into crackle
+  if (audio.ctx) {
+    const ctx = audio.ctx, t = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 0.5);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 2.5;
+    bp.frequency.setValueAtTime(3200, t);
+    bp.frequency.exponentialRampToValueAtTime(280, t + 0.42);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.09, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    src.start(t);
+    src.stop(t + 0.55);
   }
 });
 document.addEventListener('fp-bday-glitch', () => {
