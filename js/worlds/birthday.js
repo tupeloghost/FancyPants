@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=691';
-import { themePaint } from '../lib/themes.js?v=691';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=692';
+import { themePaint } from '../lib/themes.js?v=692';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -21,6 +21,7 @@ const STARS = LITE ? 300 : 550;
 const BURSTS = LITE ? 6 : 10;
 const RAIN = LITE ? 120 : 220;
 const TAIL = 10;                      // fireflies shown on the tail (the rest glow inside you)
+const EMBERS = LITE ? 3 : 5;          // loose embers on the course: red means NEVER
 
 export function createBirthday() {
   const CANDLES = window.__BDAY_N || CANDLES_DEFAULT;
@@ -39,7 +40,8 @@ export function createBirthday() {
   let stateT = 0, blowProg = 0, cascadeT = 0;
   let tapGlit = 0, callPulse = 0;
   let hintT = 0, hintedFly = false, hintedGift = false;
-  let commsSent = 0, briefed = false;   // mission control speaks in quarters
+  let commsSent = 0, briefed = false;   // dispatch speaks in quarters
+  let embers = [], emberHurtT = 0;      // red heat on the course; clip one and a flame breaks loose
   let wishStar = null;
   const color = new THREE.Color();
   const CAKE_POS = new THREE.Vector3(0, -9, -34);
@@ -66,8 +68,32 @@ export function createBirthday() {
   // the string IS the flying.
   let courseAt = 70;                     // course-distance of the next flame dealt
   const COURSE_GAP = 26;                 // spacing along the trail
-  const laneX = d => Math.sin(d * 0.021) * 5.5 + Math.sin(d * 0.0072) * 2.4;
-  const laneY = d => Math.sin(d * 0.0137) * 2.8 + Math.cos(d * 0.019) * 1.4;
+  // the chase ESCALATES: each quarter contained, the course swings wider
+  const heat = () => 1 + Math.min(0.6, (caught / CANDLES) * 0.6);
+  const laneX = d => (Math.sin(d * 0.021) * 5.5 + Math.sin(d * 0.0072) * 2.4) * heat();
+  const laneY = d => (Math.sin(d * 0.0137) * 2.8 + Math.cos(d * 0.019) * 1.4) * heat();
+  const mkEmber = () => {
+    const g = new THREE.Group();
+    const glow = glowSprite(4.6);
+    glow.material.color.set(0xff4422);
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0x1a0503, toneMapped: false })
+    );
+    g.add(glow, core);
+    g.userData = { glow, seed: Math.random() * 100, live: false, d: 0 };
+    g.visible = false;
+    return g;
+  };
+  const dealEmber = (e) => {
+    const u = e.userData;
+    u.live = true;
+    e.visible = true;
+    u.d = courseAt + COURSE_GAP * (0.4 + Math.random() * 0.3);
+    u.off = (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random() * 1.6);
+    e.position.set(laneX(u.d) + u.off, laneY(u.d) + u.off * 0.4, -(u.d - travel));
+    u.seed = Math.random() * 100;
+  };
   const dealFlame = (f) => {
     const u = f.userData;
     u.live = true;
@@ -226,6 +252,13 @@ export function createBirthday() {
       giftBox.visible = false;
       group.add(giftBox);
 
+      // embers: the danger on the course (asleep until the chase heats up)
+      embers = [];
+      for (let i = 0; i < EMBERS; i++) {
+        const e = mkEmber();
+        group.add(e);
+        embers.push(e);
+      }
       // flames: the opening stretch of the course, strung in order
       courseAt = 46;
       for (let i = 0; i < FLAMES; i++) {
@@ -467,14 +500,14 @@ export function createBirthday() {
               if (q > commsSent && caught < CANDLES) {
                 commsSent = q;
                 const lines = [
-                  '', 'first quarter secured. keep flying',
-                  'halfway. it is waiting for you',
-                  'almost there. mission control is smiling'];
+                  '', 'first dozen contained. they are moving faster',
+                  'halfway. watch the red embers',
+                  'almost all of them. where are they going?'];
                 if (lines[q]) document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: lines[q] }));
               }
               if (caught >= CANDLES) {
                 state = 'rush'; stateT = 0;
-                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all ' + CANDLES + ' secured. hold on' }));
+                document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all ' + CANDLES + ' contained. wait... something is coming' }));
               }
             }
             dealFlame(f);
@@ -496,6 +529,36 @@ export function createBirthday() {
         }
       } else {
         for (const f of flames) f.visible = false;
+      }
+
+      // ── the EMBERS: red heat drifting the course once the chase is on.
+      // clip one and a contained flame BREAKS LOOSE - never fatal, always felt
+      const embersOn = (state === 'fly' && caught >= CANDLES * 0.25) || state === 'after';
+      emberHurtT = Math.max(0, emberHurtT - dt);
+      for (const e of embers) {
+        const u = e.userData;
+        if (!embersOn) { e.visible = false; u.live = false; continue; }
+        if (!u.live) { dealEmber(e); continue; }
+        e.position.z += speed * dt;
+        e.position.x = laneX(u.d) + u.off + Math.sin(time * 2.2 + u.seed) * 0.35;
+        e.position.y = laneY(u.d) + u.off * 0.4 + Math.cos(time * 1.8 + u.seed) * 0.3;
+        u.glow.material.opacity = 0.55 + Math.sin(time * 6 + u.seed) * 0.2 + audio.bass * 0.2;
+        u.glow.scale.setScalar(0.9 + Math.sin(time * 5 + u.seed) * 0.15);
+        if (e.position.z > 8) { dealEmber(e); continue; }
+        const dz = Math.abs(e.position.z - player.position.z);
+        if (state === 'fly' && emberHurtT <= 0 && dz < 3 &&
+            Math.hypot(e.position.x - player.position.x, e.position.y - player.position.y) < 2.6) {
+          emberHurtT = 1.2;
+          dealEmber(e);
+          if (caught > 0) {
+            caught--;
+            commsSent = Math.min(commsSent, Math.floor((caught / CANDLES) * 4));
+            const runaway = flames.find(x => !x.userData.live) || null;
+            if (runaway) dealFlame(runaway);
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'one broke loose! stay off the red' }));
+          }
+          if (opts.impact) opts.impact(0.85);
+        }
       }
 
       // the tail: your gathered flames fly with you, and your light grows
@@ -528,7 +591,7 @@ export function createBirthday() {
           this._pillar.visible = true;
           if (!hintedGift) {
             hintedGift = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'there it is. fly into it' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'that is no fire. get closer' }));
           }
         }
         giftBox.position.z = Math.min(-16, giftBox.position.z + speed * dt * 0.55);
@@ -572,7 +635,7 @@ export function createBirthday() {
         if (k >= 1) {
           giftBox.visible = false;
           state = 'cascade'; stateT = 0; cascadeT = 0;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'your flames light the candles' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'so that is where they belong' }));
         }
       }
 
@@ -668,7 +731,7 @@ export function createBirthday() {
         hintT += dt;
         if (!briefed && hintT > 2.2) {
           briefed = true;
-          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'mission control: bring us ' + CANDLES + ' flames. you will understand at the end' }));
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'dispatch: ' + CANDLES + ' flames loose in the night. bring them in' }));
         }
         if (!hintedFly && hintT > 11 && caught === 0) {
           hintedFly = true;
