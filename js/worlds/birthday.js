@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=721';
-import { themePaint } from '../lib/themes.js?v=721';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=724';
+import { themePaint } from '../lib/themes.js?v=724';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -76,9 +76,9 @@ export function createBirthday() {
   let courseAt = 70;                     // course-distance of the next flame dealt
   const COURSE_GAP = 26;                 // spacing along the trail
   // the chase ESCALATES: each quarter contained, the course swings wider
-  const heat = () => 1 + Math.min(0.6, (caught / CANDLES) * 0.6);
-  const laneX = d => (Math.sin(d * 0.021) * 5.5 + Math.sin(d * 0.0072) * 2.4) * heat();
-  const laneY = d => (Math.sin(d * 0.0137) * 2.8 + Math.cos(d * 0.019) * 1.4) * heat();
+  const heat = () => 1 + Math.min(0.8, (caught / CANDLES) * 0.8);
+  const laneX = d => (Math.sin(d * 0.021) * 7 + Math.sin(d * 0.0072) * 3.2) * heat();
+  const laneY = d => (Math.sin(d * 0.0137) * 3.4 + Math.cos(d * 0.019) * 1.7) * heat();
   const mkEmber = () => {
     const g = new THREE.Group();
     const glow = glowSprite(4.6);
@@ -106,8 +106,11 @@ export function createBirthday() {
     u.live = true;
     u.dart = 0;
     f.visible = true;
-    courseAt += COURSE_GAP;
+    // the chase breathes: tight clusters (grab grab grab), then a long reach
+    const roll = Math.random();
+    courseAt += roll < 0.35 ? COURSE_GAP * 0.45 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 1.7;
     u.d = courseAt;
+    u.wob = 0.4 + Math.random() * 1.1;   // each flame wanders its own amount
     f.position.set(laneX(u.d), laneY(u.d), -(u.d - travel));
     u.seed = Math.random() * 100;
   };
@@ -758,6 +761,25 @@ export function createBirthday() {
         }
         return;
       }
+      if (state === 'unwrap') {
+        const nw = performance.now();
+        if (nw - (this._lastUnT || 0) < 450) return;   // one tap, one step
+        this._lastUnT = nw;
+        this._unwrapStep = (this._unwrapStep || 0) + 1;
+        this._shiver = 1;
+        if (this._unwrapStep === 1) {
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'the bow is off. now the ribbon. tap' } }));
+        } else if (this._unwrapStep === 2) {
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'the lid. one more tap' } }));
+        } else if (this._unwrapStep >= 3 && state === 'unwrap') {
+          state = 'open'; stateT = 0;
+          if (this._pillar) this._pillar.visible = false;
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(0, 14, 0)), opts, paint, tp);
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(-9, 8, 4)), opts, paint, tp);
+          this._fire(giftBox.position.clone().add(new THREE.Vector3(9, 8, -4)), opts, paint, tp);
+        }
+        return;
+      }
       if (state === 'drive' || state === 'douse') return;
       if (state === 'blowing' && window.__blowLevel == null) { blowProg = Math.min(1, blowProg + 0.12); return; }
       if (state !== 'fly' && state !== 'after') return;
@@ -815,7 +837,7 @@ export function createBirthday() {
       // the waking: the universe brightens with every flame taken, and once
       // the cake is out it stays fully awake
       const aliveK = state === 'radio' ? 0.05
-        : (state === 'fly' || state === 'rush' || state === 'gift' || state === 'open')
+        : (state === 'fly' || state === 'rush' || state === 'gift' || state === 'unwrap' || state === 'open')
         ? 0.15 + 0.85 * Math.min(1, caught / CANDLES)
         : 1;
       const ceremonyDim = (state === 'wish' || state === 'blowing') ? 0.45 : state === 'out' ? 0.18 : 1;
@@ -1202,8 +1224,9 @@ export function createBirthday() {
             f.position.lerp(player.position, Math.min(1, dt * 3.4));
           } else {
             f.position.z += speed * dt;
-            f.position.x = laneX(u.d) + Math.sin(time * 1.4 + u.seed) * 0.25;
-            f.position.y = laneY(u.d) + Math.cos(time * 1.1 + u.seed) * 0.25;
+            const wob = u.wob || 0.4;
+            f.position.x = laneX(u.d) + Math.sin(time * 1.4 + u.seed) * wob;
+            f.position.y = laneY(u.d) + Math.cos(time * 2.1 + u.seed) * wob * 0.7;
             if (f.position.z > 8) dealFlame(f);   // missed: it rejoins the course's end
           }
           // the catch: lane and height, generous, as it reaches you
@@ -1279,7 +1302,7 @@ export function createBirthday() {
       }
 
       // the tail: your gathered flames fly with you, and your light grows
-      const shown = state === 'fly' || state === 'gift' || state === 'open' ? Math.min(TAIL, caught) : 0;
+      const shown = state === 'fly' || state === 'gift' || state === 'unwrap' || state === 'open' ? Math.min(TAIL, caught) : 0;
       tailFlies.forEach((t, i) => {
         const on = i < shown;
         t.material.opacity += ((on ? 0.75 : 0) - t.material.opacity) * Math.min(1, dt * 3);
@@ -1321,14 +1344,51 @@ export function createBirthday() {
         [ribbonV, ribbonH, bowKnot, lid.children[1], lid.children[2]].forEach(rb => {
           if (rb && rb.material) rb.material.color.setHSL(0.11, 0.85, Math.min(0.72, gl));
         });
-        // flying INTO it opens it
+        // flying INTO it begins the unwrapping - the box is YOURS to open
         if (giftBox.position.z >= -20 && Math.hypot(player.position.x, player.position.y + 4) < 9) {
-          state = 'open'; stateT = 0;
-          if (this._pillar) this._pillar.visible = false;
-          this._fire(giftBox.position.clone().add(new THREE.Vector3(0, 14, 0)), opts, paint, tp);
-          this._fire(giftBox.position.clone().add(new THREE.Vector3(-9, 8, 4)), opts, paint, tp);
-          this._fire(giftBox.position.clone().add(new THREE.Vector3(9, 8, -4)), opts, paint, tp);
-          if (opts.impact) opts.impact(1);
+          state = 'unwrap'; stateT = 0;
+          this._unwrapStep = 0; this._shiver = 1;
+          if (opts.impact) opts.impact(0.6);
+          document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'it is wrapped. tap the bow to untie it' } }));
+        }
+      }
+
+      // ── the UNWRAP: bow, then ribbon, then lid - three taps, three answers ──
+      if (state === 'unwrap') {
+        giftBox.position.x += (0 - giftBox.position.x) * Math.min(1, dt * 2);
+        giftBox.position.z += (-30 - giftBox.position.z) * Math.min(1, dt * 2);
+        giftBox.position.y = -10 + Math.sin(time * 0.9) * 0.4;
+        this._shiver = Math.max(0, (this._shiver || 0) - dt * 2.2);
+        giftBox.rotation.y = Math.sin(time * 0.4) * 0.12;
+        giftBox.rotation.z = Math.sin(time * 38) * 0.05 * this._shiver;
+        if (this._pillar) {
+          this._pillar.position.set(giftBox.position.x, giftBox.position.y + 40, giftBox.position.z);
+          this._pillar.material.opacity = 0.08 + Math.sin(time * 2) * 0.02;
+        }
+        const gl2 = 0.42 + audio.bass * 0.25 + Math.sin(time * 2.5) * 0.1;
+        [ribbonV, ribbonH, bowKnot, lid.children[1], lid.children[2]].forEach(rb => {
+          if (rb && rb.material) rb.material.color.setHSL(0.11, 0.85, Math.min(0.58, gl2));
+        });
+        // step 1: the bow spins off into the night
+        if (this._unwrapStep >= 1 && bowKnot.visible) {
+          this._bowT = (this._bowT || 0) + dt;
+          if (this._bowY0 === undefined) this._bowY0 = bowKnot.position.y;
+          bowKnot.position.y = this._bowY0 + this._bowT * 14;
+          bowKnot.rotation.y += dt * 9;
+          bowKnot.material.transparent = true;
+          bowKnot.material.opacity = Math.max(0, 1 - this._bowT / 1.1);
+          if (this._bowT > 1.1) bowKnot.visible = false;
+        }
+        // step 2: the ribbons slide off the box
+        if (this._unwrapStep >= 2 && ribbonV.visible) {
+          this._ribT = (this._ribT || 0) + dt;
+          ribbonV.position.z += dt * 10;
+          ribbonH.position.x += dt * 10;
+          [ribbonV, ribbonH].forEach(rb => {
+            rb.material.transparent = true;
+            rb.material.opacity = Math.max(0, 1 - this._ribT / 0.9);
+          });
+          if (this._ribT > 0.9) { ribbonV.visible = false; ribbonH.visible = false; }
         }
       }
 
@@ -1340,7 +1400,7 @@ export function createBirthday() {
         lid.rotation.x = k * 1.1;
         giftBox.children[0].material.opacity = 1 - k;
         giftBox.children[0].material.transparent = true;
-        [ribbonV, ribbonH].forEach(rb => { rb.material.opacity = 1 - k; rb.material.transparent = true; });
+        [ribbonV, ribbonH].forEach(rb => { if (rb.visible) { rb.material.opacity = 1 - k; rb.material.transparent = true; } });
         if (!cake.visible && k > 0.3) cake.visible = true;
         if (cake.visible) {
           const ck = Math.min(1, Math.max(0, (k - 0.3) / 0.7));
