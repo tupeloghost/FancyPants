@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=744';
-import { themePaint } from '../lib/themes.js?v=744';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=746';
+import { themePaint } from '../lib/themes.js?v=746';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -1251,7 +1251,7 @@ export function createBirthday() {
             this._batterSaid = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'dispatch: caller reports the kitchen smells like cake batter. unrelated. probably' } }));
           }
-          if (this._needleDown && stateT - this._needleAt > 7.4) {
+          if (this._needleDown && stateT - this._needleAt > 8.4) {
             // the groove catches - and the world comes apart
             room.visible = false;
             confetti.visible = true;
@@ -1268,7 +1268,7 @@ export function createBirthday() {
       player.visible = true;
       stars.visible = true;
       const rushK = state === 'rush' ? Math.min(1, stateT / 0.5) : 0;
-      const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 16 + chorus * 4 + rushK * 34) : 2;
+      const speed = flying ? (10 + aliveK * 8 + audio.volume * 8 * reactivity + surge * 40 + chorus * 4 + rushK * 34) : 2;
       travel += speed * dt;
 
       // sky and stars
@@ -1304,6 +1304,47 @@ export function createBirthday() {
         }
         confetti.instanceMatrix.needsUpdate = true;
         ic.needsUpdate = true;
+      }
+
+      // ── WARP: hold and the universe smears into streaks rushing past ──
+      {
+        const WARP = LITE ? 50 : 90;
+        if (!this._warp) {
+          const wg = new THREE.BoxGeometry(0.05, 0.05, 1);
+          const wm = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false });
+          this._warp = new THREE.InstancedMesh(wg, wm, WARP);
+          this._warp.frustumCulled = false;
+          this._warpBits = [];
+          for (let i = 0; i < WARP; i++) {
+            const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 26;
+            this._warpBits.push({ x: Math.cos(a) * r, y: Math.sin(a) * r * 0.7, z: -Math.random() * 160 });
+          }
+          group.add(this._warp);
+        }
+        const warpOn = (state === 'fly' || state === 'after') ? surge : state === 'rush' ? 1 : 0;
+        this._warp.visible = warpOn > 0.02;
+        if (this._warp.visible) {
+          const dw = this._dumW || (this._dumW = new THREE.Object3D());
+          for (let i = 0; i < this._warpBits.length; i++) {
+            const b = this._warpBits[i];
+            b.z += speed * dt * 2.2;
+            if (b.z > 12) {
+              b.z -= 170;
+              const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 26;
+              b.x = Math.cos(a) * r; b.y = Math.sin(a) * r * 0.7;
+            }
+            dw.position.set(b.x, b.y, b.z);
+            dw.rotation.set(0, 0, 0);
+            dw.scale.set(1, 1, 2 + warpOn * 16);
+            dw.updateMatrix();
+            this._warp.setMatrixAt(i, dw.matrix);
+          }
+          this._warp.instanceMatrix.needsUpdate = true;
+          paint(0.1, audio.treble);
+          color.setHSL(tp[0], 0.35, 0.8);
+          this._warp.material.color.copy(color);
+          this._warp.material.opacity = warpOn * 0.7 * ceremonyDim;
+        }
       }
 
       // ── BEAT HOOPS: every kick throws a ring of light down the tunnel at you ──
@@ -1826,7 +1867,7 @@ export function createBirthday() {
       const camT = this._camT || (this._camT = new THREE.Vector3(0, 0.5, 12));
       const lookT = this._lookT || (this._lookT = new THREE.Vector3(0, 0, -40));
       if (flying) {
-        camT.set(steer.x * 3, 0.5 + steer.y * 2 + Math.sin(time * 0.3) * 0.5, 12 - surge * 2.5);
+        camT.set(steer.x * 3 + Math.sin(time * 47) * surge * 0.06, 0.5 + steer.y * 2 + Math.sin(time * 0.3) * 0.5 + Math.cos(time * 53) * surge * 0.05, 12 - surge * 4.5);
         lookT.set(steer.x * 4, steer.y * 2.5, -50);
       } else {
         camT.set(Math.sin(time * 0.06) * 8, 3.5, 4);
@@ -1840,7 +1881,7 @@ export function createBirthday() {
         this._bank = (this._bank || 0) + ((-steer.x * 0.16) - (this._bank || 0)) * Math.min(1, dt * 3);
         camera.rotateZ(this._bank + Math.sin(time * 37) * audio.bass * 0.006 * reactivity);
       }
-      const fovT = 76 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * 8 + (flying ? audio.beatIntensity * 6 * reactivity : 0) - (state === 'wish' || state === 'blowing' ? 6 : 0);
+      const fovT = 76 + audio.volume * (3 + 4 * aliveK) * reactivity + surge * (flying ? 18 : 8) + (flying ? audio.beatIntensity * 6 * reactivity : 0) - (state === 'wish' || state === 'blowing' ? 6 : 0);
       camera.fov += (fovT - camera.fov) * Math.min(1, dt * 5);
       camera.updateProjectionMatrix();
 

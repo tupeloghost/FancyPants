@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=744';
-import { drawQR } from './lib/qr.js?v=744';
-import { WORLDS } from './worlds/registry.js?v=744';
-import { Net, PALETTE } from './net.js?v=744';
-import { Presence } from './lib/presence.js?v=744';
-import { Pulses } from './lib/pulse.js?v=744';
-import { BeatClock } from './lib/beatclock.js?v=744';
-import { BeatCue } from './lib/beatcue.js?v=744';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=744';
-import { Race, placeOf, standings } from './lib/race.js?v=744';
-import { Signals } from './lib/signals.js?v=744';
-import { pickShareLine, loadLines } from './lib/lines.js?v=744';
-import { RouteMap } from './lib/map.js?v=744';
-import * as sfx from './lib/sfx.js?v=744';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=744';
-import { glowTexture } from './lib/glow.js?v=744';
+import { AudioEngine } from './audio-engine.js?v=746';
+import { drawQR } from './lib/qr.js?v=746';
+import { WORLDS } from './worlds/registry.js?v=746';
+import { Net, PALETTE } from './net.js?v=746';
+import { Presence } from './lib/presence.js?v=746';
+import { Pulses } from './lib/pulse.js?v=746';
+import { BeatClock } from './lib/beatclock.js?v=746';
+import { BeatCue } from './lib/beatcue.js?v=746';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=746';
+import { Race, placeOf, standings } from './lib/race.js?v=746';
+import { Signals } from './lib/signals.js?v=746';
+import { pickShareLine, loadLines } from './lib/lines.js?v=746';
+import { RouteMap } from './lib/map.js?v=746';
+import * as sfx from './lib/sfx.js?v=746';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=746';
+import { glowTexture } from './lib/glow.js?v=746';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2183,6 +2183,13 @@ $('bday-cta').addEventListener('click', () => {
 document.addEventListener('fp-bday-scene', e => {
   $('bday-cta').classList.add('hidden');   // a scene change retires its button
   bcQueue.length = 0;   // a new scene never replays the old scene's lines
+  if (e.detail === 'fly') {
+    // the glitch swallows the room: her front room's chatter does not follow
+    clearInterval(bcTimer); clearTimeout(bcHide);
+    $('bday-comm').classList.add('hidden');
+    bcBusy = false;
+    if (wkBed) walkieClose();
+  }
   audio.ensureContext();
   sfxEnsure();
   // the wheels roll: NOW the instrumental begins
