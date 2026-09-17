@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=733';
-import { themePaint } from '../lib/themes.js?v=733';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=736';
+import { themePaint } from '../lib/themes.js?v=736';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -631,13 +631,26 @@ export function createBirthday() {
       overGlow.material.opacity = 0.22;
       overGlow.position.set(0.5, 0.5, 0.5);
       room.add(plinth, sleeve, overGlow);
+      // the arm is sized to REACH: pivot (3.4, 1.2), 4.4 long - at rotation
+      // 0.75 the needle sits over the grooves ~2.3 from the spindle; at -0.1
+      // it rests clear of the record
+      const armBase = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.5, 16),
+        new THREE.MeshBasicMaterial({ color: 0x6d6790, toneMapped: false }));
+      armBase.position.set(3.4, -2.45, 1.2);
       tonearm = new THREE.Group();
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 4.4),
-        new THREE.MeshBasicMaterial({ color: 0xb9b3da, toneMapped: false }));
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 4.4),
+        new THREE.MeshBasicMaterial({ color: 0x847ea8, toneMapped: false }));
       arm.position.z = -2.2;
-      tonearm.add(arm);
-      tonearm.position.set(3.2, -2.2, 1.6);
-      tonearm.rotation.y = -0.7;   // resting off the record
+      const headshell = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.6),
+        new THREE.MeshBasicMaterial({ color: 0x9a94c0, toneMapped: false }));
+      headshell.position.set(0, -0.05, -4.4);
+      const needle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.05, 0.34, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffe2a0, toneMapped: false }));
+      needle.position.set(0, -0.3, -4.5);
+      tonearm.add(arm, headshell, needle);
+      tonearm.position.set(3.4, -1.55, 1.2);   // raised
+      tonearm.rotation.y = -0.1;               // resting off the record
+      room.add(armBase);
       room.add(table, platter, tonearm);
       this._recPhase = 0;   // 0 waiting, 1 placing, 2 placed, 3 needle down
       const lampGlow = glowSprite(14);
@@ -743,6 +756,12 @@ export function createBirthday() {
       document.addEventListener('fp-bday-ctago', this._onCta);
       if (state === 'radio') setTimeout(() => document.dispatchEvent(new CustomEvent('fp-bday-radio')), 400);
       // dev handles: skip to the gift, or straight to the ceremony
+      window.__bdayRecord = () => {
+        state = 'record'; stateT = 0;
+        if (this._cab) this._cab.visible = false;
+        road.visible = false; room.visible = true;
+        document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
+      };
       window.__bdayGift = () => { caught = CANDLES; state = 'gift'; stateT = 0; if (this._cab) this._cab.visible = false; if (road) road.visible = false; player.visible = true; };
       window.__bdayFinale = () => {
         candles.forEach(c => { c.userData.on = true; });
@@ -774,9 +793,7 @@ export function createBirthday() {
         }
         if (this._recPhase === 2 && !this._needleDown) {
           this._recPhase = 3;
-          this._needleDown = true;
-          this._needleAt = stateT;
-          document.dispatchEvent(new CustomEvent('fp-bday-needle'));
+          this._armT = 0;   // swing over, then lower until the needle touches
         }
         return;
       }
@@ -1142,15 +1159,26 @@ export function createBirthday() {
             setTimeout(() => {
               if (state !== 'douse') return;
               state = 'lady'; stateT = 0;
-              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: "mrs. dumplin: you saved my porch, sugar. one favor before you go... put a record on for me? my hip says no but my heart says boogie" }));
-              document.dispatchEvent(new CustomEvent('fp-bday-cta', { detail: 'put the record on' }));
-            }, 2000);
+              this._ladySaid = false; this._ctaShown = false;
+            }, 2800);
           }
         }
         if (state === 'lady') {
           sprayPts.visible = false;
           if (this._ret) this._ret.visible = false;
           window.__bdayFires = 0;
+          // the beat: camera walks to her (1.6s), she asks while you watch,
+          // and only once the question has finished typing - plus a breath -
+          // does the button appear
+          const LADY_LINE = "mrs. dumplin: you saved my porch, sugar. one favor before you go... put a record on for me? my hip says no but my heart says boogie";
+          if (!this._ladySaid && stateT > 1.6) {
+            this._ladySaid = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: LADY_LINE } }));
+          }
+          if (this._ladySaid && !this._ctaShown && stateT > 1.6 + LADY_LINE.length * 0.034 + 2.2) {
+            this._ctaShown = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-cta', { detail: 'put the record on' }));
+          }
           // she gets the floor: the camera walks over, her arm chats along,
           // and the gold button is the only way forward - zero ambiguity
           const lw = this._lw || (this._lw = new THREE.Vector3());
@@ -1182,10 +1210,25 @@ export function createBirthday() {
             }
           }
           if (this._recPhase >= 2) platter.rotation.y += dt * (this._needleDown ? 2.6 : 0.3);
-          if (this._needleDown) {
-            tonearm.rotation.y += ((-0.12) - tonearm.rotation.y) * Math.min(1, dt * 3);
-            tonearm.position.y += ((-2.31) - tonearm.position.y) * Math.min(1, dt * 3);
-            tonearm.rotation.x += (0.04 - tonearm.rotation.x) * Math.min(1, dt * 3);
+          if (this._recPhase >= 3) {
+            this._armT += dt;
+            // 1) swing across to the grooves, arm held up
+            const sk = Math.min(1, this._armT / 1.0);
+            const se = sk < 0.5 ? 2 * sk * sk : 1 - Math.pow(-2 * sk + 2, 2) / 2;
+            tonearm.rotation.y = -0.1 + 0.85 * se;
+            // 2) lower: needle tip meets the disc surface (y -2.41)
+            const lk = Math.min(1, Math.max(0, (this._armT - 1.15) / 0.45));
+            tonearm.position.y = -1.55 + (-1.99 - -1.55) * (lk * lk);
+            // 3) CONTACT
+            if (lk >= 1 && !this._needleDown) {
+              this._needleDown = true;
+              this._needleAt = stateT;
+              if (opts.impact) opts.impact(0.5);
+              document.dispatchEvent(new CustomEvent('fp-bday-needle'));
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'mrs. dumplin: ooh, that is my song' } }));
+            }
+            // a tiny ride on the groove once it plays
+            if (this._needleDown) tonearm.position.y = -1.99 + Math.sin(time * 14) * 0.006;
           }
           sky.material.color.setRGB(0.05, 0.03, 0.03);
           camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
@@ -1199,7 +1242,8 @@ export function createBirthday() {
             this._recordHinted = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'her record leans by the sleeve. tap it to put it on the player' }));
           }
-          if (this._needleDown && stateT - this._needleAt > 2.6) {
+          window.__bdayArm = { phase: this._recPhase, armT: +(this._armT || 0).toFixed(2), y: +tonearm.position.y.toFixed(2), rot: +tonearm.rotation.y.toFixed(2), down: !!this._needleDown };
+          if (this._needleDown && stateT - this._needleAt > 3.2) {
             // the groove catches - and the world comes apart
             room.visible = false;
             confetti.visible = true;
