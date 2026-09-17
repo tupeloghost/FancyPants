@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=726';
-import { themePaint } from '../lib/themes.js?v=726';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=727';
+import { themePaint } from '../lib/themes.js?v=727';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -74,7 +74,7 @@ export function createBirthday() {
   // trail through the night, each leading the eye to the next. Following
   // the string IS the flying.
   let courseAt = 70;                     // course-distance of the next flame dealt
-  const COURSE_GAP = 54;                 // spacing along the trail - the flight should live as long as the song
+  const COURSE_GAP = 84;                 // spacing along the trail - long reaches, every catch earned
   // the chase ESCALATES: each quarter contained, the course swings wider
   const heat = () => 1 + Math.min(0.8, (caught / CANDLES) * 0.8);
   const laneX = d => (Math.sin(d * 0.021) * 7 + Math.sin(d * 0.0072) * 3.2) * heat();
@@ -108,7 +108,7 @@ export function createBirthday() {
     f.visible = true;
     // the chase breathes: tight clusters (grab grab grab), then a long reach
     const roll = Math.random();
-    courseAt += roll < 0.35 ? COURSE_GAP * 0.55 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 1.8;
+    courseAt += roll < 0.35 ? COURSE_GAP * 0.4 : roll < 0.8 ? COURSE_GAP : COURSE_GAP * 2;
     u.d = courseAt;
     u.wob = 0.3 + Math.random() * 0.8;   // each flame wanders its own amount (fair against the ring)
     f.position.set(laneX(u.d), laneY(u.d), -(u.d - travel));
