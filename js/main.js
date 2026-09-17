@@ -8,22 +8,22 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { AudioEngine } from './audio-engine.js?v=714';
-import { drawQR } from './lib/qr.js?v=714';
-import { WORLDS } from './worlds/registry.js?v=714';
-import { Net, PALETTE } from './net.js?v=714';
-import { Presence } from './lib/presence.js?v=714';
-import { Pulses } from './lib/pulse.js?v=714';
-import { BeatClock } from './lib/beatclock.js?v=714';
-import { BeatCue } from './lib/beatcue.js?v=714';
-import { analyseTrack, cachedChart } from './lib/analyse.js?v=714';
-import { Race, placeOf, standings } from './lib/race.js?v=714';
-import { Signals } from './lib/signals.js?v=714';
-import { pickShareLine, loadLines } from './lib/lines.js?v=714';
-import { RouteMap } from './lib/map.js?v=714';
-import * as sfx from './lib/sfx.js?v=714';
-import { TUNE, saveTune, resetTune } from './lib/tune.js?v=714';
-import { glowTexture } from './lib/glow.js?v=714';
+import { AudioEngine } from './audio-engine.js?v=719';
+import { drawQR } from './lib/qr.js?v=719';
+import { WORLDS } from './worlds/registry.js?v=719';
+import { Net, PALETTE } from './net.js?v=719';
+import { Presence } from './lib/presence.js?v=719';
+import { Pulses } from './lib/pulse.js?v=719';
+import { BeatClock } from './lib/beatclock.js?v=719';
+import { BeatCue } from './lib/beatcue.js?v=719';
+import { analyseTrack, cachedChart } from './lib/analyse.js?v=719';
+import { Race, placeOf, standings } from './lib/race.js?v=719';
+import { Signals } from './lib/signals.js?v=719';
+import { pickShareLine, loadLines } from './lib/lines.js?v=719';
+import { RouteMap } from './lib/map.js?v=719';
+import * as sfx from './lib/sfx.js?v=719';
+import { TUNE, saveTune, resetTune } from './lib/tune.js?v=719';
+import { glowTexture } from './lib/glow.js?v=719';
 
 // ── Renderer ──
 const canvas = document.getElementById('canvas');
@@ -2191,12 +2191,16 @@ document.addEventListener('fp-bday-glitch', () => {
   haptic([30, 40, 30, 40, 50]);
 });
 
-// the needle drops: a breath of crackle, then THE SONG takes over the night
+// the needle drops: only a breath of crackle. The SONG waits for the glitch -
+// it belongs to the new world, not to her front room
 document.addEventListener('fp-bday-needle', () => {
   if (brNoiseGain && audio.ctx) {
     brNoiseGain.gain.setValueAtTime(0.06, audio.ctx.currentTime);
     brNoiseGain.gain.setTargetAtTime(0, audio.ctx.currentTime + 0.5, 0.2);
   }
+});
+document.addEventListener('fp-bday-glitch', () => {
+  // the static burst covers the handoff; the song lands as the new world does
   setTimeout(() => {
     if (window.__BDAY_TRACK) {
       audio.el.loop = false;
@@ -2205,7 +2209,7 @@ document.addEventListener('fp-bday-needle', () => {
       audio.play().catch(() => {});
       updatePlayBtn();
     }
-  }, 900);
+  }, 650);
 });
 
 // the mission complete: the chrome returns, and the game finally says its name

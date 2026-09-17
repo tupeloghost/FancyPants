@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=714';
-import { themePaint } from '../lib/themes.js?v=714';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=719';
+import { themePaint } from '../lib/themes.js?v=719';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -420,7 +420,12 @@ export function createBirthday() {
         g3.position.set(-7.7 + (i % 8) * 2.2 + (i >= 8 ? 1.1 : 0), -1.4 + (i >= 8 ? 1.6 : 0), 8.2);
         g3.userData = {};   // filled below
         if (i >= 8) g3.visible = false;   // the SPREAD: lit only if the drive runs long
-        g3.userData = { hp: 1, seed: Math.random() * 100, outer, inner };
+        const steam = glowSprite(2.6);
+        steam.material.color.set(0xcfe8f2);
+        steam.material.opacity = 0;
+        steam.position.y = 1.4;
+        g3.add(steam);
+        g3.userData = { hp: 1, seed: Math.random() * 100, outer, inner, steam };
         house.add(g3);
         houseFires.push(g3);
       }
@@ -583,8 +588,11 @@ export function createBirthday() {
       // ── PROLOGUE SET 2: mrs. dumplin's front room, one record player ──
       room = new THREE.Group();
       const table = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, 6),
-        new THREE.MeshBasicMaterial({ color: 0x241a30, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0x352747, toneMapped: false }));
       table.position.y = -3;
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.24, 48),
+        new THREE.MeshBasicMaterial({ color: 0x1a1526, toneMapped: false }));
+      plinth.position.set(-1, -2.6, 0);
       platter = new THREE.Group();
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.18, 48),
         new THREE.MeshBasicMaterial({ color: 0x0b0a12, toneMapped: false }));
@@ -595,7 +603,21 @@ export function createBirthday() {
       const label = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.2, 32),
         new THREE.MeshBasicMaterial({ color: 0xffd98a, toneMapped: false }));
       platter.add(disc, grooves, label);
-      platter.position.set(-1, -2.5, 0);
+      // the record starts OFF the player, out of its sleeve on the table:
+      // a task waiting to be done, label up so the gold reads at a glance
+      const sleeve = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.16, 6.8),
+        new THREE.MeshBasicMaterial({ color: 0x3c2234, toneMapped: false }));
+      sleeve.position.set(5.2, -2.66, 1.0);
+      sleeve.rotation.y = 0.3;
+      platter.position.set(4.7, -2.4, 0.6);
+      platter.rotation.set(0, 0.4, 0);
+      this._recHome = { pos: new THREE.Vector3(-1, -2.5, 0), sleevePos: platter.position.clone(), sleeveRot: platter.rotation.clone() };
+      // a warm pool over the turntable so the task is the lit thing in the room
+      const overGlow = glowSprite(9);
+      overGlow.material.color.set(0xffc98a);
+      overGlow.material.opacity = 0.22;
+      overGlow.position.set(0.5, 0.5, 0.5);
+      room.add(plinth, sleeve, overGlow);
       tonearm = new THREE.Group();
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 4.4),
         new THREE.MeshBasicMaterial({ color: 0xb9b3da, toneMapped: false }));
@@ -604,6 +626,7 @@ export function createBirthday() {
       tonearm.position.set(3.2, -2.2, 1.6);
       tonearm.rotation.y = -0.7;   // resting off the record
       room.add(table, platter, tonearm);
+      this._recPhase = 0;   // 0 waiting, 1 placing, 2 placed, 3 needle down
       const lampGlow = glowSprite(14);
       lampGlow.material.color.set(0xffb968);
       lampGlow.material.opacity = 0.3;
@@ -721,10 +744,18 @@ export function createBirthday() {
     onTap() {
       tapGlit = 1;
       callPulse = 1;
-      if (state === 'record' && !this._needleDown) {
-        this._needleDown = true;
-        this._needleAt = stateT;
-        document.dispatchEvent(new CustomEvent('fp-bday-needle'));
+      if (state === 'record') {
+        if (this._recPhase === 0) {
+          this._recPhase = 1;   // the record floats to the platter
+          this._placeK = 0;
+          return;
+        }
+        if (this._recPhase === 2 && !this._needleDown) {
+          this._recPhase = 3;
+          this._needleDown = true;
+          this._needleAt = stateT;
+          document.dispatchEvent(new CustomEvent('fp-bday-needle'));
+        }
         return;
       }
       if (state === 'drive' || state === 'douse') return;
@@ -913,6 +944,7 @@ export function createBirthday() {
           if (drove >= DRIVE_DIST) {
             state = 'arrive'; stateT = 0;
             this._cab.visible = false;
+            traffic.forEach(car => { car.visible = false; });
             // the drive's bill comes due: overtime lights extra fires
             const spread = Math.min(4, Math.max(0, Math.floor((driveT - DRIVE_PAR) / 7)));
             for (let i2 = 8; i2 < 8 + spread; i2++) houseFires[i2].visible = true;
@@ -946,7 +978,7 @@ export function createBirthday() {
           camera.updateProjectionMatrix();
           if (!this._hoseHint && stateT > 2.6) {
             this._hoseHint = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: this._spreadN > 8 ? 'it spread to ' + this._spreadN + ' fires. grab the hose - HOLD to spray' : 'grab the hose. HOLD to spray, aim with your hand' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: this._spreadN > 8 ? 'it spread to ' + this._spreadN + ' fires. HOLD to spray. aim the blue dot at each flame' : 'grab the hose. HOLD to spray. move your hand to aim the blue dot at each flame' }));
           }
           // the first HOLD takes the hose and the fight begins
           if (this._hoseHint && opts.holding) {
@@ -967,6 +999,15 @@ export function createBirthday() {
           const aim = this._aim || (this._aim = new THREE.Vector3());
           aim.set(steer.x * 9, steer.y * 6 + 1, -20.5);
           const spraying = !!opts.holding;
+          if (!this._ret) {
+            this._ret = glowSprite(1.6);
+            this._ret.material.color.set(0x9fdcff);
+            scene.add(this._ret);
+          }
+          this._ret.visible = true;
+          this._ret.position.set(aim.x, aim.y, -20.4);
+          this._ret.material.opacity = spraying ? 0.85 : 0.45 + Math.sin(time * 5) * 0.15;
+          this._ret.scale.setScalar(spraying ? 1 + Math.sin(time * 24) * 0.12 : 1);
           sprayPts.visible = spraying;
           if (spraying) {
             const posA = sprayPts.geometry.attributes.position;
@@ -974,8 +1015,9 @@ export function createBirthday() {
               const b2 = sprayBits[i];
               b2.t += dt * 2.2;
               if (b2.t > 1) b2.t -= 1;
-              const px = b2.t * aim.x + (Math.random() - 0.5) * 0.5;
-              const py = -3 + b2.t * (aim.y + 3) + Math.sin(b2.t * Math.PI) * 2.2;
+              if (b2.jx === undefined) { b2.jx = (Math.random() - 0.5) * 0.5; b2.jy = (Math.random() - 0.5) * 0.3; }
+              const px = b2.t * aim.x + b2.jx;
+              const py = -3 + b2.t * (aim.y + 3) + Math.sin(b2.t * Math.PI) * 2.2 + b2.jy;
               const pz = 6 - b2.t * 26.5;
               posA.setXYZ(i, px, py, pz);
             }
@@ -989,25 +1031,31 @@ export function createBirthday() {
             if (!u2.active) return;
             activeN++;
             if (u2.hp <= 0) {
-              // a dead fire beside a living one CREEPS BACK - keep sweeping
-              if (burning > 0) {
-                u2.hp = Math.min(0.4, (u2.hp || 0) + dt * 0.045);
-                if (u2.hp > 0.22 && reigniteWarnT <= 0) {
+              u2.deadT = (u2.deadT || 0) + dt;
+              // one flare-back per fire, after six quiet seconds, never the last one
+              if (burning > 1 && u2.deadT > 6 && !u2.flared) {
+                u2.flared = true;
+                u2.hp = 0.4;
+                if (reigniteWarnT <= 0) {
                   reigniteWarnT = 7;
-                  document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'it is coming back! hit it again' }));
+                  document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'one flared back up! hit it again' } }));
                 }
+              } else {
+                out++;
+                u2.outer.material.opacity = Math.max(0, u2.outer.material.opacity - dt);
+                u2.inner.material.opacity = Math.max(0, u2.inner.material.opacity - dt);
+                return;
               }
-              out++;
-              u2.outer.material.opacity = Math.max(0, u2.outer.material.opacity - dt);
-              u2.inner.material.opacity = Math.max(0, u2.inner.material.opacity - dt);
-              return;
             }
             const fw = this._fw || (this._fw = new THREE.Vector3());
             fl2.getWorldPosition(fw);
-            if (spraying && Math.hypot(fw.x - aim.x, fw.y - aim.y) < 3.2) {
+            const onIt = spraying && Math.hypot(fw.x - aim.x, fw.y - aim.y) < 3.4;
+            if (onIt) {
               u2.hp -= dt * 0.8;
-              if (u2.hp <= 0 && opts.impact) opts.impact(0.4);
+              if (u2.hp <= 0) { u2.deadT = 0; if (opts.impact) opts.impact(0.4); }
             }
+            if (u2.steam) u2.steam.material.opacity = Math.max(0, Math.min(0.5,
+              (u2.steam.material.opacity || 0) + (onIt ? dt * 2.5 : -dt * 2)));
             const lick2 = 0.85 + Math.sin(time * 9 + u2.seed) * 0.25 + Math.sin(time * 21 + u2.seed * 2) * 0.1;
             fl2.scale.set(0.4 + u2.hp * 0.5, (0.4 + u2.hp * 1.1) * lick2, 1);
             u2.outer.material.opacity = (0.3 + u2.hp * 0.4) + Math.sin(time * 7 + u2.seed) * 0.12;
@@ -1022,14 +1070,23 @@ export function createBirthday() {
           camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
           this._cv2.set(steer.x * 1.5, 0.8, 6);
           camera.position.lerp(this._cv2, Math.min(1, dt * 4));
-          camera.lookAt(aim.x * 0.5, aim.y * 0.5, -24);
+          const lv3 = this._lv3 || (this._lv3 = new THREE.Vector3(0, 0, -24));
+          lv3.x += (aim.x * 0.5 - lv3.x) * Math.min(1, dt * 2.5);
+          lv3.y += (aim.y * 0.5 - lv3.y) * Math.min(1, dt * 2.5);
+          camera.lookAt(lv3);
           camera.fov += (76 - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure('FIRES OUT', out, activeN);
+          // fourteen seconds with nothing out means the loop has not clicked
+          if (!this._douseNudge && stateT > 14 && out === 0) {
+            this._douseNudge = true;
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'hold the water ON one flame. it steams, shrinks, and goes out. then the next' } }));
+          }
           window.__bdayFires = activeN ? 1 - out / activeN : 0;   // the crackle dies with the fire
           if (activeN > 0 && out >= activeN && !dousedAll) {
             dousedAll = true;
             sprayPts.visible = false;
+            if (this._ret) this._ret.visible = false;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'all out. the lawn flamingo made it. hero' }));
             setTimeout(() => {
               if (state !== 'douse') return;
@@ -1043,8 +1100,21 @@ export function createBirthday() {
           }
         }
         if (state === 'record') {
-          // her front room: one lamp, one player. the tap drops the needle
-          platter.rotation.y += dt * (this._needleDown ? 2.6 : 0.15);
+          // her front room: put the record ON, then drop the needle. two taps,
+          // both asked for in words, neither skippable by accident
+          if (this._recPhase === 1) {
+            this._placeK = Math.min(1, (this._placeK || 0) + dt / 1.3);
+            const e2 = 1 - Math.pow(1 - this._placeK, 3);
+            platter.position.lerpVectors(this._recHome.sleevePos, this._recHome.pos, e2);
+            platter.position.y += Math.sin(e2 * Math.PI) * 1.8;   // an arc, not a slide
+            platter.rotation.y = this._recHome.sleeveRot.y * (1 - e2);
+            if (this._placeK >= 1) {
+              this._recPhase = 2;
+              platter.rotation.set(0, 0, 0);
+              document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: { now: true, text: 'now tap again to drop the needle' } }));
+            }
+          }
+          if (this._recPhase >= 2) platter.rotation.y += dt * (this._needleDown ? 2.6 : 0.3);
           if (this._needleDown) tonearm.rotation.y += ((-0.12) - tonearm.rotation.y) * Math.min(1, dt * 3);
           sky.material.color.setRGB(0.05, 0.03, 0.03);
           camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
@@ -1054,11 +1124,11 @@ export function createBirthday() {
           camera.fov += (66 - camera.fov) * Math.min(1, dt * 4);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure(null);
-          if (stateT > 4.5 && !this._recordHinted) {
+          if (stateT > 4.5 && !this._recordHinted && this._recPhase === 0) {
             this._recordHinted = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'tap the record player' }));
+            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'her record leans by the sleeve. tap it to put it on the player' }));
           }
-          if (this._needleDown && stateT - this._needleAt > 2.2) {
+          if (this._needleDown && stateT - this._needleAt > 2.6) {
             // the groove catches - and the world comes apart
             room.visible = false;
             confetti.visible = true;
