@@ -10,8 +10,8 @@
 //           rain, a wish star. Chic and starry, never arcade.
 
 import * as THREE from 'three';
-import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=704';
-import { themePaint } from '../lib/themes.js?v=704';
+import { glowSprite, glowPoints, skyDome } from '../lib/glow.js?v=711';
+import { themePaint } from '../lib/themes.js?v=711';
 
 const CANDLES_DEFAULT = 13;
 const LITE = !!window.__LITE;
@@ -268,6 +268,20 @@ export function createBirthday() {
       tarmac.rotation.x = -Math.PI / 2;
       tarmac.position.set(0, -4, -160);
       road.add(tarmac);
+      // the world beyond the road: dark grass, a horizon that glows faintly
+      for (const gx of [-45, 45]) {
+        const grass = new THREE.Mesh(new THREE.PlaneGeometry(60, 400),
+          new THREE.MeshBasicMaterial({ color: 0x070d06, toneMapped: false }));
+        grass.rotation.x = -Math.PI / 2;
+        grass.position.set(gx, -4.05, -160);
+        road.add(grass);
+      }
+      const horizon = glowSprite(90);
+      horizon.material.color.set(0x2a2348);
+      horizon.material.opacity = 0.35;
+      horizon.scale.y = 0.22;
+      horizon.position.set(0, 2, -330);
+      road.add(horizon);
       dashes = new THREE.InstancedMesh(
         new THREE.BoxGeometry(0.5, 0.05, 4),
         new THREE.MeshBasicMaterial({ color: 0xbfb89a, toneMapped: false }), 24);
@@ -275,12 +289,23 @@ export function createBirthday() {
       for (let i = 0; i < 24; i++) dashBits.push({ z: -i * 14 });
       road.add(dashes);
       for (let i = 0; i < 10; i++) {
+        const lx = i % 2 ? 13 : -13;
+        const z0 = -30 - i * 34;
+        const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 7.5, 8),
+          new THREE.MeshBasicMaterial({ color: 0x2a2545, toneMapped: false }));
+        post2.position.set(lx, -0.3, z0);
+        post2.userData = { z0 };
         const lamp = glowSprite(3.4);
         lamp.material.color.set(0xffc879);
         lamp.material.opacity = 0.5;
-        lamp.position.set(i % 2 ? 14 : -14, 3.5, -30 - i * 34);
-        lamp.userData = { z0: -30 - i * 34 };
-        road.add(lamp);
+        lamp.position.set(lx, 3.6, z0);
+        lamp.userData = { z0 };
+        const pool = new THREE.Mesh(new THREE.CircleGeometry(3.4, 20),
+          new THREE.MeshBasicMaterial({ color: 0x3a2f1a, transparent: true, opacity: 0.5, toneMapped: false }));
+        pool.rotation.x = -Math.PI / 2;
+        pool.position.set(lx, -3.95, z0);
+        pool.userData = { z0 };
+        road.add(post2, lamp, pool);
       }
       cones = [];   // (cones retired - the PRIUS is the road's teeth now)
       // the house: a real one - lawn, porch, door, framed windows - and the
@@ -343,12 +368,23 @@ export function createBirthday() {
       traffic = [];
       for (let i = 0; i < 3; i++) {
         const car = new THREE.Group();
-        const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.6, 5),
+        const bodyC = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.1, 5),
           new THREE.MeshBasicMaterial({ color: 0x1c1830, toneMapped: false }));
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 2.6),
+          new THREE.MeshBasicMaterial({ color: 0x14102a, toneMapped: false }));
+        cabin.position.set(0, 1, -0.3);
+        const shield = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.7),
+          new THREE.MeshBasicMaterial({ color: 0x0a0818, toneMapped: false }));
+        shield.position.set(0, 1, 1.02);
+        shield.rotation.x = -0.25;
         const hl1 = glowSprite(2.4), hl2 = glowSprite(2.4);
         hl1.material.color.set(0xfff4cc); hl2.material.color.set(0xfff4cc);
-        hl1.position.set(-0.8, 0.1, 2.6); hl2.position.set(0.8, 0.1, 2.6);
-        car.add(bodyC, hl1, hl2);
+        hl1.position.set(-0.85, -0.1, 2.6); hl2.position.set(0.85, -0.1, 2.6);
+        const hglow = glowSprite(5);
+        hglow.material.color.set(0xfff4cc);
+        hglow.material.opacity = 0.16;
+        hglow.position.set(0, -0.6, 3.6);
+        car.add(bodyC, cabin, shield, hl1, hl2, hglow);
         car.position.set(-4.5, -3.1, -180 - i * 170);
         car.userData = { z0: car.position.z, hit: false };
         road.add(car);
@@ -383,16 +419,16 @@ export function createBirthday() {
       // ── mrs. dumplin herself: out front, waving, garden hose not helping ──
       const lady = new THREE.Group();
       const dress = new THREE.Mesh(new THREE.ConeGeometry(1.1, 2.6, 12),
-        new THREE.MeshBasicMaterial({ color: 0xb9a8e0, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0x6b5a9e, toneMapped: false }));
       dress.position.y = 1.3;
       const headL = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12),
-        new THREE.MeshBasicMaterial({ color: 0xe8d5c0, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0xb08d6e, toneMapped: false }));
       headL.position.y = 3.1;
       const bun = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xdddde8, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0xa8a4b0, toneMapped: false }));
       bun.position.y = 3.6;
       const wavArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.4, 0.22),
-        new THREE.MeshBasicMaterial({ color: 0xb9a8e0, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0x6b5a9e, toneMapped: false }));
       wavArm.position.set(0.9, 2.6, 0);
       wavArm.geometry.translate(0, 0.7, 0);
       const hoseArc = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.06, 6, 24, 1.4),
@@ -403,8 +439,26 @@ export function createBirthday() {
       dribble.material.color.set(0x7fd4ff);
       dribble.material.opacity = 0.5;
       dribble.position.set(-2.6, 0.6, 0.8);
-      lady.add(dress, headL, bun, wavArm, hoseArc, dribble);
-      lady.position.set(9, -3, 16);
+      const apron = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.1),
+        new THREE.MeshBasicMaterial({ color: 0x9c8f78, toneMapped: false }));
+      apron.position.set(0, 1.15, 0.75);
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.2, 0.22),
+        new THREE.MeshBasicMaterial({ color: 0x6b5a9e, toneMapped: false }));
+      armL.position.set(-0.85, 1.9, 0.2);
+      armL.rotation.z = 0.5;
+      const slipL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 0.7),
+        new THREE.MeshBasicMaterial({ color: 0xd06a8c, toneMapped: false }));
+      slipL.position.set(-0.3, 0.1, 0.3);
+      const slipR = slipL.clone();
+      slipR.position.x = 0.3;
+      // her porch light finds her: a warm halo so she reads from the street
+      const ladyGlow = glowSprite(4.5);
+      ladyGlow.material.color.set(0xffb060);
+      ladyGlow.material.opacity = 0.12;
+      ladyGlow.position.set(0, 1.6, -1.2);
+      lady.add(ladyGlow, dress, headL, bun, wavArm, armL, apron, slipL, slipR, hoseArc, dribble);
+      lady.scale.setScalar(1.45);
+      lady.position.set(6.5, -3, 13.5);
       house.add(lady);
       this._lady = lady; this._ladyArm = wavArm;
       // the lawn flamingo (it will make it. hero.)
@@ -418,7 +472,7 @@ export function createBirthday() {
       mNeck.position.set(0.5, 2, 0);
       mNeck.rotation.z = -0.3;
       const mHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xff9bbf, toneMapped: false }));
+        new THREE.MeshBasicMaterial({ color: 0xd06a8c, toneMapped: false }));
       mHead.position.set(0.72, 2.55, 0);
       const mLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 6),
         new THREE.MeshBasicMaterial({ color: 0xffb0cc, toneMapped: false }));
@@ -468,29 +522,30 @@ export function createBirthday() {
       this._cab = new THREE.Group();
       const hood = new THREE.Mesh(
         new THREE.BoxGeometry(5.6, 0.5, 2.0),
-        new THREE.MeshBasicMaterial({ color: 0x8a1420, toneMapped: false })
+        new THREE.MeshBasicMaterial({ color: 0x4a0c14, toneMapped: false })
       );
-      hood.position.set(0, -1.85, -3.1);
+      hood.position.set(0, -2.0, -3.1);
       hood.rotation.x = 0.16;
+      // a ridge of shine down the hood so it reads as painted metal, not a slab
+      const ridge = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.9),
+        new THREE.MeshBasicMaterial({ color: 0x8a1a26, toneMapped: false }));
+      ridge.rotation.x = -Math.PI / 2 + 0.16;
+      ridge.position.set(0, -1.73, -3.1);
+      // the dark dashboard lip under your chin
+      const dashLip = new THREE.Mesh(new THREE.BoxGeometry(6, 0.7, 0.8),
+        new THREE.MeshBasicMaterial({ color: 0x120e1c, toneMapped: false }));
+      dashLip.position.set(0, -2.0, -2.0);
+      const mk1 = glowSprite(0.7), mk2 = glowSprite(0.7);
+      mk1.material.color.set(0xffb040); mk2.material.color.set(0xffb040);
+      mk1.material.opacity = 0.8; mk2.material.opacity = 0.8;
+      mk1.position.set(-2.6, -1.8, -4.05);
+      mk2.position.set(2.6, -1.8, -4.05);
       const barL = glowSprite(3.2), barR = glowSprite(3.2);
       barL.position.set(-1.9, 1.6, -2);
       barR.position.set(1.9, 1.6, -2);
-      this._cab.add(hood, barL, barR);
+      this._cab.add(hood, ridge, dashLip, mk1, mk2, barL, barR);
       this._barL = barL; this._barR = barR;
       this._cab.visible = false;
-      // the hose nozzle: brass in your hands once you take it
-      this._nozzle = new THREE.Group();
-      const nzBody = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1.2, 10),
-        new THREE.MeshBasicMaterial({ color: 0xc9a44a, toneMapped: false }));
-      nzBody.rotation.x = Math.PI / 2 - 0.25;
-      const nzHose = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.4, 8),
-        new THREE.MeshBasicMaterial({ color: 0x33302a, toneMapped: false }));
-      nzHose.position.set(0, -0.4, 0.9);
-      nzHose.rotation.x = Math.PI / 2 - 0.7;
-      this._nozzle.add(nzBody, nzHose);
-      this._nozzle.position.set(0.9, -1.5, -2.4);
-      this._nozzle.visible = false;
-      camera.add(this._nozzle);
       camera.add(this._cab);
       scene.add(camera);
       // the water: a stream of droplets while dousing
@@ -791,7 +846,7 @@ export function createBirthday() {
           // oncoming traffic: headlights in the left lane, weave or wear it
           for (const car of traffic) {
             let z = car.userData.z0 + drove * 1.8;
-            while (z > 20) { z -= 560; car.userData.hit = false; }
+            while (z > 20) { z -= 560; car.userData.hit = false; car.position.x = -4.5 + (Math.random() - 0.5) * 1.6; }
             car.position.z = z;
             const dzc = Math.abs(car.position.z);
             if (dzc < 5 && Math.abs(car.position.x - lane) < 2.4 && coneSlowT <= 0 && !car.userData.hit) {
@@ -821,7 +876,7 @@ export function createBirthday() {
           const bar = Math.sin(time * 7) > 0;
           sky.material.color.setRGB(bar ? 0.10 : 0.02, 0.02, bar ? 0.03 : 0.12);
           camera.position.lerp(this._cv2 || (this._cv2 = new THREE.Vector3()), 0);
-          this._cv2.set(lane, 0.6 + Math.sin(drove * 0.06) * 0.12, 8);
+          this._cv2.set(lane, 0.6 + Math.sin(drove * 0.06) * 0.12 + Math.sin(time * 31) * (0.02 + surge * 0.03), 8);
           camera.position.lerp(this._cv2, Math.min(1, dt * 5));
           const lv2 = this._lv2 || (this._lv2 = new THREE.Vector3(0, 0, -60));
           lv2.lerp(new THREE.Vector3(lane * 0.4, 0, -60), Math.min(1, dt * 3));
@@ -829,10 +884,6 @@ export function createBirthday() {
           camera.fov += ((78 + surge * 8) - camera.fov) * Math.min(1, dt * 5);
           camera.updateProjectionMatrix();
           if (window.__setFigure) window.__setFigure('BLOCKS', Math.min(9, Math.floor(near * 10)), 10);
-          if (!this._droveHint1 && drove > 40) {
-            this._droveHint1 = true;
-            document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'lights on. follow the smoke. not the taco truck. the smoke' }));
-          }
           if (!this._droveHint2 && near > 0.55) {
             this._droveHint2 = true;
             document.dispatchEvent(new CustomEvent('fp-bday-hint', { detail: 'she is out front waving. she is also spraying it with a garden hose. it is not helping' }));
@@ -880,7 +931,6 @@ export function createBirthday() {
             state = 'douse'; stateT = 0;
             document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'douse' }));
             scene.fog.density = 0.009;
-            if (this._nozzle) this._nozzle.visible = true;
             if (opts.impact) opts.impact(0.4);
           }
           if (window.__setFigure) window.__setFigure(null);
@@ -896,11 +946,6 @@ export function createBirthday() {
           aim.set(steer.x * 9, steer.y * 6 + 1, -20.5);
           const spraying = !!opts.holding;
           sprayPts.visible = spraying;
-          if (this._nozzle) {
-            this._nozzle.visible = true;
-            this._nozzle.position.x = 0.9 + steer.x * 0.3;
-            this._nozzle.position.y = -1.5 + steer.y * 0.2 + (spraying ? Math.sin(time * 30) * 0.02 : 0);
-          }
           if (spraying) {
             const posA = sprayPts.geometry.attributes.position;
             for (let i = 0; i < sprayBits.length; i++) {
@@ -967,7 +1012,6 @@ export function createBirthday() {
             setTimeout(() => {
               if (state !== 'douse') return;
               state = 'record'; stateT = 0;
-              if (this._nozzle) this._nozzle.visible = false;
               document.dispatchEvent(new CustomEvent('fp-bday-scene', { detail: 'record' }));
               road.visible = false;
               room.visible = true;
